@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="${SUPERFLOW_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+product_names=()
+product_layers=()
+product_owners=()
+violations=0
+
+find_manifests() {
+    local root
+    for root in "$@"; do
+        [[ -d "$root" ]] || continue
+        find "$root" -type d \( \
+            -name .build -o \
+            -name .git -o \
+            -name .swiftpm -o \
+            -name checkouts -o \
+            -name artifacts -o \
+            -name SourcePackages \
+        \) -prune -o -name Package.swift -print
+    done
+}
+
+layer_for_path() {
+    case "$1" in
+        */Packages/L0-*) printf '0' ;;
+        */Packages/L1-*) printf '1' ;;
+        */Packages/L2-*) printf '2' ;;
+        */Packages/L3-*) printf '3' ;;
+        */Packages/L4-*) printf '4' ;;
+        */App/SuperflowApp/*) printf '5' ;;
+        */App/InferenceHelper/*) printf '5' ;;
+        */tools/Superflowctl/*) printf '5' ;;
+        *) printf '' ;;
+    esac
+}
+
+layer_for_product() {
+    local product="$1"
+    local index
+    for ((index = 0; index < ${#product_names[@]}; index++)); do
+        if [[ "${product_names[$index]}" == "$product" ]]; then
+            printf '%s' "${product_layers[$index]}"
+            return 0
+        fi
+    done
+    return 0
+}
+
+owner_for_product() {
+    local product="$1"
+    local index
+    for ((index = 0; index < ${#product_names[@]}; index++)); do
+        if [[ "${product_names[$index]}" == "$product" ]]; then
+            printf '%s' "${product_owners[$index]}"
+            return 0
+        fi
+    done
+    return 0
+}
+
+while IFS= read -r manifest; do
+    package_dir="$(dirname "$manifest")"
+    package_layer="$(layer_for_path "$package_dir")"
+    [[ -n "$package_layer" ]] || continue
+    while IFS= read -r product; do
+        if [[ -n "$product" ]]; then
+            product_names+=("$product")
+            product_layers+=("$package_layer")
+            product_owners+=("$package_dir")
+        fi
+    done < <(sed -nE 's/.*\.library\(name: "([^"]+)".*/\1/p' "$manifest")
+done < <(find_manifests "$repo_root/Packages" "$repo_root/App/SuperflowApp" "$repo_root/App/InferenceHelper" "$repo_root/tools/Superflowctl")
+
+allows_import() {
+    local owner="$1"
+    local dependency="$2"
+    case "$owner:$dependency" in
+        0:0|1:0|2:0|2:2|3:0|3:2|3:4|4:0|4:4|5:0|5:1|5:2|5:3|5:4|5:5) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+while IFS= read -r manifest; do
+    package_dir="$(dirname "$manifest")"
+    owner_layer="$(layer_for_path "$package_dir")"
+    [[ -n "$owner_layer" ]] || continue
+
+    while IFS= read -r dependency_path; do
+        [[ -n "$dependency_path" ]] || continue
+        dependency_dir="$(cd "$package_dir/$dependency_path" && pwd)"
+        dependency_layer="$(layer_for_path "$dependency_dir")"
+        if [[ -z "$dependency_layer" ]]; then
+            printf 'Unclassified package dependency %s in %s\n' \
+                "$dependency_path" "$manifest" >&2
+            violations=$((violations + 1))
+        elif ! allows_import "$owner_layer" "$dependency_layer"; then
+            printf 'Layer %s cannot depend on layer %s: %s -> %s\n' \
+                "$owner_layer" "$dependency_layer" "$package_dir" "$dependency_dir" >&2
+            violations=$((violations + 1))
+        fi
+    done < <(sed -nE 's/.*\.package\(path: "([^"]+)".*/\1/p' "$manifest")
+
+    source_dir="$package_dir/Sources"
+    [[ -d "$source_dir" ]] || continue
+
+    while IFS=: read -r source_file line import_statement; do
+        [[ -n "$source_file" ]] || continue
+        imported_module="${import_statement#*import }"
+        dependency_owner="$(owner_for_product "$imported_module")"
+        if [[ "$dependency_owner" == "$package_dir" ]]; then
+            continue
+        fi
+        dependency_layer="$(layer_for_product "$imported_module")"
+        if [[ -z "$dependency_layer" ]]; then
+            printf 'Unknown local module %s imported by %s:%s\n' \
+                "$imported_module" "$source_file" "$line" >&2
+            violations=$((violations + 1))
+            continue
+        fi
+        if ! allows_import "$owner_layer" "$dependency_layer"; then
+            printf 'Layer %s cannot import %s (layer %s): %s:%s\n' \
+                "$owner_layer" "$imported_module" "$dependency_layer" "$source_file" "$line" >&2
+            violations=$((violations + 1))
+        fi
+    done < <(rg --no-heading --no-messages -n '^[[:space:]]*import[[:space:]]+Superflow[A-Za-z0-9_]+' "$source_dir" -g '*.swift' || true)
+done < <(find_manifests "$repo_root/Packages" "$repo_root/App/SuperflowApp" "$repo_root/App/InferenceHelper" "$repo_root/tools/Superflowctl")
+
+if (( violations > 0 )); then
+    printf 'Dependency check found %d violation(s).\n' "$violations" >&2
+    exit 1
+fi
+
+printf '%s\n' 'Dependency layers are valid.'

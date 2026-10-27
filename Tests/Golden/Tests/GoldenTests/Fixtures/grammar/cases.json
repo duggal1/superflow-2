@@ -1,0 +1,3472 @@
+{
+  "policy": {
+    "enabled": true,
+    "allowedKinds": [
+      "spelling",
+      "agreement",
+      "repeatedWords",
+      "aOrAn"
+    ],
+    "maxEditRatio": 0.5,
+    "timeCapMs": 50
+  },
+  "cases": [
+    {
+      "name": "spelling-01",
+      "category": "spelling",
+      "input": "I recieve the quarterly report before the meeting starts.",
+      "lints": [
+        {
+          "find": "recieve",
+          "replace": "receive",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I receive the quarterly report before the meeting starts."
+    },
+    {
+      "name": "spelling-02",
+      "category": "spelling",
+      "input": "Please send teh draft to the design team this afternoon.",
+      "lints": [
+        {
+          "find": "teh",
+          "replace": "the",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please send the draft to the design team this afternoon."
+    },
+    {
+      "name": "spelling-03",
+      "category": "spelling",
+      "input": "We should definately review the numbers before Friday.",
+      "lints": [
+        {
+          "find": "definately",
+          "replace": "definitely",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We should definitely review the numbers before Friday."
+    },
+    {
+      "name": "spelling-04",
+      "category": "spelling",
+      "input": "Can you seperate the invoices from the receipts please.",
+      "lints": [
+        {
+          "find": "seperate",
+          "replace": "separate",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Can you separate the invoices from the receipts please."
+    },
+    {
+      "name": "spelling-05",
+      "category": "spelling",
+      "input": "The outage occured right after the deployment finished.",
+      "lints": [
+        {
+          "find": "occured",
+          "replace": "occurred",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The outage occurred right after the deployment finished."
+    },
+    {
+      "name": "spelling-06",
+      "category": "spelling",
+      "input": "I need the adress for the new office in Brooklyn.",
+      "lints": [
+        {
+          "find": "adress",
+          "replace": "address",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I need the address for the new office in Brooklyn."
+    },
+    {
+      "name": "spelling-07",
+      "category": "spelling",
+      "input": "I beleive the client wants a shorter summary this time.",
+      "lints": [
+        {
+          "find": "beleive",
+          "replace": "believe",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I believe the client wants a shorter summary this time."
+    },
+    {
+      "name": "spelling-08",
+      "category": "spelling",
+      "input": "We can accomodate eight people in the small room.",
+      "lints": [
+        {
+          "find": "accomodate",
+          "replace": "accommodate",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We can accommodate eight people in the small room."
+    },
+    {
+      "name": "spelling-09",
+      "category": "spelling",
+      "input": "Let me know wich option works better for your schedule.",
+      "lints": [
+        {
+          "find": "wich",
+          "replace": "which",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Let me know which option works better for your schedule."
+    },
+    {
+      "name": "spelling-10",
+      "category": "spelling",
+      "input": "The engineers finished thier review late last night.",
+      "lints": [
+        {
+          "find": "thier",
+          "replace": "their",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The engineers finished their review late last night."
+    },
+    {
+      "name": "spelling-11",
+      "category": "spelling",
+      "input": "That change will save us alot of time next quarter.",
+      "lints": [
+        {
+          "find": "alot",
+          "replace": "a lot",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That change will save us a lot of time next quarter."
+    },
+    {
+      "name": "spelling-12",
+      "category": "spelling",
+      "input": "Keep the branch open untill the tests are green.",
+      "lints": [
+        {
+          "find": "untill",
+          "replace": "until",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Keep the branch open until the tests are green."
+    },
+    {
+      "name": "spelling-13",
+      "category": "spelling",
+      "input": "The begining of the document needs a clearer summary.",
+      "lints": [
+        {
+          "find": "begining",
+          "replace": "beginning",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The beginning of the document needs a clearer summary."
+    },
+    {
+      "name": "spelling-14",
+      "category": "spelling",
+      "input": "Add the launch review to my calender for Thursday.",
+      "lints": [
+        {
+          "find": "calender",
+          "replace": "calendar",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Add the launch review to my calendar for Thursday."
+    },
+    {
+      "name": "spelling-15",
+      "category": "spelling",
+      "input": "The team commited to shipping the fix this week.",
+      "lints": [
+        {
+          "find": "commited",
+          "replace": "committed",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The team committed to shipping the fix this week."
+    },
+    {
+      "name": "spelling-16",
+      "category": "spelling",
+      "input": "I am concious of the risk and I accept it for now.",
+      "lints": [
+        {
+          "find": "concious",
+          "replace": "conscious",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I am conscious of the risk and I accept it for now."
+    },
+    {
+      "name": "spelling-17",
+      "category": "spelling",
+      "input": "Nobody questioned the existance of the backup file.",
+      "lints": [
+        {
+          "find": "existance",
+          "replace": "existence",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Nobody questioned the existence of the backup file."
+    },
+    {
+      "name": "spelling-18",
+      "category": "spelling",
+      "input": "The foriegn exchange rate moved again this morning.",
+      "lints": [
+        {
+          "find": "foriegn",
+          "replace": "foreign",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The foreign exchange rate moved again this morning."
+    },
+    {
+      "name": "spelling-19",
+      "category": "spelling",
+      "input": "The goverment published new accessibility guidance today.",
+      "lints": [
+        {
+          "find": "goverment",
+          "replace": "government",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The government published new accessibility guidance today."
+    },
+    {
+      "name": "spelling-20",
+      "category": "spelling",
+      "input": "Please call me immediatly if the build fails again.",
+      "lints": [
+        {
+          "find": "immediatly",
+          "replace": "immediately",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please call me immediately if the build fails again."
+    },
+    {
+      "name": "spelling-21",
+      "category": "spelling",
+      "input": "We hired an independant reviewer for the security audit.",
+      "lints": [
+        {
+          "find": "independant",
+          "replace": "independent",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We hired an independent reviewer for the security audit."
+    },
+    {
+      "name": "spelling-22",
+      "category": "spelling",
+      "input": "Her knowlege of the codebase saved us a full day.",
+      "lints": [
+        {
+          "find": "knowlege",
+          "replace": "knowledge",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Her knowledge of the codebase saved us a full day."
+    },
+    {
+      "name": "spelling-23",
+      "category": "spelling",
+      "input": "The maintainance window starts at midnight on Saturday.",
+      "lints": [
+        {
+          "find": "maintainance",
+          "replace": "maintenance",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The maintenance window starts at midnight on Saturday."
+    },
+    {
+      "name": "spelling-24",
+      "category": "spelling",
+      "input": "Is it neccessary to restart the service after the change.",
+      "lints": [
+        {
+          "find": "neccessary",
+          "replace": "necessary",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Is it necessary to restart the service after the change."
+    },
+    {
+      "name": "spelling-25",
+      "category": "spelling",
+      "input": "We only use the large room on a special occassion.",
+      "lints": [
+        {
+          "find": "occassion",
+          "replace": "occasion",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We only use the large room on a special occasion."
+    },
+    {
+      "name": "spelling-26",
+      "category": "spelling",
+      "input": "That persistant warning finally disappeared after the update.",
+      "lints": [
+        {
+          "find": "persistant",
+          "replace": "persistent",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That persistent warning finally disappeared after the update."
+    },
+    {
+      "name": "spelling-27",
+      "category": "spelling",
+      "input": "It was a priviledge to work with the original author.",
+      "lints": [
+        {
+          "find": "priviledge",
+          "replace": "privilege",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "It was a privilege to work with the original author."
+    },
+    {
+      "name": "spelling-28",
+      "category": "spelling",
+      "input": "I reccomend we start with the smaller experiment first.",
+      "lints": [
+        {
+          "find": "reccomend",
+          "replace": "recommend",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I recommend we start with the smaller experiment first."
+    },
+    {
+      "name": "spelling-29",
+      "category": "spelling",
+      "input": "The support team refered the case to our group.",
+      "lints": [
+        {
+          "find": "refered",
+          "replace": "referred",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The support team referred the case to our group."
+    },
+    {
+      "name": "spelling-30",
+      "category": "spelling",
+      "input": "The migration was succesful and no rows were lost.",
+      "lints": [
+        {
+          "find": "succesful",
+          "replace": "successful",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The migration was successful and no rows were lost."
+    },
+    {
+      "name": "spelling-31",
+      "category": "spelling",
+      "input": "Let us plan to meet tommorow at nine in the morning.",
+      "lints": [
+        {
+          "find": "tommorow",
+          "replace": "tomorrow",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Let us plan to meet tomorrow at nine in the morning."
+    },
+    {
+      "name": "spelling-32",
+      "category": "spelling",
+      "input": "The new search is truely faster than the old one.",
+      "lints": [
+        {
+          "find": "truely",
+          "replace": "truly",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The new search is truly faster than the old one."
+    },
+    {
+      "name": "spelling-33",
+      "category": "spelling",
+      "input": "It felt wierd to see the dashboard without any data.",
+      "lints": [
+        {
+          "find": "wierd",
+          "replace": "weird",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "It felt weird to see the dashboard without any data."
+    },
+    {
+      "name": "spelling-34",
+      "category": "spelling",
+      "input": "I am writting a short note for the release announcement.",
+      "lints": [
+        {
+          "find": "writting",
+          "replace": "writing",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I am writing a short note for the release announcement."
+    },
+    {
+      "name": "spelling-35",
+      "category": "spelling",
+      "input": "That arguement convinced everyone in the room.",
+      "lints": [
+        {
+          "find": "arguement",
+          "replace": "argument",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That argument convinced everyone in the room."
+    },
+    {
+      "name": "spelling-36",
+      "category": "spelling",
+      "input": "The tool basicly does the same thing with fewer clicks.",
+      "lints": [
+        {
+          "find": "basicly",
+          "replace": "basically",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The tool basically does the same thing with fewer clicks."
+    },
+    {
+      "name": "spelling-37",
+      "category": "spelling",
+      "input": "The cache was completly empty after the restart.",
+      "lints": [
+        {
+          "find": "completly",
+          "replace": "completely",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The cache was completely empty after the restart."
+    },
+    {
+      "name": "spelling-38",
+      "category": "spelling",
+      "input": "We need a diffrent approach for the offline case.",
+      "lints": [
+        {
+          "find": "diffrent",
+          "replace": "different",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We need a different approach for the offline case."
+    },
+    {
+      "name": "spelling-39",
+      "category": "spelling",
+      "input": "The staging enviroment matches production closely now.",
+      "lints": [
+        {
+          "find": "enviroment",
+          "replace": "environment",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The staging environment matches production closely now."
+    },
+    {
+      "name": "spelling-40",
+      "category": "spelling",
+      "input": "That error message looks familar from last month.",
+      "lints": [
+        {
+          "find": "familar",
+          "replace": "familiar",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That error message looks familiar from last month."
+    },
+    {
+      "name": "spelling-41",
+      "category": "spelling",
+      "input": "The backup finaly finished after twenty minutes.",
+      "lints": [
+        {
+          "find": "finaly",
+          "replace": "finally",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The backup finally finished after twenty minutes."
+    },
+    {
+      "name": "spelling-42",
+      "category": "spelling",
+      "input": "I cannot garantee the same latency under load.",
+      "lints": [
+        {
+          "find": "garantee",
+          "replace": "guarantee",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I cannot guarantee the same latency under load."
+    },
+    {
+      "name": "spelling-43",
+      "category": "spelling",
+      "input": "Nothing happend after I clicked the refresh button.",
+      "lints": [
+        {
+          "find": "happend",
+          "replace": "happened",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Nothing happened after I clicked the refresh button."
+    },
+    {
+      "name": "spelling-44",
+      "category": "spelling",
+      "input": "That is an intresting edge case for the parser.",
+      "lints": [
+        {
+          "find": "intresting",
+          "replace": "interesting",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That is an interesting edge case for the parser."
+    },
+    {
+      "name": "spelling-45",
+      "category": "spelling",
+      "input": "The langauge setting resets whenever the app restarts.",
+      "lints": [
+        {
+          "find": "langauge",
+          "replace": "language",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The language setting resets whenever the app restarts."
+    },
+    {
+      "name": "spelling-46",
+      "category": "spelling",
+      "input": "The managment team approved the new hiring plan.",
+      "lints": [
+        {
+          "find": "managment",
+          "replace": "management",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The management team approved the new hiring plan."
+    },
+    {
+      "name": "spelling-47",
+      "category": "spelling",
+      "input": "This is a good oppurtunity to simplify the module.",
+      "lints": [
+        {
+          "find": "oppurtunity",
+          "replace": "opportunity",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "This is a good opportunity to simplify the module."
+    },
+    {
+      "name": "spelling-48",
+      "category": "spelling",
+      "input": "It is not posible to undo that change from the UI.",
+      "lints": [
+        {
+          "find": "posible",
+          "replace": "possible",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "It is not possible to undo that change from the UI."
+    },
+    {
+      "name": "spelling-49",
+      "category": "spelling",
+      "input": "Please fill out the questionaire before the workshop.",
+      "lints": [
+        {
+          "find": "questionaire",
+          "replace": "questionnaire",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please fill out the questionnaire before the workshop."
+    },
+    {
+      "name": "spelling-50",
+      "category": "spelling",
+      "input": "Ownership of the release is my responsibilty this month.",
+      "lints": [
+        {
+          "find": "responsibilty",
+          "replace": "responsibility",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Ownership of the release is my responsibility this month."
+    },
+    {
+      "name": "agreement-01",
+      "category": "agreement",
+      "input": "The list of pending items are on the shared drive.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The list of pending items is on the shared drive."
+    },
+    {
+      "name": "agreement-02",
+      "category": "agreement",
+      "input": "One of the configuration files are missing from the bundle.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "One of the configuration files is missing from the bundle."
+    },
+    {
+      "name": "agreement-03",
+      "category": "agreement",
+      "input": "Each of the proposed options are expensive to maintain.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Each of the proposed options is expensive to maintain."
+    },
+    {
+      "name": "agreement-04",
+      "category": "agreement",
+      "input": "The team are ready to present the results on Monday.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The team is ready to present the results on Monday."
+    },
+    {
+      "name": "agreement-05",
+      "category": "agreement",
+      "input": "There is many reasons to keep the old endpoint for now.",
+      "lints": [
+        {
+          "find": "is",
+          "replace": "are",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "There are many reasons to keep the old endpoint for now."
+    },
+    {
+      "name": "agreement-06",
+      "category": "agreement",
+      "input": "He don't want to change the schema before the freeze.",
+      "lints": [
+        {
+          "find": "don't",
+          "replace": "doesn't",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "He doesn't want to change the schema before the freeze."
+    },
+    {
+      "name": "agreement-07",
+      "category": "agreement",
+      "input": "They was planning to migrate the database last weekend.",
+      "lints": [
+        {
+          "find": "was",
+          "replace": "were",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "They were planning to migrate the database last weekend."
+    },
+    {
+      "name": "agreement-08",
+      "category": "agreement",
+      "input": "She have already reviewed the pull request twice.",
+      "lints": [
+        {
+          "find": "have",
+          "replace": "has",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "She has already reviewed the pull request twice."
+    },
+    {
+      "name": "agreement-09",
+      "category": "agreement",
+      "input": "The news about the delay are spreading across the office.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The news about the delay is spreading across the office."
+    },
+    {
+      "name": "agreement-10",
+      "category": "agreement",
+      "input": "The number of failed jobs were lower than expected.",
+      "lints": [
+        {
+          "find": "were",
+          "replace": "was",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The number of failed jobs was lower than expected."
+    },
+    {
+      "name": "agreement-11",
+      "category": "agreement",
+      "input": "A variety of templates are available in the gallery.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "A variety of templates is available in the gallery."
+    },
+    {
+      "name": "agreement-12",
+      "category": "agreement",
+      "input": "The rest of the documents is stored in the archive.",
+      "lints": [
+        {
+          "find": "is",
+          "replace": "are",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The rest of the documents are stored in the archive."
+    },
+    {
+      "name": "agreement-13",
+      "category": "agreement",
+      "input": "My colleagues has agreed to help with the rollout.",
+      "lints": [
+        {
+          "find": "has",
+          "replace": "have",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "My colleagues have agreed to help with the rollout."
+    },
+    {
+      "name": "agreement-14",
+      "category": "agreement",
+      "input": "Neither of the two servers are responding to pings.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Neither of the two servers is responding to pings."
+    },
+    {
+      "name": "agreement-15",
+      "category": "agreement",
+      "input": "The engineers was debugging the race condition all night.",
+      "lints": [
+        {
+          "find": "was",
+          "replace": "were",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The engineers were debugging the race condition all night."
+    },
+    {
+      "name": "agreement-16",
+      "category": "agreement",
+      "input": "The collection of samples are organized by session.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The collection of samples is organized by session."
+    },
+    {
+      "name": "agreement-17",
+      "category": "agreement",
+      "input": "The support team does not answer calls after six.",
+      "lints": [
+        {
+          "find": "does",
+          "replace": "do",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The support team do not answer calls after six."
+    },
+    {
+      "name": "agreement-18",
+      "category": "agreement",
+      "input": "A small group of users were affected by the outage.",
+      "lints": [
+        {
+          "find": "were",
+          "replace": "was",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "A small group of users was affected by the outage."
+    },
+    {
+      "name": "agreement-19",
+      "category": "agreement",
+      "input": "The quality of the recordings are improving every week.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The quality of the recordings is improving every week."
+    },
+    {
+      "name": "agreement-20",
+      "category": "agreement",
+      "input": "The product manager have signed off on the design.",
+      "lints": [
+        {
+          "find": "have",
+          "replace": "has",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The product manager has signed off on the design."
+    },
+    {
+      "name": "agreement-21",
+      "category": "agreement",
+      "input": "There is several open questions about the migration.",
+      "lints": [
+        {
+          "find": "is",
+          "replace": "are",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "There are several open questions about the migration."
+    },
+    {
+      "name": "agreement-22",
+      "category": "agreement",
+      "input": "The set of required permissions are listed below.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The set of required permissions is listed below."
+    },
+    {
+      "name": "agreement-23",
+      "category": "agreement",
+      "input": "The script don't clean up temporary files by default.",
+      "lints": [
+        {
+          "find": "don't",
+          "replace": "doesn't",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The script doesn't clean up temporary files by default."
+    },
+    {
+      "name": "agreement-24",
+      "category": "agreement",
+      "input": "The reviewers was impressed by the simpler approach.",
+      "lints": [
+        {
+          "find": "was",
+          "replace": "were",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The reviewers were impressed by the simpler approach."
+    },
+    {
+      "name": "agreement-25",
+      "category": "agreement",
+      "input": "The cost of the new machines are higher this year.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The cost of the new machines is higher this year."
+    },
+    {
+      "name": "agreement-26",
+      "category": "agreement",
+      "input": "The documentation have not been updated since March.",
+      "lints": [
+        {
+          "find": "have",
+          "replace": "has",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The documentation has not been updated since March."
+    },
+    {
+      "name": "agreement-27",
+      "category": "agreement",
+      "input": "The group of volunteers are meeting on Thursday.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The group of volunteers is meeting on Thursday."
+    },
+    {
+      "name": "agreement-28",
+      "category": "agreement",
+      "input": "The remaining tasks is tracked in the project board.",
+      "lints": [
+        {
+          "find": "is",
+          "replace": "are",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The remaining tasks are tracked in the project board."
+    },
+    {
+      "name": "agreement-29",
+      "category": "agreement",
+      "input": "The series of tests were green before the merge.",
+      "lints": [
+        {
+          "find": "were",
+          "replace": "was",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The series of tests was green before the merge."
+    },
+    {
+      "name": "agreement-30",
+      "category": "agreement",
+      "input": "The two reviewers has different opinions about the name.",
+      "lints": [
+        {
+          "find": "has",
+          "replace": "have",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The two reviewers have different opinions about the name."
+    },
+    {
+      "name": "agreement-31",
+      "category": "agreement",
+      "input": "The majority of the feedback are positive so far.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The majority of the feedback is positive so far."
+    },
+    {
+      "name": "agreement-32",
+      "category": "agreement",
+      "input": "The list of attendees was updated after lunch.",
+      "lints": [
+        {
+          "find": "was",
+          "replace": "were",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The list of attendees were updated after lunch."
+    },
+    {
+      "name": "agreement-33",
+      "category": "agreement",
+      "input": "The contents of the folder are backed up nightly.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The contents of the folder is backed up nightly."
+    },
+    {
+      "name": "agreement-34",
+      "category": "agreement",
+      "input": "The API client do not retry failed requests yet.",
+      "lints": [
+        {
+          "find": "do",
+          "replace": "does",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The API client does not retry failed requests yet."
+    },
+    {
+      "name": "agreement-35",
+      "category": "agreement",
+      "input": "The committee have decided to postpone the launch.",
+      "lints": [
+        {
+          "find": "have",
+          "replace": "has",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The committee has decided to postpone the launch."
+    },
+    {
+      "name": "agreement-36",
+      "category": "agreement",
+      "input": "The scope of these changes are still being discussed.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The scope of these changes is still being discussed."
+    },
+    {
+      "name": "agreement-37",
+      "category": "agreement",
+      "input": "The batch of imports were processed without errors.",
+      "lints": [
+        {
+          "find": "were",
+          "replace": "was",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The batch of imports was processed without errors."
+    },
+    {
+      "name": "agreement-38",
+      "category": "agreement",
+      "input": "The results from both experiments is consistent.",
+      "lints": [
+        {
+          "find": "is",
+          "replace": "are",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The results from both experiments are consistent."
+    },
+    {
+      "name": "agreement-39",
+      "category": "agreement",
+      "input": "The design and the copy has to be reviewed together.",
+      "lints": [
+        {
+          "find": "has",
+          "replace": "have",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The design and the copy have to be reviewed together."
+    },
+    {
+      "name": "agreement-40",
+      "category": "agreement",
+      "input": "The total number of downloads are shown on the dashboard.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The total number of downloads is shown on the dashboard."
+    },
+    {
+      "name": "agreement-41",
+      "category": "agreement",
+      "input": "The pages in the report was missing page numbers.",
+      "lints": [
+        {
+          "find": "was",
+          "replace": "were",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The pages in the report were missing page numbers."
+    },
+    {
+      "name": "agreement-42",
+      "category": "agreement",
+      "input": "The scheduler don't run on public holidays.",
+      "lints": [
+        {
+          "find": "don't",
+          "replace": "doesn't",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The scheduler doesn't run on public holidays."
+    },
+    {
+      "name": "agreement-43",
+      "category": "agreement",
+      "input": "The stack of printed notes are sitting on my desk.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The stack of printed notes is sitting on my desk."
+    },
+    {
+      "name": "agreement-44",
+      "category": "agreement",
+      "input": "The owner of these repositories have moved teams.",
+      "lints": [
+        {
+          "find": "have",
+          "replace": "has",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The owner of these repositories has moved teams."
+    },
+    {
+      "name": "agreement-45",
+      "category": "agreement",
+      "input": "The instructions for the workshop is in the shared folder.",
+      "lints": [
+        {
+          "find": "is",
+          "replace": "are",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The instructions for the workshop are in the shared folder."
+    },
+    {
+      "name": "agreement-46",
+      "category": "agreement",
+      "input": "The pair of headphones were left in the conference room.",
+      "lints": [
+        {
+          "find": "were",
+          "replace": "was",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The pair of headphones was left in the conference room."
+    },
+    {
+      "name": "agreement-47",
+      "category": "agreement",
+      "input": "The amount of noise in the recording are too high.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The amount of noise in the recording is too high."
+    },
+    {
+      "name": "agreement-48",
+      "category": "agreement",
+      "input": "The main process do not restart after a crash.",
+      "lints": [
+        {
+          "find": "do",
+          "replace": "does",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The main process does not restart after a crash."
+    },
+    {
+      "name": "agreement-49",
+      "category": "agreement",
+      "input": "The people on the call has already seen the demo.",
+      "lints": [
+        {
+          "find": "has",
+          "replace": "have",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The people on the call have already seen the demo."
+    },
+    {
+      "name": "agreement-50",
+      "category": "agreement",
+      "input": "The summary of the findings are attached to this email.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The summary of the findings is attached to this email."
+    },
+    {
+      "name": "repeatedWords-01",
+      "category": "repeatedWords",
+      "input": "Please close the the window before you leave.",
+      "lints": [
+        {
+          "find": "the the",
+          "replace": "the",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please close the window before you leave."
+    },
+    {
+      "name": "repeatedWords-02",
+      "category": "repeatedWords",
+      "input": "We need the budget and and the approval by Friday.",
+      "lints": [
+        {
+          "find": "and and",
+          "replace": "and",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We need the budget and the approval by Friday."
+    },
+    {
+      "name": "repeatedWords-03",
+      "category": "repeatedWords",
+      "input": "I want to to review the plan one more time.",
+      "lints": [
+        {
+          "find": "to to",
+          "replace": "to",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I want to review the plan one more time."
+    },
+    {
+      "name": "repeatedWords-04",
+      "category": "repeatedWords",
+      "input": "The main issue is is the missing migration file.",
+      "lints": [
+        {
+          "find": "is is",
+          "replace": "is",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The main issue is the missing migration file."
+    },
+    {
+      "name": "repeatedWords-05",
+      "category": "repeatedWords",
+      "input": "Yesterday we we decided to postpone the release.",
+      "lints": [
+        {
+          "find": "we we",
+          "replace": "we",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Yesterday we decided to postpone the release."
+    },
+    {
+      "name": "repeatedWords-06",
+      "category": "repeatedWords",
+      "input": "I think that that change is too risky for now.",
+      "lints": [
+        {
+          "find": "that that",
+          "replace": "that",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I think that change is too risky for now."
+    },
+    {
+      "name": "repeatedWords-07",
+      "category": "repeatedWords",
+      "input": "She asked for a a copy of the signed contract.",
+      "lints": [
+        {
+          "find": "a a",
+          "replace": "a",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "She asked for a copy of the signed contract."
+    },
+    {
+      "name": "repeatedWords-08",
+      "category": "repeatedWords",
+      "input": "The end of of the document is still blank.",
+      "lints": [
+        {
+          "find": "of of",
+          "replace": "of",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The end of the document is still blank."
+    },
+    {
+      "name": "repeatedWords-09",
+      "category": "repeatedWords",
+      "input": "The keys are stored in in the shared vault.",
+      "lints": [
+        {
+          "find": "in in",
+          "replace": "in",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The keys are stored in the shared vault."
+    },
+    {
+      "name": "repeatedWords-10",
+      "category": "repeatedWords",
+      "input": "If it it fails again we should roll back.",
+      "lints": [
+        {
+          "find": "it it",
+          "replace": "it",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "If it fails again we should roll back."
+    },
+    {
+      "name": "repeatedWords-11",
+      "category": "repeatedWords",
+      "input": "This is for for the internal review only.",
+      "lints": [
+        {
+          "find": "for for",
+          "replace": "for",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "This is for the internal review only."
+    },
+    {
+      "name": "repeatedWords-12",
+      "category": "repeatedWords",
+      "input": "The notes are on on the second page.",
+      "lints": [
+        {
+          "find": "on on",
+          "replace": "on",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The notes are on the second page."
+    },
+    {
+      "name": "repeatedWords-13",
+      "category": "repeatedWords",
+      "input": "Let us start with with the smallest task.",
+      "lints": [
+        {
+          "find": "with with",
+          "replace": "with",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Let us start with the smallest task."
+    },
+    {
+      "name": "repeatedWords-14",
+      "category": "repeatedWords",
+      "input": "The build should be be reproducible from scratch.",
+      "lints": [
+        {
+          "find": "be be",
+          "replace": "be",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The build should be reproducible from scratch."
+    },
+    {
+      "name": "repeatedWords-15",
+      "category": "repeatedWords",
+      "input": "Meet me at at the front desk at noon.",
+      "lints": [
+        {
+          "find": "at at",
+          "replace": "at",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Meet me at the front desk at noon."
+    },
+    {
+      "name": "repeatedWords-16",
+      "category": "repeatedWords",
+      "input": "I have seen this this error in the logs before.",
+      "lints": [
+        {
+          "find": "this this",
+          "replace": "this",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I have seen this error in the logs before."
+    },
+    {
+      "name": "repeatedWords-17",
+      "category": "repeatedWords",
+      "input": "The data came from from the legacy system.",
+      "lints": [
+        {
+          "find": "from from",
+          "replace": "from",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The data came from the legacy system."
+    },
+    {
+      "name": "repeatedWords-18",
+      "category": "repeatedWords",
+      "input": "The report was written by by the research team.",
+      "lints": [
+        {
+          "find": "by by",
+          "replace": "by",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The report was written by the research team."
+    },
+    {
+      "name": "repeatedWords-19",
+      "category": "repeatedWords",
+      "input": "We can ship it today or or wait for the review.",
+      "lints": [
+        {
+          "find": "or or",
+          "replace": "or",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We can ship it today or wait for the review."
+    },
+    {
+      "name": "repeatedWords-20",
+      "category": "repeatedWords",
+      "input": "Use the same name as as the old service.",
+      "lints": [
+        {
+          "find": "as as",
+          "replace": "as",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Use the same name as the old service."
+    },
+    {
+      "name": "repeatedWords-21",
+      "category": "repeatedWords",
+      "input": "I think you you already know the answer.",
+      "lints": [
+        {
+          "find": "you you",
+          "replace": "you",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I think you already know the answer."
+    },
+    {
+      "name": "repeatedWords-22",
+      "category": "repeatedWords",
+      "input": "We can can revisit the decision next month.",
+      "lints": [
+        {
+          "find": "can can",
+          "replace": "can",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We can revisit the decision next month."
+    },
+    {
+      "name": "repeatedWords-23",
+      "category": "repeatedWords",
+      "input": "The client will will send the files tomorrow.",
+      "lints": [
+        {
+          "find": "will will",
+          "replace": "will",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The client will send the files tomorrow."
+    },
+    {
+      "name": "repeatedWords-24",
+      "category": "repeatedWords",
+      "input": "I have have seen this pattern many times.",
+      "lints": [
+        {
+          "find": "have have",
+          "replace": "have",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I have seen this pattern many times."
+    },
+    {
+      "name": "repeatedWords-25",
+      "category": "repeatedWords",
+      "input": "Please do not not share the link outside the team.",
+      "lints": [
+        {
+          "find": "not not",
+          "replace": "not",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please do not share the link outside the team."
+    },
+    {
+      "name": "repeatedWords-26",
+      "category": "repeatedWords",
+      "input": "The tests are are running on the new machine.",
+      "lints": [
+        {
+          "find": "are are",
+          "replace": "are",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The tests are running on the new machine."
+    },
+    {
+      "name": "repeatedWords-27",
+      "category": "repeatedWords",
+      "input": "The first attempt was was much slower than this.",
+      "lints": [
+        {
+          "find": "was was",
+          "replace": "was",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The first attempt was much slower than this."
+    },
+    {
+      "name": "repeatedWords-28",
+      "category": "repeatedWords",
+      "input": "I agree but but we still need a second opinion.",
+      "lints": [
+        {
+          "find": "but but",
+          "replace": "but",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I agree but we still need a second opinion."
+    },
+    {
+      "name": "repeatedWords-29",
+      "category": "repeatedWords",
+      "input": "The room was full so so we moved to the hall.",
+      "lints": [
+        {
+          "find": "so so",
+          "replace": "so",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The room was full so we moved to the hall."
+    },
+    {
+      "name": "repeatedWords-30",
+      "category": "repeatedWords",
+      "input": "Let me know if if the schedule changes.",
+      "lints": [
+        {
+          "find": "if if",
+          "replace": "if",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Let me know if the schedule changes."
+    },
+    {
+      "name": "repeatedWords-31",
+      "category": "repeatedWords",
+      "input": "That was an an unexpected result for everyone.",
+      "lints": [
+        {
+          "find": "an an",
+          "replace": "an",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That was an unexpected result for everyone."
+    },
+    {
+      "name": "repeatedWords-32",
+      "category": "repeatedWords",
+      "input": "Please check my my calendar for the exact time.",
+      "lints": [
+        {
+          "find": "my my",
+          "replace": "my",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please check my calendar for the exact time."
+    },
+    {
+      "name": "repeatedWords-33",
+      "category": "repeatedWords",
+      "input": "I will send your your access badge by courier.",
+      "lints": [
+        {
+          "find": "your your",
+          "replace": "your",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I will send your access badge by courier."
+    },
+    {
+      "name": "repeatedWords-34",
+      "category": "repeatedWords",
+      "input": "I think there there is a simpler way to do this.",
+      "lints": [
+        {
+          "find": "there there",
+          "replace": "there",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I think there is a simpler way to do this."
+    },
+    {
+      "name": "repeatedWords-35",
+      "category": "repeatedWords",
+      "input": "I am not sure what what they meant by that.",
+      "lints": [
+        {
+          "find": "what what",
+          "replace": "what",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I am not sure what they meant by that."
+    },
+    {
+      "name": "repeatedWords-36",
+      "category": "repeatedWords",
+      "input": "Call me when when the migration is finished.",
+      "lints": [
+        {
+          "find": "when when",
+          "replace": "when",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Call me when the migration is finished."
+    },
+    {
+      "name": "repeatedWords-37",
+      "category": "repeatedWords",
+      "input": "The person who who reported it is on holiday.",
+      "lints": [
+        {
+          "find": "who who",
+          "replace": "who",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The person who reported it is on holiday."
+    },
+    {
+      "name": "repeatedWords-38",
+      "category": "repeatedWords",
+      "input": "We should ask how how they measured the latency.",
+      "lints": [
+        {
+          "find": "how how",
+          "replace": "how",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We should ask how they measured the latency."
+    },
+    {
+      "name": "repeatedWords-39",
+      "category": "repeatedWords",
+      "input": "In fact all all of the tickets are now closed.",
+      "lints": [
+        {
+          "find": "all all",
+          "replace": "all",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "In fact all of the tickets are now closed."
+    },
+    {
+      "name": "repeatedWords-40",
+      "category": "repeatedWords",
+      "input": "Please back up up the database before the upgrade.",
+      "lints": [
+        {
+          "find": "up up",
+          "replace": "up",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please back up the database before the upgrade."
+    },
+    {
+      "name": "repeatedWords-41",
+      "category": "repeatedWords",
+      "input": "The old cache was cleared out out last week.",
+      "lints": [
+        {
+          "find": "out out",
+          "replace": "out",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The old cache was cleared out last week."
+    },
+    {
+      "name": "repeatedWords-42",
+      "category": "repeatedWords",
+      "input": "That was a very very long meeting.",
+      "lints": [
+        {
+          "find": "very very",
+          "replace": "very",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That was a very long meeting."
+    },
+    {
+      "name": "repeatedWords-43",
+      "category": "repeatedWords",
+      "input": "I just just need five more minutes.",
+      "lints": [
+        {
+          "find": "just just",
+          "replace": "just",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I just need five more minutes."
+    },
+    {
+      "name": "repeatedWords-44",
+      "category": "repeatedWords",
+      "input": "The update also also fixes the export bug.",
+      "lints": [
+        {
+          "find": "also also",
+          "replace": "also",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The update also fixes the export bug."
+    },
+    {
+      "name": "repeatedWords-45",
+      "category": "repeatedWords",
+      "input": "We need more more detail in the error message.",
+      "lints": [
+        {
+          "find": "more more",
+          "replace": "more",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We need more detail in the error message."
+    },
+    {
+      "name": "repeatedWords-46",
+      "category": "repeatedWords",
+      "input": "Save the file then then run the tests.",
+      "lints": [
+        {
+          "find": "then then",
+          "replace": "then",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Save the file then run the tests."
+    },
+    {
+      "name": "repeatedWords-47",
+      "category": "repeatedWords",
+      "input": "It failed because because the token expired.",
+      "lints": [
+        {
+          "find": "because because",
+          "replace": "because",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "It failed because the token expired."
+    },
+    {
+      "name": "repeatedWords-48",
+      "category": "repeatedWords",
+      "input": "There is only only one environment left.",
+      "lints": [
+        {
+          "find": "only only",
+          "replace": "only",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "There is only one environment left."
+    },
+    {
+      "name": "repeatedWords-49",
+      "category": "repeatedWords",
+      "input": "Only one one person has access to that account.",
+      "lints": [
+        {
+          "find": "one one",
+          "replace": "one",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Only one person has access to that account."
+    },
+    {
+      "name": "repeatedWords-50",
+      "category": "repeatedWords",
+      "input": "It looks like like the same problem as before.",
+      "lints": [
+        {
+          "find": "like like",
+          "replace": "like",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "It looks like the same problem as before."
+    },
+    {
+      "name": "aOrAn-01",
+      "category": "aOrAn",
+      "input": "I ate a apple with breakfast this morning.",
+      "lints": [
+        {
+          "find": "a apple",
+          "replace": "an apple",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I ate an apple with breakfast this morning."
+    },
+    {
+      "name": "aOrAn-02",
+      "category": "aOrAn",
+      "input": "She sent an report to the leadership team.",
+      "lints": [
+        {
+          "find": "an report",
+          "replace": "a report",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "She sent a report to the leadership team."
+    },
+    {
+      "name": "aOrAn-03",
+      "category": "aOrAn",
+      "input": "The call took a hour longer than planned.",
+      "lints": [
+        {
+          "find": "a hour",
+          "replace": "an hour",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The call took an hour longer than planned."
+    },
+    {
+      "name": "aOrAn-04",
+      "category": "aOrAn",
+      "input": "I saw an user report the same issue twice today.",
+      "lints": [
+        {
+          "find": "an user",
+          "replace": "a user",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I saw a user report the same issue twice today."
+    },
+    {
+      "name": "aOrAn-05",
+      "category": "aOrAn",
+      "input": "He gave a honest answer during the review.",
+      "lints": [
+        {
+          "find": "a honest",
+          "replace": "an honest",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "He gave an honest answer during the review."
+    },
+    {
+      "name": "aOrAn-06",
+      "category": "aOrAn",
+      "input": "We shipped a update to the beta channel.",
+      "lints": [
+        {
+          "find": "a update",
+          "replace": "an update",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We shipped an update to the beta channel."
+    },
+    {
+      "name": "aOrAn-07",
+      "category": "aOrAn",
+      "input": "That is a idea worth testing next sprint.",
+      "lints": [
+        {
+          "find": "a idea",
+          "replace": "an idea",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That is an idea worth testing next sprint."
+    },
+    {
+      "name": "aOrAn-08",
+      "category": "aOrAn",
+      "input": "I have an meeting with the design team at two.",
+      "lints": [
+        {
+          "find": "an meeting",
+          "replace": "a meeting",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I have a meeting with the design team at two."
+    },
+    {
+      "name": "aOrAn-09",
+      "category": "aOrAn",
+      "input": "Please send a email when the build is ready.",
+      "lints": [
+        {
+          "find": "a email",
+          "replace": "an email",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please send an email when the build is ready."
+    },
+    {
+      "name": "aOrAn-10",
+      "category": "aOrAn",
+      "input": "We need an test that covers the retry path.",
+      "lints": [
+        {
+          "find": "an test",
+          "replace": "a test",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We need a test that covers the retry path."
+    },
+    {
+      "name": "aOrAn-11",
+      "category": "aOrAn",
+      "input": "Give me a hour to finish the draft.",
+      "lints": [
+        {
+          "find": "a hour",
+          "replace": "an hour",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Give me an hour to finish the draft."
+    },
+    {
+      "name": "aOrAn-12",
+      "category": "aOrAn",
+      "input": "They started an project to simplify onboarding.",
+      "lints": [
+        {
+          "find": "an project",
+          "replace": "a project",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "They started a project to simplify onboarding."
+    },
+    {
+      "name": "aOrAn-13",
+      "category": "aOrAn",
+      "input": "The vendor made a offer we could refuse.",
+      "lints": [
+        {
+          "find": "a offer",
+          "replace": "an offer",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The vendor made an offer we could refuse."
+    },
+    {
+      "name": "aOrAn-14",
+      "category": "aOrAn",
+      "input": "That is an change I would support.",
+      "lints": [
+        {
+          "find": "an change",
+          "replace": "a change",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That is a change I would support."
+    },
+    {
+      "name": "aOrAn-15",
+      "category": "aOrAn",
+      "input": "We are hosting a event for the local community.",
+      "lints": [
+        {
+          "find": "a event",
+          "replace": "an event",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We are hosting an event for the local community."
+    },
+    {
+      "name": "aOrAn-16",
+      "category": "aOrAn",
+      "input": "I found an bug in the export flow.",
+      "lints": [
+        {
+          "find": "an bug",
+          "replace": "a bug",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I found a bug in the export flow."
+    },
+    {
+      "name": "aOrAn-17",
+      "category": "aOrAn",
+      "input": "There is a issue with the search index.",
+      "lints": [
+        {
+          "find": "a issue",
+          "replace": "an issue",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "There is an issue with the search index."
+    },
+    {
+      "name": "aOrAn-18",
+      "category": "aOrAn",
+      "input": "Please open an ticket for the flaky test.",
+      "lints": [
+        {
+          "find": "an ticket",
+          "replace": "a ticket",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please open a ticket for the flaky test."
+    },
+    {
+      "name": "aOrAn-19",
+      "category": "aOrAn",
+      "input": "Can you add a example to the documentation.",
+      "lints": [
+        {
+          "find": "a example",
+          "replace": "an example",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Can you add an example to the documentation."
+    },
+    {
+      "name": "aOrAn-20",
+      "category": "aOrAn",
+      "input": "I sent an request to the billing team.",
+      "lints": [
+        {
+          "find": "an request",
+          "replace": "a request",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I sent a request to the billing team."
+    },
+    {
+      "name": "aOrAn-21",
+      "category": "aOrAn",
+      "input": "We finally have a answer to that question.",
+      "lints": [
+        {
+          "find": "a answer",
+          "replace": "an answer",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We finally have an answer to that question."
+    },
+    {
+      "name": "aOrAn-22",
+      "category": "aOrAn",
+      "input": "They proposed an plan with three phases.",
+      "lints": [
+        {
+          "find": "an plan",
+          "replace": "a plan",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "They proposed a plan with three phases."
+    },
+    {
+      "name": "aOrAn-23",
+      "category": "aOrAn",
+      "input": "The backup runs every a hour in staging.",
+      "lints": [
+        {
+          "find": "a hour",
+          "replace": "an hour",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The backup runs every an hour in staging."
+    },
+    {
+      "name": "aOrAn-24",
+      "category": "aOrAn",
+      "input": "We trained an model on the new dataset.",
+      "lints": [
+        {
+          "find": "an model",
+          "replace": "a model",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We trained a model on the new dataset."
+    },
+    {
+      "name": "aOrAn-25",
+      "category": "aOrAn",
+      "input": "The finance team sent a invoice this morning.",
+      "lints": [
+        {
+          "find": "a invoice",
+          "replace": "an invoice",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The finance team sent an invoice this morning."
+    },
+    {
+      "name": "aOrAn-26",
+      "category": "aOrAn",
+      "input": "We cut an release every other Thursday.",
+      "lints": [
+        {
+          "find": "an release",
+          "replace": "a release",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We cut a release every other Thursday."
+    },
+    {
+      "name": "aOrAn-27",
+      "category": "aOrAn",
+      "input": "The client needs a API for bulk imports.",
+      "lints": [
+        {
+          "find": "a API",
+          "replace": "an API",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The client needs an API for bulk imports."
+    },
+    {
+      "name": "aOrAn-28",
+      "category": "aOrAn",
+      "input": "Please attach an file with the sample rows.",
+      "lints": [
+        {
+          "find": "an file",
+          "replace": "a file",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Please attach a file with the sample rows."
+    },
+    {
+      "name": "aOrAn-29",
+      "category": "aOrAn",
+      "input": "She tested the flow on a iPhone before launch.",
+      "lints": [
+        {
+          "find": "a",
+          "replace": "an",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "She tested the flow on an iPhone before launch."
+    },
+    {
+      "name": "aOrAn-30",
+      "category": "aOrAn",
+      "input": "The error message includes an URL to the docs.",
+      "lints": [
+        {
+          "find": "an URL",
+          "replace": "a URL",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The error message includes a URL to the docs."
+    },
+    {
+      "name": "aOrAn-31",
+      "category": "aOrAn",
+      "input": "They published a SDK for the new endpoint.",
+      "lints": [
+        {
+          "find": "a SDK",
+          "replace": "an SDK",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "They published an SDK for the new endpoint."
+    },
+    {
+      "name": "aOrAn-32",
+      "category": "aOrAn",
+      "input": "We removed a item from the checklist.",
+      "lints": [
+        {
+          "find": "a item",
+          "replace": "an item",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We removed an item from the checklist."
+    },
+    {
+      "name": "aOrAn-33",
+      "category": "aOrAn",
+      "input": "There is a option to export as CSV.",
+      "lints": [
+        {
+          "find": "a option",
+          "replace": "an option",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "There is an option to export as CSV."
+    },
+    {
+      "name": "aOrAn-34",
+      "category": "aOrAn",
+      "input": "The migration created an table with the old rows.",
+      "lints": [
+        {
+          "find": "an table",
+          "replace": "a table",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The migration created a table with the old rows."
+    },
+    {
+      "name": "aOrAn-35",
+      "category": "aOrAn",
+      "input": "The handler threw a exception during shutdown.",
+      "lints": [
+        {
+          "find": "a exception",
+          "replace": "an exception",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The handler threw an exception during shutdown."
+    },
+    {
+      "name": "aOrAn-36",
+      "category": "aOrAn",
+      "input": "I wrote an script to rotate the logs.",
+      "lints": [
+        {
+          "find": "an script",
+          "replace": "a script",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I wrote a script to rotate the logs."
+    },
+    {
+      "name": "aOrAn-37",
+      "category": "aOrAn",
+      "input": "Each request adds a entry to the audit log.",
+      "lints": [
+        {
+          "find": "a entry",
+          "replace": "an entry",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Each request adds an entry to the audit log."
+    },
+    {
+      "name": "aOrAn-38",
+      "category": "aOrAn",
+      "input": "We received a alert about the elevated latency.",
+      "lints": [
+        {
+          "find": "a alert",
+          "replace": "an alert",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We received an alert about the elevated latency."
+    },
+    {
+      "name": "aOrAn-39",
+      "category": "aOrAn",
+      "input": "They created a environment for the demo.",
+      "lints": [
+        {
+          "find": "a environment",
+          "replace": "an environment",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "They created an environment for the demo."
+    },
+    {
+      "name": "aOrAn-40",
+      "category": "aOrAn",
+      "input": "The new hire needs a account by Monday.",
+      "lints": [
+        {
+          "find": "a account",
+          "replace": "an account",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The new hire needs an account by Monday."
+    },
+    {
+      "name": "aOrAn-41",
+      "category": "aOrAn",
+      "input": "The parser returned a object with two fields.",
+      "lints": [
+        {
+          "find": "a object",
+          "replace": "an object",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The parser returned an object with two fields."
+    },
+    {
+      "name": "aOrAn-42",
+      "category": "aOrAn",
+      "input": "The build includes a image for the splash screen.",
+      "lints": [
+        {
+          "find": "a image",
+          "replace": "an image",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The build includes an image for the splash screen."
+    },
+    {
+      "name": "aOrAn-43",
+      "category": "aOrAn",
+      "input": "The logger records a event for every retry.",
+      "lints": [
+        {
+          "find": "a event",
+          "replace": "an event",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The logger records an event for every retry."
+    },
+    {
+      "name": "aOrAn-44",
+      "category": "aOrAn",
+      "input": "The customer placed a order for two licenses.",
+      "lints": [
+        {
+          "find": "a order",
+          "replace": "an order",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The customer placed an order for two licenses."
+    },
+    {
+      "name": "aOrAn-45",
+      "category": "aOrAn",
+      "input": "We need a item that explains the pricing.",
+      "lints": [
+        {
+          "find": "a item",
+          "replace": "an item",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We need an item that explains the pricing."
+    },
+    {
+      "name": "aOrAn-46",
+      "category": "aOrAn",
+      "input": "That is a answer I did not expect.",
+      "lints": [
+        {
+          "find": "a answer",
+          "replace": "an answer",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "That is an answer I did not expect."
+    },
+    {
+      "name": "aOrAn-47",
+      "category": "aOrAn",
+      "input": "The interview is a hour and a half long.",
+      "lints": [
+        {
+          "find": "a hour",
+          "replace": "an hour",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The interview is an hour and a half long."
+    },
+    {
+      "name": "aOrAn-48",
+      "category": "aOrAn",
+      "input": "We added an unit test for the parser.",
+      "lints": [
+        {
+          "find": "an unit",
+          "replace": "a unit",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "We added a unit test for the parser."
+    },
+    {
+      "name": "aOrAn-49",
+      "category": "aOrAn",
+      "input": "The layout looks fine on a iPad in landscape.",
+      "lints": [
+        {
+          "find": "a",
+          "replace": "an",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The layout looks fine on an iPad in landscape."
+    },
+    {
+      "name": "aOrAn-50",
+      "category": "aOrAn",
+      "input": "I heard an member of the team raise the concern.",
+      "lints": [
+        {
+          "find": "an member",
+          "replace": "a member",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I heard a member of the team raise the concern."
+    },
+    {
+      "name": "decoy protected dictionary word",
+      "category": "spelling",
+      "input": "The Superflow release notes are ready for review.",
+      "protectedLiterals": [
+        "Superflow"
+      ],
+      "lints": [
+        {
+          "find": "Superflow",
+          "replace": "Super flow",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "The Superflow release notes are ready for review."
+    },
+    {
+      "name": "decoy protected url",
+      "category": "spelling",
+      "input": "Open https://example.com/recieve and check the response.",
+      "lints": [
+        {
+          "find": "recieve",
+          "replace": "receive",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "Open https://example.com/recieve and check the response."
+    },
+    {
+      "name": "decoy protected email",
+      "category": "spelling",
+      "input": "Send the note to recieve@example.com before lunch.",
+      "lints": [
+        {
+          "find": "recieve",
+          "replace": "receive",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "Send the note to recieve@example.com before lunch."
+    },
+    {
+      "name": "decoy no-op suggestion",
+      "category": "agreement",
+      "input": "The list of files is ready for the review.",
+      "lints": [
+        {
+          "find": "is",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "The list of files is ready for the review."
+    },
+    {
+      "name": "decoy disallowed style kind",
+      "category": "agreement",
+      "input": "The team is ready to present the plan.",
+      "lints": [
+        {
+          "find": "ready",
+          "replace": "prepared",
+          "kind": "style"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "The team is ready to present the plan."
+    },
+    {
+      "name": "decoy disallowed word choice kind",
+      "category": "spelling",
+      "input": "We should utilize the existing pipeline.",
+      "lints": [
+        {
+          "find": "utilize",
+          "replace": "use",
+          "kind": "wordChoice"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "We should utilize the existing pipeline."
+    },
+    {
+      "name": "decoy missing suggestion",
+      "category": "spelling",
+      "input": "I recieve the report every Monday.",
+      "lints": [
+        {
+          "find": "recieve",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "I recieve the report every Monday."
+    },
+    {
+      "name": "decoy zero length range",
+      "category": "spelling",
+      "input": "I recieve the report every Monday.",
+      "lints": [
+        {
+          "utf16Start": 2,
+          "utf16Length": 0,
+          "replace": "receive",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "I recieve the report every Monday."
+    },
+    {
+      "name": "decoy out of range",
+      "category": "spelling",
+      "input": "I recieve the report every Monday.",
+      "lints": [
+        {
+          "utf16Start": 500,
+          "utf16Length": 7,
+          "replace": "receive",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "I recieve the report every Monday."
+    },
+    {
+      "name": "decoy negative range",
+      "category": "spelling",
+      "input": "I recieve the report every Monday.",
+      "lints": [
+        {
+          "utf16Start": -1,
+          "utf16Length": 7,
+          "replace": "receive",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "I recieve the report every Monday."
+    },
+    {
+      "name": "decoy overlapping second edit",
+      "category": "spelling",
+      "input": "I recieve teh report every Monday.",
+      "lints": [
+        {
+          "find": "recieve",
+          "replace": "receive",
+          "kind": "spelling"
+        },
+        {
+          "find": "recieve teh",
+          "replace": "received the",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "I receive teh report every Monday."
+    },
+    {
+      "name": "decoy repeated word inside protected term",
+      "category": "repeatedWords",
+      "input": "The Superflow Superflow dashboard is open.",
+      "protectedLiterals": [
+        "Superflow Superflow"
+      ],
+      "lints": [
+        {
+          "find": "Superflow Superflow",
+          "replace": "Superflow",
+          "kind": "repeatedWords"
+        }
+      ],
+      "expectedAccepted": [],
+      "expectedFinal": "The Superflow Superflow dashboard is open."
+    },
+    {
+      "name": "protected code token does not block a distant aOrAn edit",
+      "category": "aOrAn",
+      "input": "Set a apple as the default in config.yaml.",
+      "protectedLiterals": [
+        "config.yaml"
+      ],
+      "lints": [
+        {
+          "find": "a apple",
+          "replace": "an apple",
+          "kind": "aOrAn"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Set an apple as the default in config.yaml."
+    },
+    {
+      "name": "emoji offsets are utf16",
+      "category": "spelling",
+      "input": "Ship it 🚀 recieve the notes after.",
+      "lints": [
+        {
+          "utf16Start": 11,
+          "utf16Length": 7,
+          "replace": "receive",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "Ship it 🚀 receive the notes after."
+    },
+    {
+      "name": "CJK offsets are utf16",
+      "category": "spelling",
+      "input": "你好 recieve the notes.",
+      "lints": [
+        {
+          "utf16Start": 3,
+          "utf16Length": 7,
+          "replace": "receive",
+          "kind": "spelling"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "你好 receive the notes."
+    },
+    {
+      "name": "decoy second edit after first edit",
+      "category": "agreement",
+      "input": "The list of files are ready and the team are waiting.",
+      "lints": [
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        },
+        {
+          "find": "are",
+          "replace": "is",
+          "kind": "agreement"
+        }
+      ],
+      "expectedAccepted": [
+        0
+      ],
+      "expectedFinal": "The list of files is ready and the team are waiting."
+    }
+  ]
+}

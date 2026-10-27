@@ -1,0 +1,73 @@
+{
+  "document": {
+    "title": "Weekly design review",
+    "sessionID": "11111111-2222-3333-4444-555555555555",
+    "startedAt": "2026-03-04T09:30:00Z",
+    "endedAt": "2026-03-04T10:15:00Z",
+    "durationMs": 2700000,
+    "speakers": [
+      {
+        "id": "self",
+        "name": "You",
+        "isSelf": true
+      },
+      {
+        "id": "s2",
+        "name": "Priya",
+        "isSelf": false
+      }
+    ],
+    "turns": [
+      {
+        "index": 1,
+        "speakerID": "s2",
+        "speakerName": "Priya",
+        "startMs": 65000,
+        "endMs": 70000,
+        "text": "The island should not steal focus.",
+        "rawText": "the island should not steal focus",
+        "source": "system",
+        "isGap": false
+      },
+      {
+        "index": 0,
+        "speakerID": "self",
+        "speakerName": "You",
+        "startMs": 0,
+        "endMs": 4000,
+        "text": "Let us review the open questions.",
+        "rawText": "let us review the open questions",
+        "source": "mic",
+        "isGap": false
+      },
+      {
+        "index": 2,
+        "speakerID": "self",
+        "speakerName": "You",
+        "startMs": 125000,
+        "endMs": 126000,
+        "text": "System audio was lost for 5 s.",
+        "rawText": "System audio was lost for 5 s.",
+        "source": "system",
+        "isGap": true
+      }
+    ]
+  },
+  "expectedMarkdownLines": [
+    "# Weekly design review",
+    "",
+    "**Date:** {{date}}",
+    "**Duration:** 45m 00s",
+    "**Participants:** You, Priya",
+    "",
+    "**You** · 0:00",
+    "Let us review the open questions.",
+    "",
+    "**Priya** · 1:05",
+    "The island should not steal focus.",
+    "",
+    "_[System audio was lost for 5 s.]_",
+    ""
+  ],
+  "expectedJSON": "{\n  \"meeting\" : {\n    \"duration_ms\" : 2700000,\n    \"ended_at\" : \"2026-03-04T10:15:00Z\",\n    \"id\" : \"11111111-2222-3333-4444-555555555555\",\n    \"started_at\" : \"2026-03-04T09:30:00Z\",\n    \"title\" : \"Weekly design review\"\n  },\n  \"schemaVersion\" : 1,\n  \"segments\" : [\n    {\n      \"end_ms\" : 4000,\n      \"is_gap\" : false,\n      \"raw_text\" : \"let us review the open questions\",\n      \"speaker\" : \"You\",\n      \"start_ms\" : 0,\n      \"text\" : \"Let us review the open questions.\"\n    },\n    {\n      \"end_ms\" : 70000,\n      \"is_gap\" : false,\n      \"raw_text\" : \"the island should not steal focus\",\n      \"speaker\" : \"Priya\",\n      \"start_ms\" : 65000,\n      \"text\" : \"The island should not steal focus.\"\n    },\n    {\n      \"end_ms\" : 126000,\n      \"is_gap\" : true,\n      \"raw_text\" : \"System audio was lost for 5 s.\",\n      \"speaker\" : \"You\",\n      \"start_ms\" : 125000,\n      \"text\" : \"System audio was lost for 5 s.\"\n    }\n  ],\n  \"speakers\" : [\n    {\n      \"id\" : \"self\",\n      \"is_self\" : true,\n      \"name\" : \"You\"\n    },\n    {\n      \"id\" : \"s2\",\n      \"is_self\" : false,\n      \"name\" : \"Priya\"\n    }\n  ]\n}"
+}

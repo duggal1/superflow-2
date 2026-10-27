@@ -1,0 +1,399 @@
+import AppKit
+import Foundation
+import SuperflowDesignSystem
+import SuperflowFeatureDashboard
+import SuperflowFeatureDictionary
+import SuperflowFeatureHistory
+import SuperflowFeatureIsland
+import SuperflowFeatureMeetings
+import SuperflowFeatureOnboarding
+import SuperflowFeatureSettings
+import SuperflowFeatureShortcuts
+import SuperflowGestureKit
+import SuperflowKernel
+import SuperflowMeetingEngine
+import SuperflowPorts
+import SuperflowRecoveryEngine
+import SuperflowSessionEngine
+import SuperflowUIComponents
+import SwiftUI
+
+@MainActor
+public final class AppCoordinator: ObservableObject {
+    @Published public private(set) var settings = AppSettings.default
+    @Published public private(set) var isLoaded = false
+    @Published public private(set) var startupError: String? = nil
+    @Published public private(set) var recoveryNotice: String?
+    @Published public private(set) var recoveredTranscript: String?
+    @Published public internal(set) var isCommandPalettePresented = false
+
+    public let environment: AppEnvironment?
+    public let themeStore: ThemeStore
+    public let mainWindowController: MainWindowController
+    public let menuBarController: MenuBarController
+    public let islandPanelController: IslandPanelController?
+
+    public lazy var commandPaletteModel = AppCommandPalette.make(
+        onSelectSection: { [weak self] in self?.mainWindowController.show($0) },
+        onToggleDictation: { [weak self] in
+            guard let self else { return }
+            Task { await self.menuBarController.toggleDictation() }
+        },
+        onToggleMeeting: { [weak self] in
+            guard let self else { return }
+            Task { await self.menuBarController.toggleMeeting() }
+        },
+        onQuit: { [weak self] in
+            guard let self else { return }
+            Task { await self.menuBarController.quit() }
+        }
+    )
+
+    private var didLaunch = false
+    private var gesture = GestureRecognizer()
+    private var hotkeyTask: Task<Void, Never>?
+    private var gestureTimerTask: Task<Void, Never>?
+    private var sessionRelayTask: Task<Void, Never>?
+    private var meetingRelayTask: Task<Void, Never>?
+    private var retentionTask: Task<Void, Never>?
+    private var permissionTask: Task<Void, Never>?
+    private let sessionEventRelay = EngineEventRelay<SessionEvent>()
+    private let meetingEventRelay = EngineEventRelay<MeetingEvent>()
+
+    public lazy var dashboardModel: DashboardViewModel? = {
+        guard let environment else { return nil }
+        return DashboardViewModel(repository: environment.transcripts, settings: settings)
+    }()
+
+    public lazy var historyModel: HistoryViewModel? = {
+        guard let environment else { return nil }
+        return HistoryViewModel(repository: environment.transcripts, inserter: environment.textInserter)
+    }()
+
+    public lazy var dictionaryModel: DictionaryViewModel? = {
+        guard let environment else { return nil }
+        return DictionaryViewModel(repository: environment.libraryRepository) { [weak self] in
+            Task { await self?.refreshPipeline() }
+        }
+    }()
+
+    public lazy var shortcutsModel: ShortcutsViewModel? = {
+        guard let environment else { return nil }
+        return ShortcutsViewModel(repository: environment.libraryRepository) { [weak self] in
+            Task { await self?.refreshPipeline() }
+        }
+    }()
+
+    public lazy var meetingsModel: MeetingsViewModel? = {
+        guard let environment else { return nil }
+        return MeetingsViewModel(engine: environment.meetingEngine,
+                                 repository: environment.transcripts,
+                                 inserter: environment.textInserter,
+                                 events: meetingEventRelay.subscribe())
+    }()
+
+    public lazy var settingsModel: SettingsViewModel? = {
+        guard let environment else { return nil }
+        return SettingsViewModel(
+            store: environment.settingsStore,
+            models: environment.modelProvider,
+            asrModels: environment.recognizer,
+            diarizer: environment.diarizer,
+            launchAtLogin: environment.launchAtLogin,
+            diagnostics: environment.diagnostics,
+            thirdPartyNotices: environment.thirdPartyNotices,
+            initial: settings,
+            onCleanupModelReady: { [weak self] in
+                Task { @MainActor in await self?.prepareCleanupModel() }
+            }
+        ) { [weak self] updated in
+            Task { await self?.applySettings(updated) }
+        }
+    }()
+
+    public lazy var onboardingModel: OnboardingViewModel? = {
+        guard let environment else { return nil }
+        return OnboardingViewModel(
+            permissions: environment.permissionGate,
+            globe: environment.globeKeyProbe,
+            models: environment.recognizer,
+            cleanupModels: environment.modelProvider,
+            settingsStore: environment.settingsStore,
+            practice: environment.practiceRunner,
+            initial: settings
+        ) { [weak self] updated in
+            Task { await self?.completeOnboarding(updated) }
+        }
+    }()
+
+    public init() {
+        let mainWindow = MainWindowController()
+        let environment: AppEnvironment?
+        let startupError: String?
+        do {
+            environment = try AppEnvironment()
+            startupError = nil
+        } catch {
+            environment = nil
+            startupError = "Superflow could not open its local database. \(error.localizedDescription)"
+        }
+        self.environment = environment
+        self.startupError = startupError
+        themeStore = ThemeStore()
+        mainWindowController = mainWindow
+
+        let menu = MenuBarController(
+            environment: environment,
+            mainWindow: mainWindow,
+            sessionEvents: sessionEventRelay.subscribe(),
+            meetingEvents: meetingEventRelay.subscribe()
+        )
+        menuBarController = menu
+        if let environment {
+            let islandModel = IslandViewModel()
+            let actions = IslandActions(
+                stop: { [weak menu] in
+                    Task { @MainActor in await menu?.stopActiveSession() }
+                },
+                cancel: { [weak menu] in
+                    Task { @MainActor in await menu?.cancelActiveSession() }
+                },
+                openApp: { [weak menu] in
+                    Task { @MainActor in menu?.showMainWindow() }
+                },
+                openSettings: { [weak menu] in
+                    Task { @MainActor in menu?.showMainWindow(.settings) }
+                },
+                quit: { [weak menu] in
+                    Task { @MainActor in await menu?.quit() }
+                }
+            )
+            islandPanelController = IslandPanelController(
+                session: environment.sessionEngine,
+                meeting: environment.meetingEngine,
+                model: islandModel,
+                actions: actions,
+                sessionEvents: sessionEventRelay.subscribe(),
+                meetingEvents: meetingEventRelay.subscribe()
+            )
+        } else {
+            islandPanelController = nil
+        }
+    }
+
+    public func launch() async {
+        guard !didLaunch else { return }
+        didLaunch = true
+        guard let environment else {
+            isLoaded = true
+            return
+        }
+
+        settings = await environment.settingsStore.load()
+        themeStore.mode = settings.theme
+        islandPanelController?.model.setShowIdlePill(settings.showIdlePill)
+        await environment.transcripts.setNoTranscriptStorage(settings.noTranscriptStorage)
+        await purgeExpiredTranscripts()
+        scheduleRetentionPurge()
+        await environment.practiceRunner.update(profile: settings.asrProfile)
+        gesture.update(config: settings.gesture)
+        await refreshPipeline()
+        startEventRelays()
+        menuBarController.observe()
+        islandPanelController?.startObserving()
+        observePermissionChanges(environment.permissionGate)
+        menuBarController.setRecoveryReady(false)
+        let shouldWarmModels = settings.onboardingComplete
+        Task { [weak self] in
+            if shouldWarmModels { _ = await environment.sessionEngine.warmUp() }
+            guard let self else { return }
+            await self.recoverInterruptedSessions(environment: environment)
+            self.menuBarController.setRecoveryReady(true)
+            await self.tryStartHotkeys()
+        }
+        Task { _ = await environment.prepareInstalledCleanupModel() }
+        isLoaded = true
+    }
+
+    public func copyRecoveredTranscript() {
+        guard let recoveredTranscript else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(recoveredTranscript, forType: .string)
+        recoveryNotice = "Recovered transcript copied to the clipboard."
+    }
+
+    public func refreshPipeline() async {
+        guard let environment else { return }
+        let pipeline = await environment.makePipeline(settings: settings)
+        await environment.sessionEngine.update(pipeline: pipeline, settings: settings)
+        await environment.meetingEngine.update(pipeline: pipeline, settings: settings)
+    }
+
+    public func applySettings(_ updated: AppSettings) async {
+        let retentionChanged = settings.retentionDays != updated.retentionDays
+        settings = updated
+        themeStore.mode = updated.theme
+        islandPanelController?.model.setShowIdlePill(updated.showIdlePill)
+        guard let environment else { return }
+        if retentionChanged { await purgeExpiredTranscripts() }
+        await environment.transcripts.setNoTranscriptStorage(updated.noTranscriptStorage)
+        await environment.practiceRunner.update(profile: updated.asrProfile)
+        gesture.update(config: updated.gesture)
+        dashboardModel?.update(settings: updated)
+        await refreshPipeline()
+        await tryStartHotkeys()
+        if updated.onboardingComplete, await !environment.recognizer.isReady {
+            Task { _ = await environment.sessionEngine.warmUp() }
+        }
+    }
+
+    public func completeOnboarding(_ updated: AppSettings) async {
+        await applySettings(updated)
+        mainWindowController.show(.dashboard)
+    }
+
+    private func prepareCleanupModel() async {
+        guard let environment else { return }
+        _ = await environment.prepareInstalledCleanupModel()
+    }
+
+    private func recoverInterruptedSessions(environment: AppEnvironment) async {
+        let engine = await environment.makeRecoveryEngine(settings: settings)
+        let report = await engine.recover()
+        if report.hasRecoveredText {
+            recoveredTranscript = report.recoveredTranscripts.map(\.text).joined(separator: "\n\n")
+            let count = report.recoveredTranscripts.count
+            recoveryNotice = "Recovered text from \(count) interrupted session\(count == 1 ? "" : "s")."
+        } else if report.failed > 0 {
+            recoveryNotice = "An interrupted session could not be recovered. Its audio journal was kept for retry."
+        }
+    }
+
+    private func scheduleRetentionPurge() {
+        retentionTask?.cancel()
+        retentionTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .seconds(24 * 60 * 60))
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled else { return }
+                await self?.purgeExpiredTranscripts()
+            }
+        }
+    }
+
+    private func purgeExpiredTranscripts(now: Date = Date()) async {
+        guard let environment, let retentionDays = settings.retentionDays, retentionDays > 0,
+              let cutoff = Calendar.current.date(byAdding: .day, value: -retentionDays, to: now) else { return }
+        do {
+            let removed = try await environment.transcripts.purge(olderThan: cutoff)
+            environment.metrics.event("storage.retention.purge", ["sessions": String(removed)])
+        } catch {
+            environment.metrics.event("storage.retention.purge.failed", [:])
+        }
+    }
+
+    private func tryStartHotkeys() async {
+        guard let environment, hotkeyTask == nil else { return }
+        guard settings.onboardingComplete, menuBarController.recoveryReady else { return }
+        guard await environment.permissionGate.status(.inputMonitoring) == .granted else { return }
+        do {
+            try await environment.hotkeySource.start()
+            let events = environment.hotkeySource.events
+            hotkeyTask = Task { [weak self] in
+                for await event in events {
+                    guard let self else { return }
+                    await self.handleKeyEvent(event)
+                }
+            }
+            gestureTimerTask = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    do {
+                        try await Task.sleep(for: .milliseconds(10))
+                    } catch {
+                        return
+                    }
+                    guard let self else { return }
+                    await self.applyGestureActions(
+                        self.gesture.tick(atNs: DispatchTime.now().uptimeNanoseconds)
+                    )
+                }
+            }
+        } catch {
+            menuBarController.publishError("Keyboard shortcuts are unavailable. Check Input Monitoring in System Settings.")
+        }
+    }
+
+    private func observePermissionChanges(_ permissions: any PermissionGate) {
+        guard permissionTask == nil else { return }
+        permissionTask = Task { [weak self] in
+            let updates = await permissions.updates()
+            for await (permission, status) in updates {
+                guard let self else { return }
+                self.onboardingModel?.updatePermissionStatus(permission, status: status)
+                guard permission == .inputMonitoring else { continue }
+                if status == .granted {
+                    await self.tryStartHotkeys()
+                } else if let environment = self.environment, self.hotkeyTask != nil {
+                    await environment.hotkeySource.stop()
+                    self.hotkeyTask?.cancel()
+                    self.hotkeyTask = nil
+                    self.gestureTimerTask?.cancel()
+                    self.gestureTimerTask = nil
+                    self.menuBarController.publishError(
+                        "Keyboard shortcuts are unavailable. Check Input Monitoring in System Settings."
+                    )
+                }
+            }
+        }
+    }
+
+    private func startEventRelays() {
+        guard let environment else { return }
+        if sessionRelayTask == nil {
+            let events = environment.sessionEngine.events
+            sessionRelayTask = Task { [weak self] in
+                for await event in events {
+                    guard let self else { return }
+                    self.sessionEventRelay.publish(event)
+                }
+            }
+        }
+        if meetingRelayTask == nil {
+            let events = environment.meetingEngine.events
+            meetingRelayTask = Task { [weak self] in
+                for await event in events {
+                    guard let self else { return }
+                    self.meetingEventRelay.publish(event)
+                }
+            }
+        }
+    }
+
+    private func handleKeyEvent(_ event: KeyEvent) async {
+        await applyGestureActions(gesture.handle(event))
+    }
+
+    private func applyGestureActions(_ actions: [GestureAction]) async {
+        for action in actions {
+            switch action {
+            case .startSpeculative(.dictation):
+                await menuBarController.startDictation()
+            case .startSpeculative(.meeting):
+                await menuBarController.startMeeting()
+            case .holdBegan:
+                break
+            case .beginHandsFree:
+                await menuBarController.beginHandsFreeDictation()
+            case .latchMeeting:
+                break
+            case .submit(let kind):
+                await menuBarController.stop(kind)
+            case .cancel(let kind, _):
+                await menuBarController.cancel(kind)
+            }
+        }
+    }
+}

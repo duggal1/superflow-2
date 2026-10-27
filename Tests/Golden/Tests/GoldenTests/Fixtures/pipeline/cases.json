@@ -1,0 +1,35 @@
+{
+  "settings": {
+    "commandsEnabled": true,
+    "cleanupEnabled": false,
+    "harperEnabled": false,
+    "lineFormat": { "capitalize": true, "finalPeriod": true }
+  },
+  "cases": [
+    { "name": "short dictation keeps no final period", "input": "hello world", "expected": "Hello world" },
+    { "name": "long dictation gets a final period", "input": "hello world this is a test", "expected": "Hello world this is a test." },
+    { "name": "currency formatting", "input": "two hundred dollars", "expected": "$200" },
+    { "name": "dictionary correction", "input": "super flow", "expected": "Superflow" },
+    { "name": "shortcut short circuits", "input": "sign off", "expected": "# Notes\n\n- one\n- two" },
+    { "name": "spoken new line", "input": "hello, new line world", "expected": "Hello,\n\nWorld" },
+    { "name": "spoken new paragraph", "input": "hello. new paragraph world", "expected": "Hello.\n\nWorld" },
+    { "name": "ordinary sentence", "input": "the quick brown fox jumps over the lazy dog", "expected": "The quick brown fox jumps over the lazy dog." },
+    { "name": "no grammar checker leaves text alone", "input": "I recieve teh report and it are fine", "expected": "I recieve teh report and it are fine." },
+    { "name": "empty", "input": "", "expected": "" },
+    { "name": "whitespace only", "input": "   ", "expected": "" }
+  ],
+  "edgeCases": [
+    {
+      "name": "grouped number survives the pipeline",
+      "input": "it costs 1,200 dollars",
+      "expected": "It costs 1,200 dollars.",
+      "source": "Thousands separators must remain intact through the pipeline"
+    },
+    {
+      "name": "url survives the pipeline",
+      "input": "please visit https://example.com/page today",
+      "expected": "Please visit https://example.com/page today.",
+      "source": "URLs must remain intact through the pipeline"
+    }
+  ]
+}

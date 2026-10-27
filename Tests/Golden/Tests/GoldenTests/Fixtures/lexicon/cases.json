@@ -1,0 +1,39 @@
+{
+  "entries": [
+    { "kind": "correction", "triggers": ["super flow", "superflow"], "canonical": "Superflow" },
+    { "kind": "term", "triggers": ["kube control", "cube control"], "canonical": "kubectl" },
+    { "kind": "term", "triggers": ["next js", "next.js"], "canonical": "Next.js" },
+    { "kind": "correction", "triggers": ["jason"], "canonical": "JSON" },
+    { "kind": "term", "triggers": ["flow"], "canonical": "FLOW" },
+    { "kind": "term", "triggers": ["tail wind"], "canonical": "Tailwind CSS" },
+    { "kind": "correction", "triggers": ["type script"], "canonical": "TypeScript" }
+  ],
+  "cases": [
+    { "name": "correction whole utterance", "input": "super flow", "expected": "Superflow" },
+    { "name": "correction inline", "input": "I use super flow every day", "expected": "I use Superflow every day" },
+    { "name": "correction case insensitive", "input": "Super Flow is great", "expected": "Superflow is great" },
+    { "name": "correction single token", "input": "superflow", "expected": "Superflow" },
+    { "name": "correction longest match wins", "input": "the super flow", "expected": "the Superflow" },
+    { "name": "term shorter trigger still fires", "input": "the flow", "expected": "the FLOW" },
+    { "name": "term multi word", "input": "kube control apply", "expected": "kubectl apply" },
+    { "name": "term spoken variant", "input": "cube control get pods", "expected": "kubectl get pods" },
+    { "name": "term spaced", "input": "next js app", "expected": "Next.js app" },
+    { "name": "term dotted", "input": "next.js app", "expected": "Next.js app" },
+    { "name": "correction jason", "input": "jason file", "expected": "JSON file" },
+    { "name": "no false positive json", "input": "json file", "expected": "json file" },
+    { "name": "correction uppercase trigger", "input": "JASON", "expected": "JSON" },
+    { "name": "two corrections", "input": "super flow and jason", "expected": "Superflow and JSON" },
+    { "name": "term with two words canonical", "input": "tail wind classes", "expected": "Tailwind CSS classes" },
+    { "name": "correction type script", "input": "type script project", "expected": "TypeScript project" },
+    { "name": "domain untouched", "input": "superflow.com", "expected": "superflow.com" },
+    { "name": "url untouched", "input": "https://superflow.com", "expected": "https://superflow.com" },
+    { "name": "email untouched", "input": "dev@superflow.com", "expected": "dev@superflow.com" },
+    { "name": "canonical untouched", "input": "kubectl", "expected": "kubectl" },
+    { "name": "word boundary respected", "input": "super flowed", "expected": "super flowed" },
+    { "name": "punctuation preserved", "input": "use super flow, then stop.", "expected": "use Superflow, then stop." },
+    { "name": "multi line", "input": "super flow\njason", "expected": "Superflow\nJSON" },
+    { "name": "empty", "input": "", "expected": "" },
+    { "name": "whitespace only", "input": "   ", "expected": "   " }
+  ],
+  "knownFailures": []
+}

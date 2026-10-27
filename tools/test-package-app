@@ -1,0 +1,113 @@
+#!/bin/bash
+# Exercises tools/package-app without building the real app: compiles tiny Mach-O
+# stubs, assembles bundles with and without the helper/framework, and checks the
+# smoke assertions the assembler makes.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PACKAGER="$ROOT/tools/package-app"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/superflow-package-test.XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
+
+fail() {
+    printf 'FAIL: %s\n' "$*" >&2
+    exit 1
+}
+pass() {
+    printf 'ok: %s\n' "$*"
+}
+
+STUB_SOURCE="$WORK/stub.c"
+printf 'int main(void) { return 0; }\n' > "$STUB_SOURCE"
+mkdir -p "$WORK/app-bin" "$WORK/helper-bin"
+clang "$STUB_SOURCE" -Wl,-headerpad_max_install_names -o "$WORK/app-bin/SuperflowApp"
+clang "$STUB_SOURCE" -Wl,-headerpad_max_install_names -o "$WORK/helper-bin/SuperflowInferenceHelper"
+
+# A minimal but structurally valid framework so the embedding path is covered.
+FRAMEWORK="$WORK/llama.framework"
+mkdir -p "$FRAMEWORK/Versions/A/Resources"
+clang "$STUB_SOURCE" -Wl,-headerpad_max_install_names -o "$FRAMEWORK/Versions/A/llama"
+ln -s A "$FRAMEWORK/Versions/Current"
+ln -s Versions/Current/llama "$FRAMEWORK/llama"
+ln -s Versions/Current/Resources "$FRAMEWORK/Resources"
+cat > "$FRAMEWORK/Versions/A/Resources/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>com.superflow.test.llama</string>
+	<key>CFBundleExecutable</key>
+	<string>llama</string>
+	<key>CFBundlePackageType</key>
+	<string>FMWK</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+</dict>
+</plist>
+PLIST
+
+# 1. Minimal bundle: no helper, no framework.
+MINIMAL="$WORK/minimal.app"
+SUPERFLOW_APP_BINARY="$WORK/app-bin/SuperflowApp" \
+SUPERFLOW_BIN_DIR="$WORK/app-bin" \
+SUPERFLOW_LLAMA_FRAMEWORK="$WORK/no-such.framework" \
+SUPERFLOW_APP_OUTPUT="$MINIMAL" \
+    "$PACKAGER" --smoke >/dev/null
+test -x "$MINIMAL/Contents/MacOS/SuperflowApp" || fail "minimal bundle has no executable"
+test ! -d "$MINIMAL/Contents/XPCServices" || fail "minimal bundle unexpectedly embedded the helper"
+test ! -d "$MINIMAL/Contents/Frameworks" || fail "minimal bundle unexpectedly embedded a framework"
+codesign --verify --deep --strict "$MINIMAL" 2>/dev/null || fail "minimal bundle signature is invalid"
+codesign -d --entitlements :- "$MINIMAL" 2>/dev/null | grep -q 'com.apple.security.device.audio-input' \
+    || fail "minimal bundle is missing the audio-input entitlement"
+pass "minimal bundle assembles, signs, and carries entitlements"
+
+# 2. Full bundle: helper plus framework, including the runtime search path.
+FULL="$WORK/full.app"
+SUPERFLOW_APP_BINARY="$WORK/app-bin/SuperflowApp" \
+SUPERFLOW_BIN_DIR="$WORK/app-bin" \
+SUPERFLOW_HELPER_BINARY="$WORK/helper-bin/SuperflowInferenceHelper" \
+SUPERFLOW_LLAMA_FRAMEWORK="$FRAMEWORK" \
+SUPERFLOW_APP_OUTPUT="$FULL" \
+    "$PACKAGER" --smoke >/dev/null
+test -x "$FULL/Contents/XPCServices/SuperflowInferenceHelper.xpc/Contents/MacOS/SuperflowInferenceHelper" \
+    || fail "helper was not embedded"
+test "$(plutil -extract CFBundlePackageType raw "$FULL/Contents/XPCServices/SuperflowInferenceHelper.xpc/Contents/Info.plist")" == "XPC!" \
+    || fail "helper Info.plist is not an XPC service"
+test -x "$FULL/Contents/XPCServices/SuperflowInferenceHelper.xpc/Contents/Frameworks/llama.framework/Versions/A/llama" \
+    || fail "helper runtime framework was not embedded"
+test ! -d "$FULL/Contents/Frameworks/llama.framework" || fail "app unexpectedly owns the inference framework"
+otool -l "$FULL/Contents/XPCServices/SuperflowInferenceHelper.xpc/Contents/MacOS/SuperflowInferenceHelper" \
+    | grep -q '@executable_path/../Frameworks' || fail "helper is missing the Frameworks rpath"
+codesign --verify --deep --strict "$FULL" 2>/dev/null || fail "full bundle signature is invalid"
+pass "full bundle embeds the helper and framework and signs both"
+
+# 3. A missing app executable must fail before touching the output directory.
+MISSING="$WORK/missing.app"
+if SUPERFLOW_APP_BINARY="$WORK/app-bin/does-not-exist" \
+   SUPERFLOW_BIN_DIR="$WORK/app-bin" \
+   SUPERFLOW_APP_OUTPUT="$MISSING" \
+       "$PACKAGER" --smoke >/dev/null 2>&1; then
+    fail "packager accepted a missing executable"
+fi
+test ! -e "$MISSING" || fail "packager created output despite a missing executable"
+pass "missing executable is rejected without creating a bundle"
+
+# 4. SUPERFLOW_REQUIRE_MODELS=1 must reject a missing framework.
+REQUIRED="$WORK/required.app"
+if SUPERFLOW_APP_BINARY="$WORK/app-bin/SuperflowApp" \
+   SUPERFLOW_BIN_DIR="$WORK/app-bin" \
+   SUPERFLOW_REQUIRE_MODELS=1 \
+   SUPERFLOW_LLAMA_FRAMEWORK="$WORK/no-such.framework" \
+   SUPERFLOW_APP_OUTPUT="$REQUIRED" \
+       "$PACKAGER" --smoke >/dev/null 2>&1; then
+    fail "packager ignored SUPERFLOW_REQUIRE_MODELS=1"
+fi
+test ! -e "$REQUIRED" || fail "packager created output despite a missing required framework"
+pass "required framework is enforced"
+
+# 5. Help is available and does not assemble anything.
+"$PACKAGER" --help >/dev/null || fail "packager --help failed"
+pass "help exits successfully"
+
+printf 'package-app smoke tests passed\n'

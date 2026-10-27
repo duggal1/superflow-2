@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+violations=0
+ui_roots=("$repo_root/Packages" "$repo_root/App/SuperflowApp" "$repo_root/App/InferenceHelper")
+glob=(--glob '*.swift' --glob '!**/.build/**')
+
+report_matches() {
+    local pattern="$1"
+    local message="$2"
+    local matches
+    shift 2
+    matches="$(rg -n "${glob[@]}" "$pattern" "$@" || true)"
+    if [[ -n "$matches" ]]; then
+        printf '%s\n%s\n' "$message" "$matches" >&2
+        violations=$((violations + 1))
+    fi
+}
+
+report_outside() {
+    local pattern="$1"
+    local allowed="$2"
+    local message="$3"
+    local matches
+    local filtered
+    shift 3
+    matches="$(rg -n "${glob[@]}" "$pattern" "$@" || true)"
+    filtered="$(printf '%s\n' "$matches" | rg -v "$allowed" || true)"
+    if [[ -n "${filtered//$'\n'/}" ]]; then
+        printf '%s\n%s\n' "$message" "$filtered" >&2
+        violations=$((violations + 1))
+    fi
+}
+
+while IFS= read -r -d '' source; do
+    lines="$(wc -l < "$source")"
+    if (( lines > 400 )); then
+        printf 'Swift source exceeds 400 lines (%s): %s\n' "$lines" "$source" >&2
+        violations=$((violations + 1))
+    fi
+done < <(find "$repo_root/Packages" "$repo_root/App/SuperflowApp" "$repo_root/App/InferenceHelper" -path '*/.build' -prune -o -path '*/Sources/*' -name '*.swift' -print0)
+
+report_matches '\bprint\s*\(' 'Use structured logging instead of print().' "${ui_roots[@]}"
+
+# Feature packages compose shared components; they never build raw controls.
+report_matches '\b(Button|Toggle|Picker|Slider|Stepper|TextField)\s*\(|onTapGesture|NSCursor' \
+    'Feature packages must use shared interactive components and may not manage cursors directly.' \
+    "$repo_root/Packages/L3-Features"
+
+report_outside '\.pointerStyle' "UIComponents/Sources/SuperflowUIComponents/Pointer\.swift:" \
+    'The pointer hand is only available through clickable().' "${ui_roots[@]}"
+
+# R2: no strokes anywhere except the focus ring and Increase Contrast.
+report_outside '\.(stroke|strokeBorder|border)\(' \
+    "DesignSystem/Sources/SuperflowDesignSystem/Surfaces\.swift:" \
+    'Strokes are only allowed in ContrastStroke and focusRing.' "${ui_roots[@]}"
+
+# R3: one icon family, one implementation.
+report_outside 'Image\(systemName:' "Icons/Sources/SuperflowIcons/Glyph\.swift:" \
+    'Use the shared Icon view instead of Image(systemName:).' "${ui_roots[@]}"
+
+# R4: colours come from the token file; canvas ramps are the only exceptions.
+report_outside 'Color\(hex:' \
+    "(DesignSystem/Sources/SuperflowDesignSystem/|UIComponents/Sources/SuperflowUIComponents/(PixelStop|PixelField|ContributionGrid)\.swift:)" \
+    'Hex colours belong in DesignSystem tokens (canvas ramps excepted).' "${ui_roots[@]}"
+
+# R5: Regular and Medium only.
+report_matches 'weight:\s*\.(bold|semibold|heavy|black)\b|fontWeight\(\.(bold|semibold|heavy|black)\)' \
+    'Font weights heavier than .medium are forbidden.' "${ui_roots[@]}"
+
+# R5: fixed font sizes must come from the type table.
+allowed_sizes=(9 10 11 12 13 14 15 16 28 40)
+while IFS= read -r match; do
+    [[ -z "$match" ]] && continue
+    size="$(printf '%s' "$match" | sed -E 's/.*size: ([0-9]+).*/\1/')"
+    ok=0
+    for allowed in "${allowed_sizes[@]}"; do
+        if [[ "$size" == "$allowed" ]]; then ok=1; break; fi
+    done
+    if (( ok == 0 )); then
+        printf 'Font size %s is outside the type table: %s\n' "$size" "$match" >&2
+        violations=$((violations + 1))
+    fi
+done < <(rg -n -o "\.system\(size: [0-9]+" "${glob[@]}" "${ui_roots[@]}" || true)
+
+# R7: nothing bounces, loops, or moves linearly.
+report_matches '\.animation\(\.linear|\.easeInOut|\.spring\(|\.bouncy' \
+    'Only the motion tokens (easeOut, settle, snappy, smooth) are allowed.' "${ui_roots[@]}"
+
+report_matches 'import .*(Hugeicons|Phosphor)|HugeIcon' \
+    'Third-party icon families are removed; use Glyph.' "${ui_roots[@]}"
+
+# Pass 2 structure: the system chrome is deleted, not restyled.
+report_matches 'NavigationSplitView|NavigationStack|\.searchable\(|\.toolbar \{|\.toolbar\{|\.toolbar\(removing:|ToolbarItem|toolbarBackgroundVisibility' \
+    'The shell is a custom HStack with PageBar and SearchField. System split views, toolbars and .searchable are deleted.' \
+    "$repo_root/Packages/L3-Features" "$repo_root/Packages/L4-UI" \
+    "$repo_root/App/SuperflowApp/Sources/SuperflowAppCore/Windowing"
+
+report_matches '\.popover\(' \
+    'Menus and dropdowns render in MenuLayer. No .popover anywhere.' "${ui_roots[@]}"
+
+report_matches 'AppSlider' \
+    'AppSlider is deleted. Use TimingSlider, which wraps the native Slider.' "${ui_roots[@]}"
+
+report_outside '(^|[^A-Za-z])Slider\(' "UIComponents/Sources/SuperflowUIComponents/Sliders\.swift:" \
+    'Sliders are the native Slider, wrapped once in TimingSlider.' "${ui_roots[@]}"
+
+report_outside 'isMovableByWindowBackground = true' \
+    "UIComponents/Sources/SuperflowUIComponents/Chrome\.swift:" \
+    'The main window drags from WindowDragArea. Only onboarding moves by background.' "${ui_roots[@]}"
+
+report_matches '\.symbolRenderingMode\(\.hierarchical\)' \
+    'Icons render monochrome, so a parent foregroundStyle reaches them.' "${ui_roots[@]}"
+
+report_outside 'NSCursor' "UIComponents/Sources/SuperflowUIComponents/Pointer\.swift:" \
+    'Cursors live in clickable(), backed by CursorRect.' "${ui_roots[@]}"
+
+report_matches '(^|[^A-Za-z])Menu[[:space:]]*[\{(]' \
+    'Native menus are replaced by ActionMenu in page bars.' "$repo_root/Packages/L3-Features" "$repo_root/App/SuperflowApp"
+
+# The system focus ring is the sky-blue border the owner rejected.
+while IFS= read -r file; do
+    if rg -q '\.focusable\(' "$file" && ! rg -q '\.focusEffectDisabled\(' "$file"; then
+        printf '.focusable() without .focusEffectDisabled(): %s\n' "$file" >&2
+        violations=$((violations + 1))
+    fi
+done < <(rg -l '\.focusable\(' "${glob[@]}" "${ui_roots[@]}" || true)
+
+# Icon sizes are exactly 14 (rows), 16 (bar), 12 (buttons), 9 (chevron).
+while IFS= read -r match; do
+    [[ -z "$match" ]] && continue
+    size="$(printf '%s' "$match" | sed -E 's/.*size: ([0-9]+).*/\1/')"
+    case "$size" in
+        9|12|14|16) ;;
+        *)
+            printf 'Icon size %s is outside 14 / 16 / 12 / 9: %s\n' "$size" "$match" >&2
+            violations=$((violations + 1))
+            ;;
+    esac
+done < <(rg -n -o '(^|[^A-Za-z])Icon\([^)]*size: [0-9]+' "${glob[@]}" \
+    --glob '!**/FeatureOnboarding/**' --glob '!**/FeatureIsland/**' \
+    "$repo_root/Packages/L3-Features" "$repo_root/Packages/L4-UI" \
+    "$repo_root/App/SuperflowApp" || true)
+
+if (( violations > 0 )); then
+    printf 'Forbidden-pattern lint found %d violation(s).\n' "$violations" >&2
+    exit 1
+fi
+
+printf '%s\n' 'Forbidden-pattern lint passed.'

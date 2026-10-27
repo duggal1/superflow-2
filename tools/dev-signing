@@ -1,0 +1,92 @@
+#!/bin/bash
+# Create a stable local code-signing identity for Superflow.
+#
+# Why this exists: macOS TCC (Microphone, Accessibility, Input Monitoring, Screen Recording)
+# keys every grant to the app's code identity. `tools/package-app` ad-hoc signs by default, and an
+# ad-hoc signature changes on every build, so each rebuild looks like a *different* app: grants
+# silently reset and the app can end up listed under Accessibility with no Input Monitoring record
+# at all. Signing with a certificate gives a stable identity, so one grant covers every rebuild.
+#
+# This does not replace Developer ID for distribution (see ADR 0012). It is the local-dev fix.
+#
+# Usage:
+#   ./tools/dev-signing                 # create the identity if missing, print the export line
+#   ./tools/dev-signing --print         # only print what to export
+#   SUPERFLOW_SIGN_IDENTITY="Superflow Development" make app
+#
+# The certificate is self-signed and trusted for code signing in the *login* keychain only. It is
+# useless outside this Mac, which is exactly what you want for local development.
+set -euo pipefail
+
+NAME="${SUPERFLOW_DEV_IDENTITY:-Superflow Development}"
+KEYCHAIN="${HOME}/Library/Keychains/login.keychain-db"
+PRINT_ONLY=0
+
+for argument in "$@"; do
+    case "$argument" in
+        --print) PRINT_ONLY=1 ;;
+        -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) printf 'Unknown argument: %s\n' "$argument" >&2; exit 2 ;;
+    esac
+done
+
+if [[ "$PRINT_ONLY" == 0 ]] && ! security find-identity -v -p codesigning 2>/dev/null | grep -q "$NAME"; then
+    printf 'Creating self-signed code-signing identity "%s"...\n' "$NAME"
+    work="$(mktemp -d "${TMPDIR:-/tmp}/superflow-signing.XXXXXX")"
+    trap 'rm -rf "$work"' EXIT
+
+    cat > "$work/openssl.cnf" <<EOF
+[req]
+distinguished_name = dn
+x509_extensions = ext
+prompt = no
+[dn]
+CN = $NAME
+O = Superflow Local Development
+[ext]
+basicConstraints = critical,CA:false
+keyUsage = critical,digitalSignature
+extendedKeyUsage = critical,codeSigning
+EOF
+
+    openssl req -x509 -newkey rsa:2048 -nodes \
+        -keyout "$work/key.pem" -out "$work/cert.pem" \
+        -days 3650 -config "$work/openssl.cnf" >/dev/null 2>&1
+
+    # macOS `security` cannot parse OpenSSL 3's default PKCS#12 MAC. Force the legacy
+    # algorithm; without this the import fails with "MAC verification failed".
+    openssl pkcs12 -export -legacy -inkey "$work/key.pem" -in "$work/cert.pem" \
+        -out "$work/identity.p12" -passout pass:superflow >/dev/null 2>&1 || \
+    openssl pkcs12 -export -macalg sha1 -inkey "$work/key.pem" -in "$work/cert.pem" \
+        -out "$work/identity.p12" -passout pass:superflow >/dev/null 2>&1
+
+    security import "$work/identity.p12" -k "$KEYCHAIN" -P superflow \
+        -T /usr/bin/codesign -T /usr/bin/security >/dev/null
+
+    # Without a partition list, codesign blocks on a keychain-access prompt and fails in any
+    # non-interactive invocation (make, CI, an agent).
+    security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN" >/dev/null 2>&1 || {
+        printf 'Could not set the key partition list. If codesign asks for keychain access,
+' >&2
+        printf 'choose "Always Allow" once.
+' >&2
+    }
+
+    # User-domain trust, so no sudo is required and nothing is changed system-wide.
+    security add-trusted-cert -r trustRoot -p codeSign -k "$KEYCHAIN" "$work/cert.pem" >/dev/null 2>&1 || {
+        printf 'Could not add trust settings automatically. Open Keychain Access, select "%s",\n' "$NAME" >&2
+        printf 'open "Get Info" > Trust, and set "Code Signing" to "Always Trust".\n' >&2
+    }
+fi
+
+if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "$NAME"; then
+    printf 'Identity "%s" is still missing. Create it in Keychain Access:\n' "$NAME" >&2
+    printf '  Keychain Access > Certificate Assistant > Create a Certificate >\n' >&2
+    printf '  Name "%s", Identity Type "Self Signed Root", Certificate Type "Code Signing".\n' "$NAME" >&2
+    exit 1
+fi
+
+printf '\nStable identity ready. Build with:\n\n'
+printf '  export SUPERFLOW_SIGN_IDENTITY="%s"\n' "$NAME"
+printf '  make app\n\n'
+printf 'Then grant permissions once; they survive rebuilds.\n'

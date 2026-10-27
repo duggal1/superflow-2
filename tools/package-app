@@ -1,0 +1,206 @@
+#!/bin/bash
+# Assemble an unsigned local Superflow.app from SwiftPM build products.
+#
+# The default path builds App/SuperflowApp and App/InferenceHelper, copies the
+# executable and resource bundles, embeds llama.framework in the helper, and
+# ad-hoc signs the resulting app bundle with App/Resources/Superflow.entitlements.
+#
+# Overrides exist so the assembler itself can be tested without a full app
+# build (see tools/test-package-app):
+#   SUPERFLOW_APP_BINARY       app executable to copy
+#   SUPERFLOW_BIN_DIR          directory holding *.bundle resources
+#   SUPERFLOW_HELPER_BINARY    helper executable to embed
+#   SUPERFLOW_LLAMA_FRAMEWORK  llama.framework to embed
+#   SUPERFLOW_REQUIRE_MODELS=1 fail when llama.framework is missing
+#   SUPERFLOW_REQUIRE_HELPER=1 fail when the helper is missing
+#   SUPERFLOW_SIGN_IDENTITY    codesign identity (default ad-hoc "-")
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PACKAGE="$ROOT/App/SuperflowApp"
+HELPER_PACKAGE="$ROOT/App/InferenceHelper"
+CONFIGURATION="${CONFIGURATION:-debug}"
+OUTPUT="${SUPERFLOW_APP_OUTPUT:-$ROOT/dist/Superflow.app}"
+IDENTITY="${SUPERFLOW_SIGN_IDENTITY:--}"
+INFO_PLIST="$ROOT/App/Resources/Info.plist"
+HELPER_INFO_PLIST="$ROOT/App/Resources/InferenceHelper-Info.plist"
+ENTITLEMENTS="$ROOT/App/Resources/Superflow.entitlements"
+ASSETS_CATALOG="$ROOT/App/Resources/Assets.xcassets"
+SKIP_BUILD=0
+SMOKE=0
+
+usage() {
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+for argument in "$@"; do
+    case "$argument" in
+        --skip-build) SKIP_BUILD=1 ;;
+        --smoke) SKIP_BUILD=1; SMOKE=1 ;;
+        -h|--help) usage; exit 0 ;;
+        *) printf 'Unknown argument: %s\n' "$argument" >&2; usage >&2; exit 2 ;;
+    esac
+done
+
+if [[ "$SMOKE" == 0 ]]; then
+    : "${SUPERFLOW_REQUIRE_HELPER:=1}"
+    : "${SUPERFLOW_REQUIRE_MODELS:=1}"
+fi
+
+if [[ "$SKIP_BUILD" == 0 ]]; then
+    swift build --package-path "$PACKAGE" --configuration "$CONFIGURATION"
+    mkdir -p "$HELPER_PACKAGE/.build"
+    if [[ ! -e "$HELPER_PACKAGE/.build/artifacts" && ! -L "$HELPER_PACKAGE/.build/artifacts" ]]; then
+        ln -s "$PACKAGE/.build/artifacts" "$HELPER_PACKAGE/.build/artifacts"
+    fi
+    swift build --package-path "$HELPER_PACKAGE" --configuration "$CONFIGURATION"
+fi
+
+if [[ -n "${SUPERFLOW_BIN_DIR:-}" ]]; then
+    BIN_DIR="$SUPERFLOW_BIN_DIR"
+elif [[ "$SKIP_BUILD" == 1 ]]; then
+    # SwiftPM maintains .build/<configuration> as a symlink to the real triple
+    # directory, so this works without asking SwiftPM to plan a build.
+    BIN_DIR="$PACKAGE/.build/$CONFIGURATION"
+else
+    BIN_DIR="$(swift build --package-path "$PACKAGE" --configuration "$CONFIGURATION" --show-bin-path)"
+fi
+EXECUTABLE="${SUPERFLOW_APP_BINARY:-$BIN_DIR/SuperflowApp}"
+LLAMA_FRAMEWORK="${SUPERFLOW_LLAMA_FRAMEWORK:-$PACKAGE/.build/artifacts/llmllamacpp/llama/llama.xcframework/macos-arm64_x86_64/llama.framework}"
+
+if [[ ! -x "$EXECUTABLE" ]]; then
+    printf 'App executable not found or not executable: %s\n' "$EXECUTABLE" >&2
+    exit 1
+fi
+if [[ ! -f "$INFO_PLIST" ]]; then
+    printf 'Info.plist not found: %s\n' "$INFO_PLIST" >&2
+    exit 1
+fi
+if [[ ! -f "$ENTITLEMENTS" ]]; then
+    printf 'Entitlements not found: %s\n' "$ENTITLEMENTS" >&2
+    exit 1
+fi
+
+EXECUTABLE_NAME="$(plutil -extract CFBundleExecutable raw "$INFO_PLIST")"
+if [[ "$EXECUTABLE_NAME" != "SuperflowApp" ]]; then
+    printf 'Info.plist CFBundleExecutable must be SuperflowApp, found %s\n' "$EXECUTABLE_NAME" >&2
+    exit 1
+fi
+
+# Resolve the helper only when it was explicitly supplied or has been built.
+HELPER_EXECUTABLE=""
+if [[ -n "${SUPERFLOW_HELPER_BINARY:-}" ]]; then
+    HELPER_EXECUTABLE="$SUPERFLOW_HELPER_BINARY"
+elif [[ "$SMOKE" == 0 ]]; then
+    HELPER_BIN_DIR="$(swift build --package-path "$HELPER_PACKAGE" \
+        --configuration "$CONFIGURATION" --show-bin-path)"
+    if [[ -x "$HELPER_BIN_DIR/SuperflowInferenceHelper" ]]; then
+        HELPER_EXECUTABLE="$HELPER_BIN_DIR/SuperflowInferenceHelper"
+    fi
+fi
+
+if [[ -z "$HELPER_EXECUTABLE" ]]; then
+    if [[ "${SUPERFLOW_REQUIRE_HELPER:-0}" == 1 ]]; then
+        printf 'Inference helper is required but was not built.\n' >&2
+        exit 1
+    fi
+    printf 'note: inference helper not built; packaging the app without XPC service\n'
+elif [[ ! -x "$HELPER_EXECUTABLE" ]]; then
+    printf 'Helper executable not found or not executable: %s\n' "$HELPER_EXECUTABLE" >&2
+    exit 1
+fi
+
+HAVE_FRAMEWORK=0
+if [[ -d "$LLAMA_FRAMEWORK" ]]; then
+    HAVE_FRAMEWORK=1
+elif [[ "${SUPERFLOW_REQUIRE_MODELS:-0}" == 1 ]]; then
+    printf 'llama.framework is required but missing: %s\n' "$LLAMA_FRAMEWORK" >&2
+    exit 1
+else
+    printf 'note: llama.framework not found; packaging without the LLM runtime\n'
+fi
+
+APP_NEEDS_FRAMEWORK=0
+if otool -L "$EXECUTABLE" | grep -q '@rpath/llama.framework'; then
+    APP_NEEDS_FRAMEWORK=1
+fi
+
+rm -rf "$OUTPUT"
+mkdir -p "$OUTPUT/Contents/MacOS" "$OUTPUT/Contents/Resources"
+cp "$EXECUTABLE" "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME"
+cp "$INFO_PLIST" "$OUTPUT/Contents/Info.plist"
+
+# Compile the asset catalog (app icon + accent color) into Assets.car and AppIcon.icns.
+if [[ -d "$ASSETS_CATALOG" ]]; then
+    xcrun actool "$ASSETS_CATALOG" \
+        --compile "$OUTPUT/Contents/Resources" \
+        --platform macosx --minimum-deployment-target 15.0 \
+        --app-icon AppIcon \
+        --output-partial-info-plist "$OUTPUT/.assets-partial.plist" >/dev/null
+    rm -f "$OUTPUT/.assets-partial.plist"
+    test -f "$OUTPUT/Contents/Resources/Assets.car"
+    test -f "$OUTPUT/Contents/Resources/AppIcon.icns"
+fi
+
+while IFS= read -r bundle; do
+    ditto "$bundle" "$OUTPUT/Contents/Resources/$(basename "$bundle")"
+done < <(find "$BIN_DIR" -maxdepth 1 -type d -name '*.bundle' -print 2>/dev/null)
+
+# Bundled display face. ATSApplicationFontsPath in Info.plist points at Fonts/.
+if [[ -d "$ROOT/App/Resources/Fonts" ]]; then
+    ditto "$ROOT/App/Resources/Fonts" "$OUTPUT/Contents/Resources/Fonts"
+fi
+
+if [[ "$HAVE_FRAMEWORK" == 1 && "$APP_NEEDS_FRAMEWORK" == 1 ]]; then
+    mkdir -p "$OUTPUT/Contents/Frameworks"
+    ditto "$LLAMA_FRAMEWORK" "$OUTPUT/Contents/Frameworks/llama.framework"
+    if ! otool -l "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME" | grep -q '@executable_path/../Frameworks'; then
+        install_name_tool -add_rpath '@executable_path/../Frameworks' \
+            "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME"
+    fi
+    codesign --force --timestamp=none --options runtime --sign "$IDENTITY" \
+        "$OUTPUT/Contents/Frameworks/llama.framework"
+fi
+
+HELPER_BUNDLE="$OUTPUT/Contents/XPCServices/SuperflowInferenceHelper.xpc"
+if [[ -n "$HELPER_EXECUTABLE" ]]; then
+    HELPER_NAME="$(plutil -extract CFBundleExecutable raw "$HELPER_INFO_PLIST")"
+    mkdir -p "$HELPER_BUNDLE/Contents/MacOS" "$HELPER_BUNDLE/Contents/Resources"
+    cp "$HELPER_EXECUTABLE" "$HELPER_BUNDLE/Contents/MacOS/$HELPER_NAME"
+    cp "$HELPER_INFO_PLIST" "$HELPER_BUNDLE/Contents/Info.plist"
+    if [[ "$HAVE_FRAMEWORK" == 1 ]]; then
+        mkdir -p "$HELPER_BUNDLE/Contents/Frameworks"
+        ditto "$LLAMA_FRAMEWORK" "$HELPER_BUNDLE/Contents/Frameworks/llama.framework"
+        if ! otool -l "$HELPER_BUNDLE/Contents/MacOS/$HELPER_NAME" | grep -q '@executable_path/../Frameworks'; then
+            install_name_tool -add_rpath '@executable_path/../Frameworks' \
+                "$HELPER_BUNDLE/Contents/MacOS/$HELPER_NAME"
+        fi
+        codesign --force --timestamp=none --options runtime --sign "$IDENTITY" \
+            "$HELPER_BUNDLE/Contents/Frameworks/llama.framework"
+    fi
+    plutil -lint "$HELPER_BUNDLE/Contents/Info.plist" >/dev/null
+    codesign --force --timestamp=none --options runtime \
+        --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$HELPER_BUNDLE"
+fi
+
+plutil -lint "$OUTPUT/Contents/Info.plist" >/dev/null
+codesign --force --timestamp=none --options runtime \
+    --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$OUTPUT"
+
+# Smoke checks: the bundle must be structurally valid, signed, and carry the
+# entitlement the microphone needs. Failures here mean the .app will not launch.
+test -x "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME"
+test "$(plutil -extract CFBundleExecutable raw "$OUTPUT/Contents/Info.plist")" == "$EXECUTABLE_NAME"
+test "$(plutil -extract CFBundleIdentifier raw "$OUTPUT/Contents/Info.plist")" == "com.superflow.app"
+if [[ -n "$HELPER_EXECUTABLE" ]]; then
+    test -x "$HELPER_BUNDLE/Contents/MacOS/$HELPER_NAME"
+    test "$(plutil -extract CFBundlePackageType raw "$HELPER_BUNDLE/Contents/Info.plist")" == "XPC!"
+fi
+codesign --verify --deep --strict "$OUTPUT"
+codesign -d --entitlements :- "$OUTPUT" 2>/dev/null | grep -q 'com.apple.security.device.audio-input'
+
+printf 'Built %s\n' "$OUTPUT"
+printf '  executable: %s\n' "$EXECUTABLE_NAME"
+printf '  helper: %s\n' "${HELPER_EXECUTABLE:-none}"
+printf '  llama.framework: %s\n' "$([[ "$HAVE_FRAMEWORK" == 1 ]] && echo helper-only || echo none)"
+printf '  identity: %s\n' "$IDENTITY"

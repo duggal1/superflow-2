@@ -1,0 +1,37 @@
+#!/bin/bash
+# Build a distributable Superflow.dmg from an assembled app bundle.
+#
+# Stages the .app next to an /Applications symlink (so the mounted volume can be
+# dragged into place), then writes a compressed read-only DMG.
+#
+# Inputs / overrides:
+#   SUPERFLOW_APP_PATH     app bundle to package (default dist/Superflow.app)
+#   SUPERFLOW_DMG_OUTPUT   DMG to write (default dist/Superflow.dmg)
+#   SUPERFLOW_DMG_STAGING  staging directory (default a temp dir)
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+APP="${SUPERFLOW_APP_PATH:-$ROOT/dist/Superflow.app}"
+OUTPUT="${SUPERFLOW_DMG_OUTPUT:-$ROOT/dist/Superflow.dmg}"
+STAGING="${SUPERFLOW_DMG_STAGING:-}"
+
+if [[ ! -d "$APP" ]]; then
+    printf 'No app bundle at %s. Run `make app` first.\n' "$APP" >&2
+    exit 2
+fi
+
+if [[ -z "$STAGING" ]]; then
+    STAGING="$(mktemp -d "${TMPDIR:-/tmp}/superflow-dmg.XXXXXX")"
+    trap 'rm -rf "$STAGING"' EXIT
+fi
+mkdir -p "$STAGING"
+
+rm -rf "$STAGING/Superflow.app"
+cp -R "$APP" "$STAGING/Superflow.app"
+ln -sfn /Applications "$STAGING/Applications"
+
+mkdir -p "$(dirname "$OUTPUT")"
+rm -f "$OUTPUT"
+hdiutil create -volname "Superflow" -srcfolder "$STAGING" -ov -format UDZO "$OUTPUT" >/dev/null
+
+printf 'Wrote %s\n' "$OUTPUT"

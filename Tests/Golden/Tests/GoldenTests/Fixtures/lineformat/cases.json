@@ -1,0 +1,65 @@
+{
+  "settings": { "capitalize": false, "finalPeriod": false },
+  "cases": [
+    { "name": "short text", "input": "hello there", "expected": "hello there" },
+    { "name": "single sentence", "input": "the quick brown fox jumps over the lazy dog.", "expected": "the quick brown fox jumps over the lazy dog." },
+    { "name": "two sentences stay in one block", "input": "First sentence here. Second sentence follows.", "expected": "First sentence here. Second sentence follows." },
+    { "name": "hard newline becomes paragraph", "input": "first line\nsecond line", "expected": "first line\n\nsecond line" },
+    { "name": "blank line preserved", "input": "first paragraph\n\nsecond paragraph", "expected": "first paragraph\n\nsecond paragraph" },
+    { "name": "list items are hard boundaries", "input": "- one\n- two\n- three", "expected": "- one\n\n- two\n\n- three" },
+    { "name": "collapse spaces", "input": "hello   world  ", "expected": "hello world" },
+    { "name": "punctuation spacing", "input": "hello , world . next", "expected": "hello, world. next" },
+    { "name": "abbreviations are not sentence ends", "input": "Dr. Smith went to Washington. He arrived at 5 p.m. and left.", "expected": "Dr. Smith went to Washington. He arrived at 5 p.m. and left." },
+    { "name": "decimals are not sentence ends", "input": "The value is 3.14 today. Next we test 2.71 tomorrow.", "expected": "The value is 3.14 today. Next we test 2.71 tomorrow." },
+    { "name": "ellipsis", "input": "Wait... what happened? Nobody knows.", "expected": "Wait... what happened? Nobody knows." },
+    { "name": "capitalize sentence starts", "input": "hello world. next sentence.", "expected": "Hello world. Next sentence.", "settings": { "lineFormat": { "capitalize": true } } },
+    { "name": "capitalize standalone i", "input": "i think i can.", "expected": "I think I can.", "settings": { "lineFormat": { "capitalize": true } } },
+    { "name": "final period for long dictation", "input": "one two three four", "expected": "one two three four.", "settings": { "lineFormat": { "finalPeriod": true } } },
+    { "name": "no final period for three words", "input": "one two three", "expected": "one two three", "settings": { "lineFormat": { "finalPeriod": true } } },
+    { "name": "trailing space is a stage concern", "input": "hello world", "expected": "hello world" },
+    { "name": "hard break at forty five words", "input": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25 word26 word27 word28 word29 word30 word31 word32 word33 word34 word35 word36 word37 word38 word39 word40 word41 word42 word43 word44 word45 word46 word47 word48 word49 word50 word51 word52 word53 word54 word55 word56 word57 word58 word59 word60.", "expected": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25 word26 word27 word28 word29 word30 word31 word32 word33 word34 word35 word36 word37 word38 word39 word40 word41 word42 word43 word44 word45\n\nword46 word47 word48 word49 word50 word51 word52 word53 word54 word55 word56 word57 word58 word59 word60." },
+    { "name": "clause boundary at comma", "input": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25 word26 word27 word28 word29 word30 word31 word32 word33 word34 word35 word36 word37 word38 word39 word40, word41 word42 word43 word44 word45 word46 word47 word48 word49 word50 word51 word52 word53 word54 word55 word56 word57 word58 word59 word60.", "expected": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25 word26 word27 word28 word29 word30 word31 word32 word33 word34 word35 word36 word37 word38 word39 word40,\n\nword41 word42 word43 word44 word45 word46 word47 word48 word49 word50 word51 word52 word53 word54 word55 word56 word57 word58 word59 word60." },
+    { "name": "tight settings split", "input": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25 word26 word27 word28 word29 word30 word31 word32 word33 word34 word35 word36 word37 word38 word39 word40.", "expected": "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10\n\nword11 word12 word13 word14 word15 word16 word17 word18 word19 word20\n\nword21 word22 word23 word24 word25 word26 word27 word28 word29 word30\n\nword31 word32 word33 word34 word35 word36 word37 word38 word39 word40.", "settings": { "lineFormat": { "minWords": 5, "preferredMax": 8, "hardMax": 10 } } },
+    { "name": "single newline style keeps list", "input": "- one\n- two\n- three", "expected": "- one\n- two\n- three", "settings": { "lineFormat": { "breakStyle": "newline" } } },
+    { "name": "single newline style", "input": "First sentence here. Second sentence follows. Third sentence ends.", "expected": "First sentence here. Second sentence follows. Third sentence ends.", "settings": { "lineFormat": { "breakStyle": "newline" } } },
+    { "name": "empty", "input": "", "expected": "" },
+    { "name": "whitespace only", "input": "   ", "expected": "" }
+  ],
+  "edgeCases": [
+    {
+      "name": "url is not punctuation spaced",
+      "input": "Visit https://example.com/page. Then come back.",
+      "expected": "Visit https://example.com/page. Then come back.",
+      "source": "URL schemes and query punctuation must remain intact"
+    },
+    {
+      "name": "grouped number is not punctuation spaced",
+      "input": "It costs 1,200 dollars.",
+      "expected": "It costs 1,200 dollars.",
+      "source": "Thousands separators must remain intact"
+    },
+    {
+      "name": "clock is not punctuation spaced",
+      "input": "Meet at 10:30 tomorrow.",
+      "expected": "Meet at 10:30 tomorrow.",
+      "source": "Clock separators must remain intact"
+    }
+  ],
+  "incremental": [
+    {
+      "name": "chunked sentences equal batch",
+      "chunks": ["The quick brown fox ", "jumps over the lazy dog. ", "Then it runs away. ", "A second paragraph starts here. ", "And it ends."],
+      "expected": "The quick brown fox jumps over the lazy dog. Then it runs away. A second paragraph starts here.\n\nAnd it ends."
+    },
+    {
+      "name": "short chunks equal batch",
+      "chunks": ["alpha beta gamma ", "delta epsilon. ", "zeta eta theta iota. ", "kappa lambda mu. ", "nu xi omicron pi rho sigma tau."],
+      "expected": "alpha beta gamma delta epsilon. zeta eta theta iota. kappa lambda mu.\n\nnu xi omicron pi rho sigma tau."
+    },
+    {
+      "name": "newline chunk boundary",
+      "chunks": ["first line\n", "second line\n", "- item one\n- item two"],
+      "expected": "first line\n\nsecond line\n\n- item one\n\n- item two"
+    }
+  ]
+}

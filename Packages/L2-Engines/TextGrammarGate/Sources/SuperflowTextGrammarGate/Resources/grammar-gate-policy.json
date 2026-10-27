@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 2,
+  "enabled": true,
+  "allowedKinds": ["Spelling", "Agreement", "Repetition", "aOrAn"],
+  "maxEditRatio": 0.03,
+  "timeCapMs": 50,
+  "minimumPrecision": 0.98
+}

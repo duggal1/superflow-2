@@ -1,0 +1,16 @@
+name: Swift verification
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: swift --version
+      - name: Verify packages, tests, and architecture rules
+        run: make verify

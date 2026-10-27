@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The app is intentionally not sandboxed: event taps, synthetic paste and
+	     process taps are not available to sandboxed apps. -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+	<!-- llama.framework and the FluidAudio artifacts are signed separately (and
+	     locally with an ad-hoc identity), so library validation must be off for
+	     the unsigned local build. A Developer ID build may tighten this. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

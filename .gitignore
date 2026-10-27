@@ -1,0 +1,13 @@
+.build/
+build/
+dist/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+ThirdParty/
+Packages/**/Frameworks/
+.models/
+*.gguf
+Tests/Fixtures/audio/
+.DS_Store

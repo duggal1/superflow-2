@@ -1,0 +1,229 @@
+flowchart TB
+  subgraph L5_App["L5 App"]
+    App_InferenceHelper["InferenceHelper"]
+    App_SuperflowApp["SuperflowApp"]
+  end
+  subgraph L0_Core["L0 Core"]
+    Packages_L0_Core_Kernel["Kernel"]
+    Packages_L0_Core_Ports["Ports"]
+    Packages_L0_Core_TestKit["TestKit"]
+  end
+  subgraph L1_Adapters["L1 Adapters"]
+    Packages_L1_Adapters_ASRFluidAudio["ASRFluidAudio"]
+    Packages_L1_Adapters_AudioCapture["AudioCapture"]
+    Packages_L1_Adapters_AudioJournal["AudioJournal"]
+    Packages_L1_Adapters_Diagnostics["Diagnostics"]
+    Packages_L1_Adapters_DiarizationFluidAudio["DiarizationFluidAudio"]
+    Packages_L1_Adapters_GrammarHarper["GrammarHarper"]
+    Packages_L1_Adapters_HotkeyEngine["HotkeyEngine"]
+    Packages_L1_Adapters_LLMLlamaCpp["LLMLlamaCpp"]
+    Packages_L1_Adapters_ModelStore["ModelStore"]
+    Packages_L1_Adapters_PermissionsKit["PermissionsKit"]
+    Packages_L1_Adapters_StorageSQLite["StorageSQLite"]
+    Packages_L1_Adapters_SystemAudioCapture["SystemAudioCapture"]
+    Packages_L1_Adapters_TextInsertion["TextInsertion"]
+  end
+  subgraph L2_Engines["L2 Engines"]
+    Packages_L2_Engines_GestureKit["GestureKit"]
+    Packages_L2_Engines_MeetingEngine["MeetingEngine"]
+    Packages_L2_Engines_RecoveryEngine["RecoveryEngine"]
+    Packages_L2_Engines_SessionEngine["SessionEngine"]
+    Packages_L2_Engines_StatsEngine["StatsEngine"]
+    Packages_L2_Engines_TextCleanup["TextCleanup"]
+    Packages_L2_Engines_TextCommands["TextCommands"]
+    Packages_L2_Engines_TextGrammarGate["TextGrammarGate"]
+    Packages_L2_Engines_TextLexicon["TextLexicon"]
+    Packages_L2_Engines_TextLineFormat["TextLineFormat"]
+    Packages_L2_Engines_TextNumbers["TextNumbers"]
+    Packages_L2_Engines_TextPipeline["TextPipeline"]
+    Packages_L2_Engines_TextShortcuts["TextShortcuts"]
+  end
+  subgraph L3_Features["L3 Features"]
+    Packages_L3_Features_FeatureDashboard["FeatureDashboard"]
+    Packages_L3_Features_FeatureDictionary["FeatureDictionary"]
+    Packages_L3_Features_FeatureHistory["FeatureHistory"]
+    Packages_L3_Features_FeatureIsland["FeatureIsland"]
+    Packages_L3_Features_FeatureMeetings["FeatureMeetings"]
+    Packages_L3_Features_FeatureOnboarding["FeatureOnboarding"]
+    Packages_L3_Features_FeatureSettings["FeatureSettings"]
+    Packages_L3_Features_FeatureShortcuts["FeatureShortcuts"]
+  end
+  subgraph L4_UI["L4 UI"]
+    Packages_L4_UI_DesignSystem["DesignSystem"]
+    Packages_L4_UI_Icons["Icons"]
+    Packages_L4_UI_UIComponents["UIComponents"]
+  end
+  subgraph L5_Tools["L5 Tools"]
+    tools_Superflowctl["Superflowctl"]
+  end
+  App_InferenceHelper --> Packages_L1_Adapters_LLMLlamaCpp
+  App_SuperflowApp --> App_InferenceHelper
+  App_SuperflowApp --> Packages_L0_Core_Kernel
+  App_SuperflowApp --> Packages_L0_Core_Ports
+  App_SuperflowApp --> Packages_L1_Adapters_ASRFluidAudio
+  App_SuperflowApp --> Packages_L1_Adapters_AudioCapture
+  App_SuperflowApp --> Packages_L1_Adapters_AudioJournal
+  App_SuperflowApp --> Packages_L1_Adapters_Diagnostics
+  App_SuperflowApp --> Packages_L1_Adapters_DiarizationFluidAudio
+  App_SuperflowApp --> Packages_L1_Adapters_GrammarHarper
+  App_SuperflowApp --> Packages_L1_Adapters_HotkeyEngine
+  App_SuperflowApp --> Packages_L1_Adapters_LLMLlamaCpp
+  App_SuperflowApp --> Packages_L1_Adapters_ModelStore
+  App_SuperflowApp --> Packages_L1_Adapters_PermissionsKit
+  App_SuperflowApp --> Packages_L1_Adapters_StorageSQLite
+  App_SuperflowApp --> Packages_L1_Adapters_SystemAudioCapture
+  App_SuperflowApp --> Packages_L1_Adapters_TextInsertion
+  App_SuperflowApp --> Packages_L2_Engines_GestureKit
+  App_SuperflowApp --> Packages_L2_Engines_MeetingEngine
+  App_SuperflowApp --> Packages_L2_Engines_RecoveryEngine
+  App_SuperflowApp --> Packages_L2_Engines_SessionEngine
+  App_SuperflowApp --> Packages_L2_Engines_TextCleanup
+  App_SuperflowApp --> Packages_L2_Engines_TextPipeline
+  App_SuperflowApp --> Packages_L3_Features_FeatureDashboard
+  App_SuperflowApp --> Packages_L3_Features_FeatureDictionary
+  App_SuperflowApp --> Packages_L3_Features_FeatureHistory
+  App_SuperflowApp --> Packages_L3_Features_FeatureIsland
+  App_SuperflowApp --> Packages_L3_Features_FeatureMeetings
+  App_SuperflowApp --> Packages_L3_Features_FeatureOnboarding
+  App_SuperflowApp --> Packages_L3_Features_FeatureSettings
+  App_SuperflowApp --> Packages_L3_Features_FeatureShortcuts
+  App_SuperflowApp --> Packages_L4_UI_DesignSystem
+  App_SuperflowApp --> Packages_L4_UI_Icons
+  App_SuperflowApp --> Packages_L4_UI_UIComponents
+  Packages_L0_Core_Ports --> Packages_L0_Core_Kernel
+  Packages_L0_Core_TestKit --> Packages_L0_Core_Kernel
+  Packages_L0_Core_TestKit --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_ASRFluidAudio --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_ASRFluidAudio --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_AudioCapture --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_AudioCapture --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_AudioJournal --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_AudioJournal --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_Diagnostics --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_Diagnostics --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_DiarizationFluidAudio --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_DiarizationFluidAudio --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_GrammarHarper --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_GrammarHarper --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_HotkeyEngine --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_HotkeyEngine --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_LLMLlamaCpp --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_LLMLlamaCpp --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_ModelStore --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_ModelStore --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_PermissionsKit --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_PermissionsKit --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_StorageSQLite --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_StorageSQLite --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_StorageSQLite --> Packages_L0_Core_TestKit
+  Packages_L1_Adapters_SystemAudioCapture --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_SystemAudioCapture --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_Kernel
+  Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_GestureKit --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_GestureKit --> Packages_L0_Core_Ports
+  Packages_L2_Engines_MeetingEngine --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_MeetingEngine --> Packages_L0_Core_Ports
+  Packages_L2_Engines_MeetingEngine --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_MeetingEngine --> Packages_L2_Engines_TextPipeline
+  Packages_L2_Engines_RecoveryEngine --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_RecoveryEngine --> Packages_L0_Core_Ports
+  Packages_L2_Engines_RecoveryEngine --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_SessionEngine --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_SessionEngine --> Packages_L0_Core_Ports
+  Packages_L2_Engines_SessionEngine --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_SessionEngine --> Packages_L2_Engines_TextPipeline
+  Packages_L2_Engines_StatsEngine --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextCleanup --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextCleanup --> Packages_L0_Core_Ports
+  Packages_L2_Engines_TextCleanup --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_TextCommands --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextCommands --> Packages_L0_Core_Ports
+  Packages_L2_Engines_TextGrammarGate --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextGrammarGate --> Packages_L0_Core_Ports
+  Packages_L2_Engines_TextGrammarGate --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_TextLexicon --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextLexicon --> Packages_L0_Core_Ports
+  Packages_L2_Engines_TextLineFormat --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextLineFormat --> Packages_L0_Core_Ports
+  Packages_L2_Engines_TextNumbers --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextNumbers --> Packages_L0_Core_Ports
+  Packages_L2_Engines_TextPipeline --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextPipeline --> Packages_L0_Core_Ports
+  Packages_L2_Engines_TextPipeline --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCleanup
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCommands
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextGrammarGate
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextLexicon
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextLineFormat
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextNumbers
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextShortcuts
+  Packages_L2_Engines_TextShortcuts --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextShortcuts --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureDashboard --> Packages_L0_Core_Kernel
+  Packages_L3_Features_FeatureDashboard --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureDashboard --> Packages_L0_Core_TestKit
+  Packages_L3_Features_FeatureDashboard --> Packages_L2_Engines_StatsEngine
+  Packages_L3_Features_FeatureDashboard --> Packages_L4_UI_DesignSystem
+  Packages_L3_Features_FeatureDashboard --> Packages_L4_UI_Icons
+  Packages_L3_Features_FeatureDashboard --> Packages_L4_UI_UIComponents
+  Packages_L3_Features_FeatureDictionary --> Packages_L0_Core_Kernel
+  Packages_L3_Features_FeatureDictionary --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureDictionary --> Packages_L0_Core_TestKit
+  Packages_L3_Features_FeatureDictionary --> Packages_L2_Engines_TextLexicon
+  Packages_L3_Features_FeatureDictionary --> Packages_L4_UI_DesignSystem
+  Packages_L3_Features_FeatureDictionary --> Packages_L4_UI_Icons
+  Packages_L3_Features_FeatureDictionary --> Packages_L4_UI_UIComponents
+  Packages_L3_Features_FeatureHistory --> Packages_L0_Core_Kernel
+  Packages_L3_Features_FeatureHistory --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureHistory --> Packages_L0_Core_TestKit
+  Packages_L3_Features_FeatureHistory --> Packages_L4_UI_DesignSystem
+  Packages_L3_Features_FeatureHistory --> Packages_L4_UI_Icons
+  Packages_L3_Features_FeatureHistory --> Packages_L4_UI_UIComponents
+  Packages_L3_Features_FeatureIsland --> Packages_L0_Core_Kernel
+  Packages_L3_Features_FeatureIsland --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureIsland --> Packages_L2_Engines_MeetingEngine
+  Packages_L3_Features_FeatureIsland --> Packages_L2_Engines_SessionEngine
+  Packages_L3_Features_FeatureIsland --> Packages_L4_UI_DesignSystem
+  Packages_L3_Features_FeatureIsland --> Packages_L4_UI_Icons
+  Packages_L3_Features_FeatureIsland --> Packages_L4_UI_UIComponents
+  Packages_L3_Features_FeatureMeetings --> Packages_L0_Core_Kernel
+  Packages_L3_Features_FeatureMeetings --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureMeetings --> Packages_L0_Core_TestKit
+  Packages_L3_Features_FeatureMeetings --> Packages_L2_Engines_MeetingEngine
+  Packages_L3_Features_FeatureMeetings --> Packages_L2_Engines_TextPipeline
+  Packages_L3_Features_FeatureMeetings --> Packages_L4_UI_DesignSystem
+  Packages_L3_Features_FeatureMeetings --> Packages_L4_UI_Icons
+  Packages_L3_Features_FeatureMeetings --> Packages_L4_UI_UIComponents
+  Packages_L3_Features_FeatureOnboarding --> Packages_L0_Core_Kernel
+  Packages_L3_Features_FeatureOnboarding --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureOnboarding --> Packages_L0_Core_TestKit
+  Packages_L3_Features_FeatureOnboarding --> Packages_L4_UI_DesignSystem
+  Packages_L3_Features_FeatureOnboarding --> Packages_L4_UI_Icons
+  Packages_L3_Features_FeatureOnboarding --> Packages_L4_UI_UIComponents
+  Packages_L3_Features_FeatureSettings --> Packages_L0_Core_Kernel
+  Packages_L3_Features_FeatureSettings --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureSettings --> Packages_L0_Core_TestKit
+  Packages_L3_Features_FeatureSettings --> Packages_L4_UI_DesignSystem
+  Packages_L3_Features_FeatureSettings --> Packages_L4_UI_Icons
+  Packages_L3_Features_FeatureSettings --> Packages_L4_UI_UIComponents
+  Packages_L3_Features_FeatureShortcuts --> Packages_L0_Core_Kernel
+  Packages_L3_Features_FeatureShortcuts --> Packages_L0_Core_Ports
+  Packages_L3_Features_FeatureShortcuts --> Packages_L0_Core_TestKit
+  Packages_L3_Features_FeatureShortcuts --> Packages_L2_Engines_TextLexicon
+  Packages_L3_Features_FeatureShortcuts --> Packages_L2_Engines_TextShortcuts
+  Packages_L3_Features_FeatureShortcuts --> Packages_L4_UI_DesignSystem
+  Packages_L3_Features_FeatureShortcuts --> Packages_L4_UI_Icons
+  Packages_L3_Features_FeatureShortcuts --> Packages_L4_UI_UIComponents
+  Packages_L4_UI_DesignSystem --> Packages_L0_Core_Kernel
+  Packages_L4_UI_Icons --> Packages_L4_UI_DesignSystem
+  Packages_L4_UI_UIComponents --> Packages_L0_Core_Kernel
+  Packages_L4_UI_UIComponents --> Packages_L4_UI_DesignSystem
+  Packages_L4_UI_UIComponents --> Packages_L4_UI_Icons
+  tools_Superflowctl --> Packages_L0_Core_Kernel
+  tools_Superflowctl --> Packages_L0_Core_Ports
+  tools_Superflowctl --> Packages_L1_Adapters_ASRFluidAudio
+  tools_Superflowctl --> Packages_L1_Adapters_AudioCapture
+  tools_Superflowctl --> Packages_L1_Adapters_AudioJournal
+  tools_Superflowctl --> Packages_L2_Engines_TextPipeline

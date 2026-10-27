@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fixture="$(mktemp -d)"
+trap 'rm -rf "$fixture"' EXIT
+
+mkdir -p "$fixture/Packages/L0-Core/Kernel/Sources/SuperflowKernel"
+mkdir -p "$fixture/Packages/L1-Adapters/Audio/Sources/SuperflowAudio"
+
+cat > "$fixture/Packages/L0-Core/Kernel/Package.swift" <<'SWIFT'
+import PackageDescription
+
+let package = Package(
+    name: "Kernel",
+    products: [.library(name: "SuperflowKernel", targets: ["SuperflowKernel"])],
+    dependencies: [.package(path: "../../L1-Adapters/Audio")],
+    targets: [.target(name: "SuperflowKernel", dependencies: [
+        .product(name: "SuperflowAudio", package: "Audio")
+    ])]
+)
+SWIFT
+
+cat > "$fixture/Packages/L0-Core/Kernel/Sources/SuperflowKernel/Violation.swift" <<'SWIFT'
+import SuperflowAudio
+SWIFT
+
+cat > "$fixture/Packages/L1-Adapters/Audio/Package.swift" <<'SWIFT'
+import PackageDescription
+
+let package = Package(
+    name: "Audio",
+    products: [.library(name: "SuperflowAudio", targets: ["SuperflowAudio"])],
+    targets: [.target(name: "SuperflowAudio")]
+)
+SWIFT
+
+if SUPERFLOW_REPO_ROOT="$fixture" "$script_dir/check-deps" >/dev/null 2>&1; then
+    printf '%s\n' 'Dependency checker accepted a forbidden L0-to-L1 import.' >&2
+    exit 1
+fi
+
+printf '%s\n' 'Dependency checker rejects a forbidden L0-to-L1 import.'

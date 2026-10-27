@@ -1,0 +1,11 @@
+[package]
+name = "harper-ffi"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "harper_ffi"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+harper-core = "2.13.0"

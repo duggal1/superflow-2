@@ -1,0 +1,26 @@
+{
+  "entries": [
+    { "trigger": "sign off", "content": "# Notes\n\n- one\n- two" },
+    { "trigger": "my email", "content": "dev@example.com" },
+    { "trigger": "standup", "content": "Daily standup notes", "match": "inline" },
+    { "trigger": "design dot md", "content": "design.md" },
+    { "trigger": "signature", "content": "--\nAlex" }
+  ],
+  "cases": [
+    { "name": "whole utterance", "input": "sign off", "expected": "# Notes\n\n- one\n- two" },
+    { "name": "whole utterance trailing period", "input": "Sign off.", "expected": "# Notes\n\n- one\n- two" },
+    { "name": "whole utterance extra spaces", "input": "sign  off", "expected": "# Notes\n\n- one\n- two" },
+    { "name": "whole utterance surrounded by punctuation", "input": "\"sign off\"", "expected": "# Notes\n\n- one\n- two" },
+    { "name": "whole utterance not inline", "input": "please sign off now", "expected": "please sign off now" },
+    { "name": "email shortcut", "input": "my email", "expected": "dev@example.com" },
+    { "name": "email shortcut not inline", "input": "email my email to me", "expected": "email my email to me" },
+    { "name": "inline expansion", "input": "for the standup tomorrow", "expected": "for the Daily standup notes tomorrow" },
+    { "name": "inline single word", "input": "standup", "expected": "Daily standup notes" },
+    { "name": "spoken dot normalization", "input": "design dot md", "expected": "design.md" },
+    { "name": "literal dot normalization", "input": "design.md", "expected": "design.md" },
+    { "name": "multi line content", "input": "signature", "expected": "--\nAlex" },
+    { "name": "no trigger", "input": "just some words", "expected": "just some words" },
+    { "name": "empty", "input": "", "expected": "" }
+  ],
+  "knownFailures": []
+}
