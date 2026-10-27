@@ -65,6 +65,8 @@ final class PortsDefaultTests: XCTestCase {
         XCTAssertTrue(GlobeKeyAction.changeInputSource.isConflict)
         XCTAssertTrue(GlobeKeyAction.emojiAndSymbols.isConflict)
         XCTAssertTrue(GlobeKeyAction.dictation.isConflict)
+        // Unset is macOS defaulting to Show Emoji & Symbols, which is a conflict, not an unknown.
+        XCTAssertTrue(GlobeKeyAction.notConfigured.isConflict)
         let action = await UnknownGlobeKeyProbe().currentAction()
         XCTAssertEqual(action, .unknown)
     }

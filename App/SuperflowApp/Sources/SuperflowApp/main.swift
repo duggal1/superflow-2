@@ -7,11 +7,20 @@ import SuperflowIcons
 /// Orders the main window front and activates the app on launch. Swapping the activation policy
 /// away from `.accessory` was necessary but not sufficient: SwiftUI presented the window behind
 /// other apps, so it looked like nothing had launched at all.
+@MainActor
 final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // `ATSApplicationFontsPath` registers the bundled faces for a packaged app. This is
+        // the belt-and-braces path: one wrong plist value would otherwise drop the display
+        // face silently and every title would fall back to the system serif. UI text is SF Pro
+        // and never depends on a bundled file.
+        AppFont.registerBundledFonts()
+        // The one system-level smoothing knob CoreText still reads before the
+        // process starts drawing. The per-window context work lives in FontSmoothing.
+        UserDefaults.standard.register(defaults: ["AppleFontSmoothing": 3])
         #if DEBUG
-        // Fail loudly at launch instead of rendering nothing when a symbol name or the
-        // bundled display face is missing.
+        // Fail loudly at launch instead of rendering nothing when a symbol name or a
+        // bundled face is missing.
         validateGlyphs()
         validateDisplayFont()
         #endif
@@ -30,8 +39,7 @@ final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
     private func activate() {
         NSApp.setActivationPolicy(.regular)
         NSApp.unhide(nil)
-        NSRunningApplication.current.activate(options: [.activateAllWindows,
-                                                       .activateIgnoringOtherApps])
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
         guard let window = NSApp.windows.first(where: { $0.canBecomeMain }) else { return }
         // Restored window state can come back minimised or hidden, which reports as "no window"
         // and looks like the app never launched. Force it back onto the current Space.

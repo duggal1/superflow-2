@@ -17,7 +17,6 @@ import SuperflowRecoveryEngine
 import SuperflowSessionEngine
 import SuperflowUIComponents
 import SwiftUI
-
 @MainActor
 public final class AppCoordinator: ObservableObject {
     @Published public private(set) var settings = AppSettings.default
@@ -50,13 +49,14 @@ public final class AppCoordinator: ObservableObject {
     )
 
     private var didLaunch = false
-    private var gesture = GestureRecognizer()
-    private var hotkeyTask: Task<Void, Never>?
-    private var gestureTimerTask: Task<Void, Never>?
+    // Shared with `AppCoordinator+Input.swift`, which owns the hotkey and permission wiring.
+    var gesture = GestureRecognizer()
+    var hotkeyTask: Task<Void, Never>?
+    var gestureTimerTask: Task<Void, Never>?
     private var sessionRelayTask: Task<Void, Never>?
     private var meetingRelayTask: Task<Void, Never>?
     private var retentionTask: Task<Void, Never>?
-    private var permissionTask: Task<Void, Never>?
+    var permissionTask: Task<Void, Never>?
     private let sessionEventRelay = EngineEventRelay<SessionEvent>()
     private let meetingEventRelay = EngineEventRelay<MeetingEvent>()
 
@@ -90,6 +90,11 @@ public final class AppCoordinator: ObservableObject {
                                  repository: environment.transcripts,
                                  inserter: environment.textInserter,
                                  events: meetingEventRelay.subscribe())
+    }()
+
+    public lazy var modelsModel: ModelsViewModel? = {
+        guard let environment else { return nil }
+        return ModelsViewModel()
     }()
 
     public lazy var settingsModel: SettingsViewModel? = {
@@ -180,7 +185,6 @@ public final class AppCoordinator: ObservableObject {
             islandPanelController = nil
         }
     }
-
     public func launch() async {
         guard !didLaunch else { return }
         didLaunch = true
@@ -190,6 +194,8 @@ public final class AppCoordinator: ObservableObject {
         }
 
         settings = await environment.settingsStore.load()
+        // Fn is Superflow's dictation key, so put the Globe binding in the Do Nothing state first.
+        environment.claimFunctionKey()
         themeStore.mode = settings.theme
         islandPanelController?.model.setShowIdlePill(settings.showIdlePill)
         await environment.transcripts.setNoTranscriptStorage(settings.noTranscriptStorage)
@@ -295,61 +301,6 @@ public final class AppCoordinator: ObservableObject {
         }
     }
 
-    private func tryStartHotkeys() async {
-        guard let environment, hotkeyTask == nil else { return }
-        guard settings.onboardingComplete, menuBarController.recoveryReady else { return }
-        guard await environment.permissionGate.status(.inputMonitoring) == .granted else { return }
-        do {
-            try await environment.hotkeySource.start()
-            let events = environment.hotkeySource.events
-            hotkeyTask = Task { [weak self] in
-                for await event in events {
-                    guard let self else { return }
-                    await self.handleKeyEvent(event)
-                }
-            }
-            gestureTimerTask = Task { @MainActor [weak self] in
-                while !Task.isCancelled {
-                    do {
-                        try await Task.sleep(for: .milliseconds(10))
-                    } catch {
-                        return
-                    }
-                    guard let self else { return }
-                    await self.applyGestureActions(
-                        self.gesture.tick(atNs: DispatchTime.now().uptimeNanoseconds)
-                    )
-                }
-            }
-        } catch {
-            menuBarController.publishError("Keyboard shortcuts are unavailable. Check Input Monitoring in System Settings.")
-        }
-    }
-
-    private func observePermissionChanges(_ permissions: any PermissionGate) {
-        guard permissionTask == nil else { return }
-        permissionTask = Task { [weak self] in
-            let updates = await permissions.updates()
-            for await (permission, status) in updates {
-                guard let self else { return }
-                self.onboardingModel?.updatePermissionStatus(permission, status: status)
-                guard permission == .inputMonitoring else { continue }
-                if status == .granted {
-                    await self.tryStartHotkeys()
-                } else if let environment = self.environment, self.hotkeyTask != nil {
-                    await environment.hotkeySource.stop()
-                    self.hotkeyTask?.cancel()
-                    self.hotkeyTask = nil
-                    self.gestureTimerTask?.cancel()
-                    self.gestureTimerTask = nil
-                    self.menuBarController.publishError(
-                        "Keyboard shortcuts are unavailable. Check Input Monitoring in System Settings."
-                    )
-                }
-            }
-        }
-    }
-
     private func startEventRelays() {
         guard let environment else { return }
         if sessionRelayTask == nil {
@@ -372,28 +323,4 @@ public final class AppCoordinator: ObservableObject {
         }
     }
 
-    private func handleKeyEvent(_ event: KeyEvent) async {
-        await applyGestureActions(gesture.handle(event))
-    }
-
-    private func applyGestureActions(_ actions: [GestureAction]) async {
-        for action in actions {
-            switch action {
-            case .startSpeculative(.dictation):
-                await menuBarController.startDictation()
-            case .startSpeculative(.meeting):
-                await menuBarController.startMeeting()
-            case .holdBegan:
-                break
-            case .beginHandsFree:
-                await menuBarController.beginHandsFreeDictation()
-            case .latchMeeting:
-                break
-            case .submit(let kind):
-                await menuBarController.stop(kind)
-            case .cancel(let kind, _):
-                await menuBarController.cancel(kind)
-            }
-        }
-    }
 }

@@ -174,6 +174,29 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(count, 0)
     }
 
+    func testJournalDegradationIsSurfacedOnce() async throws {
+        let journals = FakeJournalStore()
+        await journals.setDegradeWrites(true)
+        let engine = engine(journals: journals)
+        let collector = Task { () -> [SessionEvent] in
+            var out: [SessionEvent] = []
+            for await event in engine.events {
+                out.append(event)
+                if case .finished = event { break }
+            }
+            return out
+        }
+        _ = try await engine.start()
+        _ = await engine.stop()
+        let events = await collector.value
+        let notices = events.compactMap { event -> String? in
+            if case .notice(let text) = event { return text }
+            return nil
+        }
+        XCTAssertEqual(notices.filter { $0.contains("Audio journal stopped") }.count, 1,
+                       "the user should be warned exactly once per session")
+    }
+
     func testAudioStartFailureMarksFailed() async {
         let engine = engine(audio: ScriptedAudioSource(samples: [], failStart: true))
         do {

@@ -19,6 +19,22 @@ final class FluidAudioRecognitionStreamTests: XCTestCase {
         return stream
     }
 
+    private func makeStream(engine: FakeEngine, spy: EngineSpy,
+                            deadlines: FluidAudioRecognitionStream.Deadlines,
+                            returns: EngineReturnLog) async -> FluidAudioRecognitionStream {
+        let stream = FluidAudioRecognitionStream(
+            profileID: ModelProfile.parakeetEOU120M.id,
+            source: .mic,
+            manager: engine,
+            modelDirectory: FileManager.default.temporaryDirectory,
+            engineFactory: { _, _ in try await spy.make() },
+            voiceActivity: FakeVoiceActivity(),
+            deadlines: deadlines,
+            returnEngine: { manager in await returns.record(manager) })
+        await stream.configure()
+        return stream
+    }
+
     func testPartialEventsAreForwarded() async {
         let engine = FakeEngine()
         let stream = await makeStream(engine: engine, vad: FakeVoiceActivity(), spy: EngineSpy())
@@ -182,6 +198,79 @@ final class FluidAudioRecognitionStreamTests: XCTestCase {
         XCTAssertEqual(buffer.samples.first, 5, "the oldest seconds are dropped")
         buffer.removeAll()
         XCTAssertTrue(buffer.samples.isEmpty)
+    }
+
+    func testPushDeadlineRebuildsAndReplaysTheUncommittedSegment() async {
+        let stalled = FakeEngine()
+        await stalled.setHangProcessing(true)
+        let spy = EngineSpy()
+        let returns = EngineReturnLog()
+        let stream = await makeStream(
+            engine: stalled, spy: spy,
+            deadlines: .init(push: .milliseconds(50), retire: .milliseconds(50)),
+            returns: returns)
+
+        await stream.feed(chunk(seconds: 1, startSample: 0))
+
+        let replacement = await spy.engine(at: 0)
+        let replayed = await replacement?.appendedSamples
+        XCTAssertEqual(replayed, sampleRate, "the fresh engine must receive the whole segment")
+        let stalledReturned = await returns.contains(stalled)
+        XCTAssertFalse(stalledReturned, "a stalled manager must never go back to the pool")
+
+        await stream.finish()
+    }
+
+    func testFinishDeadlineRebuildsAndStillCommitsTheTail() async {
+        let stalled = FakeEngine(text: "stalled")
+        await stalled.setHangFinish(true)
+        let spy = EngineSpy()
+        let returns = EngineReturnLog()
+        let stream = await makeStream(
+            engine: stalled, spy: spy,
+            deadlines: .init(finish: .milliseconds(50), retire: .milliseconds(50)),
+            returns: returns)
+        await stream.feed(chunk(seconds: 1, startSample: 0))
+
+        let started = ContinuousClock.now
+        await stream.finish()
+        XCTAssertLessThan(ContinuousClock.now - started, .seconds(1.5),
+                          "finish must not wait for a wedged model call")
+
+        var events: [RecognitionEvent] = []
+        for await event in stream.events { events.append(event) }
+        let committed = events.compactMap { event -> RawSegment? in
+            if case .committed(let segment) = event { return segment }
+            return nil
+        }
+        XCTAssertEqual(committed.count, 1, "the rebuilt engine still produces the final text")
+        XCTAssertEqual(committed.first?.text, "hello world")
+
+        let replacement = await spy.engine(at: 0)
+        let finished = await replacement?.finishCount
+        XCTAssertEqual(finished, 1)
+        let returned = await returns.count
+        XCTAssertEqual(returned, 1, "only the healthy replacement goes back to the pool")
+        let stalledReturned = await returns.contains(stalled)
+        XCTAssertFalse(stalledReturned)
+    }
+
+    func testCallbacksFromAnAbandonedEngineAreIgnored() async {
+        let stalled = FakeEngine()
+        await stalled.setHangProcessing(true)
+        let spy = EngineSpy()
+        let stream = await makeStream(
+            engine: stalled, spy: spy,
+            deadlines: .init(push: .milliseconds(50), retire: .milliseconds(50)),
+            returns: EngineReturnLog())
+
+        await stream.feed(chunk(seconds: 1, startSample: 0))
+        // The old manager was abandoned mid-call; a late callback must not leak in.
+        await stalled.emitPartial("stale")
+
+        let events = await collectEvents(stream, count: 1)
+        XCTAssertFalse(events.contains(.partial("stale")))
+        await stream.finish()
     }
 
     func testEnergyVoiceActivitySeparatesSpeechFromSilence() async {

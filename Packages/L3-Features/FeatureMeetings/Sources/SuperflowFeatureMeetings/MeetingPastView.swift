@@ -86,7 +86,7 @@ struct MeetingPastView: View {
             VStack(spacing: Space.sm) {
                 PixelStop(cells: 11, cell: 3)
                 Text("Select a meeting.")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(Typography.headline)
                     .foregroundStyle(Tok.text)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -96,7 +96,7 @@ struct MeetingPastView: View {
     private func header(_ document: MeetingDocument) -> some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(document.title)
-                .font(.system(size: 15, weight: .medium))
+                .font(Typography.headline)
                 .foregroundStyle(Tok.text)
             HStack(spacing: Space.sm) {
                 Text(document.durationLabel)
@@ -128,14 +128,14 @@ struct MeetingPastView: View {
             VStack(alignment: .leading, spacing: 2) {
                 speakerLabel(turn)
                 Text(turn.timestampLabel)
-                    .font(Typography.mono)
+                    .font(Typography.secondary)
                     .monospacedDigit()
                     .foregroundStyle(Tok.text2)
             }
             .frame(width: 120, alignment: .leading)
 
             Text(turn.text)
-                .font(.system(size: 15))
+                .font(Typography.large)
                 .foregroundStyle(turn.isGap ? Tok.text2 : Tok.text)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)

@@ -143,16 +143,25 @@ final class FileJournalStoreTests: XCTestCase {
         XCTAssertEqual(firstStart, Int64(firstCount - 5))
     }
 
-    func testJournalRefusesToStartBelowConfiguredFreeSpace() async throws {
+    /// Refusing to open meant a nearly full disk made dictation impossible: the start failed long
+    /// after the model was ready, and losing the transcript is worse than losing crash protection.
+    /// A constrained lane now opens degraded instead and reports it.
+    func testJournalOpensDegradedInsteadOfRefusingWhenDiskIsLow() async throws {
+        let session = SessionID("no-space")
         let constrainedStore = FileJournalStore(root: root.appendingPathComponent("constrained"),
                                                 minimumStartFreeBytes: .max,
                                                 lowDiskWarningBytes: 0)
-        do {
-            _ = try await constrainedStore.openWriter(session: SessionID("no-space"), source: .mic)
-            XCTFail("Expected a disk-full error")
-        } catch let error as SuperflowError {
-            XCTAssertEqual(error, .diskFull)
-        }
+        let writer = try await constrainedStore.openWriter(session: session, source: .mic)
+        let openedDegraded = await writer.isDegraded
+        XCTAssertTrue(openedDegraded, "A low-disk lane must open degraded, not throw")
+
+        await writer.append(AudioChunk(samples: [Float](repeating: 0.5, count: 1_600),
+                                       startSample: 0, source: .mic))
+        let summary = await writer.close()
+        XCTAssertTrue(summary.degraded)
+        XCTAssertEqual(summary.samples, 0, "A degraded lane journals nothing")
+        let count = await constrainedStore.sampleCount(session: session, source: .mic)
+        XCTAssertEqual(count, 0)
     }
 
     func testReopeningJournalTruncatesTornManifestLine() async throws {

@@ -215,7 +215,7 @@ public struct SectionHeader: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.custom(AppFont.baseName, size: 15))
+                .font(Typography.headline)
                 .foregroundStyle(Tok.text)
             if let note {
                 Text(note)
@@ -231,12 +231,10 @@ public struct SectionHeader: View {
 public struct KeyValueRow: View {
     private let label: String
     private let value: String
-    private let monospaced: Bool
 
-    public init(_ label: String, value: String, monospaced: Bool = false) {
+    public init(_ label: String, value: String) {
         self.label = label
         self.value = value
-        self.monospaced = monospaced
     }
 
     public var body: some View {
@@ -246,7 +244,7 @@ public struct KeyValueRow: View {
                 .foregroundStyle(Tok.text2)
             Spacer(minLength: Space.md)
             Text(value)
-                .font(monospaced ? Typography.mono : Typography.body)
+                .font(Typography.bodyMedium)
                 .monospacedDigit()
                 .foregroundStyle(Tok.text)
                 .textSelection(.enabled)

@@ -46,6 +46,8 @@ public struct MainWindowRootView: View {
             }
         }
         .preferredColorScheme(coordinator.themeStore.preferredColorScheme)
+        .fontSmoothing()
+        .focusEffectDisabled()
         .onAppear {
             // Connect as soon as the window exists so menu-bar and onboarding actions can
             // always bring it back, even before the menu-bar menu has ever been opened.
@@ -86,6 +88,7 @@ public struct MainWindowRootView: View {
         .coordinateSpace(name: WindowSpace.name)
         .overlay { MenuLayer() }
         .environment(menuHost)
+        .environment(\.openModels, { windowController.show(.models) })
         .background(WindowChrome(kind: .main))
         .frame(minWidth: Layout.windowMinWidth, minHeight: Layout.windowMinHeight)
         .tint(Tok.accent)
@@ -111,6 +114,8 @@ public struct MainWindowRootView: View {
             if let model = coordinator.shortcutsModel { ShortcutsView(model: model) }
         case .meetings:
             if let model = coordinator.meetingsModel { MeetingsView(model: model) }
+        case .models:
+            if let model = coordinator.modelsModel { ModelsView(vm: model) }
         case .settings:
             if let model = coordinator.settingsModel { SettingsView(model: model) }
         }
@@ -155,6 +160,7 @@ private struct MainSidebar: View {
     let status: EngineStatus
     let onStatus: () -> Void
     @Namespace private var pill
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -181,7 +187,7 @@ private struct MainSidebar: View {
         .frame(width: Layout.sidebar)
         .frame(maxHeight: .infinity)
         .background { SidebarBackdrop() }
-        .animation(Motion.slide, value: selection)
+        .animation(reduceMotion ? nil : Motion.slide, value: selection)
     }
 }
 
@@ -199,7 +205,7 @@ private struct SidebarRow: View {
                 Icon(section.icon, size: 14, tint: Tok.text)
                     .frame(width: 20, height: 20)
                 Text(section.title)
-                    .font(.system(size: 13))
+                    .font(Typography.body)
                 Spacer(minLength: 0)
             }
             .foregroundStyle(Tok.text)
@@ -219,6 +225,7 @@ private struct SidebarRow: View {
         .buttonStyle(PressStyle())
         .onHover { hover = $0 }
         .animation(reduceMotion ? nil : (hover ? Motion.hoverIn : Motion.hoverOut), value: hover)
+        .focusStep(Capsule())
         .clickable()
         .accessibilityLabel(section.title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -236,7 +243,7 @@ private struct SidebarStatus: View {
             HStack(spacing: Space.xs) {
                 DotView(status.tone)
                 Text(status.label)
-                    .font(.system(size: 12))
+                    .font(Typography.secondary)
                     .foregroundStyle(Tok.text2)
                     .lineLimit(1)
                 Spacer(minLength: 0)
@@ -246,6 +253,7 @@ private struct SidebarStatus: View {
             .contentShape(.capsule)
         }
         .buttonStyle(PressStyle())
+        .focusStep(Capsule())
         .clickable()
         .help(status.label)
         .accessibilityLabel("Engine status: \(status.label)")

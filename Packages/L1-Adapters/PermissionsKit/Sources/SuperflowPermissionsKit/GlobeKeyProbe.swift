@@ -2,9 +2,9 @@ import Foundation
 import SuperflowPorts
 
 /// Reads the system preference behind System Settings > Keyboard > "Press
-/// Globe key to". `AppleFnUsageType` is a global-domain integer; an absent key
-/// means macOS has never been told, so the probe reports `.unknown` and the
-/// onboarding copy asks the user to check it rather than guessing.
+/// Globe key to". `AppleFnUsageType` is a global-domain integer; an absent key means macOS has
+/// never been told, and its default for the Globe key is Show Emoji & Symbols. That is a real
+/// conflict, not an unknown one, so the probe reports `.notConfigured` instead of `.unknown`.
 ///
 /// Only the suite name is stored, which keeps the type `Sendable`. The
 /// non-Sendable `UserDefaults` instance is created and read inside the main
@@ -20,8 +20,8 @@ public struct UserDefaultsGlobeKeyProbe: GlobeKeyProbe {
         let suite = suiteName
         return await MainActor.run {
             let defaults = suite.flatMap(UserDefaults.init(suiteName:)) ?? .standard
-            guard let raw = defaults.object(forKey: "AppleFnUsageType") as? Int else {
-                return .unknown
+            guard let raw = defaults.object(forKey: GlobeKeyOwnership.preferenceKey) as? Int else {
+                return .notConfigured
             }
             switch raw {
             case 0: return .doNothing

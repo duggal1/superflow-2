@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-// TOKEN LIST (DESIGN-REBUILD-GUIDE §5.1). Use only these; anything else is a bug.
+// TOKEN LIST (pass 3). Use only these; anything else is a bug.
 //
 // Surface ladder (luminance steps only, never a stroke)
 //   bg             light #F4F4F4  dark #0A0A0A   canvas, titlebar, toolbar
@@ -21,13 +21,20 @@ import SwiftUI
 //   wash           black 5% / white 7%            hover over the sidebar blur or glass
 //   washStrong     black 9% / white 12%           selected over the sidebar blur
 //
-// Accent: blue 600 #2563EB, hover #1D4ED8 / #3B82F6, pressed #1E40AF,
-//         accent text #2563EB / #60A5FA, soft #DBEAFE / #2563EB at 17%.
+// Action text on dark: one tiny step below `text` (neutral 200 against #FAFAFA).
+//   textAction     light #2E2E2E  dark #E5E5E5   "Open Settings", "Get model", text links
+//
+// Accent: blue 600 #2563EB is the base. Hover #1D4ED8 / #3B82F6, pressed #1D4ED8.
+//         Blue 800 is removed from every control. accent text #2563EB / #60A5FA,
+//         soft #DBEAFE / #2563EB at 17%.
+//
+// Activity ramp: Ramp.blue, five steps, dark first then light (ActivityYear, ThroughputStrip).
 //
 // Spacing 4·8·12·16·20·24·32·48·64 (Space). Page padding 32, section gap 32,
 //   card padding 20.
 // Radii: capsule buttons/toggles, 16 cards, 12 nested, 8 fields and badges, 6 chips.
-// Control heights 24 / 28 / 32 (larger onboarding CTA is 32 in this revision).
+// Control heights: text buttons 24 (inline) or 28 (bars, cards, onboarding). 32 exists
+//   only for the search field and BarIconButton.
 // Type: SF Pro Regular/Medium; Exposure Italic at 28 (page/empty titles) and 40 (onboarding).
 // Motion: hover 0.10 out 0.22, settle 0.28, entrance 0.78, stagger 0.07, springs snappy/smooth.
 
@@ -105,7 +112,7 @@ public enum Tok {
         public static let accent: UInt32 = 0x2563EB
         public static let accentHoverLight: UInt32 = 0x1D4ED8
         public static let accentHoverDark: UInt32 = 0x3B82F6
-        public static let accentPressed: UInt32 = 0x1E40AF
+        public static let accentPressed: UInt32 = 0x1D4ED8
         public static let accentTextLight: UInt32 = 0x2563EB
         public static let accentTextDark: UInt32 = 0x60A5FA
         public static let accentSoftLight: UInt32 = 0xDBEAFE
@@ -131,6 +138,9 @@ public enum Tok {
     public static let text = HexColor(light: Hex.textLight, dark: Hex.textDark).color
     public static let text2 = HexColor(light: Hex.text2Light, dark: Hex.text2Dark).color
 
+    // Action text: one tiny step below text.
+    public static let textAction = Color(light: Color(hex: 0x2E2E2E), dark: Color(hex: 0xE5E5E5))
+
     // Text inputs that sit directly on the canvas (pass 2).
     public static let field = HexColor(light: Hex.fieldLight, dark: Hex.fieldDark).color
     public static let fieldHover = HexColor(light: Hex.fieldHoverLight, dark: Hex.fieldHoverDark).color
@@ -154,4 +164,21 @@ public enum Tok {
     /// Increase Contrast is the only place a border is allowed on a surface.
     public static let contrastStroke = HexColor(light: 0xD4D4D4, dark: 0xFFFFFF,
                                                 darkAlpha: 0.35).color
+
+    /// Keycap ink. Slightly settled from pure text so the cap reads as a key,
+    /// never brighter than the surface it sits on.
+    public static let keycapText = HexColor(light: 0x0A0A0A, dark: 0xEDEDED).color
+
+    /// The command-palette scrim. The one translucent black in the app.
+    public static let scrim = Color(hex: 0x000000, alpha: 0.18)
+}
+
+public enum Ramp {
+    public static let blue: [Color] = [
+        Color(light: Color(hex: 0xE9E9E9), dark: Color(hex: 0x171717)),
+        Color(light: Color(hex: 0xDBEAFE), dark: Color(hex: 0x172554)),
+        Color(light: Color(hex: 0x93C5FD), dark: Color(hex: 0x1E3A8A)),
+        Color(light: Color(hex: 0x2563EB), dark: Color(hex: 0x2563EB)),
+        Color(light: Color(hex: 0x1E3A8A), dark: Color(hex: 0x60A5FA)),
+    ]
 }

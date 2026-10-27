@@ -2,6 +2,7 @@ import Foundation
 import SuperflowKernel
 import SuperflowPorts
 import SuperflowTextCleanup
+import SuperflowTextCodeSpeak
 import SuperflowTextCommands
 import SuperflowTextGrammarGate
 import SuperflowTextLexicon
@@ -41,6 +42,9 @@ public enum TextPipelineBuilder {
             stages.append(ShortcutsStage(entries: dependencies.shortcuts))
         }
         stages.append(NumbersStage(id: "numbers"))
+        if settings.codeSpeakEnabled {
+            stages.append(CodeSpeakStage())
+        }
         stages.append(LexiconStage(entries: dependencies.lexiconEntries, id: "lexicon"))
         if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
             stages.append(CleanupStage(service: cleaner))

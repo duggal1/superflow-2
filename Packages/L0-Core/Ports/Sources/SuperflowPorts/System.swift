@@ -88,6 +88,10 @@ public enum GlobeKeyAction: String, Sendable, Equatable, CaseIterable {
     case changeInputSource
     case emojiAndSymbols
     case dictation
+    /// `AppleFnUsageType` has never been written, so macOS applies its own default for the Globe
+    /// key, which is Show Emoji & Symbols. Treating that as "not checked" was wrong: it is the
+    /// most common real conflict, and it is exactly the state every first-run Mac is in.
+    case notConfigured
     case unknown
 
     public var label: String {
@@ -96,10 +100,13 @@ public enum GlobeKeyAction: String, Sendable, Equatable, CaseIterable {
         case .changeInputSource: "Change Input Source"
         case .emojiAndSymbols: "Show Emoji & Symbols"
         case .dictation: "Start Dictation"
+        case .notConfigured: "Not set (shows Emoji & Symbols)"
         case .unknown: "Not checked"
         }
     }
 
+    /// `.unknown` means the probe could not read the preference at all. Everything else that is
+    /// not `doNothing` takes the key from Superflow, including the unset default.
     public var isConflict: Bool {
         self != .doNothing && self != .unknown
     }

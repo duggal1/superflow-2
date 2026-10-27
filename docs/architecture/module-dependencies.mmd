@@ -24,12 +24,14 @@ flowchart TB
     Packages_L1_Adapters_TextInsertion["TextInsertion"]
   end
   subgraph L2_Engines["L2 Engines"]
+    Packages_L2_Engines_ContextProfiles["ContextProfiles"]
     Packages_L2_Engines_GestureKit["GestureKit"]
     Packages_L2_Engines_MeetingEngine["MeetingEngine"]
     Packages_L2_Engines_RecoveryEngine["RecoveryEngine"]
     Packages_L2_Engines_SessionEngine["SessionEngine"]
     Packages_L2_Engines_StatsEngine["StatsEngine"]
     Packages_L2_Engines_TextCleanup["TextCleanup"]
+    Packages_L2_Engines_TextCodeSpeak["TextCodeSpeak"]
     Packages_L2_Engines_TextCommands["TextCommands"]
     Packages_L2_Engines_TextGrammarGate["TextGrammarGate"]
     Packages_L2_Engines_TextLexicon["TextLexicon"]
@@ -121,6 +123,7 @@ flowchart TB
   Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_Kernel
   Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_Ports
   Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_ContextProfiles --> Packages_L0_Core_Kernel
   Packages_L2_Engines_GestureKit --> Packages_L0_Core_Kernel
   Packages_L2_Engines_GestureKit --> Packages_L0_Core_Ports
   Packages_L2_Engines_MeetingEngine --> Packages_L0_Core_Kernel
@@ -138,6 +141,8 @@ flowchart TB
   Packages_L2_Engines_TextCleanup --> Packages_L0_Core_Kernel
   Packages_L2_Engines_TextCleanup --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextCleanup --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_TextCodeSpeak --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextCodeSpeak --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextCommands --> Packages_L0_Core_Kernel
   Packages_L2_Engines_TextCommands --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextGrammarGate --> Packages_L0_Core_Kernel
@@ -153,6 +158,7 @@ flowchart TB
   Packages_L2_Engines_TextPipeline --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextPipeline --> Packages_L0_Core_TestKit
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCleanup
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCodeSpeak
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCommands
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextGrammarGate
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextLexicon
@@ -205,6 +211,8 @@ flowchart TB
   Packages_L3_Features_FeatureSettings --> Packages_L0_Core_Kernel
   Packages_L3_Features_FeatureSettings --> Packages_L0_Core_Ports
   Packages_L3_Features_FeatureSettings --> Packages_L0_Core_TestKit
+  Packages_L3_Features_FeatureSettings --> Packages_L2_Engines_ContextProfiles
+  Packages_L3_Features_FeatureSettings --> Packages_L2_Engines_TextCodeSpeak
   Packages_L3_Features_FeatureSettings --> Packages_L4_UI_DesignSystem
   Packages_L3_Features_FeatureSettings --> Packages_L4_UI_Icons
   Packages_L3_Features_FeatureSettings --> Packages_L4_UI_UIComponents

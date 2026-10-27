@@ -15,7 +15,7 @@ public struct BadgeRamp: Sendable, Equatable {
 }
 
 public enum BadgeVariant: String, CaseIterable, Sendable {
-    case neutral, yellow, sky, blue, violet, purple, fuchsia, rose, orange, green
+    case neutral, yellow, sky, blue, violet, purple, fuchsia, rose, orange, green, danger
 
     public static let cycle: [BadgeVariant] = [
         .blue, .green, .orange, .violet, .yellow, .purple, .sky, .fuchsia, .rose,
@@ -35,6 +35,7 @@ public enum BadgeVariant: String, CaseIterable, Sendable {
         case .purple: return BadgeRamp(c100: 0xF3E8FF, c200: 0xE9D5FF, c600: 0x9333EA, c700: 0x7E22CE)
         case .fuchsia: return BadgeRamp(c100: 0xFAE8FF, c200: 0xF5D0FE, c600: 0xC026D3, c700: 0xA21CAF)
         case .rose: return BadgeRamp(c100: 0xFFE4E6, c200: 0xFECDD3, c600: 0xE11D48, c700: 0xBE123C)
+        case .danger: return BadgeRamp(c100: 0xFFE4E6, c200: 0xFECDD3, c600: 0xE11D48, c700: 0xBE123C)
         case .orange: return BadgeRamp(c100: 0xFFEDD5, c200: 0xFED7AA, c600: 0xEA580C, c700: 0xC2410C)
         case .green: return BadgeRamp(c100: 0xDCFCE7, c200: 0xBBF7D0, c600: 0x16A34A, c700: 0x15803D)
         }

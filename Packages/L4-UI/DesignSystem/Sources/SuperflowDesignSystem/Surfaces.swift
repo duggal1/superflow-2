@@ -21,18 +21,16 @@ public struct ContrastStroke: ViewModifier {
 }
 
 public extension View {
-    /// Keyboard focus ring. 2pt accent, offset 2. System controls keep the system ring.
-    func focusRing(radius: CGFloat, active: Bool) -> some View {
-        overlay {
-            RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .strokeBorder(Tok.accent, lineWidth: Radius.focusRing)
-                .padding(-Radius.focusOffset)
-                .opacity(active ? 1 : 0)
-                .allowsHitTesting(false)
-        }
-    }
-
     func contrastStroke(radius: CGFloat) -> some View {
         modifier(ContrastStroke(radius: radius))
     }
+}
+
+public func cellHash(_ i: Int, _ j: Int, _ seed: UInt32) -> CGFloat {
+    var h = UInt32(truncatingIfNeeded: i) &* 374761393
+        &+ UInt32(truncatingIfNeeded: j) &* 668265263
+        &+ seed &* 2246822519
+    h = (h ^ (h >> 13)) &* 1274126177
+    h ^= h >> 16
+    return CGFloat(h) / CGFloat(UInt32.max)
 }

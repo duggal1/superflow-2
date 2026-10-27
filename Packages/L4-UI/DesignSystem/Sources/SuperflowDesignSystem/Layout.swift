@@ -31,16 +31,13 @@ public enum Radius {
     public static let chip: CGFloat = 6
     public static let islandCompact: CGFloat = 22
     public static let islandExpanded: CGFloat = 26
-    public static let focusRing: CGFloat = 2
-    public static let focusOffset: CGFloat = 2
 }
 
 public enum ControlHeight {
     public static let small: CGFloat = 24
     public static let regular: CGFloat = 28
+    /// The search field and `BarIconButton` only. Text buttons stop at 28.
     public static let large: CGFloat = 32
-    /// This revision drops the 40pt onboarding CTA; the largest control is 32.
-    public static let onboardingCTA: CGFloat = 32
 }
 
 public enum Layout {
@@ -53,6 +50,11 @@ public enum Layout {
     public static let sidebarMax: CGFloat = 280
     public static let onboardingWidth: CGFloat = 640
     public static let onboardingHeight: CGFloat = 520
+    /// Onboarding content column (640 − 2 × 80).
+    public static let onboardingColumn: CGFloat = 480
+    /// Floor for the onboarding primary button, wide enough for "Open Superflow",
+    /// so the label can change mid-step without the button resizing under the pointer.
+    public static let onboardingPrimaryWidth: CGFloat = 168
     public static let islandDragThreshold: CGFloat = 4
     public static let islandTopInset: CGFloat = 6
 

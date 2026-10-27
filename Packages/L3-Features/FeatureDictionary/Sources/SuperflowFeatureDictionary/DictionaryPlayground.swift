@@ -25,7 +25,7 @@ struct DictionaryPlayground: View {
                          text: $input)
                 if !input.isEmpty {
                     Text(output)
-                        .font(.system(size: 15))
+                        .font(Typography.large)
                         .foregroundStyle(Tok.text)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)

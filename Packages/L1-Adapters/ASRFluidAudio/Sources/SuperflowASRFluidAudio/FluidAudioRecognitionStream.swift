@@ -1,78 +1,33 @@
 @preconcurrency import AVFoundation
 import FluidAudio
 import Foundation
+import os
 import SuperflowKernel
 import SuperflowPorts
 
-enum FluidAudioSegmentPolicy {
-    static let minimumSegmentSamples = 30 * sampleRate
-    static let pauseSamples = 600 * sampleRate / 1000
-    static let hardCapSamples = 120 * sampleRate
-    static let watchdogSamples = 8 * sampleRate
-    static let replayLimitSamples = 125 * sampleRate
-    static let maximumRecoveriesPerSegment = 2
-}
-
-/// Lock-backed one-shot flag used by FluidAudio callbacks, which are invoked
-/// outside the stream actor and must never block audio processing.
-final class FlagSignal: @unchecked Sendable {
-    private let lock = NSLock()
-    private var marked = false
-
-    func mark() { lock.withLock { marked = true } }
-
-    func take() -> Bool {
-        lock.withLock {
-            defer { marked = false }
-            return marked
-        }
-    }
-}
-
-/// Bounded copy of the current, uncommitted segment. It exists so the watchdog
-/// can replay after a recognizer rebuild without retaining the whole recording.
-struct ReplayBuffer {
-    private(set) var samples: [Float] = []
-    let limit: Int
-
-    init(limit: Int = FluidAudioSegmentPolicy.replayLimitSamples) {
-        self.limit = limit
-    }
-
-    mutating func append(_ newSamples: [Float]) {
-        samples.append(contentsOf: newSamples)
-        let overflow = samples.count - limit
-        if overflow > 0 { samples.removeFirst(overflow) }
-    }
-
-    mutating func removeAll() { samples.removeAll(keepingCapacity: true) }
-}
-
-enum FluidAudioBuffer {
-    static func make(_ samples: [Float], rate: Int = sampleRate) throws -> AVAudioPCMBuffer {
-        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                         sampleRate: Double(rate), channels: 1, interleaved: false),
-              let buffer = AVAudioPCMBuffer(pcmFormat: format,
-                                            frameCapacity: AVAudioFrameCount(samples.count)),
-              let channel = buffer.floatChannelData?.pointee else {
-            throw SuperflowError.audioFailure("Could not allocate a FluidAudio input buffer.")
-        }
-        buffer.frameLength = AVAudioFrameCount(samples.count)
-        for index in samples.indices { channel[index] = samples[index] }
-        return buffer
-    }
-}
-
-private enum CommitReason {
-    case nativeEndpoint
-    case pause
-    case hardCap
-}
-
 /// One recognition stream. It owns segment rotation (30 s + 600 ms pause, or a
 /// 120 s hard cap), the 8 s stall watchdog, and the bounded replay buffer.
+///
+/// Every call into FluidAudio is raced against a wall-clock deadline. A model
+/// call that never returns is abandoned and the stream rebuilds a recognizer
+/// from the replay buffer; the journal remains the durable source of truth.
 public actor FluidAudioRecognitionStream: RecognitionStream {
     public nonisolated let events: AsyncStream<RecognitionEvent>
+
+    struct Deadlines: Sendable {
+        var push: Duration
+        var finish: Duration
+        var reset: Duration
+        var retire: Duration
+
+        init(push: Duration = .seconds(8), finish: Duration = .seconds(5),
+             reset: Duration = .seconds(3), retire: Duration = .seconds(2)) {
+            self.push = push
+            self.finish = finish
+            self.reset = reset
+            self.retire = retire
+        }
+    }
 
     private let continuation: AsyncStream<RecognitionEvent>.Continuation
     private var manager: any StreamingAsrManager
@@ -82,9 +37,11 @@ public actor FluidAudioRecognitionStream: RecognitionStream {
     private let engineFactory: FluidAudioEngineFactory
     private let voiceActivity: any VoiceActivityClassifying
     private let returnEngine: @Sendable (any StreamingAsrManager) async -> Void
+    private let deadlines: Deadlines
 
     private let tokenSignal = FlagSignal()
     private let endpointSignal = FlagSignal()
+    private let callbacks = CallbackGeneration()
     private var replay = ReplayBuffer()
     private var segmentStartSample: Int64 = 0
     private var lastFeedEndSample: Int64 = 0
@@ -95,10 +52,14 @@ public actor FluidAudioRecognitionStream: RecognitionStream {
     private var heardSpeech = false
     private var recoveries = 0
     private var isFinished = false
+    /// False while the current manager is stalled or its replacement failed.
+    /// Audio keeps flowing to the journal, but it is not fed to a dead model.
+    private var managerIsHealthy = true
 
     init(profileID: String, source: AudioSourceKind, manager: any StreamingAsrManager,
          modelDirectory: URL, engineFactory: @escaping FluidAudioEngineFactory,
          voiceActivity: any VoiceActivityClassifying,
+         deadlines: Deadlines = Deadlines(),
          returnEngine: @escaping @Sendable (any StreamingAsrManager) async -> Void) {
         self.profileID = profileID
         self.source = source
@@ -106,6 +67,7 @@ public actor FluidAudioRecognitionStream: RecognitionStream {
         self.modelDirectory = modelDirectory
         self.engineFactory = engineFactory
         self.voiceActivity = voiceActivity
+        self.deadlines = deadlines
         self.returnEngine = returnEngine
         (events, continuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(128))
     }
@@ -124,13 +86,8 @@ public actor FluidAudioRecognitionStream: RecognitionStream {
         lastFeedEndSample = chunk.endSample
         replay.append(chunk.samples)
         segmentSamples += chunk.samples.count
-        do {
-            try await manager.appendAudio(FluidAudioBuffer.make(chunk.samples))
-            try await manager.processBufferedAudio()
-        } catch {
-            continuation.yield(.failure(error.localizedDescription))
-            return
-        }
+
+        await push(chunk.samples)
 
         let speechSamples = await voiceActivity.classify(chunk.samples)
         if speechSamples > 0 {
@@ -170,43 +127,95 @@ public actor FluidAudioRecognitionStream: RecognitionStream {
         guard !isFinished else { return }
         isFinished = true
         let end = max(segmentStartSample, lastFeedEndSample)
-        do {
-            let text = try await manager.finish().trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty {
-                continuation.yield(.committed(RawSegment(text: text, startSample: segmentStartSample,
-                                                         endSample: end, source: source)))
-            }
-        } catch {
-            continuation.yield(.failure(error.localizedDescription))
+        if let text = await finishText(), !text.isEmpty {
+            continuation.yield(.committed(RawSegment(text: text, startSample: segmentStartSample,
+                                                     endSample: end, source: source)))
         }
 
-        await manager.setPartialTranscriptCallback { _ in }
-        if let eou = manager as? StreamingEouAsrManager {
-            await eou.setEouCallback { _ in }
-        }
-        try? await manager.reset()
+        // Mute every recognizer before it is reset or returned to the pool.
+        callbacks.advance()
+        await resetManagerIfHealthy()
         continuation.finish()
-        await returnEngine(manager)
+        // A stalled manager is abandoned, never pooled.
+        if managerIsHealthy { await returnEngine(manager) }
+    }
+
+    // MARK: - Model calls
+
+    /// Appends audio and runs inference behind one deadline. A timeout leaves the
+    /// manager unusable; the segment is replayed into a fresh one.
+    private func push(_ samples: [Float]) async {
+        guard managerIsHealthy else { return }
+        do {
+            try await withDeadline(deadlines.push, label: "ASR push") { [manager] in
+                try await manager.appendAudio(FluidAudioBuffer.make(samples))
+                try await manager.processBufferedAudio()
+            }
+        } catch {
+            managerIsHealthy = false
+            continuation.yield(.failure("Recognizer stalled while processing audio (\(error.localizedDescription))"))
+            _ = await rebuild(reason: "push")
+        }
+    }
+
+    private func finishText() async -> String? {
+        if !managerIsHealthy {
+            let recovered = await rebuild(reason: "finish")
+            guard recovered else { return nil }
+        }
+        do {
+            return try await finishOnce()
+        } catch {
+            managerIsHealthy = false
+            continuation.yield(.failure("Recognizer stalled while finishing (\(error.localizedDescription))"))
+            guard await rebuild(reason: "finish") else { return nil }
+            do {
+                return try await finishOnce()
+            } catch {
+                managerIsHealthy = false
+                continuation.yield(.failure("Recognizer could not finish (\(error.localizedDescription))"))
+                return nil
+            }
+        }
+    }
+
+    private func finishOnce() async throws -> String {
+        let text = try await withDeadline(deadlines.finish, label: "ASR finish") { [manager] in
+            try await manager.finish()
+        }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func resetManagerIfHealthy() async {
+        guard managerIsHealthy else {
+            // A new segment starts with an empty replay buffer, so swapping in a
+            // fresh recognizer here is cheap and restores live transcription.
+            _ = await rebuild(reason: "reset")
+            return
+        }
+        do {
+            try await withDeadline(deadlines.reset, label: "ASR reset") { [manager] in
+                try await manager.reset()
+            }
+        } catch {
+            managerIsHealthy = false
+            _ = await rebuild(reason: "reset")
+        }
     }
 
     // MARK: - Segment rotation
 
     private func commit(reason: CommitReason) async {
         let end = await commitEndSample(reason: reason)
-        do {
-            let text = try await manager.finish().trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty {
-                continuation.yield(.committed(RawSegment(text: text, startSample: segmentStartSample,
-                                                         endSample: end, source: source)))
-            }
-        } catch {
-            continuation.yield(.failure(error.localizedDescription))
+        if let text = await finishText(), !text.isEmpty {
+            continuation.yield(.committed(RawSegment(text: text, startSample: segmentStartSample,
+                                                     endSample: end, source: source)))
         }
         continuation.yield(.endpoint(end))
-        try? await manager.reset()
         _ = tokenSignal.take()
         _ = endpointSignal.take()
         resetSegment(after: max(end, lastFeedEndSample))
+        await resetManagerIfHealthy()
     }
 
     private func commitEndSample(reason: CommitReason) async -> Int64 {
@@ -214,7 +223,8 @@ public actor FluidAudioRecognitionStream: RecognitionStream {
         if reason == .pause, lastSpeechEndSample > segmentStartSample {
             candidate = lastSpeechEndSample
         }
-        if reason == .nativeEndpoint, let eou = manager as? StreamingEouAsrManager,
+        if reason == .nativeEndpoint, managerIsHealthy,
+           let eou = manager as? StreamingEouAsrManager,
            let milliseconds = await eou.getEouTimestampsMs().last {
             let estimated = segmentStartSample + Int64(milliseconds) * Int64(sampleRate) / 1000
             candidate = min(candidate, max(segmentStartSample, estimated))
@@ -236,12 +246,21 @@ public actor FluidAudioRecognitionStream: RecognitionStream {
     // MARK: - Watchdog
 
     private func recoverFromStall() async {
+        _ = await rebuild(reason: "no transcript while speech was present")
+    }
+
+    /// Builds a fresh recognizer and replays the uncommitted segment into it.
+    /// The previous manager is retired behind a deadline: if it is wedged inside
+    /// Core ML, it is abandoned instead of blocking the audio path forever.
+    private func rebuild(reason: String) async -> Bool {
         guard recoveries < FluidAudioSegmentPolicy.maximumRecoveriesPerSegment else {
             samplesSinceToken = 0
-            return
+            return false
         }
         recoveries += 1
-        let old = manager
+        let previous = manager
+        managerIsHealthy = false
+
         do {
             let rebuilt = try await engineFactory(profileID, modelDirectory)
             await installCallbacks(on: rebuilt)
@@ -249,34 +268,59 @@ public actor FluidAudioRecognitionStream: RecognitionStream {
             var start = 0
             while start < audio.count {
                 let end = min(start + sampleRate, audio.count)
-                try await rebuilt.appendAudio(FluidAudioBuffer.make(Array(audio[start..<end])))
-                try await rebuilt.processBufferedAudio()
+                let block = Array(audio[start..<end])
+                try await withDeadline(deadlines.push, label: "ASR replay") { [rebuilt] in
+                    try await rebuilt.appendAudio(FluidAudioBuffer.make(block))
+                    try await rebuilt.processBufferedAudio()
+                }
                 start = end
             }
-            await old.setPartialTranscriptCallback { _ in }
-            if let eou = old as? StreamingEouAsrManager {
-                await eou.setEouCallback { _ in }
-            }
-            await old.cleanup()
             manager = rebuilt
+            managerIsHealthy = true
             samplesSinceToken = 0
             _ = tokenSignal.take()
+            _ = endpointSignal.take()
+            await retire(previous, reason: reason)
+            return true
         } catch {
+            managerIsHealthy = false
             continuation.yield(.failure("Could not rebuild the recognizer: \(error.localizedDescription)"))
             samplesSinceToken = 0
+            return false
+        }
+    }
+
+    private func retire(_ manager: any StreamingAsrManager, reason: String) async {
+        do {
+            try await withDeadline(deadlines.retire, label: "ASR retire (\(reason))") { [manager] in
+                await manager.setPartialTranscriptCallback { _ in }
+                if let eou = manager as? StreamingEouAsrManager {
+                    await eou.setEouCallback { _ in }
+                }
+                await manager.cleanup()
+            }
+        } catch {
+            // Abandoned. Core ML cannot be cancelled from this process, so the
+            // model stays wedged until it returns on its own or we are killed.
         }
     }
 
     private func installCallbacks(on manager: any StreamingAsrManager) async {
+        let generation = callbacks.advance()
+        let generations = callbacks
         let tokenSignal = tokenSignal
         let endpointSignal = endpointSignal
         let continuation = continuation
         await manager.setPartialTranscriptCallback { text in
+            guard generations.isCurrent(generation) else { return }
             tokenSignal.mark()
             continuation.yield(.partial(text))
         }
         if let eou = manager as? StreamingEouAsrManager {
-            await eou.setEouCallback { _ in endpointSignal.mark() }
+            await eou.setEouCallback { _ in
+                guard generations.isCurrent(generation) else { return }
+                endpointSignal.mark()
+            }
         }
     }
 }

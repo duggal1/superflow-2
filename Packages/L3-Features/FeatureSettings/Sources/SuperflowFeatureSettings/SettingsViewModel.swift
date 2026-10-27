@@ -1,4 +1,5 @@
 import Foundation
+import SuperflowContextProfiles
 import SuperflowDesignSystem
 import SuperflowKernel
 import SuperflowPorts
@@ -14,13 +15,17 @@ public final class SettingsViewModel: ObservableObject {
     @Published public private(set) var error: String?
     @Published public private(set) var asrReady = false
     @Published public private(set) var cleanupReady = false
+    public var cleanupModelInstalled: Bool { cleanupReady }
     @Published public private(set) var diarizationReady = false
     @Published public private(set) var isCheckingModels = false
     @Published public private(set) var isDownloadingASR = false
     @Published public private(set) var isDownloadingCleanup = false
     @Published public private(set) var isDownloadingDiarization = false
     @Published public private(set) var asrProgress: Double?
+    /// Measured wire speed for the running transfer, not an estimate.
+    @Published public private(set) var asrTransfer: TransferSnapshot?
     @Published public private(set) var cleanupProgress: Double?
+    @Published public private(set) var cleanupTransfer: TransferSnapshot?
     @Published public private(set) var diarizationProgress: Double?
     @Published public private(set) var lastDiagnosticsExport: URL?
 
@@ -161,6 +166,18 @@ public final class SettingsViewModel: ObservableObject {
         toast.show("Changes discarded.", style: .info)
     }
 
+    /// Applies a profile to the working copy and offers the previous values
+    /// back. Profiles never write to the store on their own; Save still owns
+    /// persistence.
+    public func applyProfile(_ profile: ContextProfile) {
+        let previous = settings
+        guard !profile.matches(previous) else { return }
+        settings = profile.applying(to: previous)
+        toast.show("\(profile.name) profile applied.", style: .info, actionTitle: "Undo") { [weak self] in
+            self?.settings = previous
+        }
+    }
+
     public func resetToDefaults() {
         var defaults = AppSettings.default
         defaults.onboardingComplete = saved.onboardingComplete
@@ -212,6 +229,12 @@ public final class SettingsViewModel: ObservableObject {
         guard !isDownloadingASR else { return }
         isDownloadingASR = true
         asrProgress = 0
+        asrTransfer = nil
+        let meter = meterTransfer { [weak self] snapshot in self?.asrTransfer = snapshot }
+        defer {
+            meter.cancel()
+            asrTransfer = nil
+        }
         let token = UUID()
         asrDownloadToken = token
         let profileID = settings.asrProfile
@@ -243,6 +266,12 @@ public final class SettingsViewModel: ObservableObject {
         guard !isDownloadingCleanup else { return }
         isDownloadingCleanup = true
         cleanupProgress = 0
+        cleanupTransfer = nil
+        let meter = meterTransfer { [weak self] snapshot in self?.cleanupTransfer = snapshot }
+        defer {
+            meter.cancel()
+            cleanupTransfer = nil
+        }
         let token = UUID()
         cleanupDownloadToken = token
         do {
@@ -295,6 +324,19 @@ public final class SettingsViewModel: ObservableObject {
                        style: .error)
         }
         isDownloadingDiarization = false
+    }
+
+    /// Polls the shared meter while a transfer runs. The transfer layer reports
+    /// on its own queues; the screen only reads the latest reading.
+    private func meterTransfer(
+        _ apply: @escaping @MainActor (TransferSnapshot?) -> Void
+    ) -> Task<Void, Never> {
+        Task { @MainActor in
+            while !Task.isCancelled {
+                apply(DownloadTelemetry.shared.snapshot())
+                try? await Task.sleep(for: .milliseconds(300))
+            }
+        }
     }
 
     // MARK: diagnostics

@@ -85,7 +85,7 @@ public struct HistoryView: View {
                             }
                         } header: {
                             Text(HistoryGrouping.label(for: group.day, today: today))
-                                .font(.system(size: 12))
+                                .font(Typography.secondary)
                                 .foregroundStyle(Tok.text2)
                                 .padding(.horizontal, Space.xs)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -124,11 +124,11 @@ public struct HistoryView: View {
                     }
                     HStack(spacing: Space.xxs) {
                         Text(HistoryGrouping.timeLabel(session.startedAt))
-                            .font(.system(size: 12))
+                            .font(Typography.secondary)
                             .foregroundStyle(Tok.text2)
                         Spacer(minLength: Space.xs)
                         Text("\(session.wordCount.formatted()) words")
-                            .font(.system(size: 12))
+                            .font(Typography.secondary)
                             .monospacedDigit()
                             .foregroundStyle(Tok.text2)
                     }
@@ -170,7 +170,7 @@ public struct HistoryView: View {
             VStack(spacing: Space.sm) {
                 PixelStop(cells: 11, cell: 3)
                 Text("Select a session.")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(Typography.headline)
                     .foregroundStyle(Tok.text)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -180,7 +180,7 @@ public struct HistoryView: View {
     private func header(_ session: SessionRecord) -> some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(AppInfo.name(for: session.frontmostBundleID))
-                .font(.system(size: 15, weight: .medium))
+                .font(Typography.headline)
                 .foregroundStyle(Tok.text)
             HStack(spacing: Space.sm) {
                 Text(HistoryGrouping.timeLabel(session.startedAt))
@@ -191,7 +191,7 @@ public struct HistoryView: View {
                 Text("\(session.wordCount.formatted()) words")
                     .monospacedDigit()
             }
-            .font(.system(size: 12))
+            .font(Typography.secondary)
             .foregroundStyle(Tok.text2)
         }
         .accessibilityElement(children: .combine)
@@ -217,14 +217,14 @@ public struct HistoryView: View {
         VStack(alignment: .leading, spacing: 2) {
             if let speaker = model.speakerName(for: segment) {
                 Text(speaker)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Typography.secondaryMedium)
                     .foregroundStyle(Tok.text2)
             }
             if model.showRaw {
                 Text(rawText(segment))
             } else {
                 Text(model.displayText(for: segment))
-                    .font(.system(size: 15))
+                    .font(Typography.large)
                     .foregroundStyle(Tok.text)
             }
         }
@@ -238,7 +238,7 @@ public struct HistoryView: View {
         let pieces = TextDiff.segments(reference: segment.bestText, candidate: segment.rawText)
         for piece in pieces {
             var run = AttributedString(piece.text)
-            run.font = .system(size: 15)
+            run.font = Typography.large
             run.foregroundColor = piece.changed ? Tok.text : Tok.text2
             if piece.changed { run.backgroundColor = Tok.accentSoft }
             attributed += run

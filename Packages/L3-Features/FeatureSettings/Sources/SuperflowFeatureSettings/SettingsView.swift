@@ -45,10 +45,10 @@ public struct SettingsView: View {
             SearchField(text: $model.searchQuery, prompt: "Search settings", isFocused: $searchFocus)
         } trailing: {
             if model.hasChanges {
-                AppButton("Discard", kind: .quiet, height: Layout.control) {
+                AppButton("Discard", kind: .quiet, height: ControlHeight.regular) {
                     model.revert()
                 }
-                AppButton("Save", kind: .primary, height: Layout.control) {
+                AppButton("Save", kind: .primary, height: ControlHeight.regular) {
                     Task { await model.save() }
                 }
             }
@@ -112,11 +112,11 @@ public struct SettingsView: View {
     private var noticesSheet: some View {
         VStack(alignment: .leading, spacing: Space.md) {
             Text("Third-party notices")
-                .font(.system(size: 15, weight: .medium))
+                .font(Typography.headline)
                 .foregroundStyle(Tok.text)
             ScrollView {
                 Text(model.thirdPartyNotices)
-                    .font(Typography.mono)
+                    .font(Typography.secondary)
                     .foregroundStyle(Tok.text2)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -159,5 +159,15 @@ struct SettingsCard<Content: View>: View {
                 .padding(.horizontal, Space.sm)
             }
         }
+    }
+}
+
+public struct OpenModelsKey: EnvironmentKey {
+    public static let defaultValue: @Sendable () -> Void = {}
+}
+public extension EnvironmentValues {
+    var openModels: @Sendable () -> Void {
+        get { self[OpenModelsKey.self] }
+        set { self[OpenModelsKey.self] = newValue }
     }
 }

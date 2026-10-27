@@ -41,7 +41,7 @@ public struct Badge: View {
 
     public var body: some View {
         Text(text)
-            .font(.system(size: size.font, weight: .regular))
+            .font(Typography.ui(size.font))
             .foregroundStyle(variant.textColor(dark: scheme == .dark))
             .lineLimit(1)
             .fixedSize()
@@ -83,10 +83,10 @@ public struct KeyCap: View {
 
     public var body: some View {
         Text(label)
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(Tok.text)
-            .frame(minWidth: 28, minHeight: 24)
-            .padding(.horizontal, Space.xs)
+            .font(Typography.bodyMedium)
+            .foregroundStyle(Tok.keycapText)
+            .frame(minWidth: 28, minHeight: 28)
+            .padding(.horizontal, Space.sm)
             .background(Tok.controlHover,
                         in: .rect(cornerRadius: Radius.field, style: .continuous))
             .offset(y: down ? 2 : 0)
@@ -118,17 +118,18 @@ public struct Metric: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 if let glyph {
                     Icon(glyph, size: 14, tint: Tok.text2)
+                        .frame(width: 16, height: 16)
                 }
                 Text(label)
                     .font(.system(size: 12))
                     .foregroundStyle(Tok.text2)
             }
             Text(value)
-                .font(Typography.metric)
+                .font(.system(size: 28, weight: .medium))
                 .monospacedDigit()
                 .foregroundStyle(Tok.text)
                 .contentTransition(reduceMotion ? .identity : .numericText())
@@ -141,7 +142,9 @@ public struct Metric: View {
     }
 }
 
-/// Step progress without a bar: the active capsule widens.
+/// Step progress without a bar: the active capsule widens and carries the accent,
+/// the trail behind it is the same blue one step quieter, and what is still ahead
+/// is a neutral surface step. Sizes stay on the 4pt grid (16 / 4, gap 8, height 4).
 public struct ProgressDots: View {
     private let step: Int
     private let count: Int
@@ -153,17 +156,23 @@ public struct ProgressDots: View {
     }
 
     public var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Space.xs) {
             ForEach(0..<count, id: \.self) { index in
                 Capsule()
-                    .fill(index == step ? Tok.accent
-                          : index < step ? Tok.accent.opacity(0.45) : Tok.controlHover)
-                    .frame(width: index == step ? 20 : 6, height: 4)
+                    .fill(color(index))
+                    .frame(width: index == step ? 16 : 4, height: 4)
             }
         }
         .animation(reduceMotion ? nil : Motion.settle, value: step)
         .accessibilityElement()
         .accessibilityLabel("Step \(step + 1) of \(count)")
+    }
+
+    /// Current, reached, ahead. The 45% tint is the trail fading out, not a text
+    /// hierarchy: it is the only two-step tint in the app and it belongs to progress.
+    private func color(_ index: Int) -> Color {
+        if index == step { return Tok.accent }
+        return index < step ? Tok.accent.opacity(0.45) : Tok.controlHover
     }
 }
 
@@ -202,7 +211,6 @@ public struct NoticeBanner: View {
     }
 }
 
-/// Compact inline progress for the Island only. Pages use `ProgressRow`.
 public struct ProgressBar: View {
     public let value: Double
     public var height: CGFloat
@@ -229,5 +237,48 @@ public struct ProgressBar: View {
         .accessibilityElement()
         .accessibilityLabel("Progress")
         .accessibilityValue("\(Int(value * 100)) percent")
+    }
+}
+
+public enum DotLevel: Sendable {
+    case info, warning, success, error
+    public var tone: DotTone {
+        switch self {
+        case .info: .blue
+        case .warning: .orange
+        case .success: .green
+        case .error: .rose
+        }
+    }
+}
+
+public struct Dot: View {
+    public let level: DotLevel
+    public var size: CGFloat = 6
+    public init(level: DotLevel, size: CGFloat = 6) {
+        self.level = level
+        self.size = size
+    }
+    public var body: some View {
+        DotView(level.tone, size: size)
+    }
+}
+
+public struct StatusNote: View {
+    public let text: String
+    public var level: DotLevel = .warning
+    public init(text: String, level: DotLevel = .warning) {
+        self.text = text
+        self.level = level
+    }
+    public var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Dot(level: level).frame(width: 6, height: 6)
+            Text(text).font(.system(size: 13)).foregroundStyle(Tok.text2).frame(height: 16)
+        }
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+        .background(Tok.surface, in: .rect(cornerRadius: Radius.nested, style: .continuous))
+        .modifier(ContrastStroke(radius: Radius.nested))
     }
 }

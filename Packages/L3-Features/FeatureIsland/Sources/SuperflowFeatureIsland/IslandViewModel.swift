@@ -83,6 +83,17 @@ public final class IslandViewModel: ObservableObject {
         }
     }
 
+    /// The concrete reason behind "Needs attention". The compact pill used to show only the
+    /// generic label, so a refused start or a degraded session looked like a mystery; the engine
+    /// already knows why, so surface it next to the label.
+    public var reason: String? {
+        switch phase {
+        case .failed(let message) where !message.isEmpty: return message
+        case .degraded(let message) where !message.isEmpty: return message
+        default: return notice
+        }
+    }
+
     public var elapsedLabel: String {
         let seconds = max(0, elapsedMs) / 1000
         let minutes = seconds / 60

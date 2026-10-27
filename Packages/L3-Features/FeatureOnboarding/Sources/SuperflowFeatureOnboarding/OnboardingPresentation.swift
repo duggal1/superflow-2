@@ -6,6 +6,11 @@ import SuperflowUIComponents
 import SwiftUI
 
 /// Rows the steps reuse. A row never owns state: the model does.
+///
+/// One shape for both rows: what it is on the left, what it wants on the right.
+/// There is no leading glyph, because the title already names the thing and a
+/// second symbol for one fact is noise. The trailing column is the only place
+/// the state appears, and it is always one control wide.
 enum OnboardingPresentation {
     /// Title, one-line reason, trailing control. Never a divider between rows.
     struct PermissionRow: View {
@@ -16,21 +21,21 @@ enum OnboardingPresentation {
 
         var body: some View {
             let status = model.status(for: permission)
-            HStack(spacing: Space.sm) {
-                Icon(glyph, size: 14, tint: status.isGranted ? Tok.text2 : Tok.text)
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: Space.md) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(permission.label)
                         .font(Typography.bodyMedium)
                         .foregroundStyle(Tok.text)
                     Text(permission.rationale)
-                        .font(Typography.secondary)
+                        .font(Typography.readingSmall)
+                        .tracking(Typography.readingTracking)
                         .foregroundStyle(Tok.text2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: Space.md)
                 control(status)
             }
-            .frame(minHeight: 44)
+            .frame(minHeight: 52)
             .accessibilityElement(children: .contain)
         }
 
@@ -38,21 +43,11 @@ enum OnboardingPresentation {
         private func control(_ status: PermissionStatus) -> some View {
             switch status {
             case .granted:
-                Icon(.checkmark, size: 12, weight: .medium, tint: Tok.accentText)
-                    .accessibilityLabel("Granted")
+                Badge("Granted", variant: .green, size: .sm)
             case .denied:
-                AppButton("Open Settings", kind: .quiet, action: open)
+                AppButton("Open Settings", kind: .link, action: open)
             case .notDetermined:
                 AppButton("Grant", kind: accent ? .primary : .quiet, action: request)
-            }
-        }
-
-        private var glyph: Glyph {
-            switch permission {
-            case .microphone: .mic
-            case .accessibility: .accessibility
-            case .inputMonitoring: .keyboard
-            case .systemAudio: .speaker
             }
         }
 
@@ -71,27 +66,31 @@ enum OnboardingPresentation {
         @ObservedObject var model: OnboardingViewModel
 
         var body: some View {
-            HStack(spacing: Space.sm) {
-                Icon(.keyboard, size: 14, tint: model.globeConflict ? Tok.text : Tok.text2)
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: Space.md) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     Text("Globe key")
                         .font(Typography.bodyMedium)
                         .foregroundStyle(Tok.text)
                     Text(reason)
-                        .font(Typography.secondary)
+                        .font(Typography.readingSmall)
+                        .tracking(Typography.readingTracking)
                         .foregroundStyle(Tok.text2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: Space.md)
-                if model.globeConflict {
-                    AppButton("Open Keyboard settings", kind: .quiet, action: open)
-                } else if model.globeChecked {
-                    Icon(.checkmark, size: 12, weight: .medium, tint: Tok.accentText)
-                        .accessibilityLabel("Set to Do Nothing")
-                }
+                control
             }
-            .frame(minHeight: 44)
+            .frame(minHeight: 52)
             .accessibilityElement(children: .contain)
+        }
+
+        @ViewBuilder
+        private var control: some View {
+            if model.globeConflict {
+                AppButton("Open Keyboard settings", kind: .link, action: open)
+            } else if model.globeChecked {
+                Badge("Ready", variant: .green, size: .sm)
+            }
         }
 
         private var reason: String {
@@ -101,7 +100,7 @@ enum OnboardingPresentation {
             if model.globeConflict {
                 return "macOS uses it for “\(model.globeAction.label)”."
             }
-            return "Set to Do Nothing."
+            return "Set to Do Nothing, so fn is free."
         }
 
         private func open() {

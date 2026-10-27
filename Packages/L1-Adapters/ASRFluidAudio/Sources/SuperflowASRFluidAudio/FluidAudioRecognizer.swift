@@ -96,6 +96,7 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
             let manager = try await task.value
             preparing[profileID] = nil
             preparedProfiles.insert(profileID)
+            await Self.warmPredictions(manager)
             await pool.release(manager, profileID: profileID)
             progress(1)
         } catch {
@@ -132,6 +133,7 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
             let manager = try await task.value
             preparing[profile.id] = nil
             preparedProfiles.insert(profile.id)
+            await Self.warmPredictions(manager)
             await pool.release(manager, profileID: profile.id)
         } catch {
             preparing[profile.id] = nil
@@ -179,6 +181,20 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
 
     private func returnEngine(_ manager: any StreamingAsrManager, profileID: String) async {
         await pool.release(manager, profileID: profileID)
+    }
+
+    /// Load plus one dummy prediction. The first prediction triggers Core ML's
+    /// ANE specialization and warms the decode buffers; paying it at launch keeps
+    /// it off the record path. Best effort: a failed warm-up must not fail prepare.
+    private static func warmPredictions(_ manager: any StreamingAsrManager) async {
+        // 4 s of silence covers the largest streaming chunk in the catalog
+        // (2,240 ms) with margin; FluidAudio re-chunks internally.
+        let silence = [Float](repeating: 0, count: sampleRate * 4)
+        guard let buffer = try? FluidAudioBuffer.make(silence) else { return }
+        try? await manager.appendAudio(buffer)
+        try? await manager.processBufferedAudio()
+        _ = try? await manager.finish()
+        try? await manager.reset()
     }
 
     private func makeVoiceActivity() async -> any VoiceActivityClassifying {

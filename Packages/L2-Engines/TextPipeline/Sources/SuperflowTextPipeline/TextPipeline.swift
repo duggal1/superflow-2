@@ -23,6 +23,27 @@ public struct PipelineResult: Sendable, Equatable {
     public var text: String { draft.text }
 }
 
+public struct StageExplanation: Sendable, Equatable {
+    public var stageID: String
+    public var edits: [TextEdit]
+    public init(stageID: String, edits: [TextEdit]) {
+        self.stageID = stageID
+        self.edits = edits
+    }
+}
+
+/// The normal pipeline result plus per-stage provenance. Produced only on
+/// demand; the recording path never asks for it.
+public struct PipelineExplanation: Sendable, Equatable {
+    public var result: PipelineResult
+    public var stages: [StageExplanation]
+    public init(result: PipelineResult, stages: [StageExplanation]) {
+        self.result = result
+        self.stages = stages
+    }
+    public var edits: [TextEdit] { stages.flatMap(\.edits) }
+}
+
 /// Runs text stages in order. A shortcut expansion stops the pipeline immediately.
 /// The pipeline itself cannot throw; each stage owns its own failure fallback.
 public struct TextPipeline: Sendable {
@@ -69,5 +90,54 @@ public struct TextPipeline: Sendable {
             }
         }
         return PipelineResult(draft: draft, timings: timings, shortCircuitedBy: shortCircuitedBy)
+    }
+
+    /// Same stages and the same failure rules as `run`, but records one
+    /// explanation per executed stage. Deterministic stages are diffed at word
+    /// level; a stage that conforms to `ExplainingTextStage` may name the exact
+    /// rule instead. The model stage is aligned by the same word diff.
+    public func explain(_ text: String, context: TextContext,
+                        protected: Protected = Protected()) async -> PipelineExplanation {
+        var draft = TranscriptDraft(text: text, protected: protected)
+        draft.protected.literals.formUnion(seedProtected)
+        var timings: [StageTiming] = []
+        var explanations: [StageExplanation] = []
+        var shortCircuitedBy: String?
+
+        for stage in stages {
+            let before = draft
+            let started = DispatchTime.now().uptimeNanoseconds
+            draft = await stage.apply(draft, context: context)
+            let elapsed = Int((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000)
+            timings.append(StageTiming(id: stage.id, ms: elapsed))
+
+            if draft.text.isEmpty, !before.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                draft = before
+                draft.diagnostics.append(Diagnostic(stage: stage.id,
+                    message: "stage returned empty text; reverted to input"))
+                explanations.append(StageExplanation(stageID: stage.id, edits: []))
+            } else {
+                let edits = await Self.edits(for: stage, before: before, after: draft, context: context)
+                explanations.append(StageExplanation(stageID: stage.id, edits: edits))
+            }
+
+            if draft.shortCircuit {
+                shortCircuitedBy = stage.id
+                break
+            }
+        }
+        return PipelineExplanation(
+            result: PipelineResult(draft: draft, timings: timings, shortCircuitedBy: shortCircuitedBy),
+            stages: explanations)
+    }
+
+    private static func edits(for stage: any TextStage, before: TranscriptDraft,
+                              after: TranscriptDraft, context: TextContext) async -> [TextEdit] {
+        guard before.text != after.text else { return [] }
+        if let explaining = stage as? any ExplainingTextStage,
+           let edits = await explaining.explainEdits(before: before, after: after, context: context) {
+            return edits
+        }
+        return TextWordDiff.edits(stageID: stage.id, before: before.text, after: after.text)
     }
 }

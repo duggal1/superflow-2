@@ -27,10 +27,12 @@ public enum DashboardCopy {
 @MainActor
 public final class DashboardViewModel: ObservableObject {
     @Published public private(set) var summary = StatsSummary()
-    @Published public private(set) var contributions: [ContributionGridDay] = []
+    @Published public private(set) var activity: [ActivityDay] = []
     @Published public private(set) var insights: DashboardInsights = .empty
     @Published public private(set) var isLoading = false
     @Published public private(set) var error: String?
+    /// The physical fn key. The cleanup keycap goes down with it.
+    @Published public private(set) var isFnHeld = false
 
     private let repository: any TranscriptRepository
     private let calendar: Calendar
@@ -43,6 +45,11 @@ public final class DashboardViewModel: ObservableObject {
         self.settings = settings
         self.calendar = calendar
         self.now = now
+    }
+
+    public func setFnHeld(_ held: Bool) {
+        guard isFnHeld != held else { return }
+        isFnHeld = held
     }
 
     public func update(settings: AppSettings) {
@@ -66,9 +73,20 @@ public final class DashboardViewModel: ObservableObject {
             dailyCache = daily
             summary = StatsEngine.summary(daily: daily, typingWPM: settings.typingWPM,
                                           today: now(), calendar: calendar)
-            contributions = StatsEngine.contributions(daily: daily, endingOn: now(),
-                                                      calendar: calendar).map {
-                ContributionGridDay(day: $0.day, words: $0.words, level: $0.level, isFuture: $0.isFuture)
+            let end = calendar.startOfDay(for: now())
+            guard let start = calendar.date(byAdding: .day, value: -364, to: end) else { return }
+            let wordsByDay = Dictionary(daily.map { ($0.day, $0.words) }, uniquingKeysWith: +)
+            var words: [Int] = []
+            var dates: [Date] = []
+            for offset in 0..<365 {
+                guard let date = calendar.date(byAdding: .day, value: offset, to: start) else { continue }
+                dates.append(date)
+                let key = LocalDay.string(for: date, calendar: calendar)
+                words.append(wordsByDay[key] ?? 0)
+            }
+            let levels = ActivityLevel.assign(words)
+            activity = zip(dates, zip(words, levels)).map { d, wl in
+                ActivityDay(date: d, words: wl.0, level: wl.1)
             }
             insights = await DashboardInsightsLoader.load(repository: repository,
                                                           now: now(),
@@ -105,7 +123,6 @@ public final class DashboardViewModel: ObservableObject {
     public var streak: String { streakLabel }
     public var sessionsNote: String { sessionsLabel }
     public var todayNote: String { todayLabel }
-    public var levels: [ContributionGridDay] { contributions }
 
     public var wordsLabel: String { summary.totalWords.formatted() }
     public var timeSavedLabel: String { summary.timeSavedLabel }
@@ -118,7 +135,13 @@ public final class DashboardViewModel: ObservableObject {
     public var todayLabel: String {
         summary.todayWords == 1 ? "1 word today" : "\(summary.todayWords.formatted()) words today"
     }
+    /// `daily_stats.sessions` is a running counter, and deleting a session writes
+    /// `sessions: -1` into the row for that day (HistoryViewModel.deleteSelected).
+    /// Deleting a session that predates the 365-day window — or deleting without a
+    /// matching increment — drives the column below zero, and StatsEngine sums it.
+    /// The count is clamped here, so the ledger can never read "-1 sessions".
     public var sessionsLabel: String {
-        summary.totalSessions == 1 ? "1 session" : "\(summary.totalSessions.formatted()) sessions"
+        let n = max(summary.totalSessions, 0)
+        return "\(n) \(n == 1 ? "session" : "sessions")"
     }
 }

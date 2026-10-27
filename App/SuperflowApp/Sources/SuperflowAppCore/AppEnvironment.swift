@@ -166,6 +166,21 @@ public final class AppEnvironment {
                               keepJournals: settings.keepJournals, cleaner: cleaner)
     }
 
+    /// Fn is Superflow's dictation key, and macOS shows Emoji & Symbols for the Globe key until
+    /// `AppleFnUsageType` is written. Put that preference in the state the Keyboard pane calls
+    /// Do Nothing. The system can keep the old binding until the next login, which is why the
+    /// event tap also swallows the lone Fn press.
+    public func claimFunctionKey() {
+        GlobeKeyOwnership.enforceDoNothing()
+    }
+
+    /// Swallowing an event needs an active tap, so Fn suppression depends on Accessibility.
+    /// Called before the hotkeys start and again whenever that grant changes.
+    public func refreshFunctionKeySuppression() async {
+        let canSwallow = await permissionGate.status(.accessibility) == .granted
+        await hotkeySource.setFnSuppression(canSwallow)
+    }
+
     public func prepareInstalledCleanupModel() async -> Bool {
         guard await modelProvider.llmModelURL() != nil else { return false }
         do {

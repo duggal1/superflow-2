@@ -15,6 +15,9 @@ public actor MeetingEngine {
     static let residentTurnLimit = 512
     static let noticeLimit = 50
     static let droppedIndexLimit = 512
+    /// Bound around the model warm-up. A Core ML call cannot be cancelled, so the deadline
+    /// abandons it instead of holding the meeting in `warming` forever.
+    static let modelDeadline: Duration = .seconds(120)
 
     let mic: any AudioSource
     let system: (any AudioSource)?
@@ -93,8 +96,13 @@ public actor MeetingEngine {
         reset()
         transition(.warming)
         do {
-            if await !recognizer.isReady {
-                try await recognizer.warmUp(profile: newRecord.modelProfile)
+            // Warm the exact profile this meeting will use. `isReady` only reports that *some*
+            // profile is resident, so gating on it let the start pass and then fail later with
+            // `invalidState` when the stream asked for a profile that was never prepared.
+            let recognizer = self.recognizer
+            let profile = newRecord.modelProfile
+            try await withDeadline(Self.modelDeadline, label: "model warm-up") {
+                try await recognizer.warmUp(profile: profile)
             }
             await diarizer?.beginSession()
             if let diarizer, await !diarizer.isReady() {

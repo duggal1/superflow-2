@@ -35,7 +35,7 @@ final class DashboardViewModelTests: XCTestCase {
         XCTAssertEqual(DashboardCopy.greeting(name: "you", hour: 21), "Good evening.")
     }
 
-    func testLoadAggregatesStatsAndContributions() async throws {
+    func testLoadAggregatesStatsAndActivity() async throws {
         let repository = InMemoryRepository()
         try await repository.addDailyStat(DailyStat(day: "2026-03-14", words: 100,
                                                     audioMs: 30_000, sessions: 1))
@@ -56,8 +56,34 @@ final class DashboardViewModelTests: XCTestCase {
         XCTAssertEqual(model.speedLabel, "400 wpm")
         XCTAssertEqual(model.streakLabel, "2 days")
         XCTAssertEqual(model.todayLabel, "300 words today")
-        XCTAssertEqual(model.contributions.count, 371)
+        XCTAssertEqual(model.sessionsLabel, "3 sessions")
+        // The year is 365 days, oldest first, ending on today.
+        XCTAssertEqual(model.activity.count, 365)
+        XCTAssertEqual(model.activity.last?.date, calendar.startOfDay(for: now))
         XCTAssertTrue(model.hasActivity)
+    }
+
+    /// `daily_stats.sessions` can be driven below zero by a delete, so the ledger
+    /// clamps it rather than printing "-1 sessions".
+    func testNegativeSessionCountIsClamped() async throws {
+        let repository = InMemoryRepository()
+        try await repository.addDailyStat(DailyStat(day: "2026-03-15", words: 10,
+                                                    audioMs: 1_000, sessions: -4))
+        let model = DashboardViewModel(repository: repository, calendar: calendar,
+                                       now: { self.now })
+        await model.load()
+        XCTAssertEqual(model.summary.totalSessions, -4)
+        XCTAssertEqual(model.sessionsLabel, "0 sessions")
+    }
+
+    func testOneSessionReadsInTheSingular() async throws {
+        let repository = InMemoryRepository()
+        try await repository.addDailyStat(DailyStat(day: "2026-03-15", words: 10,
+                                                    audioMs: 1_000, sessions: 1))
+        let model = DashboardViewModel(repository: repository, calendar: calendar,
+                                       now: { self.now })
+        await model.load()
+        XCTAssertEqual(model.sessionsLabel, "1 session")
     }
 
     func testEmptyRepositoryHasNoActivity() async throws {
@@ -68,7 +94,8 @@ final class DashboardViewModelTests: XCTestCase {
         XCTAssertEqual(model.wordsLabel, "0")
         XCTAssertEqual(model.speedLabel, "—")
         XCTAssertEqual(model.streakLabel, "0 days")
-        XCTAssertEqual(model.contributions.count, 371)
+        XCTAssertEqual(model.activity.count, 365)
+        XCTAssertTrue(model.activity.allSatisfy { $0.words == 0 && $0.level == 0 })
     }
 
     func testUpdateSettingsRecomputesSummaryWithoutReloading() async throws {

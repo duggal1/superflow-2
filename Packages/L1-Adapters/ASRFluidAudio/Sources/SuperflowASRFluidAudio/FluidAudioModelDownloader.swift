@@ -27,21 +27,90 @@ public struct FluidAudioModelHubDownloader: FluidAudioModelDownloading {
         let handler: ProgressHandler = { update in progress(update.fractionCompleted) }
         progress(0)
 
+        // FluidAudio reports a fraction only, so speed is measured where the
+        // bytes actually land: the size of the profile's cache directory. The
+        // total is not published up front, so the meter carries bytes and MB/s
+        // without inventing a percentage of its own.
+        let directory = FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: cacheRoot)
+        DownloadTelemetry.shared.begin(label: profile.id, totalBytes: nil)
+        let meter = ModelDirectoryMeter(directory: directory)
+        meter.start()
+        defer {
+            meter.stop()
+            DownloadTelemetry.shared.end()
+        }
+
+        // Files, connections and stall detection are already resumable and
+        // parallel inside FluidAudio; raise the fan-out so a fast link is not
+        // limited to four files at a time, and keep the stall watchdog at a
+        // minute instead of two so a frozen CDN connection retries sooner.
+        let config = DownloadConfig(timeout: 60 * 60,
+                                    minStallBytes: 1 << 20,
+                                    stallWindow: 60,
+                                    maxConcurrentFiles: 8)
+
         switch profile.engine {
         case .streaming(let variant):
             // `additionalModelNames` carries the catalog's exact artifact list so the download
             // covers context-specific encoders (for example Parakeet Unified's latency tier).
             try await ModelHub.download(variant.repo, to: cacheRoot,
                                         additionalModelNames: Set(profile.requiredArtifacts),
+                                        config: config,
                                         progressHandler: handler)
         case .nemotronMultilingual(let languageDirectory, let chunkMs):
             try await ModelHub.download(.nemotronMultilingual,
                                         subdirectory: "\(languageDirectory)/\(chunkMs)ms",
                                         to: cacheRoot,
+                                        config: config,
                                         progressHandler: handler,
                                         shouldSkip: { $0.contains(".mlpackage") })
         }
         progress(1)
+    }
+}
+
+/// Samples the on-disk size of one model directory while it downloads. This is
+/// the only byte source FluidAudio exposes, and it is a real one: the bytes on
+/// disk are the bytes that arrived.
+final class ModelDirectoryMeter: @unchecked Sendable {
+    private let directory: URL
+    private let queue = DispatchQueue(label: "com.superflow.model-download-meter")
+    private var timer: DispatchSourceTimer?
+
+    init(directory: URL) {
+        self.directory = directory
+    }
+
+    func start() {
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + .milliseconds(300), repeating: .milliseconds(400))
+        timer.setEventHandler { [weak self] in self?.sample() }
+        timer.resume()
+        self.timer = timer
+    }
+
+    func stop() {
+        timer?.cancel()
+        timer = nil
+    }
+
+    private func sample() {
+        DownloadTelemetry.shared.record(receivedBytes: Self.size(of: directory))
+    }
+
+    static func size(of directory: URL) -> Int64 {
+        let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey]
+        guard let enumerator = FileManager.default.enumerator(at: directory,
+                                                              includingPropertiesForKeys: keys) else {
+            return 0
+        }
+        var total: Int64 = 0
+        for case let url as URL in enumerator {
+            guard let values = try? url.resourceValues(forKeys: Set(keys)),
+                  values.isRegularFile == true else { continue }
+            total += Int64(values.fileSize ?? 0)
+        }
+        return total
     }
 }
 

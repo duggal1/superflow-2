@@ -16,12 +16,13 @@ public struct LexiconWarning: Sendable, Equatable {
 /// triggers are allowed, the longest match wins, and each line is rewritten in
 /// a single pass. Terms normalize away case, spacing, hyphens, dots and the
 /// spoken word "dot". Corrections map a model output form to the user's form.
-public struct LexiconStage: TextStage {
+public struct LexiconStage: ExplainingTextStage {
     public let id: String
     public let warnings: [LexiconWarning]
     public let entryCount: Int
     private let trie: LexiconTrie
     private let canonicals: [String]
+    private let ruleIDs: [String]
 
     public init(entries: [LexiconEntry], id: String = "lexicon") {
         self.id = id
@@ -37,6 +38,7 @@ public struct LexiconStage: TextStage {
 
         var trie = LexiconTrie()
         var canonicals: [String] = []
+        var ruleIDs: [String] = []
         var owner: [String: Int] = [:]
         var seenWarnings = Set<String>()
         var warnings: [LexiconWarning] = []
@@ -62,6 +64,7 @@ public struct LexiconStage: TextStage {
                 }
                 owner[key] = canonicals.count
                 canonicals.append(entry.canonical)
+                ruleIDs.append(entry.id)
                 trie.insert(Array(key), entry: canonicals.count - 1)
             }
             for trigger in triggers where CommonWords.isRisky(trigger: trigger) {
@@ -72,6 +75,7 @@ public struct LexiconStage: TextStage {
 
         self.trie = trie
         self.canonicals = canonicals
+        self.ruleIDs = ruleIDs
         self.entryCount = ordered.count
         self.warnings = warnings
     }
@@ -90,11 +94,22 @@ public struct LexiconStage: TextStage {
         return output
     }
 
-    private func replaceLine(_ line: String, protected: Protected, found: inout Set<String>) -> String {
+    private func replaceLine(_ line: String, protected: Protected, found: inout Set<String>,
+                             record: ((Range<String.Index>, String, String, Int) -> Void)? = nil) -> String {
         let stream = LexiconStream.build(line)
         guard !stream.tokens.isEmpty else { return line }
         let ranges = protected.ranges(in: line, detect: true)
         var out: [String] = []
+        var outputUTF16 = 0
+
+        func append(_ piece: String) -> Int {
+            if !out.isEmpty { outputUTF16 += 1 }
+            let start = outputUTF16
+            out.append(piece)
+            outputUTF16 += piece.utf16.count
+            return start
+        }
+
         var index = 0
         while index < stream.tokens.count {
             let start = stream.tokenStart[index]
@@ -107,16 +122,52 @@ public struct LexiconStage: TextStage {
                     }
                     if !blocked {
                         let canonical = canonicals[match.entry]
-                        out.append(stream.tokens[index].lead + canonical + stream.tokens[last].trail)
+                        let lead = stream.tokens[index].lead
+                        let trail = stream.tokens[last].trail
+                        let startOffset = append(lead + canonical + trail)
+                        record?(stream.tokens[index].range.lowerBound..<stream.tokens[last].range.upperBound,
+                                canonical, ruleIDs[match.entry], startOffset + lead.utf16.count)
                         found.insert(canonical)
                         index = last + 1
                         continue
                     }
                 }
             }
-            out.append(stream.tokens[index].full)
+            _ = append(stream.tokens[index].full)
             index += 1
         }
         return out.joined(separator: " ")
+    }
+
+    public func explainEdits(before: TranscriptDraft, after: TranscriptDraft,
+                             context: TextContext) async -> [TextEdit]? {
+        var found = Set<String>()
+        var edits: [TextEdit] = []
+        var rebuilt: [String] = []
+        var inputLineStart = 0
+        var outputLineStart = 0
+        let lines = before.text.components(separatedBy: "\n")
+
+        for (lineIndex, line) in lines.enumerated() {
+            var recorded: [(TextSpan, TextSpan, String)] = []
+            let rewritten = replaceLine(line, protected: before.protected, found: &found) {
+                input, canonical, ruleID, outputStart in
+                let local = NSRange(input, in: line)
+                recorded.append((TextSpan(location: inputLineStart + local.location, length: local.length),
+                                 TextSpan(location: outputLineStart + outputStart,
+                                          length: canonical.utf16.count),
+                                 ruleID))
+            }
+            rebuilt.append(rewritten)
+            for (input, output, ruleID) in recorded {
+                edits.append(TextEdit(stageID: id, ruleID: ruleID, kind: .replace,
+                                      input: input, output: output))
+            }
+            inputLineStart += (line as NSString).length + (lineIndex < lines.count - 1 ? 1 : 0)
+            outputLineStart += rewritten.utf16.count + (lineIndex < lines.count - 1 ? 1 : 0)
+        }
+
+        guard rebuilt.joined(separator: "\n") == after.text else { return nil }
+        return edits.isEmpty ? nil : edits
     }
 }

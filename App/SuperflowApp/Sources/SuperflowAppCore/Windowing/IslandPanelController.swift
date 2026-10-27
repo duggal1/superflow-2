@@ -199,11 +199,9 @@ private struct IslandPanelContent: View {
             .contextMenu {
                 Button("Stop", systemImage: "stop.fill", action: actions.stop)
                 Button("Cancel", systemImage: "xmark", action: actions.cancel)
-                Divider()
                 Button("Open App", systemImage: "macwindow", action: actions.openApp)
                 Button("Settings", systemImage: "gearshape", action: actions.openSettings)
                 Button("Reset Position", systemImage: "arrow.uturn.backward", action: resetPosition)
-                Divider()
                 Button("Quit Superflow", systemImage: "power", action: actions.quit)
             }
     }

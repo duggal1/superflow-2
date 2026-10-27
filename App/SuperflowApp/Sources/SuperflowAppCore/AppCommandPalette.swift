@@ -31,6 +31,7 @@ enum AppCommandPalette {
         case .dictionary: .dictionary
         case .shortcuts: .shortcuts
         case .meetings: .meetings
+        case .models: .models
         case .settings: .settings
         }
     }

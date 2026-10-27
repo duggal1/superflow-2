@@ -69,14 +69,15 @@ public struct IslandView: View {
             .onEnded { _ in lastDragTranslation = .zero }
         )
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Superflow \(model.modeLabel)")
+        .accessibilityLabel(model.reason.map { "Superflow \(model.modeLabel): \($0)" }
+                            ?? "Superflow \(model.modeLabel)")
     }
 
     private var idlePill: some View {
         HStack(spacing: Space.sm) {
             Icon(.waveform, size: 14, tint: Tok.accent)
             Text("Superflow")
-                .font(.system(size: 12, weight: .medium))
+                .font(Typography.secondaryMedium)
                 .foregroundStyle(Tok.text)
             Spacer(minLength: Space.xs)
             Text("Hold Fn")
@@ -98,9 +99,15 @@ public struct IslandView: View {
                     stateIndicator
                     VStack(alignment: .leading, spacing: 1) {
                         Text(model.modeLabel)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(Typography.secondaryMedium)
                             .foregroundStyle(Tok.text)
-                        if model.phase.isActive {
+                        if let reason = model.reason {
+                            Text(reason)
+                                .font(.system(size: 10, weight: .regular))
+                                .foregroundStyle(Tok.text2)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        } else if model.phase.isActive {
                             Text(model.elapsedLabel)
                                 .font(.system(size: 10, weight: .regular).monospacedDigit())
                                 .foregroundStyle(Tok.text2)
@@ -189,7 +196,7 @@ public struct IslandView: View {
             ProgressBar(value: max(0.08, model.progress), height: 3)
                 .frame(width: 46)
         case .listening:
-            WaveformView(levels: model.levels, tint: Tok.accent, barWidth: 2, spacing: 2)
+            LevelsWaveform(levels: model.levels, barWidth: 2, spacing: 2)
                 .frame(width: 46, height: 16)
         case .finalizing:
             ProgressBar(value: max(0.08, model.progress), height: 3)

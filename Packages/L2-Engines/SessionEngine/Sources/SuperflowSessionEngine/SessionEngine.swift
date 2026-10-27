@@ -31,8 +31,14 @@ public actor SessionEngine {
     private var lastEndMs = 0
     private var cumulativeTokenCount = 0
     private var levelCounter = 0
+    private var journalWarned = false
     private var insertionMs = 3_000
-    private var finalizeMs = 10_000
+    /// Bounded model waits. A Core ML call cannot be cancelled, so a deadline abandons the call
+    /// and lets the session continue instead of wedging in `warming`/`finalizing` forever. The
+    /// warm-up bound is generous because the first prediction on a cold machine pays the ANE
+    /// specialization cost.
+    private let modelDeadline: Duration = .seconds(120)
+    private let finishDeadline: Duration = .seconds(20)
 
     public init(audio: any AudioSource, recognizer: any SpeechRecognizer, pipeline: TextPipeline,
                 repository: any TranscriptRepository, journals: any JournalStore,
@@ -77,7 +83,11 @@ public actor SessionEngine {
         guard state == .idle else { return false }
         transition(.warming)
         do {
-            try await recognizer.warmUp(profile: settings.asrProfile)
+            let recognizer = self.recognizer
+            let profile = settings.asrProfile
+            try await withDeadline(modelDeadline, label: "model warm-up") {
+                try await recognizer.warmUp(profile: profile)
+            }
             transition(.idle)
             return true
         } catch {
@@ -108,16 +118,25 @@ public actor SessionEngine {
         transition(.warming)
 
         do {
-            if await !recognizer.isReady {
-                try await recognizer.warmUp(profile: newRecord.modelProfile)
+            // Warm the exact profile this session will use. `isReady` only reports that *some*
+            // profile is resident, so gating on it let a session pass the check and then throw
+            // `invalidState` from `makeStream` for a profile that was never prepared. `warmUp`
+            // is idempotent and returns immediately once the profile is loaded.
+            let recognizer = self.recognizer
+            let profile = newRecord.modelProfile
+            try await withDeadline(modelDeadline, label: "model warm-up") {
+                try await recognizer.warmUp(profile: profile)
             }
-            // Refuse to start when the disk is full: recording without a durable journal would
-            // silently lose audio. The catch below finalizes the session as failed and rethrows.
+            // A low disk no longer blocks recording. The lane opens degraded (no journal, no
+            // crash recovery) and the session reports it instead of refusing to start.
             let journalWriter = try await journals.openWriter(session: newRecord.id, source: .mic,
                                                               startingSample: 0)
             writer = journalWriter
+            await reportJournalIfDegraded(journalWriter)
             let streams = try await audio.start()
-            let recognition = try await recognizer.makeStream(profile: newRecord.modelProfile, source: .mic)
+            let recognition = try await withDeadline(modelDeadline, label: "recognition stream") {
+                try await recognizer.makeStream(profile: profile, source: .mic)
+            }
             recognitionStream = recognition
             let eventContinuation = continuation
             let cleanup = SessionCleanupCoordinator(repository: repository, sessionID: newRecord.id,
@@ -164,16 +183,34 @@ public actor SessionEngine {
         let started = DispatchTime.now().uptimeNanoseconds
 
         await audio.stop()
-        if let sampleTask { await sampleTask.value }
+        // Both consumers touch the model, so both are bounded: a stuck prediction must not hold
+        // the session in `finalizing` forever. The abandoned call keeps running and is dropped.
+        if let sampleTask {
+            let task = sampleTask
+            _ = try? await withDeadline(finishDeadline, label: "capture drain") { await task.value }
+            task.cancel()
+        }
         sampleTask = nil
-        await recognitionStream?.finish()
-        if let recognitionTask { await recognitionTask.value }
+        if let stream = recognitionStream {
+            _ = try? await withDeadline(finishDeadline, label: "recognition finish") {
+                await stream.finish()
+            }
+        }
+        if let recognitionTask {
+            let task = recognitionTask
+            _ = try? await withDeadline(finishDeadline, label: "recognition drain") { await task.value }
+            task.cancel()
+        }
         recognitionTask = nil
-        _ = await writer?.close()
+        let journalSummary = await writer?.close()
         writer = nil
         recognitionStream = nil
         eventTask?.cancel()
         eventTask = nil
+        if journalSummary?.degraded == true, !journalWarned {
+            journalWarned = true
+            emit(.notice("Crash recovery was off for this session: the audio journal stopped (low disk). Dictation still worked and the transcript is saved."))
+        }
 
         let cleanupState = await cleanupCoordinator?.finish() ?? .skipped
         cleanupCoordinator = nil
@@ -198,7 +235,7 @@ public actor SessionEngine {
         if !text.isEmpty {
             transition(.inserting)
             do {
-                insertion = try await withTimeout(ms: insertionMs) { [inserter] in
+                insertion = try await withDeadline(.milliseconds(insertionMs), label: "insertion") { [inserter] in
                     try await inserter.insert(text, strategy: .auto)
                 }
                 if let insertion { emit(.inserted(insertion)) }
@@ -249,7 +286,15 @@ public actor SessionEngine {
     private func consumeAudio(_ samples: AsyncStream<AudioChunk>, writer: (any AudioJournalWriter)?,
                               stream: any RecognitionStream) async {
         for await chunk in samples {
-            await writer?.append(chunk)
+            if let writer {
+                await writer.append(chunk)
+                // Journaling can stop mid-session (disk full / IO error). Keep
+                // transcribing, but tell the user crash recovery is now off.
+                if !journalWarned, await writer.isDegraded {
+                    journalWarned = true
+                    emit(.notice("Audio journal stopped (disk). Transcription continues, crash recovery is off."))
+                }
+            }
             await stream.feed(chunk)
             levelCounter += 1
             if levelCounter % 4 == 0 {
@@ -321,6 +366,7 @@ public actor SessionEngine {
         lastEndMs = 0
         cumulativeTokenCount = 0
         levelCounter = 0
+        journalWarned = false
         cleanupCoordinator = nil
     }
 
@@ -340,16 +386,11 @@ public actor SessionEngine {
         return min(1, (sum / Float(samples.count)).squareRoot() * 6)
     }
 
-    private func withTimeout<T: Sendable>(ms: Int, operation: @escaping @Sendable () async throws -> T) async throws -> T {
-        try await withThrowingTaskGroup(of: T.self) { group in
-            group.addTask { try await operation() }
-            group.addTask {
-                try await Task.sleep(for: .milliseconds(max(1, ms)))
-                throw SuperflowError.timeout("insertion")
-            }
-            guard let first = try await group.next() else { throw SuperflowError.timeout("insertion") }
-            group.cancelAll()
-            return first
-        }
+    /// A degraded lane still records and transcribes; only crash recovery is off. Say so in the
+    /// notice channel the Island already renders, rather than failing or staying silent.
+    private func reportJournalIfDegraded(_ journalWriter: any AudioJournalWriter) async {
+        guard !journalWarned, await journalWriter.isDegraded else { return }
+        journalWarned = true
+        emit(.notice("Crash recovery is off: not enough free disk space for the audio journal. Dictation keeps working and your transcript is still saved."))
     }
 }

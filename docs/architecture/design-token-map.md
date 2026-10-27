@@ -1,55 +1,60 @@
 # Design token map
 
-`DESIGN.md` is the source of truth. The app shell consumes these existing tokens rather than defining app-only colors, spacing, or radii. `PLAN.md` §18 adds product rules (Hugeicons, pointer cursor, focus rings) that sit on top of the visual tokens.
+`DESIGN.md` is the source of truth. The app shell consumes these tokens rather than defining app-only colours, spacing or radii.
 
 ## Foundations
 
 | Token group | Source | Design specification | App use |
 |---|---|---|---|
-| Surface, text, accent, badge and dot colors | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Colors.swift` | `DESIGN.md` §3 | Main window, sidebar, feature surfaces, badges, status dots. Blue 600 is the only accent; `#0A0A0A` / `#141414` remain the dark surfaces. |
-| Spacing, radii, control heights, window and sidebar sizes | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Layout.swift` | `DESIGN.md` §6 | 4pt grid (`Space.grid`), 24pt content padding, card/nested/field radii, 28pt rows, 960×640 window minimum, 220–320pt sidebar. |
-| Type roles and display fallback | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Typography.swift` | `DESIGN.md` §5 | SF Pro Regular/Medium for UI; Exposure Italic only at ≥28pt display sizes, with a serif-italic fallback and zero tracking when the font is absent. |
-| Motion durations and reduce-motion behavior | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Motion.swift` | `DESIGN.md` §9 | Shared transitions; every animated component branches on `accessibilityReduceMotion`. |
-| Appearance | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/ThemeStore.swift` | `DESIGN.md` §§3, 11 | Persisted light/dark theme shared by the Island and main window. |
-| Glass and material fallback | `Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Glass.swift` | `DESIGN.md` §§2, 7 | `GlassSurface` / `GlassGroup` / `FloatingPanel` for the Island, command palette and toasts only. Content surfaces use `Tok.card`, never glass or shadows. |
+| Surface, text, accent, button edge, scrim | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Colors.swift` | `DESIGN.md` §4 | Canvas, sidebar washes, cards, fields, buttons, badges, dots. Blue 600 is the only accent. |
+| Spacing, radii, control heights, window and sidebar sizes | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Layout.swift` | `DESIGN.md` §4.5, §7 | 4 pt grid, page padding 32, card 20, radii 16/12/8/6, control heights 24/28/32, 960 × 620 default, 880 × 560 minimum, sidebar 220. |
+| Type roles | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Typography.swift` | `DESIGN.md` §5 | Albert Sans at 350 (500 for emphasis) for every UI role, SF Pro for the numeric metric; Serif Vinci Italic only at 28 (page/empty titles) and 40 (onboarding). |
+| Motion | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Motion.swift` | `DESIGN.md` §11 | hover 0.10/0.22, settle 0.28, entrance 0.78, slide 0.30, fade 0.18, menu 0.20/0.12, stagger 0.07, snappy/smooth. |
+| Appearance | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/ThemeStore.swift` | `DESIGN.md` §2 | Persisted light/dark theme shared by the Island and main window. |
+| Glass and material fallback | `Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Glass.swift` | `DESIGN.md` §3 | `GlassSurface` / `GlassGroup` / `FloatingPanel` for the Island, command palette and toasts only. Content uses `Tok.surface`. |
 
 ## Interaction primitives
 
 | Component | Source | Tokens / rules |
 |---|---|---|
-| Pointer cursor | `UIComponents/PointerCursor.swift` | The single `pointerCursor(enabled:)` modifier owns `NSCursor` push/pop. Every interactive control applies it; feature packages must not call `NSCursor` directly. |
-| Focus ring | `UIComponents/PointerCursor.swift` | `focusRing(_:radius:)` uses `Tok.accent`, `Radius.focusRing` (2pt) and `Radius.focusOffset` (2pt). |
-| Buttons | `UIComponents/Buttons.swift` | `PrimaryButton` / `SecondaryButton` / `IconButton` / `TextButton` / `ClickableSurface`; heights from `ControlHeight`, 4pt-multiple padding, `Tok.accent` only on primary. |
-| Inputs | `UIComponents/Inputs.swift` | `SearchField`, `LabeledField`, `LabeledTextEditor`, `SegmentedControl`, `ToggleRow`, `SwitchControl`, `OptionRow`, `SliderRow`, `StepperRow`, `SelectRow`; `Radius.field`, `Tok.field` / `Tok.button`, `Tok.text2` for readable secondary text. |
-| Navigation | `UIComponents/Navigation.swift` | `SidebarItem` (28pt row, `Tok.selection` selected state), `SidebarSectionLabel` (`Tok.text2`), `ToolbarIconButton`. |
-| Indicators | `UIComponents/Indicators.swift` | `BadgeView` (`BadgeVariant.at` wraps negative indexes), `DotView`, `BadgeRow`, `KeyCap` (`Radius.chip`, 24pt minimum). |
-| Progress and notices | `UIComponents/Controls.swift` | `ProgressBar`, `NoticeBanner`; reduce-motion aware. |
-| Toasts | `UIComponents/Toast.swift` | `ToastQueue` (bounded) + `ToastCenter` + `ToastHost`; glass surface, `DotTone` per style, action/undo closures released on dismissal, reduce-motion transition. |
+| Pointer cursor | `UIComponents/Pointer.swift` | The only `clickable(_:)` modifier owns `pointerStyle` and the AppKit cursor rect. Feature packages never call `NSCursor`. |
+| Focus ring | `DesignSystem/Surfaces.swift` | `focusRing(radius:active:)` uses `Tok.accent`, 2 pt, 2 pt offset. |
+| Buttons | `UIComponents/Buttons.swift` | `AppButtonStyle`, `AppButton`, `SapphireButton`, `IconButton`; 32 pt height, radius 16, SF Pro 14 Medium at −0.35 tracking, `Tok.buttonBorder` 1 pt, inner button blur, `clickable`. |
+| Inputs | `UIComponents/Inputs.swift` | `AppField`, `AppTextField`, `PracticeField`, `AppTextEditor`; `Tok.field` / `Tok.well`, radius 8, focus step, `contrastStroke`. |
+| Search | `UIComponents/PageChrome.swift` | `SearchField`; capsule, `Tok.field`, caret accent, I-beam, no ring. |
+| Navigation | `App/SuperflowApp/Sources/SuperflowAppCore/Windowing/MainWindowRootView.swift` | `MainSidebar` + `SidebarRow`; 220 pt, `NSVisualEffectView(.sidebar, .behindWindow)`, 32 pt rows, `washStrong` pill. |
+| Indicators | `UIComponents/Indicators.swift` | `Badge`, `DotView`, `KeyCap`, `Metric`, `ProgressDots`, `NoticeBanner`, `ProgressBar`. |
+| Controls | `UIComponents/Controls.swift` | `Segmented`, `AppToggleStyle`, `AppToggle`. |
+| Menus | `UIComponents/MenuLayer.swift` | `MenuHost`, `MenuLayer`, `Dropdown`, `ActionMenu`; root overlay, glass panel, no popover. |
+| Sliders and steppers | `UIComponents/Sliders.swift` | `TimingSlider` (native `Slider`, 280 + 64 readout), `AppStepper`, `KeyRecorder`. |
+| Toasts | `UIComponents/Toast.swift` | `ToastCenter` + `ToastHost`; glass, `DotTone`, reduce-motion transition. |
 
 ## Content components
 
 | Component | Source | Tokens / rules |
 |---|---|---|
-| Card and section header | `UIComponents/Surfaces.swift` | `Tok.card`, 1pt `Tok.border`, `Radius.card`; no content shadows or gradients. |
-| Stat tile | `UIComponents/Surfaces.swift` | `StatTile`; value uses `Typography.title` (22pt), label/detail `Typography.secondary` + `Tok.text2`, numeric transition disabled under reduce motion. |
-| Empty state | `UIComponents/Surfaces.swift` | `EmptyState`; 28pt Hugeicon in `Tok.text3`, headline title, body message capped at 360pt. |
-| Contribution graph | `UIComponents/ContributionGrid.swift` | `ContributionGrid` / `ContributionLayout`; 53×7 Sunday-first cells from `StatsEngine.contributions`, 5 levels (`levelCount`), 12pt cells with 4pt gaps, `Tok.accent` alpha ramp, `Tok.border` for empty cells, future days at 0.35 opacity, O(n) chunking. |
-| Command palette | `UIComponents/CommandPalette.swift` | `CommandPalette` + `CommandPaletteModel`; ⌘K surface, `FloatingPanel`, 560pt width, 44pt search row, `Tok.selection` for the highlighted row, arrow/return/escape handling, wrap-around selection, query reset on close, reduce-motion scale. |
-| Waveform | `UIComponents/Waveform.swift` | `WaveformView`; bar levels throttled by the Island model to ≤30fps. |
-| Pixel field | `UIComponents/PixelField.swift` | `PixelField` + `PixelRenderer`; onboarding hero only, `PixelPalette.blue`, deterministic seed, reduce-motion static frame. |
+| Card, page chrome, rows | `UIComponents/Surfaces.swift`, `UIComponents/Rows.swift` | `Tok.surface`, radius 16, padding 20, no border; `Page` / `SplitPage` / `PageBar`; `RowButton`, `SettingRow`. |
+| Empty state | `UIComponents/EmptyState.swift` | Pixel stop 11 × 4 / 3, display 28 or 15 Medium, one sentence. |
+| Contribution graph | `UIComponents/ContributionGrid.swift` | 53 × 7 cells on the canvas, 5-step blue ramp, measured width drives height and hover. |
+| Dashboard lower half | `FeatureDashboard/DashboardLowerHalf.swift` | Apps row fill (`accentSoft`), Hours 24 × 8 pixel columns, real `NSWorkspace` icons. |
+| Cleanup card | `FeatureDashboard/DashboardCleanup.swift` | LCS word diff, flow layout, hold/release/clean once, `Replay`, `fnHeld` from the physical key. |
+| Command palette | `UIComponents/CommandPalette.swift` | `⌘K`, `Tok.scrim`, `FloatingPanel` 560 wide, arrow/return/escape. |
+| Waveform | `UIComponents/new-waveform.swift` | `WaveformView` + `WaveformEngine` + `LevelsWaveform`; only waveform drawing path. |
+| Mic test | `UIComponents/waveform-mic-test.swift`, `UIComponents/MicLevelSource.swift` | `MicTestView` + `DotMeterEngine`; only mic meter. |
+| Pixel identity | `UIComponents/PixelStop.swift`, `PixelField.swift`, `PixelDiscFlight.swift` | 5 × 1.5 full stop, deterministic field, 5-cell disc flight. |
 
 ## Island geometry
 
 | Token | Source | Value / rule |
 |---|---|---|
-| Compact / expanded widths | `FeatureIsland/IslandMetrics.swift` | 280pt / 460pt; must match the AppKit panel. |
-| Compact / expanded heights | `FeatureIsland/IslandMetrics.swift` | 60pt / 160pt. |
-| Top inset | `FeatureIsland/IslandMetrics.swift` | `Layout.islandTopInset` (6pt). |
-| Drag threshold | `FeatureIsland/IslandDragPolicy.swift` | `Layout.islandDragThreshold` (4pt) radial distance; below is a click, at/above is a drag. |
+| Compact / expanded widths | `FeatureIsland/IslandMetrics.swift` | 280 pt / 460 pt; must match the AppKit panel. |
+| Compact / expanded heights | `FeatureIsland/IslandMetrics.swift` | 60 pt / 160 pt. |
+| Top inset | `FeatureIsland/IslandMetrics.swift` | `Layout.islandTopInset` (6 pt). |
+| Drag threshold | `FeatureIsland/IslandDragPolicy.swift` | `Layout.islandDragThreshold` (4 pt) radial distance. |
 
 ## Accessibility and appearance checks
 
-- Every interactive control exposes an accessibility label and applies the shared pointer cursor; list rows add selection traits.
-- Feature views support light and dark schemes through `Tok` and `@Environment(\.colorScheme)`; badges and dots resolve their own light/dark ramps.
-- Reduce Motion disables scale/move/numeric transitions; Reduce Transparency is honored by the glass fallback.
-- Keyboard reachability: History supports up/down selection, the command palette supports arrows/return/escape, and focus rings use the shared token.
+- Every interactive control exposes an accessibility label and applies `clickable`.
+- Feature views support light and dark through `Tok` and `@Environment(\.colorScheme)`.
+- Reduce Motion removes pill slides, disc flight, waveform motion, reveal offsets and numeric transitions.
+- Reduce Transparency falls back to `Tok.surface`; Increase Contrast adds the shared 1 pt stroke.

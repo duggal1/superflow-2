@@ -162,12 +162,12 @@ public struct CleanupLine: View {
     }
 
     public var body: some View {
-        FlowLayout(spacing: 0, lineSpacing: 6) {
+        FlowLayout(spacing: -2, lineSpacing: 6) {
             ForEach(tokens) { token in
                 if let shown = token.text(in: phase) {
                     let marked = phase == .said && token.isMarked
                     Text(shown)
-                        .font(.system(size: 15))
+                        .font(Typography.large)
                         .foregroundStyle(phase == .typed || marked ? Tok.text : Tok.text2)
                         .padding(.horizontal, 3)
                         .padding(.vertical, 2)
@@ -287,7 +287,7 @@ private struct Caption: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 12, weight: .medium))
+            .font(Typography.secondaryMedium)
             .foregroundStyle(active ? Tok.text : Tok.text2)
     }
 }
@@ -302,12 +302,12 @@ private struct LatestMeta: View {
             }
             if let name = sample.appName {
                 Text(name)
-                    .font(.system(size: 12))
+                    .font(Typography.secondary)
                     .foregroundStyle(Tok.text2)
             }
             if let date = sample.date {
                 Text(date, format: .dateTime.hour().minute())
-                    .font(.system(size: 12))
+                    .font(Typography.secondary)
                     .monospacedDigit()
                     .foregroundStyle(Tok.text2)
             }

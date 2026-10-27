@@ -1,19 +1,17 @@
 import SwiftUI
 
-/// Frames of the text blocks the pixel field must dissolve around. Several text
-/// blocks make one hole, so the reduce step appends instead of replacing.
-public struct PixelClearKey: PreferenceKey {
-    public static let defaultValue: [Anchor<CGRect>] = []
+public struct ShellAnchors: Sendable { public var clear: [Anchor<CGRect>] = []; public var bloom: Anchor<CGRect>? }
 
-    public static func reduce(value: inout [Anchor<CGRect>],
-                              nextValue: () -> [Anchor<CGRect>]) {
-        value += nextValue()
+public struct ShellKey: PreferenceKey {
+    public static let defaultValue = ShellAnchors()
+    public static func reduce(value: inout ShellAnchors, nextValue: () -> ShellAnchors) {
+        let n = nextValue()
+        value.clear += n.clear
+        if let b = n.bloom { value.bloom = b }
     }
 }
 
 public extension View {
-    /// Marks a block whose frame becomes part of the field's organic hole.
-    func clearsPixels() -> some View {
-        anchorPreference(key: PixelClearKey.self, value: .bounds) { [$0] }
-    }
+    func clearsPixels() -> some View { anchorPreference(key: ShellKey.self, value: .bounds) { ShellAnchors(clear: [$0]) } }
+    func bloomSource() -> some View { anchorPreference(key: ShellKey.self, value: .bounds) { ShellAnchors(bloom: $0) } }
 }

@@ -58,6 +58,25 @@ final class PipelineTests: XCTestCase {
                        ["shortcuts", "numbers", "lexicon", "numbers.assert", "lexicon.assert", "lineformat"])
     }
 
+    func testCodeSpeakIsOptInAndRunsAfterNumbers() async {
+        var settings = AppSettings.default
+        settings.cleanupEnabled = false
+        settings.lineFormat.capitalize = false
+        settings.lineFormat.finalPeriod = false
+        XCTAssertFalse(TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
+            .stageIDs.contains("codeSpeak"))
+
+        settings.codeSpeakEnabled = true
+        let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
+        XCTAssertEqual(Array(pipeline.stageIDs.prefix(4)),
+                       ["commands", "shortcuts", "numbers", "codeSpeak"])
+        let index = pipeline.stageIDs.firstIndex(of: "codeSpeak")
+        XCTAssertEqual(index.map { pipeline.stageIDs[$0 + 1] }, "lexicon")
+
+        let result = await pipeline.run("snake case user id", context: TextContext(settings: settings))
+        XCTAssertEqual(result.text, "user_id")
+    }
+
     func testShortcutExpandsVerbatimAndShortCircuits() async {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))

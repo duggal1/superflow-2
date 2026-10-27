@@ -76,7 +76,10 @@ struct RealModelSpeedBench {
         audioSeconds / median, audioSeconds / (walls.max() ?? median), audioSeconds / (walls.min() ?? median),
         Self.percentile(chunkLatencies, 0.5) * 1000, Self.percentile(chunkLatencies, 0.95) * 1000,
         Self.percentile(finishes, 0.5) * 1000, Self.percentile(finishes, 0.95) * 1000,
-        Double(baseline) / 1_048_576, Double(peak - baseline) / 1_048_576, Double(peak) / 1_048_576,
+        // Signed: the footprint can legitimately shrink between the baseline and the peak
+        // (mapped pages released, compressor reclaiming idle weights), and a UInt64
+        // subtraction traps in that case.
+        Double(baseline) / 1_048_576, (Double(peak) - Double(baseline)) / 1_048_576, Double(peak) / 1_048_576,
         lastWords))
     }
 

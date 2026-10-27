@@ -24,7 +24,7 @@ public struct EmptyState: View {
             Text(title)
                 .font(density == .page
                       ? Typography.displayFont(size: TypeScale.displaySSize)
-                      : .system(size: 15, weight: .medium))
+                      : Typography.headline)
                 .tracking(density == .page ? TypeScale.displaySTracking : 0)
                 .foregroundStyle(Tok.text)
                 .multilineTextAlignment(.center)

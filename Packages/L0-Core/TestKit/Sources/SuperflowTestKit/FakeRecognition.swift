@@ -9,11 +9,14 @@ public actor FakeJournalStore: JournalStore {
     /// system lane) hit a full disk while the microphone lane still opens.
     public var failSources: Set<AudioSourceKind> = []
     public var free = Int64.max
+    /// Writers report themselves as degraded after each append when true.
+    public var degradeWrites = false
 
     public init() {}
 
     public func setShouldFail(_ value: Bool) { shouldFail = value }
     public func setFailSources(_ sources: Set<AudioSourceKind>) { failSources = sources }
+    public func setDegradeWrites(_ value: Bool) { degradeWrites = value }
 
     public func openWriter(session: SessionID, source: AudioSourceKind,
                            startingSample: Int64) async throws -> any AudioJournalWriter {
@@ -54,6 +57,7 @@ public actor FakeJournalWriter: AudioJournalWriter {
     public func append(_ chunk: AudioChunk) async {
         await store.record(chunk)
         total = max(total, chunk.endSample)
+        if await store.degradeWrites { degraded = true }
     }
     public func close() async -> JournalSummary { JournalSummary(samples: total, degraded: degraded) }
     public var isDegraded: Bool { degraded }

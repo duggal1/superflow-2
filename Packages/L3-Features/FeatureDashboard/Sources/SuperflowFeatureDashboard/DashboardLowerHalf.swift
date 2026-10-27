@@ -44,12 +44,12 @@ private struct AppShareRow: View {
         HStack(spacing: Space.sm) {
             AppIcon(bundleID: app.bundleID, size: 20)
             Text(app.name)
-                .font(.system(size: 13, weight: .medium))
+                .font(Typography.bodyMedium)
                 .foregroundStyle(Tok.text)
                 .lineLimit(1)
             Spacer(minLength: Space.md)
             Text(app.words, format: .number)
-                .font(.system(size: 13))
+                .font(Typography.body)
                 .monospacedDigit()
                 .foregroundStyle(Tok.text2)
         }
@@ -177,9 +177,9 @@ public struct HourColumns: View {
                 let lit = value == 0
                     ? 0
                     : max(1, Int((Double(value) / Double(maxValue) * Double(rows)).rounded()))
-                let tone = hour == hovered ? ContributionGrid.ramp[4]
-                    : hour == peak ? ContributionGrid.ramp[3]
-                    : ContributionGrid.ramp[2]
+                let tone = hour == hovered ? Ramp.blue[4]
+                    : hour == peak ? Ramp.blue[3]
+                    : Ramp.blue[2]
                 for row in 0..<rows {
                     let rect = CGRect(x: CGFloat(hour) * pitch,
                                       y: top + CGFloat(rows - 1 - row) * pitch,
@@ -214,7 +214,7 @@ private struct HourAxis: View {
         HStack(spacing: 0) {
             ForEach([0, 6, 12, 18], id: \.self) { hour in
                 Text(hour.hourLabel)
-                    .font(.system(size: 12))
+                    .font(Typography.secondary)
                     .foregroundStyle(Tok.text2)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

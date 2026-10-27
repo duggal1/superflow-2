@@ -51,10 +51,15 @@ report_matches '\b(Button|Toggle|Picker|Slider|Stepper|TextField)\s*\(|onTapGest
 report_outside '\.pointerStyle' "UIComponents/Sources/SuperflowUIComponents/Pointer\.swift:" \
     'The pointer hand is only available through clickable().' "${ui_roots[@]}"
 
-# R2: no strokes anywhere except the focus ring and Increase Contrast.
+# R2: no strokes anywhere except the focus ring, Increase Contrast, and the
+# single button edge the button spec defines.
 report_outside '\.(stroke|strokeBorder|border)\(' \
-    "DesignSystem/Sources/SuperflowDesignSystem/Surfaces\.swift:" \
-    'Strokes are only allowed in ContrastStroke and focusRing.' "${ui_roots[@]}"
+    "DesignSystem/Sources/SuperflowDesignSystem/Surfaces\.swift:|UIComponents/Sources/SuperflowUIComponents/Buttons\.swift:|UIComponents/Sources/SuperflowUIComponents/FocusStep\.swift:" \
+    'Strokes are only allowed in ContrastStroke, focusRing and FocusStep.' "${ui_roots[@]}"
+
+# R2: no dividers. Spacing and fills do that job.
+report_matches '\bDivider\(\)' \
+    'Dividers are forbidden; separate with spacing and surface steps.' "${ui_roots[@]}"
 
 # R3: one icon family, one implementation.
 report_outside 'Image\(systemName:' "Icons/Sources/SuperflowIcons/Glyph\.swift:" \
@@ -62,7 +67,7 @@ report_outside 'Image\(systemName:' "Icons/Sources/SuperflowIcons/Glyph\.swift:"
 
 # R4: colours come from the token file; canvas ramps are the only exceptions.
 report_outside 'Color\(hex:' \
-    "(DesignSystem/Sources/SuperflowDesignSystem/|UIComponents/Sources/SuperflowUIComponents/(PixelStop|PixelField|ContributionGrid)\.swift:)" \
+    "(DesignSystem/Sources/SuperflowDesignSystem/|UIComponents/Sources/SuperflowUIComponents/(PixelStop|PixelField)\.swift:)" \
     'Hex colours belong in DesignSystem tokens (canvas ramps excepted).' "${ui_roots[@]}"
 
 # R5: Regular and Medium only.
@@ -142,6 +147,57 @@ done < <(rg -n -o '(^|[^A-Za-z])Icon\([^)]*size: [0-9]+' "${glob[@]}" \
     --glob '!**/FeatureOnboarding/**' --glob '!**/FeatureIsland/**' \
     "$repo_root/Packages/L3-Features" "$repo_root/Packages/L4-UI" \
     "$repo_root/App/SuperflowApp" || true)
+
+# Pass 3 additions.
+report_matches '\bfocusRing\(' 'focusRing is deleted; use focusStep.' "${ui_roots[@]}"
+
+# .focusable without .focusEffectDisabled in same file (already handled above).
+
+report_matches '\bProgressRow\b' 'ProgressRow is deleted; use DownloadCard.' "${ui_roots[@]}"
+report_matches '\bContributionGrid\(' 'ContributionGrid view is deleted; use ActivityYear.' "${ui_roots[@]}"
+report_matches 'ContributionGrid\.ramp' 'Use Ramp.blue instead of ContributionGrid.ramp.' "${ui_roots[@]}"
+report_matches '\bAppSlider\b' 'AppSlider is deleted.' "${ui_roots[@]}"
+report_matches '\bClearKey\b' 'ClearKey replaced by ShellKey.' "${ui_roots[@]}"
+
+# .pointerStyle outside clickable() and scrubbable()
+# (already enforced for clickable only; extend allowed list)
+# handled by report_outside below
+report_outside '\.pointerStyle' "UIComponents/Sources/SuperflowUIComponents/Pointer\.swift:"     'pointerStyle is only available through clickable() and scrubbable().' "${ui_roots[@]}"
+
+report_matches '\bPicker\b|\.pickerStyle\(' 'No native Picker; use Dropdown.' "${ui_roots[@]}"
+# Menu( and Menu { outside UIComponents
+report_outside '(^|[^A-Za-z])Menu[[:space:]]*[\{(]' "UIComponents/Sources/SuperflowUIComponents/"     'Native menus are replaced by ActionMenu/Dropdown.' "${ui_roots[@]}"
+report_matches '\.popover\(' 'No .popover; use MenuLayer.' "${ui_roots[@]}"
+
+# Text buttons are 24 or 28 tall. Nothing else, anywhere.
+report_matches 'height: ControlHeight\.(large|onboardingCTA)' \
+    'Text buttons are 24 or 28 tall; 32 is only the search field and BarIconButton.' "${ui_roots[@]}"
+while IFS= read -r match; do
+    [[ -z "$match" ]] && continue
+    size="$(printf '%s' "$match" | sed -E 's/.*height: ([0-9]+).*/\1/')"
+    case "$size" in
+        24|28) ;;
+        *)
+            printf 'AppButton height %s is not 24 or 28: %s\n' "$size" "$match" >&2
+            violations=$((violations + 1))
+            ;;
+    esac
+done < <(rg -n -o 'AppButton\([^)]*height: [0-9]+' "${glob[@]}" "${ui_roots[@]}" || true)
+
+# accentPressed equal 0x1E40AF (blue 800 is removed from every control).
+if rg -q --glob '*.swift' --glob '!**/.build/**' '0x1E40AF' "${ui_roots[@]}"; then
+    printf 'accentPressed must be 0x1D4ED8, not 0x1E40AF.\n' >&2
+    violations=$((violations + 1))
+fi
+
+# Route/AppSection list must contain models
+if ! grep -R "\.models" "$repo_root/App/SuperflowApp/Sources/SuperflowAppCore/Windowing/MainWindowController.swift" >/dev/null 2>&1; then
+    printf 'AppSection must contain .models.\n' >&2
+    violations=$((violations + 1))
+fi
+
+# Image(" outside VendorMark
+report_outside 'Image\("' "UIComponents/Sources/SuperflowUIComponents/.*VendorMark\|FeatureSettings/Sources/SuperflowFeatureSettings/ModelsView.swift"     'Image(" is only allowed in VendorMark.' "${ui_roots[@]}"
 
 if (( violations > 0 )); then
     printf 'Forbidden-pattern lint found %d violation(s).\n' "$violations" >&2

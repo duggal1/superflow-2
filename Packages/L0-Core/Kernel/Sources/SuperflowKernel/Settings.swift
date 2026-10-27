@@ -60,6 +60,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var cleanupEnabled = true
     public var harperEnabled = false
     public var commandsEnabled = true
+    public var codeSpeakEnabled = false
     public var numberStyle: LargeNumberStyle = .abbreviated
     public var spellOutSmallNumbers = true
     public var lineFormat = LineFormatSettings()
@@ -73,6 +74,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var showIdlePill = false
     public var cleanupStyling = "semi-formal"
     public var cleanupStructure = "prose"
+    public var cleanupContext = "general"
     public var interactiveDeadlineMs = 1500
     public var backgroundDeadlineMs = 30_000
     public var cleanupWorkers = 3
@@ -89,6 +91,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         cleanupEnabled = try c.decodeIfPresent(Bool.self, forKey: .cleanupEnabled) ?? d.cleanupEnabled
         harperEnabled = try c.decodeIfPresent(Bool.self, forKey: .harperEnabled) ?? d.harperEnabled
         commandsEnabled = try c.decodeIfPresent(Bool.self, forKey: .commandsEnabled) ?? d.commandsEnabled
+        codeSpeakEnabled = try c.decodeIfPresent(Bool.self, forKey: .codeSpeakEnabled) ?? d.codeSpeakEnabled
         numberStyle = try c.decodeIfPresent(LargeNumberStyle.self, forKey: .numberStyle) ?? d.numberStyle
         spellOutSmallNumbers = try c.decodeIfPresent(Bool.self, forKey: .spellOutSmallNumbers) ?? d.spellOutSmallNumbers
         lineFormat = try c.decodeIfPresent(LineFormatSettings.self, forKey: .lineFormat) ?? d.lineFormat
@@ -102,6 +105,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         showIdlePill = try c.decodeIfPresent(Bool.self, forKey: .showIdlePill) ?? d.showIdlePill
         cleanupStyling = try c.decodeIfPresent(String.self, forKey: .cleanupStyling) ?? d.cleanupStyling
         cleanupStructure = try c.decodeIfPresent(String.self, forKey: .cleanupStructure) ?? d.cleanupStructure
+        cleanupContext = try c.decodeIfPresent(String.self, forKey: .cleanupContext) ?? d.cleanupContext
         interactiveDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .interactiveDeadlineMs) ?? d.interactiveDeadlineMs
         backgroundDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .backgroundDeadlineMs) ?? d.backgroundDeadlineMs
         cleanupWorkers = try c.decodeIfPresent(Int.self, forKey: .cleanupWorkers) ?? d.cleanupWorkers

@@ -41,7 +41,7 @@ struct ShortcutRowEditor: View {
                 HStack(spacing: Space.sm) {
                     if let counter = byteCounter {
                         Text(counter)
-                            .font(Typography.mono)
+                            .font(Typography.body)
                             .foregroundStyle(Tok.text2)
                     }
                     Spacer(minLength: Space.md)

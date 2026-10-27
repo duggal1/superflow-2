@@ -1,5 +1,6 @@
 import CoreGraphics
 import SuperflowDesignSystem
+import SuperflowKernel
 import XCTest
 @testable import SuperflowUIComponents
 
@@ -34,38 +35,22 @@ final class UIComponentsTests: XCTestCase {
         XCTAssertEqual(ToastMessage(text: "x", actionTitle: "Undo").duration, 6)
     }
 
-    func testContributionColumnsAreSevenDayWeeks() {
-        let days = (0..<16).map { ContributionGridDay(day: String(format: "2026-01-%02d", $0 + 1),
-                                                       words: $0, level: $0 % 5, isFuture: false) }
-        let columns = ContributionLayout.columns(days)
-        XCTAssertEqual(columns.count, 3)
-        XCTAssertEqual(columns[0].count, 7)
-        XCTAssertEqual(columns[1].count, 7)
-        XCTAssertEqual(columns[2].count, 2)
-        XCTAssertEqual(ContributionLayout.columns([]).count, 0)
+    func testWaveformNormalizesTheDecibelWindow() {
+        XCTAssertEqual(WaveformEngine.normalized(rms: 1), 1, accuracy: 0.0001)
+        XCTAssertEqual(WaveformEngine.normalized(rms: 1e-6), 0, accuracy: 0.0001)
+        let mid = WaveformEngine.normalized(rms: 0.01)
+        XCTAssertGreaterThan(mid, 0)
+        XCTAssertLessThan(mid, 1)
     }
 
-    func testMonthLabelsChangeOncePerMonth() {
-        let days = ["2026-01-01", "2026-01-20", "2026-02-02", "2026-02-10"]
-            .map { ContributionGridDay(day: $0, words: 1, level: 1, isFuture: false) }
-        let labels = ContributionLayout.monthLabels(days)
-        XCTAssertEqual(labels.count, 2)
-        XCTAssertEqual(labels.first, "Jan")
-        XCTAssertEqual(labels.last, "Feb")
-    }
-
-    func testWaveformPadsAndNormalizes() {
-        let bars = Waveform.bars(from: [0.5, 1.0], count: 4)
-        XCTAssertEqual(bars.count, 4)
-        XCTAssertEqual(bars[0], 0.06, accuracy: 0.001)
-        XCTAssertEqual(bars[2], 0.5, accuracy: 0.001)
-        XCTAssertEqual(bars[3], 1.0, accuracy: 0.001)
-        XCTAssertEqual(Waveform.bars(from: [], count: 3), [0.08, 0.08, 0.08])
-    }
-
-    func testWaveformRMS() {
-        XCTAssertEqual(Waveform.rms([0.5, -0.5]), 0.5, accuracy: 0.0001)
-        XCTAssertEqual(Waveform.rms([]), 0)
+    func testWaveformPushClampsItsInput() {
+        let engine = WaveformEngine()
+        engine.push(level: 4)
+        engine.push(level: -1)
+        engine.seed([0.2, 0.4, 0.6])
+        let frame = engine.frame(now: 1, phase: .idle, count: 8, flow: .outward, calm: true)
+        XCTAssertEqual(frame.count, 8)
+        XCTAssertTrue(frame.allSatisfy { $0 >= 0 && $0 <= 1 })
     }
 
     func testPixelRendererIsDeterministic() {
@@ -113,21 +98,58 @@ final class UIComponentsTests: XCTestCase {
         XCTAssertNil(PixelPalette.blue.hex(tone: 3, dark: true))
     }
 
-    func testButtonHeightsMatchTheControlScale() {
-        XCTAssertEqual(AppButtonStyle(kind: .secondary).height, 28)
-        XCTAssertEqual(AppButtonStyle(kind: .secondary, height: ControlHeight.small).height, 24)
-        XCTAssertEqual(AppButtonStyle(kind: .primary, height: ControlHeight.large).height, 32)
+    /// Text buttons are 24 or 28 tall. 32 belongs to the search field and BarIconButton.
+    func testTextButtonsAreTwentyFourOrTwentyEightTall() {
+        XCTAssertEqual(AppButtonStyle(kind: .secondary).height, ControlHeight.regular)
+        XCTAssertEqual(AppButtonStyle(kind: .secondary, height: ControlHeight.small).height,
+                       ControlHeight.small)
+        XCTAssertEqual(AppButtonStyle(kind: .primary, height: ControlHeight.regular).height,
+                       ControlHeight.regular)
+    }
+
+    /// Blue 800 is removed from every control.
+    func testAccentPressedIsBlueSevenHundred() {
+        XCTAssertEqual(Tok.Hex.accentPressed, 0x1D4ED8)
+    }
+
+    /// The year is twelve calendars, and the levels are quartiles of the days that have words.
+    func testActivityLevelsAreQuartilesOfNonZeroDays() {
+        XCTAssertEqual(ActivityLevel.assign([0, 0, 0]), [0, 0, 0])
+        XCTAssertEqual(ActivityLevel.assign([5]), [1])
+        let levels = ActivityLevel.assign([0, 1, 10, 100, 1_000])
+        XCTAssertEqual(levels.first, 0)
+        XCTAssertTrue(levels.dropFirst().allSatisfy { (1...4).contains($0) })
+        XCTAssertTrue(levels.allSatisfy { $0 <= 4 })
+    }
+
+    /// Every day lands in exactly one month block, once, and every block starts at column 0.
+    func testActivityBlocksHoldEveryDayExactlyOnce() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 1, day: 15))!
+        let days = (0..<300).compactMap { offset -> ActivityDay? in
+            calendar.date(byAdding: .day, value: offset, to: start)
+                .map { ActivityDay(date: $0, words: offset % 40, level: offset % 5) }
+        }
+
+        let blocks = ActivityBlock.make(days)
+        XCTAssertEqual(blocks.reduce(0) { $0 + $1.cells.count }, days.count)
+        XCTAssertEqual(Set(blocks.flatMap { $0.cells.map { $0.day.id } }).count, days.count)
+        for block in blocks {
+            XCTAssertGreaterThanOrEqual(block.cols, 1)
+            XCTAssertEqual(block.cells.map(\.col).min(), 0)
+            XCTAssertTrue(block.cells.allSatisfy { (0...6).contains($0.row) })
+            XCTAssertTrue(block.cells.allSatisfy { (0..<block.cols).contains($0.col) })
+        }
     }
 
     /// The pixel full stop stays an odd, symmetric block.
+    @MainActor
     func testPixelStopSnapsToAnOddCellCount() {
         XCTAssertEqual(PixelStop(cells: 5).count, 5)
         XCTAssertEqual(PixelStop(cells: 6).count, 7)
         XCTAssertEqual(PixelStop(cells: 11).count, 11)
-    }
-
-    func testContributionGridHasFiveLevels() {
-        XCTAssertEqual(ContributionLayout.levelCount, 5)
     }
 
     @MainActor
@@ -175,6 +197,23 @@ final class UIComponentsTests: XCTestCase {
         model.reset()
         XCTAssertEqual(model.query, "")
         XCTAssertEqual(model.selectedItem?.id, "start")
+    }
+
+    @MainActor
+    func testEverySoundCueIsBundled() {
+        for cue in SoundCue.allCases {
+            XCTAssertNotNil(Sounds.url(for: cue), "missing resource for \(cue.rawValue)")
+        }
+    }
+
+    func testTransferTextShowsMeasuredRateAndBytes() {
+        let snapshot = TransferSnapshot(label: "s1-mini", receivedBytes: 120_000_000,
+                                        totalBytes: 484_219_808, bytesPerSecond: 24_600_000)
+        XCTAssertEqual(TransferText.progress(0.25, transfer: snapshot),
+                       "25% · 25 MB/s · 120 MB of 484 MB")
+        XCTAssertFalse(TransferText.progress(0.25, transfer: nil).contains("MB/s"))
+        XCTAssertEqual(TransferText.bytes(1_500_000_000), "1.50 GB")
+        XCTAssertEqual(TransferText.rate(0), "")
     }
 
     @MainActor

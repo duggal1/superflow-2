@@ -41,6 +41,8 @@ actor FakeEngine: StreamingAsrManager {
     private(set) var resetCount = 0
     private(set) var cleanupCount = 0
     var autoPartial = false
+    var hangProcessing = false
+    var hangFinish = false
 
     init(text: String = "hello world") {
         self.text = text
@@ -48,6 +50,8 @@ actor FakeEngine: StreamingAsrManager {
 
     func setText(_ value: String) { text = value }
     func setAutoPartial(_ value: Bool) { autoPartial = value }
+    func setHangProcessing(_ value: Bool) { hangProcessing = value }
+    func setHangFinish(_ value: Bool) { hangFinish = value }
 
     func loadModels() async throws {}
 
@@ -56,10 +60,12 @@ actor FakeEngine: StreamingAsrManager {
     }
 
     func processBufferedAudio() async throws {
+        if hangProcessing { try? await Task.sleep(for: .milliseconds(500)) }
         if autoPartial { partialCallback?("token") }
     }
 
     func finish() async throws -> String {
+        if hangFinish { try? await Task.sleep(for: .milliseconds(500)) }
         finishCount += 1
         return text
     }
@@ -91,6 +97,21 @@ actor EngineSpy {
 
     func engine(at index: Int) -> FakeEngine? {
         engines.indices.contains(index) ? engines[index] : nil
+    }
+}
+
+/// Records which managers a stream returns to the pool.
+actor EngineReturnLog {
+    private var identifiers: [ObjectIdentifier] = []
+
+    func record(_ manager: any StreamingAsrManager) {
+        identifiers.append(ObjectIdentifier(manager))
+    }
+
+    var count: Int { identifiers.count }
+
+    func contains(_ manager: any StreamingAsrManager) -> Bool {
+        identifiers.contains(ObjectIdentifier(manager))
     }
 }
 

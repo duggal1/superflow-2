@@ -75,7 +75,7 @@ public struct ShortcutsView: View {
                 AppTextEditor("Shortcut text", text: $content, minHeight: 96)
                 if let counter = byteCounter {
                     Text(counter)
-                        .font(Typography.mono)
+                        .font(Typography.secondary)
                         .foregroundStyle(Tok.text2)
                 }
             }
@@ -116,7 +116,6 @@ public struct ShortcutsView: View {
                              badge: entry.match == .inline ? "Inline" : nil,
                              badgeVariant: .blue,
                              isDisabled: !entry.enabled,
-                             monospaced: true,
                              onOpen: { expandedID = expandedID == entry.id ? nil : entry.id },
                              onDelete: { Task { await model.delete(entry) } })
                     if expandedID == entry.id {

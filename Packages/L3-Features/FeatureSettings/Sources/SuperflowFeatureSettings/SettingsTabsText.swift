@@ -6,17 +6,22 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct TextTab: View {
-    nonisolated static let titles = ["Harper grammar pass", "Spoken commands", "Large numbers",
-                         "Zero through nine as words", "Minimum block", "Preferred maximum",
-                         "Hard maximum", "Separate blocks with", "Capitalize sentence starts",
-                         "Add a final period", "Leave a trailing space"]
+    nonisolated static let titles = grammarTitles + numberTitles + formatTitles
+        + ContextProfileCard.titles + CodeSpeakCard.titles
+
+    nonisolated static let grammarTitles = ["Harper grammar pass", "Spoken commands",
+                                            "Large numbers"]
+    nonisolated static let numberTitles = ["Zero through nine as words", "Minimum block",
+                                           "Preferred maximum", "Hard maximum"]
+    nonisolated static let formatTitles = ["Separate blocks with", "Capitalize sentence starts",
+                                           "Add a final period", "Leave a trailing space"]
 
     @ObservedObject var model: SettingsViewModel
     let query: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.md) {
-            SettingsCard(titles: Array(Self.titles.prefix(3)), query: query) {
+            SettingsCard(titles: Self.grammarTitles, query: query) {
                 SettingRow("Harper grammar pass", filter: query) {
                     AppToggle("Harper grammar pass", isOn: $model.settings.harperEnabled)
                 }
@@ -28,25 +33,25 @@ struct TextTab: View {
                               items: LargeNumberStyle.allCases.map { .init($0.label, value: $0) })
                 }
             }
-            SettingsCard(titles: Array(Self.titles[3...6]), query: query) {
+            SettingsCard(titles: Self.numberTitles, query: query) {
                 SettingRow("Zero through nine as words", filter: query) {
                     AppToggle("Zero through nine as words",
                               isOn: $model.settings.spellOutSmallNumbers)
                 }
                 SettingRow("Minimum block", filter: query) {
                     AppStepper(value: $model.settings.lineFormat.minWords,
-                               in: SettingsValidation.lineWordRange, unit: "words")
+                               range: SettingsValidation.lineWordRange, unit: "words", label: "Minimum block")
                 }
                 SettingRow("Preferred maximum", filter: query) {
                     AppStepper(value: $model.settings.lineFormat.preferredMax,
-                               in: SettingsValidation.lineWordRange, unit: "words")
+                               range: SettingsValidation.lineWordRange, unit: "words", label: "Preferred maximum")
                 }
                 SettingRow("Hard maximum", filter: query) {
                     AppStepper(value: $model.settings.lineFormat.hardMax,
-                               in: SettingsValidation.lineWordRange, unit: "words")
+                               range: SettingsValidation.lineWordRange, unit: "words", label: "Hard maximum")
                 }
             }
-            SettingsCard(titles: Array(Self.titles.suffix(4)), query: query) {
+            SettingsCard(titles: Self.formatTitles, query: query) {
                 SettingRow("Separate blocks with", filter: query) {
                     Segmented(selection: $model.settings.lineFormat.breakStyle,
                               items: BreakStyle.allCases.map { .init($0.label, value: $0) })
@@ -63,12 +68,14 @@ struct TextTab: View {
                               isOn: $model.settings.lineFormat.trailingSpace)
                 }
             }
+            ContextProfileCard(model: model, query: query)
+            CodeSpeakCard(model: model, query: query)
         }
     }
 }
 
 struct MeetingsTab: View {
-    nonisolated static let titles = ["Meetings in stats", "Speaker separation"]
+    nonisolated static let titles = ["Meetings in stats"]
 
     @ObservedObject var model: SettingsViewModel
     let query: String
@@ -78,30 +85,7 @@ struct MeetingsTab: View {
             SettingRow("Meetings in stats", filter: query) {
                 AppToggle("Meetings in stats", isOn: $model.settings.meetingsInStats)
             }
-            SettingRow("Speaker separation", filter: query) {
-                if model.diarizationReady {
-                    Badge("Installed", variant: .green, size: .sm)
-                } else {
-                    HStack(spacing: Space.xs) {
-                        if model.isDownloadingDiarization {
-                            Text(progressLabel)
-                                .font(.system(size: 12))
-                                .monospacedDigit()
-                                .foregroundStyle(Tok.text2)
-                        }
-                        AppButton("Download", kind: .quiet, height: ControlHeight.small,
-                                  enabled: !model.isDownloadingDiarization) {
-                            Task { await model.downloadDiarizationModel() }
-                        }
-                    }
-                }
-            }
         }
-    }
-
-    private var progressLabel: String {
-        guard let progress = model.diarizationProgress else { return "Downloading…" }
-        return "\(Int(progress * 100))%"
     }
 }
 
@@ -172,7 +156,7 @@ struct AdvancedTab: View {
             }
             SettingRow("Cleanup workers", filter: query) {
                 AppStepper(value: $model.settings.cleanupWorkers,
-                           in: SettingsValidation.cleanupWorkersRange)
+                           range: SettingsValidation.cleanupWorkersRange, label: "Cleanup workers")
             }
         }
     }

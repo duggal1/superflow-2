@@ -16,11 +16,14 @@ public final class OnboardingViewModel: ObservableObject {
     @Published public private(set) var speechReady = false
     @Published public private(set) var speechSkipped = false
     @Published public private(set) var speechProgress: Double?
+    /// Measured wire speed for the running transfer, not an estimate.
+    @Published public private(set) var speechTransfer: TransferSnapshot?
     @Published public private(set) var speechError: String?
     @Published public private(set) var isDownloadingSpeech = false
 
     @Published public private(set) var cleanupReady = false
     @Published public private(set) var cleanupProgress: Double?
+    @Published public private(set) var cleanupTransfer: TransferSnapshot?
     @Published public private(set) var cleanupError: String?
     @Published public private(set) var isDownloadingCleanup = false
     /// The cleanup model is optional, so the row carries its own switch.
@@ -121,16 +124,23 @@ public final class OnboardingViewModel: ObservableObject {
         }
     }
 
+    public var speechTotalBytes: Int64? { speechTransfer?.totalBytes }
+    public var cleanupTotalBytes: Int64? { cleanupTransfer?.totalBytes }
+
     public var speechDetail: String {
         if speechReady { return "Ready" }
-        if let speechProgress { return "\(Int(speechProgress * 100))%" }
+        if let speechProgress {
+            return TransferText.progress(speechProgress, transfer: speechTransfer)
+        }
         if speechError != nil { return "Download failed" }
         return "Streaming speech recognition for English. Runs on this Mac."
     }
 
     public var cleanupDetail: String {
         if cleanupReady { return "Ready" }
-        if let cleanupProgress { return "\(Int(cleanupProgress * 100))%" }
+        if let cleanupProgress {
+            return TransferText.progress(cleanupProgress, transfer: cleanupTransfer)
+        }
         if cleanupError != nil { return "Download failed" }
         return "Removes filler words and fixes punctuation. Optional."
     }
@@ -175,6 +185,10 @@ public final class OnboardingViewModel: ObservableObject {
     public func performPrimaryAction() async {
         if step == .models, needsDownload {
             await downloadAll()
+            return
+        }
+        if step == .done {
+            await finish()
             return
         }
         await advance()
@@ -253,6 +267,12 @@ public final class OnboardingViewModel: ObservableObject {
         isDownloadingSpeech = true
         speechError = nil
         speechProgress = 0
+        speechTransfer = nil
+        let meter = meterTransfer { [weak self] snapshot in self?.speechTransfer = snapshot }
+        defer {
+            meter.cancel()
+            speechTransfer = nil
+        }
         let token = UUID()
         speechToken = token
         do {
@@ -283,6 +303,12 @@ public final class OnboardingViewModel: ObservableObject {
         isDownloadingCleanup = true
         cleanupError = nil
         cleanupProgress = 0
+        cleanupTransfer = nil
+        let meter = meterTransfer { [weak self] snapshot in self?.cleanupTransfer = snapshot }
+        defer {
+            meter.cancel()
+            cleanupTransfer = nil
+        }
         let token = UUID()
         cleanupToken = token
         do {
@@ -304,6 +330,19 @@ public final class OnboardingViewModel: ObservableObject {
                        style: .error)
         }
         isDownloadingCleanup = false
+    }
+
+    /// Polls the shared meter while a transfer runs. The transfer layer reports
+    /// on its own queues; the screen only reads the latest reading.
+    private func meterTransfer(
+        _ apply: @escaping @MainActor (TransferSnapshot?) -> Void
+    ) -> Task<Void, Never> {
+        Task { @MainActor in
+            while !Task.isCancelled {
+                apply(DownloadTelemetry.shared.snapshot())
+                try? await Task.sleep(for: .milliseconds(300))
+            }
+        }
     }
 
     public func setCleanupWanted(_ wanted: Bool) async {

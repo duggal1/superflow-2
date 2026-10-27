@@ -32,7 +32,8 @@ struct GeneralTab: View {
 }
 
 struct DictationTab: View {
-    nonisolated static let titles = ["Speech model", "Clean up with S1-mini",
+    @Environment(\.openModels) private var openModels
+    nonisolated static let titles = ["Clean up with S1-mini",
                          "Hold to talk", "Double-tap window", "Meeting hold", "Typing speed"]
 
     @ObservedObject var model: SettingsViewModel
@@ -40,17 +41,14 @@ struct DictationTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.md) {
-            SettingsCard(titles: Array(Self.titles.prefix(2)), query: query) {
-                SettingRow("Speech model", filter: query) { speechModel }
+            SettingsCard(titles: Array(Self.titles.prefix(1)), query: query) {
                 SettingRow("Clean up with S1-mini", filter: query) {
-                    HStack(spacing: Space.xs) {
-                        if !model.cleanupReady {
-                            AppButton("Download", kind: .quiet, height: ControlHeight.small,
-                                      enabled: !model.isDownloadingCleanup) {
-                                Task { await model.downloadCleanupModel() }
-                            }
+                    HStack(spacing: 12) {
+                        if !model.cleanupModelInstalled {
+                            AppButton("Get model", kind: .link, height: ControlHeight.small) { openModels() } 
                         }
                         AppToggle("Clean up with S1-mini", isOn: $model.settings.cleanupEnabled)
+                            .disabled(!model.cleanupModelInstalled)
                     }
                 }
             }
@@ -66,40 +64,10 @@ struct DictationTab: View {
                 }
                 SettingRow("Typing speed", filter: query) {
                     AppStepper(value: $model.settings.typingWPM,
-                               in: SettingsValidation.typingSpeedRange, unit: "wpm")
+                               range: SettingsValidation.typingSpeedRange, unit: "wpm", label: "Typing speed")
                 }
             }
         }
-    }
-
-    @ViewBuilder
-    private var speechModel: some View {
-        HStack(spacing: Space.xs) {
-            if model.asrReady {
-                Badge("Verified", variant: .green, size: .sm)
-            } else if model.isDownloadingASR {
-                Text(progressLabel)
-                    .font(.system(size: 12))
-                    .monospacedDigit()
-                    .foregroundStyle(Tok.text2)
-            } else {
-                AppButton("Download", kind: .quiet, height: ControlHeight.small,
-                          enabled: model.profile.supportsLiveDictation) {
-                    Task { await model.downloadASRModel() }
-                }
-            }
-            Dropdown(selection: Binding(get: { model.settings.asrProfile },
-                                        set: { model.setProfile($0) }),
-                     options: model.profileOptions.map {
-                         Dropdown.Option(model.profileName($0), value: $0)
-                     },
-                     label: "Speech model")
-        }
-    }
-
-    private var progressLabel: String {
-        guard let progress = model.asrProgress else { return "Downloading…" }
-        return "\(Int(progress * 100))%"
     }
 
     private func ms(_ key: WritableKeyPath<GestureConfig, Int>,

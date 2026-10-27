@@ -13,11 +13,21 @@ final class RingBufferTests: XCTestCase {
         XCTAssertEqual(ring.available, 0)
     }
 
-    func testOverflowDropsOldestFreeSpace() {
+    func testOverflowDropsNewestSamples() {
         let ring = AudioRingBuffer(capacity: 4)
         let input = [Float](repeating: 1, count: 6)
         input.withUnsafeBufferPointer { XCTAssertEqual(ring.write($0), 4) }
         XCTAssertEqual(ring.available, 4)
+        XCTAssertEqual(ring.droppedSamples, 2)
+    }
+
+    func testDefaultCapacityHoldsThirtySeconds() {
+        let ring = AudioRingBuffer()
+        let input = [Float](repeating: 0.5, count: 32 * 16_000)
+        let written = input.withUnsafeBufferPointer { ring.write($0) }
+        XCTAssertEqual(written, input.count)
+        XCTAssertEqual(ring.available, input.count)
+        XCTAssertEqual(ring.droppedSamples, 0)
     }
 
     func testEmptyRead() {

@@ -29,6 +29,7 @@ public struct WindowChrome: NSViewRepresentable {
         let view = ChromeView()
         let kind = kind
         view.configure = { window in
+            window.makeFirstResponder(nil)
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             window.styleMask.insert(.fullSizeContentView)
@@ -50,6 +51,16 @@ public struct WindowChrome: NSViewRepresentable {
                 window.isMovableByWindowBackground = false
                 window.minSize = NSSize(width: Layout.windowMinWidth,
                                         height: Layout.windowMinHeight)
+                // Onboarding removes resizing and pins 640 x 520. Coming back to the
+                // main window has to restore both, or the dashboard lands in a
+                // fixed-size onboarding window.
+                if !window.styleMask.contains(.resizable) {
+                    window.styleMask.insert(.resizable)
+                    window.standardWindowButton(.zoomButton)?.isHidden = false
+                    window.setContentSize(NSSize(width: Layout.windowDefaultWidth,
+                                                 height: Layout.windowDefaultHeight))
+                    window.center()
+                }
             }
         }
         return view

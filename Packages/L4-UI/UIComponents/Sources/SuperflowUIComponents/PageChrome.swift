@@ -84,7 +84,7 @@ public struct SearchField: View {
             Icon(.search, size: 14, tint: Tok.text2)
             TextField("", text: $text, prompt: Text(prompt).foregroundStyle(Tok.text2))
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .font(Typography.body)
                 .foregroundStyle(Tok.text)
                 .tint(Tok.accent)
                 .focused($focus)
@@ -111,6 +111,7 @@ public struct SearchField: View {
         .frame(height: Layout.control)
         .frame(minWidth: 200, idealWidth: 280, maxWidth: 320)
         .background(focus || hover ? Tok.fieldHover : Tok.field, in: .capsule)
+        .contrastStroke(radius: Layout.control / 2)
         .contentShape(.capsule)
         .onTapGesture { focus = true }
         .onHover { hover = $0 }
@@ -148,6 +149,7 @@ public struct BarIconButton: View {
         .onHover { hover = $0 }
         .animation(hover ? Motion.hoverIn : Motion.hoverOut, value: hover)
         .opacity(enabled ? 1 : 0.35)
+        .focusStep(Circle())
         .accessibilityLabel(label)
         .clickable(enabled)
     }

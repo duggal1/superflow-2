@@ -4,10 +4,16 @@ import SuperflowKernel
 import SuperflowPorts
 
 /// AVAudioEngine microphone capture converted to 16 kHz mono Float32.
+///
+/// The sample-rate conversion happens inside the audio graph: the input node is
+/// connected to a mixer at the hardware format and the mixer to the main mixer
+/// at 16 kHz mono. That avoids the aliasing and per-buffer allocation of a
+/// hand-written linear resampler on the realtime thread.
 public final class MicrophoneCapture: AudioSource, @unchecked Sendable {
     public let kind: AudioSourceKind = .mic
     private let lock = NSLock()
     private var engine: AVAudioEngine?
+    private var mixer: AVAudioMixerNode?
     private var continuation: AsyncStream<AudioChunk>.Continuation?
     private var eventContinuation: AsyncStream<AudioEvent>.Continuation?
     private var consumer: Task<Void, Never>?
@@ -15,6 +21,9 @@ public final class MicrophoneCapture: AudioSource, @unchecked Sendable {
     private var stopping = false
     private var observer: NSObjectProtocol?
     private let ring = AudioRingBuffer()
+
+    /// Samples the audio thread had to drop because the consumer fell behind.
+    public var droppedSamples: Int { ring.droppedSamples }
 
     public init() {}
 
@@ -25,10 +34,11 @@ public final class MicrophoneCapture: AudioSource, @unchecked Sendable {
 
         let (samples, sampleContinuation) = AsyncStream<AudioChunk>.makeStream(bufferingPolicy: .bufferingNewest(600))
         let (events, eventContinuation) = AsyncStream<AudioEvent>.makeStream(bufferingPolicy: .bufferingNewest(16))
-        let engine = try makeEngine()
+        let (engine, mixer) = try makeEngine()
 
         lock.withLock {
             self.engine = engine
+            self.mixer = mixer
             self.continuation = sampleContinuation
             self.eventContinuation = eventContinuation
             self.running = true
@@ -43,13 +53,13 @@ public final class MicrophoneCapture: AudioSource, @unchecked Sendable {
     }
 
     public func stop() async {
-        let (shouldStop, engineToStop) = lock.withLock { () -> (Bool, AVAudioEngine?) in
-            guard running, !stopping else { return (false, nil) }
+        let (shouldStop, engineToStop, mixerToStop) = lock.withLock { () -> (Bool, AVAudioEngine?, AVAudioMixerNode?) in
+            guard running, !stopping else { return (false, nil, nil) }
             stopping = true
-            return (true, engine)
+            return (true, engine, mixer)
         }
         guard shouldStop else { return }
-        engineToStop?.inputNode.removeTap(onBus: 0)
+        mixerToStop?.removeTap(onBus: 0)
         engineToStop?.stop()
 
         let state = lock.withLock { () -> (AsyncStream<AudioChunk>.Continuation?,
@@ -57,6 +67,7 @@ public final class MicrophoneCapture: AudioSource, @unchecked Sendable {
                                             NSObjectProtocol?) in
             let value = (continuation, eventContinuation, consumer, observer)
             engine = nil
+            mixer = nil
             continuation = nil
             eventContinuation = nil
             consumer = nil
@@ -90,24 +101,38 @@ public final class MicrophoneCapture: AudioSource, @unchecked Sendable {
         }
     }
 
-    private func makeEngine() throws -> AVAudioEngine {
+    private func makeEngine() throws -> (AVAudioEngine, AVAudioMixerNode) {
         let engine = AVAudioEngine()
         let input = engine.inputNode
-        let format = input.outputFormat(forBus: 0)
-        guard format.sampleRate > 0, format.channelCount > 0 else {
+        let hardware = input.outputFormat(forBus: 0)
+        guard hardware.sampleRate > 0, hardware.channelCount > 0 else {
             throw SuperflowError.audioFailure("no microphone input format")
         }
-        let resampler = AudioResampler(inputRate: format.sampleRate)
-        let ring = self.ring
-        input.installTap(onBus: 0, bufferSize: 1_024, format: format) { buffer, _ in
-            resampler.process(buffer, into: ring)
+        guard let target = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                         sampleRate: Double(sampleRate),
+                                         channels: 1, interleaved: false) else {
+            throw SuperflowError.audioFailure("could not create a 16 kHz mono format")
         }
+
+        let mixer = AVAudioMixerNode()
+        engine.attach(mixer)
+        engine.connect(input, to: mixer, format: hardware)
+        engine.connect(mixer, to: engine.mainMixerNode, format: target)
+        // Keep the graph pulled while monitoring nothing: dictation must not echo.
+        engine.mainMixerNode.outputVolume = 0
+
+        let ring = self.ring
+        mixer.installTap(onBus: 0, bufferSize: 1_024, format: target) { buffer, _ in
+            guard let channel = buffer.floatChannelData?[0] else { return }
+            _ = ring.write(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+        }
+
         engine.prepare()
         do {
             try engine.start()
-            return engine
+            return (engine, mixer)
         } catch {
-            input.removeTap(onBus: 0)
+            mixer.removeTap(onBus: 0)
             throw SuperflowError.audioFailure(error.localizedDescription)
         }
     }
@@ -127,28 +152,32 @@ public final class MicrophoneCapture: AudioSource, @unchecked Sendable {
     }
 
     private func rebuildAfterRouteChange() {
-        let state = lock.withLock { () -> (AVAudioEngine, NSObjectProtocol?, AsyncStream<AudioEvent>.Continuation?)? in
+        let state = lock.withLock { () -> (AVAudioEngine, AVAudioMixerNode?, NSObjectProtocol?,
+                                            AsyncStream<AudioEvent>.Continuation?)? in
             guard running, !stopping, let engine else { return nil }
             self.engine = nil
+            let mixer = self.mixer
+            self.mixer = nil
             let observer = self.observer
             self.observer = nil
-            return (engine, observer, eventContinuation)
+            return (engine, mixer, observer, eventContinuation)
         }
-        guard let (oldEngine, oldObserver, events) = state else { return }
+        guard let (oldEngine, oldMixer, oldObserver, events) = state else { return }
         if let oldObserver { NotificationCenter.default.removeObserver(oldObserver) }
-        oldEngine.inputNode.removeTap(onBus: 0)
+        oldMixer?.removeTap(onBus: 0)
         oldEngine.stop()
         events?.yield(.routeChanged)
 
         do {
-            let replacement = try makeEngine()
+            let (replacement, replacementMixer) = try makeEngine()
             let installed = lock.withLock { () -> Bool in
                 guard running, !stopping else { return false }
                 engine = replacement
+                mixer = replacementMixer
                 return true
             }
             guard installed else {
-                replacement.inputNode.removeTap(onBus: 0)
+                replacementMixer.removeTap(onBus: 0)
                 replacement.stop()
                 return
             }

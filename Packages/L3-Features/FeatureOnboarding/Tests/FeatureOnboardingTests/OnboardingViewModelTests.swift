@@ -308,4 +308,19 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertTrue(saved.onboardingComplete)
         XCTAssertTrue(received?.onboardingComplete == true)
     }
+
+    /// The last step has no `next`, so `Open Superflow` must finish, not advance.
+    func testPrimaryActionOnDoneSavesAndHandsOff() async {
+        var received: AppSettings?
+        let model = makeModel(onFinish: { received = $0 })
+        await model.load()
+        await advanceTo(.done, in: model)
+
+        await model.performPrimaryAction()
+
+        let saved = await store.load()
+        XCTAssertTrue(saved.onboardingComplete)
+        XCTAssertTrue(received?.onboardingComplete == true)
+        XCTAssertFalse(model.isFinishing)
+    }
 }

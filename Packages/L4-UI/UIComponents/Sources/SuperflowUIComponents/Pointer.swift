@@ -60,3 +60,8 @@ struct CursorRect: NSViewRepresentable {
         }
     }
 }
+
+public extension View {
+    /// Horizontal drag handle. Open hand at rest, closed hand while dragging.
+    func scrubbable(_ active: Bool) -> some View { pointerStyle(active ? .grabActive : .grabIdle) }
+}

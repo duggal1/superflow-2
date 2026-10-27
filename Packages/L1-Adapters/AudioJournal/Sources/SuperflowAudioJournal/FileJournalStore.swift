@@ -30,9 +30,18 @@ enum JournalManifest {
 }
 
 /// Stores one session/source lane as append-only manifest entries and 60-second Int16 PCM files.
+///
+/// A lane never refuses to open because of disk pressure. Refusing meant a user with a nearly
+/// full disk could not dictate at all: the failure surfaced as a start error long after the
+/// model was ready, and losing the transcript is a worse outcome than losing crash protection.
+/// Below the configured floor the lane opens degraded instead: capture, recognition and
+/// cleanup continue, the journal stays empty, and the caller reports that crash recovery is off.
 public actor FileJournalStore: JournalStore {
     public static let segmentDurationSamples: Int64 = Int64(sampleRate) * 60
-    public static let minimumStartFreeBytes: Int64 = 3 * 1_024 * 1_024 * 1_024
+    /// Free space below which a lane opens degraded rather than journaling. 16 kHz mono Int16 is
+    /// ~1.9 MB/min, so this is hours of dictation; the point is only to stop writing when the
+    /// volume is genuinely about to run out.
+    public static let minimumStartFreeBytes: Int64 = 512 * 1_024 * 1_024
     public static let lowDiskWarningBytes: Int64 = 1 * 1_024 * 1_024 * 1_024
 
     private let root: URL
@@ -42,8 +51,8 @@ public actor FileJournalStore: JournalStore {
     private let lowDiskWarningBytes: Int64
 
     public init(root: URL? = nil, keepAfterClose: Bool = false,
-                minimumStartFreeBytes: Int64 = 3 * 1_024 * 1_024 * 1_024,
-                lowDiskWarningBytes: Int64 = 1 * 1_024 * 1_024 * 1_024,
+                minimumStartFreeBytes: Int64 = FileJournalStore.minimumStartFreeBytes,
+                lowDiskWarningBytes: Int64 = FileJournalStore.lowDiskWarningBytes,
                 fileManager: FileManager = .default) {
         self.fileManager = fileManager
         self.keepAfterClose = keepAfterClose
@@ -61,8 +70,7 @@ public actor FileJournalStore: JournalStore {
     public func openWriter(session: SessionID, source: AudioSourceKind,
                            startingSample: Int64) async throws -> any AudioJournalWriter {
         try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
-        let available = availableBytes(at: root)
-        guard available >= minimumStartFreeBytes else { throw SuperflowError.diskFull }
+        let startsDegraded = availableBytes(at: root) < minimumStartFreeBytes
         let directory = sessionDirectory(session)
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
         let legacyURL = directory.appendingPathComponent("\(source.rawValue).pcm")
@@ -72,7 +80,8 @@ public actor FileJournalStore: JournalStore {
         let start = max(legacySamples, max(0, startingSample))
         return try PCMJournalWriter(directory: directory, source: source,
                                     startingSamples: start,
-                                    lowDiskWarningBytes: lowDiskWarningBytes)
+                                    lowDiskWarningBytes: lowDiskWarningBytes,
+                                    startingDegraded: startsDegraded)
     }
 
     public func replay(session: SessionID, source: AudioSourceKind,

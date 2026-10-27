@@ -10,6 +10,7 @@ public struct RowButton<Content: View>: View {
     private let radius: CGFloat
     private let selected: Bool
     private let enabled: Bool
+    private let hoverFill: Color
     private let action: () -> Void
     private let content: Content
     @State private var hover = false
@@ -18,12 +19,14 @@ public struct RowButton<Content: View>: View {
 
     public init(_ label: String, height: CGFloat? = nil, radius: CGFloat = Radius.nested,
                 selected: Bool = false, enabled: Bool = true,
+                hoverFill: Color = Tok.surface,
                 action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
         self.label = label
         self.height = height
         self.radius = radius
         self.selected = selected
         self.enabled = enabled
+        self.hoverFill = hoverFill
         self.action = action
         self.content = content()
     }
@@ -48,7 +51,7 @@ public struct RowButton<Content: View>: View {
 
     private var fill: Color {
         if selected { return Tok.control }
-        return hover ? Tok.surface : .clear
+        return hover ? hoverFill : .clear
     }
 }
 
@@ -77,7 +80,7 @@ public struct SettingRow<Control: View>: View {
         if visible {
             HStack(spacing: Space.lg) {
                 Text(title)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(Typography.bodyMedium)
                     .foregroundStyle(Tok.text)
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 control
@@ -113,20 +116,18 @@ public struct EntryRow: View {
     private let badge: String?
     private let badgeVariant: BadgeVariant
     private let isDisabled: Bool
-    private let monospaced: Bool
     private let onOpen: () -> Void
     private let onDelete: () -> Void
 
     public init(trigger: String, result: String, badge: String? = nil,
                 badgeVariant: BadgeVariant = .neutral, isDisabled: Bool = false,
-                monospaced: Bool = false, onOpen: @escaping () -> Void,
+                onOpen: @escaping () -> Void,
                 onDelete: @escaping () -> Void) {
         self.trigger = trigger
         self.result = result
         self.badge = badge
         self.badgeVariant = badgeVariant
         self.isDisabled = isDisabled
-        self.monospaced = monospaced
         self.onOpen = onOpen
         self.onDelete = onDelete
     }
@@ -143,7 +144,7 @@ public struct EntryRow: View {
                     .lineLimit(1)
                 Icon(.arrow, size: 12, tint: Tok.text2)
                 Text(result)
-                    .font(monospaced ? Typography.mono : .system(size: 13, weight: .medium))
+                    .font(Typography.bodyMedium)
                     .foregroundStyle(isDisabled ? Tok.text2 : Tok.text)
                     .lineLimit(1)
                 Spacer(minLength: Space.md)

@@ -7,7 +7,6 @@ public struct AppField: View {
     private let label: String
     private let prompt: String
     @Binding private var text: String
-    private let monospaced: Bool
     private let height: CGFloat
     private let onCard: Bool
     private let onSubmit: (() -> Void)?
@@ -16,13 +15,12 @@ public struct AppField: View {
     @State private var hover = false
 
     public init(_ label: String, prompt: String = "", text: Binding<String>,
-                monospaced: Bool = false, height: CGFloat = ControlHeight.large,
+                height: CGFloat = ControlHeight.large,
                 onCard: Bool = true, onSubmit: (() -> Void)? = nil,
                 onTab: (() -> Void)? = nil) {
         self.label = label
         self.prompt = prompt
         _text = text
-        self.monospaced = monospaced
         self.height = height
         self.onCard = onCard
         self.onSubmit = onSubmit
@@ -32,7 +30,7 @@ public struct AppField: View {
     public var body: some View {
         TextField(prompt, text: $text)
             .textFieldStyle(.plain)
-            .font(monospaced ? Typography.mono : Typography.body)
+            .font(Typography.body)
             .foregroundStyle(Tok.text)
             .focused($focused)
             .onSubmit { onSubmit?() }
@@ -44,6 +42,7 @@ public struct AppField: View {
             .padding(.horizontal, Space.sm)
             .frame(height: height)
             .background(fill, in: .rect(cornerRadius: Radius.field, style: .continuous))
+            .contrastStroke(radius: Radius.field)
             .contentShape(.rect(cornerRadius: Radius.field))
             .onTapGesture { focused = true }
             .onHover { hover = $0 }
@@ -89,13 +88,14 @@ public struct AppTextField: View {
     public var body: some View {
         TextField("", text: $text, prompt: Text(prompt).foregroundStyle(Tok.text2))
             .textFieldStyle(.plain)
-            .font(.system(size: 13))
+            .font(Typography.body)
             .foregroundStyle(Tok.text)
             .tint(Tok.accent)
             .focused($focused)
             .padding(.horizontal, Space.sm)
             .frame(height: ControlHeight.regular)
             .background(fill, in: .rect(cornerRadius: Radius.field, style: .continuous))
+            .contrastStroke(radius: Radius.field)
             .contentShape(.rect(cornerRadius: Radius.field))
             .onTapGesture { focused = true }
             .onHover { hover = $0 }
@@ -118,7 +118,7 @@ public struct PracticeField: View {
     public var body: some View {
         TextField(prompt, text: $text, axis: .vertical)
             .textFieldStyle(.plain)
-            .font(.system(size: 15))
+            .font(Typography.large)
             .foregroundStyle(Tok.text)
             .lineLimit(2...4)
             .padding(Space.sm)
@@ -130,7 +130,7 @@ public struct PracticeField: View {
     }
 }
 
-/// A monospaced body editor for shortcut content. Grows to six lines.
+/// A multiline body editor for shortcut content. Grows to six lines.
 public struct AppTextEditor: View {
     private let label: String
     @Binding private var text: String
@@ -145,14 +145,14 @@ public struct AppTextEditor: View {
 
     public var body: some View {
         TextEditor(text: $text)
-            .font(Typography.mono)
+            .font(Typography.body)
             .foregroundStyle(Tok.text)
             .scrollContentBackground(.hidden)
             .focused($focused)
             .padding(Space.xs)
             .frame(minHeight: minHeight)
             .background(Tok.well, in: .rect(cornerRadius: Radius.field, style: .continuous))
-            .focusRing(radius: Radius.field, active: focused)
+            .focusStep(.rect(cornerRadius: Radius.field))
             .accessibilityLabel(label)
     }
 }

@@ -119,7 +119,7 @@ public actor CleanupService {
                 try await self.cleaner.clean(plan.text, options: CleanOptions(
                     styling: context.settings.cleanupStyling,
                     structure: context.settings.cleanupStructure,
-                    context: "general",
+                    context: context.settings.cleanupContext,
                     deadlineMs: deadlineMs,
                     maxNewTokens: self.config.maxNewTokens))
             }

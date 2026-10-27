@@ -17,6 +17,9 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     private var activeTap: CFMachPort?
     private var activeSource: CFRunLoopSource?
     private var wantsActive = false
+    /// When true the passive tap is installed as an active tap so the lone Fn press can be
+    /// swallowed before macOS runs its Globe action. Requires Accessibility.
+    private var suppressFn = false
     private var lifecycle = HotkeyLifecycle()
     private var wakeObserver: NSObjectProtocol?
     private var healthTimer: DispatchSourceTimer?
@@ -70,18 +73,34 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         }
     }
 
+    /// Takes ownership of the lone Fn press. Swallowing an event is only possible from an active
+    /// tap, which needs Accessibility; without it the system's Globe action still fires and the
+    /// app simply keeps observing Fn. Reinstalls the taps so the new options take effect.
+    public func setFnSuppression(_ on: Bool) async {
+        let changed = lock.withLock { () -> Bool in
+            guard suppressFn != on else { return false }
+            suppressFn = on
+            return true
+        }
+        guard changed, lock.withLock({ lifecycle.isRunning }) else { return }
+        removeTaps()
+        _ = installPassiveTap()
+        if lock.withLock({ wantsActive }) { installActiveTap() }
+    }
+
     // MARK: taps
 
     private func installPassiveTap() -> Bool {
         let mask = CGEventMask(1) << CGEventType.flagsChanged.rawValue
             | CGEventMask(1) << CGEventType.keyDown.rawValue
-        guard let tap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
-            options: .listenOnly,
-            eventsOfInterest: mask,
-            callback: Self.passiveCallback,
-            userInfo: Unmanaged.passUnretained(self).toOpaque()) else { return false }
+        // A listen-only tap can observe Fn but can never take it from the system, which is exactly
+        // why the Globe/Fn key still opened the emoji picker. With Accessibility the tap is
+        // installed active so the lone Fn press can be swallowed; if that fails (no Accessibility)
+        // we fall back to listening, so hotkeys keep working and only suppression is lost.
+        let wantsSwallow = lock.withLock { suppressFn }
+        var tap = makePassiveTap(mask: mask, options: wantsSwallow ? .defaultTap : .listenOnly)
+        if tap == nil, wantsSwallow { tap = makePassiveTap(mask: mask, options: .listenOnly) }
+        guard let tap else { return false }
         guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
             CFMachPortInvalidate(tap)
             return false
@@ -93,6 +112,16 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             passiveSource = source
         }
         return true
+    }
+
+    private func makePassiveTap(mask: CGEventMask, options: CGEventTapOptions) -> CFMachPort? {
+        CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: options,
+            eventsOfInterest: mask,
+            callback: Self.passiveCallback,
+            userInfo: Unmanaged.passUnretained(self).toOpaque())
     }
 
     private func installActiveTap() {
@@ -182,6 +211,13 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             if let mapped = KeyEventMapper.flagsChanged(keyCode: keyCode, flags: event.flags,
                                                          timestampNs: timestamp) {
                 continuation.yield(mapped)
+                // Drop only the Fn modifier change so macOS cannot run its Globe action (Show
+                // Emoji & Symbols) underneath us. Key events are untouched, so Fn plus a function
+                // key or an arrow still delivers the real key: the system is not hijacked, only
+                // the emoji binding is suppressed while Superflow runs.
+                if mapped.kind == .fnDown || mapped.kind == .fnUp {
+                    if lock.withLock({ suppressFn }) { return nil }
+                }
             }
         case .keyDown:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)

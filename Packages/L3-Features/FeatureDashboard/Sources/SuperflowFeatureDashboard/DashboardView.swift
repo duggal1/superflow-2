@@ -16,7 +16,7 @@ public struct DashboardView: View {
                     .revealOnce(0, seen: model.hasAppeared)
             }
 
-            if model.isLoading && model.contributions.isEmpty {
+            if model.isLoading && model.activity.isEmpty {
                 Text("Reading your library…")
                     .font(Typography.body)
                     .foregroundStyle(Tok.text2)
@@ -29,10 +29,11 @@ public struct DashboardView: View {
                 if model.insights.hasData {
                     lowerHalf
                         .revealOnce(2, seen: model.hasAppeared)
-                    CleanupCard(mode: model.insights.latest.map(CleanupCard.Mode.latest) ?? .example)
+                    CleanupCard(mode: model.insights.latest.map(CleanupCard.Mode.latest) ?? .example,
+                                fnHeld: model.isFnHeld)
                         .revealOnce(3, seen: model.hasAppeared)
                 } else {
-                    CleanupCard(mode: .example)
+                    CleanupCard(mode: .example, fnHeld: model.isFnHeld)
                         .revealOnce(2, seen: model.hasAppeared)
                 }
             }
@@ -57,14 +58,14 @@ public struct DashboardView: View {
         }
     }
 
+    /// The title and the canvas are one component: `ActivityYear` already draws
+    /// "Last 12 months" and its readout line, so the page adds no second header.
     private var graph: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            SectionHeader("Last 12 months", note: "Dictation words per day")
-            ContributionGrid(model.contributions, animateReveal: !model.hasAppeared)
-        }
+        ActivityYear(days: model.activity, animatesIn: !model.hasAppeared)
     }
 
-    /// Both cards take the taller one's height; the row is fixed, not hug-height.
+    /// Both cards take the taller one's height, which comes from their content: no
+    /// fixed row height, and no dead third of either card.
     private var lowerHalf: some View {
         HStack(alignment: .top, spacing: Space.md) {
             AppsCard(apps: model.insights.topApps)
@@ -72,7 +73,7 @@ public struct DashboardView: View {
             HoursCard(hours: model.insights.hourly)
                 .frame(width: 320)
         }
-        .frame(height: 320, alignment: .top)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

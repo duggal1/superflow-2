@@ -14,7 +14,6 @@ public struct MenuBarContentView: View {
             Button("Open Superflow") {
                 coordinator.mainWindowController.show()
             }
-            Divider()
             Button(menu.dictationTitle) {
                 Task { await menu.toggleDictation() }
             }
@@ -29,7 +28,6 @@ public struct MenuBarContentView: View {
                 }
             }
             .disabled(!coordinator.isLoaded || (!menu.meetingState.isActive && !menu.canStartMeeting))
-            Divider()
             Button("Settings") {
                 coordinator.mainWindowController.show(.settings)
             }
@@ -46,7 +44,6 @@ public struct MenuBarContentView: View {
                     }
                 }
             }
-            Divider()
             Button("Quit Superflow") {
                 Task { await menu.quit() }
             }

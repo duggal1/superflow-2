@@ -8,8 +8,13 @@ import SwiftUI
 
 public struct OnboardingView: View {
     @ObservedObject private var model: OnboardingViewModel
-    @State private var reveal: CGFloat = 0
+    /// Field progress, in whole steps, run once at launch.
+    @State private var fieldReveal: CGFloat = 0
+    @State private var bloom = BloomModel()
+    /// The last step closes the ring, grows the disc, then flies it to the slot.
     @State private var collapse: CGFloat = 0
+    @State private var discGrow: Double = 0
+    @State private var discTravel: Double = 0
     @State private var keyDown = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -22,16 +27,17 @@ public struct OnboardingView: View {
                         count: model.step.count,
                         primaryTitle: model.primaryTitle,
                         primaryEnabled: model.primaryEnabled,
-                        skipTitle: skipTitle,
-                        reveal: reveal,
-                        collapse: collapse,
+                        reveal: fieldReveal,
                         backAction: model.step.previous == nil ? nil : { model.back() },
+                        skipTitle: skipTitle,
                         skipAction: skipTitle == nil ? nil : { Task { await model.skipCurrent() } }) {
             Task { await model.performPrimaryAction() }
         } content: {
             stepContent
         }
         .overlay { ToastHost(center: model.toast) }
+        .environment(bloom)
+        .focusEffectDisabled()
         .task {
             await model.load()
             await revealField()
@@ -46,8 +52,14 @@ public struct OnboardingView: View {
             }
         }
         .onChange(of: model.step) { _, step in
-            if step == .done {
+            switch step {
+            case .done:
                 Task { await closeField() }
+            case .welcome:
+                resetField()
+                pressKeyOnce()
+            default:
+                resetField()
             }
         }
         .onAppear { pressKeyOnce() }
@@ -65,25 +77,22 @@ public struct OnboardingView: View {
         }
     }
 
+    /// 1 — one line of body, one key that presses once, the privacy line stated once.
     private var welcome: some View {
-        VStack(alignment: .leading, spacing: Space.xl) {
-            heading
-            HStack(spacing: Space.sm) {
-                KeyCap("fn", down: keyDown)
-                Text("Hold fn and speak")
-                    .font(Typography.body)
-                    .foregroundStyle(Tok.text2)
-            }
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Speak. It types.").displayStyle(size: TypeScale.displaySize).clearsPixels()
+            FnDemo()
             Text("Everything runs on this Mac. No account, no cloud, no telemetry.")
-                .font(Typography.secondary)
-                .foregroundStyle(Tok.text2)
-                .fixedSize(horizontal: false, vertical: true)
+                .font(.system(size: 13)).foregroundStyle(Tok.text2).clearsPixels()
         }
     }
 
+    /// 2 — four rows in one card. Only the first row that still needs action carries
+    /// the accent, so the footer's Continue stays the accent control.
     private var permissions: some View {
-        VStack(alignment: .leading, spacing: Space.lg) {
+        VStack(alignment: .leading, spacing: Space.xl) {
             heading
+                .reveal(0)
             VStack(spacing: Space.md) {
                 ForEach(Array(OnboardingViewModel.requiredPermissions.enumerated()),
                         id: \.element) { index, permission in
@@ -96,111 +105,130 @@ public struct OnboardingView: View {
             .padding(Space.cardPaddingDense)
             .background(Tok.surface, in: .rect(cornerRadius: Radius.card, style: .continuous))
             .contrastStroke(radius: Radius.card)
+            .reveal(1)
             if model.permissionsSkipped {
-                NoticeBanner("Superflow will ask again the first time you dictate.",
-                             tone: .orange)
+                StatusNote(text: "Superflow asks again the first time you dictate.")
+                    .reveal(2)
             }
         }
     }
 
+    /// 3 — two rows, one button. Progress is the row fill and the detail line, never
+    /// a bar, and the detail line is never printed twice.
     private var models: some View {
-        VStack(alignment: .leading, spacing: Space.md) {
+        VStack(alignment: .leading, spacing: Space.xl) {
             heading
-            ProgressRow(title: model.speechName, detail: model.speechDetail,
-                        progress: model.speechProgress) {
-                NVIDIAIcon(size: 20, tint: Tok.text)
-            } trailing: {
-                state(speechReady: model.speechReady, error: model.speechError)
-            }
-            if model.cleanupAvailable {
-                ProgressRow(title: "S1-mini cleanup", detail: model.cleanupDetail,
-                            progress: model.cleanupProgress) {
-                    Icon(.cleanup, size: 16, tint: Tok.text)
+                .reveal(0)
+            VStack(spacing: Space.md) {
+                DownloadCard(title: model.speechName,
+                             detail: model.speechDetail,
+                             state: model.speechReady ? .installed : (model.isDownloadingSpeech ? .downloading(model.speechProgress) : (model.speechError.map { .failed($0) } ?? .idle)),
+                             totalBytes: model.speechTotalBytes) {
+                    NVIDIAIcon(size: 20, tint: Tok.text)
                 } trailing: {
-                    SettingToggle("Download cleanup", isOn: Binding(
-                        get: { model.cleanupWanted },
-                        set: { value in Task { await model.setCleanupWanted(value) } }))
+                    speechStatus
+                }
+                if model.cleanupAvailable {
+                    DownloadCard(title: "S1-mini cleanup",
+                                 detail: model.cleanupDetail,
+                                 state: cleanupIsDownloading ? .downloading(model.cleanupProgress) : (model.cleanupWanted ? .idle : .idle),
+                                 totalBytes: model.cleanupTotalBytes) {
+                        Icon(.cleanup, size: 16, tint: Tok.text)
+                    } trailing: {
+                        SettingToggle("Download the cleanup model", isOn: Binding(
+                            get: { model.cleanupWanted },
+                            set: { value in Task { await model.setCleanupWanted(value) } }))
+                    }
                 }
             }
+            .reveal(1)
             if let error = model.speechError {
                 NoticeBanner("The speech model download failed: \(error)", tone: .rose,
                              actionTitle: "Try again") {
                     Task { await model.downloadSpeech() }
                 }
+                .reveal(2)
+            }
+            if let error = model.cleanupError {
+                NoticeBanner("The cleanup download failed: \(error)", tone: .rose,
+                             actionTitle: "Try again") {
+                    Task { await model.downloadCleanupModel() }
+                }
+                .reveal(3)
             }
         }
     }
 
+    private var cleanupIsDownloading: Bool {
+        model.cleanupWanted && (model.cleanupProgress ?? 1) < 1
+    }
+
+    /// 4 — the title ends in the pixel disc, the ring has closed, and the sandbox
+    /// field appears only when it can actually work.
     private var done: some View {
-        VStack(alignment: .leading, spacing: Space.md) {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                HStack(alignment: .lastTextBaseline, spacing: Space.xs) {
-                    Text(model.step.title)
-                        .displayStyle(size: TypeScale.displaySize)
-                    PixelStop(cells: 7, cell: 2)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityAddTraits(.isHeader)
-                if let subtitle = model.step.subtitle {
-                    Text(subtitle)
-                        .font(Typography.body)
+        VStack(alignment: .leading, spacing: Space.xl) {
+            heading(stop: true)
+                .reveal(0)
+            VStack(alignment: .leading, spacing: Space.md) {
+                if model.practiceReady {
+                    PracticeField("Hold fn and say something", text: $model.practiceText)
+                    // One mic test for the whole app: the same component Settings uses.
+                    MicTestView()
+                } else {
+                    Text("Grant the microphone and finish the download to try it here.")
+                        .font(Typography.readingSmall)
+                        .tracking(Typography.readingTracking)
                         .foregroundStyle(Tok.text2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            if model.practiceReady {
-                PracticeField("Hold fn and say something", text: $model.practiceText)
-                HStack(spacing: Space.xs) {
-                    if model.isListening {
-                        AppButton("Cancel", kind: .quiet) { model.cancelPractice() }
-                    } else {
-                        AppButton("Record a test", kind: .quiet) {
-                            Task { await model.startPractice() }
-                        }
-                    }
-                    Spacer(minLength: Space.md)
-                    if model.practiceState == .done {
-                        Badge("Captured", variant: .green, size: .sm)
-                    }
-                }
-                if case .failed(let message) = model.practiceState {
-                    NoticeBanner("The test recording failed: \(message)", tone: .rose)
-                }
-            } else {
-                Text("Grant the microphone and finish the download to try it here.")
-                    .font(Typography.secondary)
-                    .foregroundStyle(Tok.text2)
-                    .fixedSize(horizontal: false, vertical: true)
+            .reveal(1)
+            if case .failed(let message) = model.practiceState {
+                NoticeBanner("The test recording failed: \(message)", tone: .rose)
+                    .reveal(2)
             }
         }
     }
 
     private var heading: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            Text(model.step.title)
-                .displayStyle(size: TypeScale.displaySize)
-                .accessibilityAddTraits(.isHeader)
+        heading(stop: false)
+    }
+
+    private func heading(stop: Bool) -> some View {
+        VStack(alignment: .leading, spacing: Space.md) {
+            HStack(alignment: .lastTextBaseline, spacing: Space.xs) {
+                Text(model.step.title)
+                    .displayStyle(size: TypeScale.displaySize)
+                if stop {
+                    // The dot is the disc that flew here, drawn by the field over this
+                    // measured slot. One dot exists, not two.
+                    Color.clear
+                        .frame(width: PixelDiscFlight.slotSide,
+                               height: PixelDiscFlight.slotSide)
+                        .pixelSlot()
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
             if let subtitle = model.step.subtitle {
                 Text(subtitle)
-                    .font(Typography.body)
+                    .font(Typography.reading)
+                    .tracking(Typography.readingTracking)
                     .foregroundStyle(Tok.text2)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
+    /// The row fill and the detail line already carry progress, so the trailing
+    /// slot only ever adds information.
     @ViewBuilder
-    private func state(speechReady: Bool, error: String?) -> some View {
-        if speechReady {
+    private var speechStatus: some View {
+        if model.speechReady {
             Badge("Ready", variant: .green, size: .sm)
-        } else if error != nil {
+        } else if model.speechError != nil {
             Badge("Failed", variant: .rose, size: .sm)
-        } else if model.isDownloadingSpeech {
-            Text(model.speechDetail)
-                .font(Typography.secondaryMedium)
-                .monospacedDigit()
-                .foregroundStyle(Tok.text)
-        } else {
+        } else if !model.isDownloadingSpeech {
             Badge("Required", variant: .neutral, size: .sm)
         }
     }
@@ -220,26 +248,44 @@ public struct OnboardingView: View {
     /// The reveal runs in whole steps, once, from the field's own progress value.
     private func revealField() async {
         guard !reduceMotion else {
-            reveal = 1
+            fieldReveal = 1
             return
         }
         let steps = 14
         for value in 1...steps {
             try? await Task.sleep(for: .milliseconds(1300 / steps))
-            reveal = CGFloat(value) / CGFloat(steps)
+            fieldReveal = CGFloat(value) / CGFloat(steps)
         }
     }
 
-    /// The last step closes the ring: no second animation on top of it.
+    /// One chain, one progress value at a time: ring closes, disc grows in at the
+    /// centre, disc travels to the slot. No second animation runs on top (§8.6, §8.7).
     private func closeField() async {
         guard !reduceMotion else {
             collapse = 1
+            discGrow = 1
+            discTravel = 1
             return
         }
         for value in 1...6 {
             try? await Task.sleep(for: .milliseconds(60))
             collapse = CGFloat(value) / 6
         }
+        for value in 1...5 {
+            try? await Task.sleep(for: .milliseconds(45))
+            discGrow = Double(value) / 5
+        }
+        for value in 1...14 {
+            try? await Task.sleep(for: .milliseconds(26))
+            discTravel = Double(value) / 14
+        }
+    }
+
+    /// Going back reopens the field and puts the disc away with it.
+    private func resetField() {
+        collapse = 0
+        discGrow = 0
+        discTravel = 0
     }
 
     private func pressKeyOnce() {

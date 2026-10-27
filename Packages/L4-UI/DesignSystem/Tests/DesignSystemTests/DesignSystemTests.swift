@@ -30,11 +30,12 @@ final class DesignSystemTests: XCTestCase {
         }
     }
 
+    /// Blue 600 base, blue 500/700 for hover, blue 700 pressed. Nothing darker, ever.
     func testAccentIsBlue600Everywhere() {
         XCTAssertEqual(Tok.Hex.accent, 0x2563EB)
         XCTAssertEqual(Tok.Hex.accentHoverLight, 0x1D4ED8)
         XCTAssertEqual(Tok.Hex.accentHoverDark, 0x3B82F6)
-        XCTAssertEqual(Tok.Hex.accentPressed, 0x1E40AF)
+        XCTAssertEqual(Tok.Hex.accentPressed, 0x1D4ED8)
         XCTAssertEqual(Tok.Hex.accentTextDark, 0x60A5FA)
         XCTAssertEqual(Tok.Hex.accentSoftLight, 0xDBEAFE)
     }
@@ -95,12 +96,9 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(Radius.chip, 6)
         XCTAssertEqual(Radius.islandCompact, 22)
         XCTAssertEqual(Radius.islandExpanded, 26)
-        XCTAssertEqual(Radius.focusRing, 2)
-        XCTAssertEqual(Radius.focusOffset, 2)
         XCTAssertEqual(ControlHeight.small, 24)
         XCTAssertEqual(ControlHeight.regular, 28)
         XCTAssertEqual(ControlHeight.large, 32)
-        XCTAssertEqual(ControlHeight.onboardingCTA, 32)
         XCTAssertEqual(Layout.sidebarWidth, 220)
         XCTAssertEqual(Layout.sidebarMin, 200)
         XCTAssertEqual(Layout.sidebarMax, 280)

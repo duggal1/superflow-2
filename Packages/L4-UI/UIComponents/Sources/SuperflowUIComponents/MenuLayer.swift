@@ -83,7 +83,7 @@ public struct MenuLayer: View {
                     Color.clear
                         .contentShape(.rect)
                         .onTapGesture { host.dismiss() }
-                    MenuPanel(presented: presented, canvas: proxy.size)
+                    MenuPanel(p: presented, canvas: proxy.size)
                 }
                 .id(presented.token)
                 .transition(.opacity)
@@ -94,7 +94,7 @@ public struct MenuLayer: View {
 }
 
 private struct MenuPanel: View {
-    let presented: MenuHost.Presented
+    let p: MenuHost.Presented
     let canvas: CGSize
     @Environment(MenuHost.self) private var host
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -102,31 +102,33 @@ private struct MenuPanel: View {
     @FocusState private var focused: Bool
     @State private var shown = false
 
-    private let row: CGFloat = 32
-    private let gap: CGFloat = 2
-    private let inset: CGFloat = 6
+    private let row: CGFloat = 32, gap: CGFloat = 2, inset: CGFloat = 6
+
+    private var highlightIndex: Int? { p.items.firstIndex { $0.id == host.cursor } }
 
     var body: some View {
-        let width = max(presented.anchor.width, 184)
-        let count = CGFloat(presented.items.count)
-        let height = count * row + max(count - 1, 0) * gap + inset * 2
-        let x = min(max(presented.trailing ? presented.anchor.maxX - width : presented.anchor.minX, 8),
-                    max(canvas.width - width - 8, 8))
-        let below = presented.anchor.maxY + 6 + height <= canvas.height - 8
-        let y = below ? presented.anchor.maxY + 6 : presented.anchor.minY - 6 - height
-        let origin = UnitPoint(x: presented.trailing ? 1 : 0, y: below ? 0 : 1)
+        let width  = max(p.anchor.width, 184)
+        let height = CGFloat(p.items.count) * row + CGFloat(max(p.items.count - 1, 0)) * gap + inset * 2
+        let x      = min(max(p.trailing ? p.anchor.maxX - width : p.anchor.minX, 8), canvas.width - width - 8)
+        let below  = p.anchor.maxY + 6 + height <= canvas.height - 8
+        let y      = below ? p.anchor.maxY + 6 : p.anchor.minY - 6 - height
+        let origin = UnitPoint(x: p.trailing ? 1 : 0, y: below ? 0 : 1)
         let instant = shown || reduceMotion
 
-        VStack(spacing: gap) {
-            ForEach(presented.items) { item in
-                MenuRow(item: item,
-                        isSelected: item.id == presented.selected,
-                        isHighlighted: item.id == host.cursor,
-                        radius: Radius.card - inset)
-                    .onHover { inside in
-                        if inside { host.cursor = item.id }
-                    }
-                    .onTapGesture { host.commit(item.id) }
+        ZStack(alignment: .topLeading) {
+            if let i = highlightIndex {
+                RoundedRectangle(cornerRadius: Radius.card - inset, style: .continuous)
+                    .fill(Tok.wash)
+                    .frame(height: row)
+                    .offset(y: CGFloat(i) * (row + gap))
+                    .animation(reduceMotion ? nil : .smooth(duration: 0.18), value: i)
+            }
+            VStack(spacing: gap) {
+                ForEach(p.items) { item in
+                    MenuRow(item: item, isSelected: item.id == p.selected)
+                        .onHover { if $0 { host.cursor = item.id } }
+                        .onTapGesture { host.commit(item.id) }
+                }
             }
         }
         .padding(inset)
@@ -139,16 +141,12 @@ private struct MenuPanel: View {
         .focused($focused)
         .focusEffectDisabled()
         .onKeyPress(.downArrow) { host.move(1); return .handled }
-        .onKeyPress(.upArrow) { host.move(-1); return .handled }
-        .onKeyPress(.return) { host.commit(); return .handled }
-        .onKeyPress(.escape) { host.dismiss(); return .handled }
-        .onAppear {
-            focused = true
-            withAnimation(Motion.menuIn) { shown = true }
-        }
-        .padding(.leading, x)
-        .padding(.top, max(y, 0))
+        .onKeyPress(.upArrow)   { host.move(-1); return .handled }
+        .onKeyPress(.return)    { host.commit(); return .handled }
+        .onKeyPress(.escape)    { host.dismiss(); return .handled }
+        .padding(.leading, x).padding(.top, y)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onAppear { focused = true; withAnimation(Motion.menuIn) { shown = true } }
     }
 }
 
@@ -170,30 +168,16 @@ private struct PanelSurface: ViewModifier {
 private struct MenuRow: View {
     let item: MenuHost.Item
     let isSelected: Bool
-    let isHighlighted: Bool
-    let radius: CGFloat
-
     var body: some View {
         HStack(spacing: 10) {
-            if let glyph = item.glyph {
-                Icon(glyph, size: 14, tint: Tok.text)
-                    .frame(width: 20)
-            }
-            Text(item.title)
-                .font(.system(size: 13))
-                .foregroundStyle(Tok.text)
-                .lineLimit(1)
-            Spacer(minLength: Space.md)
-            if isSelected {
-                Icon(.checkmark, size: 12, weight: .medium, tint: Tok.text)
-            }
+            if let g = item.glyph { Icon(g, size: 14).frame(width: 20) }
+            Text(item.title).font(.system(size: 13)).foregroundStyle(Tok.text).lineLimit(1)
+            Spacer(minLength: 16)
+            if isSelected { Icon(.checkmark, size: 12, weight: .medium, tint: Tok.text) }
         }
         .padding(.horizontal, 10)
         .frame(height: 32)
-        .background(isHighlighted ? Tok.wash : .clear,
-                    in: .rect(cornerRadius: radius, style: .continuous))
         .contentShape(.rect)
-        .animation(Motion.hoverIn, value: isHighlighted)
         .clickable()
     }
 }
@@ -235,7 +219,7 @@ public struct Dropdown<Value: Hashable>: View {
         Button(action: toggle) {
             HStack(spacing: Space.xs) {
                 Text(selectedTitle)
-                    .font(.system(size: 13))
+                    .font(Typography.body)
                     .foregroundStyle(Tok.text)
                     .lineLimit(1)
                 Icon(.chevronUpDown, size: 9, weight: .medium, tint: Tok.text2)
@@ -253,6 +237,7 @@ public struct Dropdown<Value: Hashable>: View {
         .reportFrame($frame)
         .onChange(of: frame) { _, value in host.reanchor(token, value) }
         .clickable()
+        .focusStep()
         .accessibilityLabel(label)
         .accessibilityValue(selectedTitle)
     }

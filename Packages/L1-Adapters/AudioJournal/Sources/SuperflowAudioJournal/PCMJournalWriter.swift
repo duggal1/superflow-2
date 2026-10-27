@@ -22,11 +22,15 @@ actor PCMJournalWriter: AudioJournalWriter {
     private var closed = false
 
     init(directory: URL, source: AudioSourceKind, startingSamples: Int64,
-         lowDiskWarningBytes: Int64) throws {
+         lowDiskWarningBytes: Int64, startingDegraded: Bool = false) throws {
         self.directory = directory
         self.source = source
         self.manifestURL = directory.appendingPathComponent(JournalManifest.fileName(for: source))
         self.lowDiskWarningBytes = lowDiskWarningBytes
+        // A lane that opened under disk pressure starts degraded: `append` becomes a no-op, so
+        // no manifest entry and no segment file is ever created, but the session keeps running
+        // and its summary reports `degraded` so the caller can say so.
+        self.degraded = startingDegraded
         try Self.repairTrailingManifestLine(at: manifestURL)
         entries = JournalManifest.read(directory: directory, source: source)
         totalSamples = max(0, startingSamples)

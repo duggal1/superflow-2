@@ -106,7 +106,7 @@ public struct CommandPalette: View {
     public var body: some View {
         if isPresented {
             ZStack(alignment: .top) {
-                Color.black.opacity(0.18)
+                Tok.scrim
                     .ignoresSafeArea()
                     .onTapGesture { close() }
                     .accessibilityHidden(true)
@@ -149,7 +149,7 @@ public struct CommandPalette: View {
             Icon(.search, size: 14)
             TextField(placeholder, text: $model.query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 15))
+                .font(Typography.large)
                 .foregroundStyle(Tok.text)
                 .focused($searchFocused)
                 .accessibilityLabel(placeholder)
@@ -199,7 +199,7 @@ public struct CommandPalette: View {
                 Spacer(minLength: Space.md)
                 if let shortcut = item.shortcut {
                     Text(shortcut)
-                        .font(Typography.mono)
+                        .font(Typography.secondary)
                         .foregroundStyle(Tok.text2)
                 }
             }

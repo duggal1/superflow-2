@@ -13,10 +13,12 @@ public enum Glyph: String, CaseIterable, Sendable {
     case shortcuts = "command"
     case meetings = "person.2"
     case settings = "gearshape"
+    case models = "cpu"
 
     // Actions and state
     case search = "magnifyingglass"
     case add = "plus"
+    case minus = "minus"
     case more = "ellipsis"
     case copy = "doc.on.doc"
     case delete = "trash"
@@ -50,15 +52,14 @@ public enum Glyph: String, CaseIterable, Sendable {
     case waveform = "waveform"
     case cleanup = "textformat"
     case calendar = "calendar"
-    case clock = "clock"
     case folder = "folder"
     case sun = "sun.max"
     case moon = "moon"
 
-    // Dashboard metrics (pass 2): one bare symbol per metric.
-    case words = "text.alignleft"
-    case timeSaved = "timer"
-    case speed = "speedometer"
+    // Dashboard metrics (pass 3).
+    case words = "text.cursor"
+    case timeSaved = "hourglass"
+    case speed = "gauge.with.dots.needle.33percent"
     case streak = "flame"
 }
 

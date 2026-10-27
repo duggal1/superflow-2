@@ -4,6 +4,7 @@ import SuperflowKernel
 import SuperflowMeetingEngine
 import SuperflowPorts
 import SuperflowSessionEngine
+import SuperflowUIComponents
 import SwiftUI
 
 @MainActor
@@ -12,6 +13,8 @@ public final class MenuBarController: ObservableObject {
     @Published public private(set) var meetingState: MeetingState = .idle
     @Published public private(set) var error: String?
     @Published public private(set) var recoveryReady = true
+    /// True while the fn key is physically down. The dashboard keycap reads it.
+    @Published public private(set) var isFnHeld = false
 
     private let session: SessionEngine?
     private let meeting: MeetingEngine?
@@ -54,6 +57,11 @@ public final class MenuBarController: ObservableObject {
 
     public func setRecoveryReady(_ ready: Bool) {
         recoveryReady = ready
+    }
+
+    public func setFnHeld(_ held: Bool) {
+        guard isFnHeld != held else { return }
+        isFnHeld = held
     }
 
     public func observe() {
@@ -160,7 +168,10 @@ public final class MenuBarController: ObservableObject {
         await hotkeys?.setActiveTap(false)
     }
 
-    public func cancel(_ kind: SessionKind) async {
+    /// Cancelling a dictation is silent unless the user did it deliberately, so
+    /// only the Escape gesture asks for the cue.
+    public func cancel(_ kind: SessionKind, cue: Bool = false) async {
+        if cue, kind == .dictation { Sounds.play(.transcriptionCancel) }
         if kind == .dictation {
             await session?.cancel()
         } else {

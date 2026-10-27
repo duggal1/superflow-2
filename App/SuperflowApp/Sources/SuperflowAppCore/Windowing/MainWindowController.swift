@@ -9,6 +9,7 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
     case dictionary
     case shortcuts
     case meetings
+    case models
     case settings
 
     public var id: String { rawValue }
@@ -20,6 +21,7 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
         case .dictionary: "Dictionary"
         case .shortcuts: "Shortcuts"
         case .meetings: "Meetings"
+        case .models: "Models"
         case .settings: "Settings"
         }
     }
@@ -32,6 +34,7 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
         case .dictionary: .dictionary
         case .shortcuts: .shortcuts
         case .meetings: .meetings
+        case .models: .models
         case .settings: .settings
         }
     }
@@ -77,8 +80,7 @@ public final class MainWindowController: ObservableObject {
         NSApp.setActivationPolicy(.regular)
         // Presenting a scene is not the same as showing it: SwiftUI can create the window behind
         // the current app, which reads as "nothing launched". Order it front whenever it appears.
-        NSRunningApplication.current.activate(options: [.activateAllWindows,
-                                                       .activateIgnoringOtherApps])
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
         NSApp.windows.first(where: { $0.canBecomeMain })?.makeKeyAndOrderFront(nil)
     }
 

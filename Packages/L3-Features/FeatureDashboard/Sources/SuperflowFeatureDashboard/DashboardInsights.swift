@@ -97,23 +97,51 @@ public enum DashboardInsightsBuilder {
 /// Reads three aggregates through the existing ports. No new engine, no schema change.
 @MainActor
 public enum DashboardInsightsLoader {
+    /// The store returns newest first, so the walk stops at the first session older
+    /// than the window instead of truncating the aggregate at an arbitrary row count.
+    public static let pageSize = 200
+    /// Bound on the walk: 1,600 sessions is the window for a heavy user, plus room to
+    /// find a cleanup sample when the window holds none. The old single call took the
+    /// newest 800 rows, so the numbers were silently short for anyone past that.
+    public static let pageLimit = 8
+
     public static func load(repository: any TranscriptRepository,
                             now: Date = Date(),
                             calendar: Calendar = .current) async -> DashboardInsights {
         let since = calendar.date(byAdding: .day, value: -DashboardInsightsBuilder.windowDays,
                                   to: now) ?? now
         do {
-            let dictation = try await repository.sessions(kind: .dictation, query: nil,
-                                                          limit: 800, offset: 0)
-            let recent = dictation.filter { $0.startedAt >= since }
-            let candidate = dictation.first {
-                (6...60).contains($0.wordCount) && $0.status == .complete
+            var window: [SessionRecord] = []
+            var candidate: SessionRecord?
+            var insideWindow = true
+            var offset = 0
+
+            for _ in 0..<pageLimit {
+                let batch = try await repository.sessions(kind: .dictation, query: nil,
+                                                          limit: pageSize, offset: offset)
+                guard !batch.isEmpty else { break }
+                for session in batch {
+                    if session.startedAt < since {
+                        insideWindow = false
+                    } else {
+                        window.append(session)
+                    }
+                    if candidate == nil, session.status == .complete,
+                       (6...60).contains(session.wordCount) {
+                        candidate = session
+                    }
+                }
+                // Past the window with a sample in hand: nothing older can matter.
+                if !insideWindow, candidate != nil { break }
+                guard batch.count == pageSize else { break }
+                offset += pageSize
             }
+
             var latest: CleanupSample?
             if let candidate {
                 latest = await sample(for: candidate, repository: repository)
             }
-            return DashboardInsightsBuilder.build(sessions: recent, latest: latest,
+            return DashboardInsightsBuilder.build(sessions: window, latest: latest,
                                                   calendar: calendar)
         } catch {
             return .empty

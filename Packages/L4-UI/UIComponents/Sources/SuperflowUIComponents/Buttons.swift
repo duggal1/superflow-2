@@ -3,10 +3,9 @@ import SuperflowIcons
 import SwiftUI
 
 public enum ButtonKind: Sendable {
-    case primary, secondary, quiet
+    case primary, secondary, quiet, link
 }
 
-/// Capsule, no border, no icon unless the icon carries meaning. Heights 24 / 28 / 32.
 public struct AppButtonStyle: ButtonStyle {
     public var kind: ButtonKind
     public var height: CGFloat
@@ -28,39 +27,41 @@ public struct AppButtonStyle: ButtonStyle {
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @State private var hover = false
 
+        private var px: CGFloat { height >= 28 ? 12 : 10 }
+        private var font: CGFloat { height >= 28 ? 13 : 12 }
+
         private var fill: Color {
             switch kind {
-            case .primary:
-                configuration.isPressed ? Tok.accentPressed : hover ? Tok.accentHover : Tok.accent
-            case .secondary:
-                configuration.isPressed ? Tok.controlPressed : hover ? Tok.controlHover : Tok.control
-            case .quiet:
-                .clear
+            case .primary: configuration.isPressed ? Tok.accentPressed : hover ? Tok.accentHover : Tok.accent
+            case .secondary: configuration.isPressed ? Tok.controlPressed : hover ? Tok.controlHover : Tok.control
+            case .quiet, .link: hover || configuration.isPressed ? Tok.wash : .clear
             }
         }
 
         private var label: Color {
             switch kind {
-            case .primary: Tok.onAccent
+            case .primary: .white
             case .secondary: Tok.text
             case .quiet: hover || configuration.isPressed ? Tok.text : Tok.text2
+            case .link: hover || configuration.isPressed ? Tok.text : Tok.textAction
             }
         }
 
         var body: some View {
             configuration.label
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: font, weight: .medium))
                 .foregroundStyle(label)
-                .padding(.horizontal, height >= ControlHeight.large ? 14 : 12)
+                .padding(.horizontal, px)
                 .frame(height: height)
                 .background(fill, in: .capsule)
                 .contentShape(.capsule)
                 .opacity(enabled ? 1 : Opacity.disabled)
                 .scaleEffect(configuration.isPressed && !reduceMotion ? Opacity.pressScale : 1)
-                .animation(reduceMotion ? nil : Motion.hoverIn, value: configuration.isPressed)
+                .animation(reduceMotion ? nil : (configuration.isPressed ? Motion.hoverIn : Motion.hoverOut), value: configuration.isPressed)
                 .animation(reduceMotion ? nil : (hover ? Motion.hoverIn : Motion.hoverOut), value: hover)
                 .onHover { hover = $0 }
                 .clickable(enabled)
+                .focusStep()
         }
     }
 }
@@ -71,7 +72,6 @@ public extension ButtonStyle where Self == AppButtonStyle {
     }
 }
 
-/// Text buttons for bars, cards and rows. Features never use a raw Button.
 public struct AppButton: View {
     private let title: String
     private let glyph: Glyph?
@@ -89,15 +89,15 @@ public struct AppButton: View {
         self.height = height
         self.enabled = enabled
         self.action = action
+        #if DEBUG
+        assert(height == 24 || height == 28, "AppButton height must be 24 or 28")
+        #endif
     }
 
     public var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
-                if let glyph {
-                    Icon(glyph, size: 12, weight: .medium,
-                         tint: kind == .primary ? Tok.onAccent : nil)
-                }
+                if let glyph { Icon(glyph, size: 12, weight: .medium, tint: kind == .primary ? .white : nil) }
                 Text(title)
             }
         }
@@ -107,7 +107,7 @@ public struct AppButton: View {
     }
 }
 
-/// A bare symbol in a hit target. No circle, no box: the hover fill is the affordance.
+
 public struct IconButton: View {
     private let glyph: Glyph
     private let label: String
@@ -131,10 +131,8 @@ public struct IconButton: View {
     public var body: some View {
         Button(action: action) {
             Icon(glyph, size: size, tint: tint)
-                .frame(width: size + 12, height: size + 12)
-                .background(hover ? Tok.control : .clear,
-                            in: .rect(cornerRadius: Radius.chip, style: .continuous))
-                .contentShape(.rect(cornerRadius: Radius.chip))
+                .frame(width: 24, height: 24)
+                .contentShape(.rect)
         }
         .buttonStyle(PressStyle())
         .disabled(!enabled)
@@ -144,5 +142,6 @@ public struct IconButton: View {
         .clickable(enabled)
         .help(label)
         .accessibilityLabel(label)
+        .focusStep(.rect(cornerRadius: Radius.chip))
     }
 }

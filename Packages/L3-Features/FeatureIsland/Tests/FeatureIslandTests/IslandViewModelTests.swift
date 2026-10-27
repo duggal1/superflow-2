@@ -134,6 +134,36 @@ final class IslandViewModelTests: XCTestCase {
         XCTAssertTrue(model.isDegraded)
     }
 
+    /// "Needs attention" alone made a refused start look like a mystery. The engine's message has
+    /// to reach the pill, not just the expanded view.
+    func testFailedSessionExposesTheReasonBehindTheNeedsAttentionLabel() {
+        model.handle(SessionEvent.state(.failed(SessionID("s"),
+                                                "Not enough free disk space to record safely.")))
+        XCTAssertEqual(model.modeLabel, "Needs attention")
+        XCTAssertEqual(model.reason, "Not enough free disk space to record safely.")
+        XCTAssertTrue(model.isVisible)
+    }
+
+    func testDegradedPhaseReasonUsesThePhaseMessage() {
+        model.handle(SessionEvent.state(.recording(.dictation)))
+        model.degrade("System audio was lost.")
+        XCTAssertEqual(model.reason, "System audio was lost.")
+    }
+
+    /// The journal degradation notice arrives while the session is still recording, so the reason
+    /// has to come from the durable notice rather than the phase.
+    func testNoticeSurfacesAsTheReasonWhileStillRecording() {
+        model.handle(SessionEvent.state(.recording(.dictation)))
+        model.handle(SessionEvent.notice("Crash recovery is off for this session."))
+        XCTAssertEqual(model.modeLabel, "Dictation")
+        XCTAssertEqual(model.reason, "Crash recovery is off for this session.")
+    }
+
+    func testHealthyRecordingHasNoReason() {
+        model.handle(SessionEvent.state(.recording(.dictation)))
+        XCTAssertNil(model.reason)
+    }
+
     func testIslandMetricsMatchThePanel() {
         XCTAssertEqual(IslandMetrics.compactWidth, 280)
         XCTAssertEqual(IslandMetrics.expandedWidth, 460)

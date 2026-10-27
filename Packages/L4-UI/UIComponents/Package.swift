@@ -17,7 +17,8 @@ let package = Package(
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowDesignSystem", package: "DesignSystem"),
                 .product(name: "SuperflowIcons", package: "Icons"),
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "SuperflowUIComponentsTests",
