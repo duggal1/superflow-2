@@ -11,3 +11,14 @@ Packages/**/Frameworks/
 *.gguf
 Tests/Fixtures/audio/
 .DS_Store
+
+# Rust build artifacts
+Rust/**/target/
+Rust/**/HarperFFI.xcframework/
+*.a
+*.rlib
+*.rlib.meta
+
+# Swift package build artifacts (redundant safety)
+**/.build/
+*.xcarchive
