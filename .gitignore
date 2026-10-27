@@ -22,3 +22,30 @@ Rust/**/HarperFFI.xcframework/
 # Swift package build artifacts (redundant safety)
 **/.build/
 *.xcarchive
+
+# Additional build/generated artifacts
+*.o
+*.dylib
+*.framework
+*.xcframework
+*.dSYM
+*.dSYM.zip
+*.app
+*.ipa
+*.dmg
+node_modules/
+*.log
+*.tmp
+*.cache
+.cache/
+coverage/
+*.profdata
+*.profraw
+*.testresult
+XCTestResults/
+*.xctestrun
+Package.resolved
+# local model caches
+.models/
+*.mlmodelc
+*.mlpackage
