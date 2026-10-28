@@ -181,8 +181,8 @@ report_matches '\.formatted\(date:|DateFormatter' \
     'History dates come from Humanize, never from a formatter.' \
     "$repo_root/Packages/L3-Features/FeatureHistory"
 
-report_outside 'AVAudioPlayer' "FeatureHistory/Sources/SuperflowFeatureHistory/AudioPreview\.swift:" \
-    'AVAudioPlayer lives only in the History audio preview.' "${ui_roots[@]}"
+report_outside 'AVAudioPlayer' "UIComponents/Sources/SuperflowUIComponents/AudioPreview\.swift:" \
+    'AVAudioPlayer lives only in the one shared audio preview.' "${ui_roots[@]}"
 report_outside 'AVAudioFile\(forWriting' "AudioArchive\.swift:" \
     'Audio files are written only by AudioArchiveWriter.' "${ui_roots[@]}"
 

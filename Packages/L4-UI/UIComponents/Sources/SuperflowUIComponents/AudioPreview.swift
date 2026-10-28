@@ -4,44 +4,66 @@ import Foundation
 import Observation
 import SuperflowDesignSystem
 import SuperflowIcons
-import SuperflowUIComponents
 import SwiftUI
 
 /// The clip the recognizer heard, as a picture, with a tape head instead of a
 /// progress bar. Space plays and pauses, the arrows step a second, once the card
 /// has focus.
-struct AudioPreview: View {
-    let url: URL
+///
+/// One implementation, two places: History shows it inside its own card, and the
+/// dashboard's latest-dictation card embeds it bare so cards never nest.
+public struct AudioPreview: View {
+    public enum Chrome: Sendable {
+        /// Own `Card` fill and radius. History uses this.
+        case card
+        /// No fill, no radius: the caller's card already provides both.
+        case bare
+    }
+
+    private let url: URL
+    private let chrome: Chrome
     @State private var player = ClipPlayer()
     @State private var clip: ClipData?
     @State private var failed = false
     @State private var hover: TimeInterval?
     @FocusState private var focused: Bool
 
-    var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 16) {
-                SpectroScrubber(clip: clip, unavailable: failed, player: player,
-                                hover: $hover, onTouch: { focused = true })
-                HStack(spacing: 8) {
-                    BarIconButton(glyph: player.state == .playing ? .pause : .play,
-                                  label: player.state == .playing ? "Pause" : "Play") {
-                        focused = true
-                        player.toggle()
-                    }
-                    .disabled(clip == nil)
-                    Readout(player: player, hover: hover, total: clip?.duration ?? 0)
-                    Spacer(minLength: 16)
-                    // The one non-obvious gesture, revealed only under the pointer.
-                    // Always laid out, so showing it never moves the row.
-                    Text("Drag to hear")
-                        .appType(.caption)
-                        .foregroundStyle(Tok.text2)
-                        .opacity(hover == nil ? 0 : 1)
-                        .animation(.easeOut(duration: 0.15), value: hover == nil)
+    public init(url: URL, chrome: Chrome = .card) {
+        self.url = url
+        self.chrome = chrome
+    }
+
+    public var body: some View {
+        switch chrome {
+        case .card:
+            Card { content }
+        case .bare:
+            content
+        }
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SpectroScrubber(clip: clip, unavailable: failed, player: player,
+                            hover: $hover, onTouch: { focused = true })
+            HStack(spacing: 8) {
+                BarIconButton(glyph: player.state == .playing ? .pause : .play,
+                              label: player.state == .playing ? "Pause" : "Play") {
+                    focused = true
+                    player.toggle()
                 }
-                .frame(height: 32)
+                .disabled(clip == nil)
+                Readout(player: player, hover: hover, total: clip?.duration ?? 0)
+                Spacer(minLength: 16)
+                // The one non-obvious gesture, revealed only under the pointer.
+                // Always laid out, so showing it never moves the row.
+                Text("Drag to hear")
+                    .appType(.caption)
+                    .foregroundStyle(Tok.text2)
+                    .opacity(hover == nil ? 0 : 1)
+                    .animation(.easeOut(duration: 0.15), value: hover == nil)
             }
+            .frame(height: 32)
         }
         .focusable()
         .focused($focused)

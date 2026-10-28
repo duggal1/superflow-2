@@ -1,6 +1,5 @@
 import Foundation
 import SuperflowDesignSystem
-import SuperflowUIComponents
 import SwiftUI
 
 /// The clip as a picture you can drag across to hear. Rows are frequency,
