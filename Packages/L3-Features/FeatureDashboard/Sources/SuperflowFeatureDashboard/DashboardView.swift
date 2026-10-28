@@ -26,15 +26,11 @@ public struct DashboardView: View {
                     .revealOnce(0, seen: model.hasAppeared)
                 graph
                     .revealOnce(1, seen: model.hasAppeared)
+                latest
+                    .revealOnce(2, seen: model.hasAppeared)
                 if model.insights.hasData {
                     lowerHalf
-                        .revealOnce(2, seen: model.hasAppeared)
-                    CleanupCard(mode: model.insights.latest.map(CleanupCard.Mode.latest) ?? .example,
-                                fnHeld: model.isFnHeld)
                         .revealOnce(3, seen: model.hasAppeared)
-                } else {
-                    CleanupCard(mode: .example, fnHeld: model.isFnHeld)
-                        .revealOnce(2, seen: model.hasAppeared)
                 }
             }
         }
@@ -62,6 +58,15 @@ public struct DashboardView: View {
     /// "Last 12 months" and its readout line, so the page adds no second header.
     private var graph: some View {
         ActivityYear(days: model.activity, animatesIn: !model.hasAppeared)
+    }
+
+    /// The newest dictation, with the archived clip and the cleanup line. This is
+    /// the component directly under the 12-month graph.
+    private var latest: some View {
+        LatestDictationCard(sample: model.insights.latest ?? .example,
+                            audio: model.latestAudioURL,
+                            isExample: model.insights.latest == nil,
+                            fnHeld: model.isFnHeld)
     }
 
     /// Both cards take the taller one's height, which comes from their content: no

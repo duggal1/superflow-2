@@ -181,59 +181,42 @@ public struct CleanupLine: View {
     }
 }
 
-/// The product explained in motion: the keycap goes down, the raw sentence sits
-/// there, the keycap comes up, and the sentence cleans itself. One run, never a loop.
-public struct CleanupCard: View {
-    public enum Mode {
-        case example
-        case latest(CleanupSample)
-    }
-
-    private let mode: Mode
+/// The component under the 12-month graph: the newest dictation as a picture you
+/// can drag to hear, and as the sentence the model cleaned. It replaces the old
+/// text-only card, so the audio component and the cleanup line live together.
+///
+/// The keycap is a control, not a drawing: clicking it plays the hold → release →
+/// clean run, and it goes down for real while the physical fn key is held.
+public struct LatestDictationCard: View {
+    private let sample: CleanupSample
+    private let audio: URL?
+    private let isExample: Bool
     private let fnHeld: Bool
+
     @State private var phase: CleanupPhase = .said
     @State private var demoKeyDown = false
     @State private var run = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(mode: Mode, fnHeld: Bool = false) {
-        self.mode = mode
+    public init(sample: CleanupSample, audio: URL?, isExample: Bool, fnHeld: Bool = false) {
+        self.sample = sample
+        self.audio = audio
+        self.isExample = isExample
         self.fnHeld = fnHeld
     }
 
-    private var sample: CleanupSample {
-        switch mode {
-        case .example: .example
-        case .latest(let sample): sample
-        }
-    }
-
-    private var isExample: Bool {
-        if case .example = mode { return true }
-        return false
-    }
-
     public var body: some View {
-        let tokens = sample.tokens
-        Card {
-            HStack(alignment: .top, spacing: Space.lg) {
-                if isExample {
-                    KeyCap("fn", down: demoKeyDown || fnHeld)
-                        .padding(.top, 2)
-                }
-                VStack(alignment: .leading, spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            SectionHeader("Latest dictation")
+            Card {
+                VStack(alignment: .leading, spacing: Space.lg) {
                     header
-                    if reduceMotion {
-                        VStack(alignment: .leading, spacing: Space.xs) {
-                            CleanupLine(tokens: tokens, phase: .said)
-                            Caption(text: "It typed", active: true)
-                            CleanupLine(tokens: tokens, phase: .typed)
-                        }
-                    } else {
-                        CleanupLine(tokens: tokens, phase: phase)
+                    if let audio {
+                        AudioPreview(url: audio, chrome: .bare)
+                            .id(audio)
                     }
+                    lines
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .task(id: run) { await play() }
@@ -242,20 +225,27 @@ public struct CleanupCard: View {
     }
 
     private var header: some View {
-        HStack(spacing: Space.sm) {
-            if reduceMotion {
-                Caption(text: "You said", active: false)
-            } else {
-                Caption(text: phase == .said ? "You said" : "It typed", active: phase == .typed)
-                    .contentTransition(.opacity)
-                    .animation(.easeOut(duration: 0.2), value: phase)
+        HStack(alignment: .center, spacing: Space.sm) {
+            Button { run += 1 } label: {
+                KeyCap("fn", down: demoKeyDown || fnHeld)
             }
+            .buttonStyle(.plain)
+            .clickable()
+            .accessibilityLabel("fn key")
+            .accessibilityHint("Plays the hold, speak, release demonstration")
+
+            Caption(text: phase == .said ? "You said" : "It typed", active: !reduceMotion && phase == .typed)
+                .contentTransition(.opacity)
+                .animation(.easeOut(duration: 0.2), value: phase)
+
             Spacer(minLength: Space.md)
+
             if isExample {
                 Badge("Example")
             } else {
                 LatestMeta(sample: sample)
             }
+
             if !reduceMotion {
                 AppButton("Replay", kind: .quiet, height: ControlHeight.small) { run += 1 }
                     .opacity(phase == .typed ? 1 : 0)
@@ -265,14 +255,28 @@ public struct CleanupCard: View {
         }
     }
 
-    /// Hold, release, clean. Driven by state only, once per appearance or per Replay.
+    @ViewBuilder
+    private var lines: some View {
+        let tokens = sample.tokens
+        if reduceMotion {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                CleanupLine(tokens: tokens, phase: .said)
+                Caption(text: "It typed", active: true)
+                CleanupLine(tokens: tokens, phase: .typed)
+            }
+        } else {
+            CleanupLine(tokens: tokens, phase: phase)
+        }
+    }
+
+    /// Hold, release, clean. State-driven, once per appearance or per click.
     private func play() async {
         guard !reduceMotion else {
             phase = .typed
             return
         }
         phase = .said
-        demoKeyDown = isExample
+        demoKeyDown = true
         try? await Task.sleep(for: .milliseconds(isExample ? 1200 : 900))
         guard !Task.isCancelled else { return }
         demoKeyDown = false
@@ -305,9 +309,10 @@ private struct LatestMeta: View {
                 Text(name)
                     .appType(.caption)
                     .foregroundStyle(Tok.text2)
+                    .lineLimit(1)
             }
             if let date = sample.date {
-                Text(date, format: .dateTime.hour().minute())
+                Text(Humanize.when(date))
                     .appType(.caption)
                     .monospacedDigit()
                     .foregroundStyle(Tok.text2)

@@ -109,6 +109,14 @@ public final class DashboardViewModel: ObservableObject {
 
     public var hasActivity: Bool { summary.totalSessions > 0 }
 
+    /// The archived clip for the newest dictation, when the archive kept one.
+    /// The file is the source of truth: a row can outlive a swept clip.
+    public var latestAudioURL: URL? {
+        guard let id = insights.latest?.sessionID else { return nil }
+        let url = AudioArchiveLocation.url(for: id)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
     /// The entrance stagger runs once after launch, not on every route change.
     public private(set) var hasAppeared = false
 

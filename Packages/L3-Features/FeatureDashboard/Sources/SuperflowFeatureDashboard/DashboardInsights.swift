@@ -26,14 +26,17 @@ public struct CleanupSample: Equatable, Sendable {
     public var appBundleID: String?
     public var appName: String?
     public var date: Date?
+    /// The session this came from, so the card can offer its archived audio.
+    public var sessionID: SessionID?
 
     public init(raw: String, cleaned: String, appBundleID: String? = nil,
-                appName: String? = nil, date: Date? = nil) {
+                appName: String? = nil, date: Date? = nil, sessionID: SessionID? = nil) {
         self.raw = raw
         self.cleaned = cleaned
         self.appBundleID = appBundleID
         self.appName = appName
         self.date = date
+        self.sessionID = sessionID
     }
 
     public var tokens: [CleanupToken] { WordDiff.tokens(raw: raw, clean: cleaned) }
@@ -159,7 +162,8 @@ public enum DashboardInsightsLoader {
                              cleaned: String(cleaned.prefix(400)),
                              appBundleID: session.frontmostBundleID,
                              appName: session.frontmostBundleID.map(AppNameLookup.name(for:)),
-                             date: session.startedAt)
+                             date: session.startedAt,
+                             sessionID: session.id)
     }
 }
 
