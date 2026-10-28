@@ -45,6 +45,18 @@ extension SessionEngine {
         return min(1, (sum / Float(samples.count)).squareRoot() * 6)
     }
 
+    /// Opens the archive lane for a session. A failure is reported instead of being
+    /// swallowed: `try?` here is how a whole session's clip went missing silently.
+    func openArchive(for session: SessionID) async -> (any AudioArchiveWriter)? {
+        guard settings.keepAudio, !settings.noTranscriptStorage, let archive else { return nil }
+        do {
+            return try await archive.makeWriter(session: session)
+        } catch {
+            emit(.notice("Audio could not be archived for this session: \(error.localizedDescription)"))
+            return nil
+        }
+    }
+
     /// A degraded lane still records and transcribes; only crash recovery is off.
     /// Say so in the notice channel the Island already renders.
     func reportJournalIfDegraded(_ journalWriter: any AudioJournalWriter) async {

@@ -63,6 +63,9 @@ public final class M4AArchiveWriter: AudioArchiveWriter, @unchecked Sendable {
                     }
                 }
             }
+            // Finalize the container before the value escapes, so a finished clip is
+            // always playable instead of depending on when the file deinitialises.
+            file.close()
             if filled > 0 { peaks.append(Self.level(peak)) }
             guard frames > 0 else { return nil }
             return ArchivedAudio(url: url,
