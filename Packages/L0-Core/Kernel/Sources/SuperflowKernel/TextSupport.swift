@@ -77,13 +77,24 @@ public struct TextContext: Sendable {
     public var speakerID: String?
     public var interactive: Bool
     public var settings: AppSettings
+    /// Session-scoped project scope. Nil means TextCodeAware cannot resolve
+    /// paths at all; it still normalizes filenames and extensions.
+    public var project: ProjectContext?
 
     public init(source: AudioSourceKind = .mic, speakerID: String? = nil, interactive: Bool = true,
-                settings: AppSettings = .default) {
+                settings: AppSettings = .default, project: ProjectContext? = nil) {
         self.source = source
         self.speakerID = speakerID
         self.interactive = interactive
         self.settings = settings
+        self.project = project
+    }
+
+    /// Cleanup context sent to the model. A coding session upgrades the
+    /// general context so path-like speech is treated conservatively.
+    public var cleanupContext: String {
+        if project?.isCoding == true { return "coding" }
+        return settings.cleanupContext
     }
 }
 

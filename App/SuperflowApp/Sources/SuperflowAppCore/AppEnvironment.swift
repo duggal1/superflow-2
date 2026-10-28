@@ -13,6 +13,7 @@ import SuperflowMeetingEngine
 import SuperflowModelStore
 import SuperflowPermissionsKit
 import SuperflowPorts
+import SuperflowProjectIndex
 import SuperflowRecoveryEngine
 import SuperflowSessionEngine
 import SuperflowStorageSQLite
@@ -35,6 +36,7 @@ public final class AppEnvironment {
     public let microphone: MicrophoneCapture
     public let systemAudio: SystemAudioCapture
     public let journalStore: FileJournalStore
+    public let audioArchive: AudioArchiveAdapter
     public let textInserter: SystemTextInserter
     public let sessionEngine: SessionEngine
     public let meetingEngine: MeetingEngine
@@ -47,6 +49,9 @@ public final class AppEnvironment {
     public let diagnostics: DiagnosticsExporter
     public let supportDirectory: URL
     public let thirdPartyNotices: String
+    /// Explicitly selected project scope. Nil means cleanup is filename-only
+    /// and no path is ever resolved.
+    public private(set) var project: ProjectContext?
 
     public init(applicationSupportDirectory: URL? = nil,
                 fileManager: FileManager = .default) throws {
@@ -82,6 +87,8 @@ public final class AppEnvironment {
             root: supportDirectory.appendingPathComponent("Journals", isDirectory: true),
             fileManager: FileManager()
         )
+        let audioArchive = AudioArchiveAdapter(
+            directory: supportDirectory.appendingPathComponent("Audio", isDirectory: true))
         let textInserter = SystemTextInserter()
         let pipeline = TextPipelineBuilder.make(settings: .default)
 
@@ -97,6 +104,7 @@ public final class AppEnvironment {
         self.microphone = microphone
         self.systemAudio = systemAudio
         self.journalStore = journalStore
+        self.audioArchive = audioArchive
         self.textInserter = textInserter
         self.metrics = metrics
         diagnostics = DiagnosticsExporter(metrics: metrics, databaseURL: databaseURL)
@@ -114,6 +122,7 @@ public final class AppEnvironment {
             repository: transcripts,
             journals: journalStore,
             inserter: textInserter,
+            archive: audioArchive,
             metrics: metrics
         )
         meetingEngine = MeetingEngine(
@@ -151,15 +160,38 @@ public final class AppEnvironment {
                 lexiconEntries: lexicon,
                 shortcuts: shortcuts,
                 cleaner: cleanup,
-                grammarChecker: grammar
+                grammarChecker: grammar,
+                project: project
             )
         )
     }
 
+    /// Builds a bounded project index off the main actor and applies it to both
+    /// engines. Call this only from an explicit project selection or refresh;
+    /// cleanup itself never walks the filesystem.
+    @discardableResult
+    public func selectProject(root: URL, isCoding: Bool) async -> ProjectContext? {
+        let context = await Task.detached(priority: .userInitiated) {
+            ProjectIndexer().build(root: root, isCoding: isCoding, approvedByUser: true)
+        }.value
+        project = context
+        await sessionEngine.update(project: context)
+        await meetingEngine.update(project: context)
+        return context
+    }
+
+    public func clearProject() async {
+        project = nil
+        await sessionEngine.update(project: nil)
+        await meetingEngine.update(project: nil)
+    }
+
     public func makeRecoveryEngine(settings: AppSettings) async -> RecoveryEngine {
         let pipeline = await makePipeline(settings: settings)
+        let project = self.project
         let cleaner: RecoveryCleaner = { text in
-            let result = await pipeline.run(text, context: TextContext(settings: settings))
+            let result = await pipeline.run(text, context: TextContext(settings: settings,
+                                                                      project: project))
             return RecoveryCleaned(text: result.text, state: result.draft.cleanupState)
         }
         return RecoveryEngine(repository: transcripts, journals: journalStore, recognizer: recognizer,

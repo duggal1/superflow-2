@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 import SuperflowKernel
 import SuperflowPorts
@@ -70,6 +71,42 @@ final class CleanupTests: XCTestCase {
         let text = "First sentence here. Second sentence follows. Third sentence ends."
         let plans = await planner.plan(text) { input in max(1, wordCount(input)) }
         XCTAssertEqual(plans.map(\.text).joined(separator: " "), text)
+    }
+
+    func testStrongListCuesUpgradeStructure() async {
+        let cleaner = FakeTextCleaner(.identity)
+        _ = await service(cleaner).clean(
+            "Here are the steps: first install it, second run it.", context: TextContext())
+        let options = await cleaner.lastOptions
+        XCTAssertEqual(options?.structure, "list")
+    }
+
+    func testOrdinaryProseStaysProse() async {
+        let cleaner = FakeTextCleaner(.identity)
+        _ = await service(cleaner).clean("First I went home. Then I ate dinner.",
+                                         context: TextContext())
+        let options = await cleaner.lastOptions
+        XCTAssertEqual(options?.structure, "prose")
+    }
+
+    func testConfiguredStructureIsNeverOverridden() {
+        XCTAssertEqual(CleanupStructureDetector.structure(
+            for: "First one. Second two. Third three.", configured: "bullets"), "bullets")
+        XCTAssertEqual(CleanupStructureDetector.structure(
+            for: "First one. Second two. Third three.", configured: "prose"), "list")
+        XCTAssertEqual(CleanupStructureDetector.structure(
+            for: "First one. Second two.", configured: "prose"), "prose")
+        XCTAssertEqual(CleanupStructureDetector.structure(
+            for: "- one\n- two\n- three", configured: "prose"), "list")
+    }
+
+    func testCodingProjectUpgradesCleanupContext() async {
+        let cleaner = FakeTextCleaner(.identity)
+        let project = ProjectContext(root: FileManager.default.temporaryDirectory,
+                                     isCoding: true, approvedByUser: true)
+        _ = await service(cleaner).clean("hero.tsx", context: TextContext(project: project))
+        let options = await cleaner.lastOptions
+        XCTAssertEqual(options?.context, "coding")
     }
 
     func testSeamRepair() {

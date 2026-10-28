@@ -31,6 +31,7 @@ public struct SettingsView: View {
     @State private var tab: SettingsTab = .general
     @State private var searchFocus = false
     @State private var showingNotices = false
+    @Environment(DialogHost.self) private var dialogs
 
     public init(model: SettingsViewModel) {
         self.model = model
@@ -71,8 +72,10 @@ public struct SettingsView: View {
         }
         .task { await model.load() }
         .searchShortcut($searchFocus)
-        .sheet(isPresented: $showingNotices) {
-            noticesSheet
+        .onChange(of: showingNotices) { _, show in
+            guard show else { return }
+            dialogs.present { noticesDialog }
+            showingNotices = false
         }
         .toast(model.toast)
     }
@@ -109,26 +112,14 @@ public struct SettingsView: View {
         }
     }
 
-    private var noticesSheet: some View {
-        VStack(alignment: .leading, spacing: Space.md) {
-            Text("Third-party notices")
-                .font(Typography.headline)
-                .foregroundStyle(Tok.text)
-            ScrollView {
-                Text(model.thirdPartyNotices)
-                    .font(Typography.secondary)
-                    .foregroundStyle(Tok.text2)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            HStack {
-                Spacer()
-                AppButton("Close", kind: .secondary) { showingNotices = false }
-            }
+    private var noticesDialog: some View {
+        InfoDialog(title: "Third-party notices") {
+            Text(model.thirdPartyNotices)
+                .appType(.caption)
+                .foregroundStyle(Tok.text2)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(Space.lg)
-        .frame(minWidth: 560, minHeight: 420)
-        .background(Tok.bg)
     }
 }
 
@@ -163,10 +154,10 @@ struct SettingsCard<Content: View>: View {
 }
 
 public struct OpenModelsKey: EnvironmentKey {
-    public static let defaultValue: @Sendable () -> Void = {}
+    public static let defaultValue: @MainActor () -> Void = {}
 }
 public extension EnvironmentValues {
-    var openModels: @Sendable () -> Void {
+    var openModels: @MainActor () -> Void {
         get { self[OpenModelsKey.self] }
         set { self[OpenModelsKey.self] = newValue }
     }

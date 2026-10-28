@@ -1,0 +1,6 @@
+iter	phase	verdict	score	blocking	major	change
+0	build	-	-	-	-	first-principles decomposition: 7 components, 11 tasks, plan.md + tasks.json written
+1	critique	revise	62	0	9	PE: strategy-options gap; detached restore untestable; T5 signature break; 3s deadline; Island partial payload; T4/T7 oversized; wiring isolation; stale prepared PID; reference file absent
+2	revise	-	-	-	-	added options seam, RestoreScheduling, T4a/T4b/T7a/T7b/T8b split, 8s injectable deadline + clipboard fallback, Island finalized-record fix, prepared-PID TTL, @MainActor live init, vendored reference, step vocabulary, secure-input
+3	implement	done	-	0	0	T1-T14 landed: L0 marker + prepare default, TextInsertion rewrite (11 files, 326-line service), HotkeyEngine marker guards, SessionEngine prepare + 8s deadline + clipboardOnly fallback, Island finalized-transcript card, TestKit hooks, ADR 0022 + PLAN §15 + permissions runbook; 59 insertion tests, 9 hotkey, 16 session, 10 ports, 9 app, make lint green
+4	implement	done	-	0	0	elite upgrade: AX-first for confident editable fields, adaptive 50ms/500ms cancellable restore with flush-before-next-snapshot, 30s prepared TTL + frontmost invalidation, whole-value verification (value-verified/ax-value-verified), FIFO insertion serialization; 74 insertion tests, ADR 0022 + PLAN §15 updated, make lint green

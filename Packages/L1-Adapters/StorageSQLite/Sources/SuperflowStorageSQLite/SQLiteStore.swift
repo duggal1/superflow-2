@@ -6,7 +6,7 @@ import SuperflowPorts
 /// Serialized SQLite store behind all three persistence ports. One writer actor
 /// keeps ordering simple; WAL means readers could be added later without a
 /// schema change.
-public actor SQLiteStore: TranscriptRepository {
+public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
     let db: SQLiteConnection
 
     public nonisolated let path: String
@@ -26,14 +26,16 @@ public actor SQLiteStore: TranscriptRepository {
     public func createSession(_ s: SessionRecord) async throws {
         let sql = """
         INSERT INTO sessions (id, kind, started_at, ended_at, status, frontmost_bundle_id, model_profile,
-                              duration_ms, word_count, cleanup_state, title, local_day)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              duration_ms, word_count, cleanup_state, title, local_day,
+                              audio_duration, audio_peaks)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             kind = excluded.kind, started_at = excluded.started_at, ended_at = excluded.ended_at,
             status = excluded.status, frontmost_bundle_id = excluded.frontmost_bundle_id,
             model_profile = excluded.model_profile, duration_ms = excluded.duration_ms,
             word_count = excluded.word_count, cleanup_state = excluded.cleanup_state,
-            title = excluded.title, local_day = excluded.local_day
+            title = excluded.title, local_day = excluded.local_day,
+            audio_duration = excluded.audio_duration, audio_peaks = excluded.audio_peaks
         """
         let statement = try db.prepare(sql)
         try statement.bind(Self.values(for: s))
@@ -327,7 +329,9 @@ public actor SQLiteStore: TranscriptRepository {
 
     static let sessionColumns = """
     id, kind, started_at, ended_at, status, frontmost_bundle_id, model_profile,
-    duration_ms, word_count, cleanup_state, title, local_day
+    duration_ms, word_count, cleanup_state, title, local_day, audio_duration, audio_peaks,
+    (SELECT COALESCE(cleaned_text, raw_text) FROM segments
+     WHERE segments.session_id = sessions.id ORDER BY idx LIMIT 1)
     """
 
     static func values(for s: SessionRecord) -> [SQLValue] {
@@ -337,6 +341,7 @@ public actor SQLiteStore: TranscriptRepository {
             .text(s.status.rawValue), s.frontmostBundleID.map { .text($0) } ?? .null,
             .text(s.modelProfile), .integer(Int64(s.durationMs)), .integer(Int64(s.wordCount)),
             .text(s.cleanupState.rawValue), s.title.map { .text($0) } ?? .null, .text(s.localDay),
+            s.audioDuration.map { .real($0) } ?? .null, s.audioPeaks.map { .blob($0) } ?? .null,
         ]
     }
 
@@ -353,20 +358,10 @@ public actor SQLiteStore: TranscriptRepository {
             wordCount: Int(statement.int(8)),
             cleanupState: CleanupState(rawValue: statement.text(9) ?? "") ?? .pending,
             title: statement.text(10),
-            localDay: statement.text(11) ?? "")
+            localDay: statement.text(11) ?? "",
+            audioDuration: statement.isNull(12) ? nil : statement.double(12),
+            audioPeaks: statement.data(13),
+            preview: statement.text(14))
     }
 
-    static func segment(from statement: SQLiteStatement) -> Segment {
-        Segment(
-            sessionID: SessionID(statement.text(0) ?? ""),
-            index: Int(statement.int(1)),
-            startMs: Int(statement.int(2)),
-            endMs: Int(statement.int(3)),
-            speakerID: statement.text(4),
-            source: AudioSourceKind(rawValue: statement.text(5) ?? "") ?? .mic,
-            rawText: statement.text(6) ?? "",
-            cleanedText: statement.text(7),
-            cleanupState: CleanupState(rawValue: statement.text(8) ?? "") ?? .pending,
-            createdAt: Date(timeIntervalSince1970: statement.double(9)))
-    }
 }

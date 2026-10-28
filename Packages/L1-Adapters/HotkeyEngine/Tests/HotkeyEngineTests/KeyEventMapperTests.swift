@@ -1,4 +1,5 @@
 import CoreGraphics
+import SuperflowKernel
 import SuperflowPorts
 import XCTest
 @testable import SuperflowHotkeyEngine
@@ -36,5 +37,19 @@ final class KeyEventMapperTests: XCTestCase {
                        KeyEvent(kind: .otherKeyDown(0), timestampNs: 3))
         XCTAssertEqual(KeyEventMapper.keyDown(keyCode: 0x7E, timestampNs: 4),
                        KeyEvent(kind: .otherKeyDown(126), timestampNs: 4))
+    }
+
+    func testSyntheticMarkerIsRecognised() throws {
+        let source = CGEventSource(stateID: .privateState)
+        let marked = try XCTUnwrap(CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true))
+        marked.setIntegerValueField(.eventSourceUserData, value: SyntheticInputMarker.value)
+        XCTAssertTrue(KeyEventMapper.isSynthetic(marked))
+
+        let other = try XCTUnwrap(CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true))
+        other.setIntegerValueField(.eventSourceUserData, value: 1234)
+        XCTAssertFalse(KeyEventMapper.isSynthetic(other))
+
+        let plain = try XCTUnwrap(CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true))
+        XCTAssertFalse(KeyEventMapper.isSynthetic(plain))
     }
 }

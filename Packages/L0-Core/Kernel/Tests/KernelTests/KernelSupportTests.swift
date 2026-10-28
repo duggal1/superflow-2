@@ -63,11 +63,17 @@ final class KernelSupportTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: encoded), settings)
     }
 
-    func testModelProfileLookupFallsBackToTheVerifiedDefault() {
+    func testModelProfileLookupFallsBackToNemotron35() {
         XCTAssertEqual(ModelProfile.byID(ModelProfile.parakeetEOU120M.id),
                        ModelProfile.parakeetEOU120M)
-        XCTAssertEqual(ModelProfile.byID("does-not-exist"), .parakeetEOU120M)
+        XCTAssertEqual(ModelProfile.byID("does-not-exist"), .nemotron35Streaming)
+        XCTAssertEqual(ModelProfile.default, .nemotron35Streaming)
         XCTAssertEqual(ModelProfile.all.map(\.id), ModelProfile.all.map(\.id).uniqued())
+    }
+
+    func testBatchProfilesAreNeverSelectableForDictation() {
+        XCTAssertFalse(ModelProfile.streamingProfiles.contains(.parakeetTDTV3))
+        XCTAssertTrue(ModelProfile.streamingProfiles.contains(.nemotron35Streaming))
     }
 
     func testNVIDIAProfilesExposeStreamingAndBatchModels() {

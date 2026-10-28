@@ -129,7 +129,7 @@ public struct Metric: View {
                     .foregroundStyle(Tok.text2)
             }
             Text(value)
-                .font(.system(size: 28, weight: .medium))
+                .appType(.metric)
                 .monospacedDigit()
                 .foregroundStyle(Tok.text)
                 .contentTransition(reduceMotion ? .identity : .numericText())

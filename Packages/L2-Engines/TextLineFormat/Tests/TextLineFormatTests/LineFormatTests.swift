@@ -49,6 +49,49 @@ final class LineFormatTests: XCTestCase {
         XCTAssertEqual(out, "One line\n\n- list item one\n\n- list item two.")
     }
 
+    func testFencedCodeIsPreservedVerbatim() {
+        let input = "here is the patch\n```swift\nlet x = 1\nprint(x)\n```\ndone for now please"
+        let out = format(input) { settings in
+            settings.capitalize = true
+            settings.finalPeriod = true
+        }
+        XCTAssertTrue(out.contains("```swift\nlet x = 1\nprint(x)\n```"), out)
+        XCTAssertTrue(out.hasPrefix("Here is the patch"), out)
+        XCTAssertTrue(out.hasSuffix("Done for now please."), out)
+    }
+
+    func testInlineCodeAndPathsArePreserved() {
+        let out = format("run `npm run build` then open src/main.ts") { settings in
+            settings.capitalize = true
+            settings.finalPeriod = true
+        }
+        XCTAssertTrue(out.contains("`npm run build`"), out)
+        XCTAssertTrue(out.contains("src/main.ts"), out)
+        XCTAssertFalse(out.contains("Src/main.ts"), out)
+        XCTAssertTrue(out.hasPrefix("Run "), out)
+    }
+
+    func testUnclosedFenceStaysCode() {
+        let out = format("```\nlet x = 1") { settings in
+            settings.capitalize = true
+            settings.finalPeriod = true
+        }
+        XCTAssertEqual(out, "```\nlet x = 1")
+    }
+
+    func testListMarkerSpacingIsNormalized() {
+        let out = format("-   one\n-   two") { settings in
+            settings.capitalize = false
+            settings.finalPeriod = false
+        }
+        XCTAssertEqual(out, "- one\n\n- two")
+        let numbered = format("1.   first\n2)   second") { settings in
+            settings.capitalize = false
+            settings.finalPeriod = false
+        }
+        XCTAssertEqual(numbered, "1. first\n\n2) second")
+    }
+
     func testIncrementalEqualsBatch() {
         let chunks = [
             "This is the first sentence and it has quite a lot of words in it to reach the threshold easily. ",
@@ -64,7 +107,8 @@ final class LineFormatTests: XCTestCase {
     }
 
     func testIdempotent() {
-        for input in ["hello world. this is a test", "one line\n- item", "a b c"] {
+        for input in ["hello world. this is a test", "one line\n- item", "a b c",
+                      "run `npm run build` then open src/main.ts"] {
             let once = format(input)
             let twice = format(once)
             XCTAssertEqual(once, twice, "input: \(input)")

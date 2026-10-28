@@ -3,7 +3,7 @@ import Foundation
 /// Versioned migrations. Each version is applied inside its own transaction so
 /// a failed upgrade leaves the previous schema intact.
 enum Schema {
-    static let currentVersion: Int32 = 2
+    static let currentVersion: Int32 = 3
 
     static func migrate(_ connection: SQLiteConnection) throws {
         let version = connection.userVersion
@@ -18,6 +18,12 @@ enum Schema {
             try connection.transaction {
                 try connection.execute(v2)
                 try connection.setUserVersion(2)
+            }
+        }
+        if version < 3 {
+            try connection.transaction {
+                try connection.execute(v3)
+                try connection.setUserVersion(3)
             }
         }
     }
@@ -106,5 +112,12 @@ enum Schema {
     static let v2 = """
     CREATE INDEX IF NOT EXISTS sessions_status ON sessions(status, started_at DESC);
     CREATE INDEX IF NOT EXISTS segments_source ON segments(session_id, source);
+    """
+
+    /// v3 adds the archived dictation clip. Both columns are nullable, so every
+    /// existing session stays valid and "no audio" is the absence of a value.
+    static let v3 = """
+    ALTER TABLE sessions ADD COLUMN audio_duration REAL;
+    ALTER TABLE sessions ADD COLUMN audio_peaks BLOB;
     """
 }

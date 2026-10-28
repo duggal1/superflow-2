@@ -108,6 +108,7 @@ public actor FakeSpeechRecognizer: SpeechRecognizer {
     public var failWarmUp: Bool
     public var failMakeStream: Bool
     public private(set) var streamsMade = 0
+    public var onWarmUp: (@Sendable () async -> Void)?
 
     public init(isReady: Bool = true, script: [String] = ["hello world"],
                 scriptsBySource: [AudioSourceKind: [String]] = [:],
@@ -122,9 +123,12 @@ public actor FakeSpeechRecognizer: SpeechRecognizer {
     }
 
     public func warmUp(profile: String) async throws {
+        if let onWarmUp { await onWarmUp() }
         if failWarmUp { throw SuperflowError.modelUnavailable(profile) }
         isReady = true
     }
+
+    public func setOnWarmUp(_ hook: (@Sendable () async -> Void)?) { onWarmUp = hook }
 
     public func makeStream(profile: String, source: AudioSourceKind) async throws -> any RecognitionStream {
         if failMakeStream { throw SuperflowError.modelUnavailable(profile) }

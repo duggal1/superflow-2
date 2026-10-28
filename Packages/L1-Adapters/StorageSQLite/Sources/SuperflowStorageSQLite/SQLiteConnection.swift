@@ -177,4 +177,11 @@ final class SQLiteStatement {
     func int(_ index: Int32) -> Int64 { sqlite3_column_int64(handle, index) }
     func double(_ index: Int32) -> Double { sqlite3_column_double(handle, index) }
     func isNull(_ index: Int32) -> Bool { sqlite3_column_type(handle, index) == SQLITE_NULL }
+
+    func data(_ index: Int32) -> Data? {
+        guard sqlite3_column_type(handle, index) != SQLITE_NULL,
+              let pointer = sqlite3_column_blob(handle, index) else { return nil }
+        let count = Int(sqlite3_column_bytes(handle, index))
+        return Data(bytes: pointer, count: count)
+    }
 }

@@ -1,208 +1,186 @@
 import AppKit
-import CoreGraphics
-import CoreFoundation
-import Foundation
 import SuperflowFeatureIsland
-import SuperflowMeetingEngine
-import SuperflowSessionEngine
 import SwiftUI
 
+/// The Island's window: borderless, non-activating, above the menu bar, and
+/// never draggable. It is created once and never ordered out.
 @MainActor
-public final class IslandPanelController: NSObject, NSWindowDelegate {
-    public let model: IslandViewModel
+final class IslandPanel: NSPanel {
+    /// True only while the "recent" card is open, so Escape works. Never true
+    /// otherwise: the Island must not steal focus.
+    var allowsKey = false
+    var onCancel: (() -> Void)?
 
-    private let session: SessionEngine
-    private let meeting: MeetingEngine
-    private let actions: IslandActions
-    private let defaults: UserDefaults
-    private let panel: NonActivatingIslandPanel
-    private let sessionEvents: AsyncStream<SessionEvent>?
-    private let meetingEvents: AsyncStream<MeetingEvent>?
-    private var sessionTask: Task<Void, Never>?
-    private var meetingTask: Task<Void, Never>?
-    private var tickTask: Task<Void, Never>?
-
-    public init(session: SessionEngine, meeting: MeetingEngine, model: IslandViewModel,
-                actions: IslandActions, sessionEvents: AsyncStream<SessionEvent>? = nil,
-                meetingEvents: AsyncStream<MeetingEvent>? = nil,
-                defaults: UserDefaults = .standard) {
-        self.session = session
-        self.meeting = meeting
-        self.model = model
-        self.actions = actions
-        self.sessionEvents = sessionEvents
-        self.meetingEvents = meetingEvents
-        self.defaults = defaults
-        panel = NonActivatingIslandPanel(
-            contentRect: NSRect(origin: .zero, size: NSSize(width: 280, height: 60)),
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        super.init()
-        panel.isFloatingPanel = true
-        panel.level = .statusBar
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
-        panel.hidesOnDeactivate = false
-        panel.isMovableByWindowBackground = false
-        panel.backgroundColor = .clear
-        panel.isOpaque = false
-        panel.hasShadow = false
-        panel.title = "Superflow Island"
-        panel.delegate = self
-        panel.contentView = NSHostingView(rootView: IslandPanelContent(
-            model: model,
-            actions: actions,
-            resetPosition: { [weak self] in self?.resetPosition() },
-            movePanel: { [weak self] delta in self?.movePanel(by: delta) }
-        ))
-        placePanel()
-    }
-
-    public func startObserving() {
-        guard sessionTask == nil, meetingTask == nil else { return }
-        let sessionEvents = self.sessionEvents ?? session.events
-        sessionTask = Task { [weak self] in
-            for await event in sessionEvents {
-                guard let self else { return }
-                self.model.handle(event)
-                self.refreshPanel()
-            }
-        }
-        let meetingEvents = self.meetingEvents ?? meeting.events
-        meetingTask = Task { [weak self] in
-            for await event in meetingEvents {
-                guard let self else { return }
-                self.model.handle(event)
-                self.refreshPanel()
-            }
-        }
-    }
-
-    public func resetPosition() {
-        if let screen = screenForPanel() {
-            defaults.removeObject(forKey: positionKey(for: screen))
-        }
-        placePanel()
-    }
-
-    public func windowDidMove(_ notification: Notification) {
-        guard let screen = screenForPanel() else { return }
-        defaults.set(NSStringFromPoint(panel.frame.origin), forKey: positionKey(for: screen))
-    }
-
-    private func movePanel(by delta: CGSize) {
-        let proposed = panel.frame.offsetBy(dx: delta.width, dy: delta.height)
-        guard let screen = NSScreen.screens.first(where: { $0.visibleFrame.intersects(proposed) })
-                ?? screenForPanel() else { return }
-        let visible = screen.visibleFrame
-        let origin = NSPoint(
-            x: min(max(proposed.origin.x, visible.minX), max(visible.minX, visible.maxX - proposed.width)),
-            y: min(max(proposed.origin.y, visible.minY), max(visible.minY, visible.maxY - proposed.height))
-        )
-        panel.setFrameOrigin(origin)
-    }
-
-    private func refreshPanel() {
-        let size = model.isExpanded
-            ? NSSize(width: 460, height: 160)
-            : NSSize(width: 280, height: 60)
-        if panel.frame.size != size {
-            var frame = panel.frame
-            let oldHeight = frame.height
-            frame.size = size
-            frame.origin.y += oldHeight - size.height
-            panel.setFrame(frame, display: true)
-        }
-
-        if model.isVisible {
-            if !panel.isVisible {
-                placePanel()
-                panel.orderFrontRegardless()
-            }
-            startTicking()
-        } else {
-            panel.orderOut(nil)
-            stopTicking()
-        }
-    }
-
-    private func startTicking() {
-        guard tickTask == nil else { return }
-        tickTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(for: .milliseconds(33))
-                } catch {
-                    return
-                }
-                guard let self else { return }
-                self.model.tick()
-                self.refreshPanel()
-            }
-        }
-    }
-
-    private func stopTicking() {
-        tickTask?.cancel()
-        tickTask = nil
-    }
-
-    private func placePanel() {
-        guard let screen = screenForPanel() ?? NSScreen.main ?? NSScreen.screens.first else { return }
-        let visible = screen.visibleFrame
-        let size = panel.frame.size
-        let key = positionKey(for: screen)
-        let saved = defaults.string(forKey: key).map(NSPointFromString)
-        let proposed = saved ?? NSPoint(x: visible.midX - size.width / 2,
-                                        y: visible.maxY - size.height - 8)
-        let origin = NSPoint(
-            x: min(max(proposed.x, visible.minX), max(visible.minX, visible.maxX - size.width)),
-            y: min(max(proposed.y, visible.minY), max(visible.minY, visible.maxY - size.height))
-        )
-        panel.setFrameOrigin(origin)
-    }
-
-    private func screenForPanel() -> NSScreen? {
-        NSScreen.screens.first { $0.frame.intersects(panel.frame) }
-    }
-
-    private func positionKey(for screen: NSScreen) -> String {
-        "island.position.\(displayIdentifier(for: screen))"
-    }
-
-    private func displayIdentifier(for screen: NSScreen) -> String {
-        guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
-            return screen.localizedName
-        }
-        guard let unmanaged = CGDisplayCreateUUIDFromDisplayID(CGDirectDisplayID(number.uint32Value)) else {
-            return String(number.uint32Value)
-        }
-        return CFUUIDCreateString(nil, unmanaged.takeRetainedValue()) as String
-    }
-}
-
-@MainActor
-private final class NonActivatingIslandPanel: NSPanel {
-    override var canBecomeKey: Bool { false }
+    override var canBecomeKey: Bool { allowsKey }
     override var canBecomeMain: Bool { false }
+    override func cancelOperation(_ sender: Any?) { onCancel?() }
+
+    /// By default AppKit pushes a window below the menu bar. That is half of the
+    /// floating-badge bug.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
+
+    init() {
+        super.init(contentRect: NSRect(origin: .zero, size: IslandLayout.canvas),
+                   styleMask: [.borderless, .nonactivatingPanel],
+                   backing: .buffered,
+                   defer: false)
+        level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue + 3)
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        isMovable = false
+        isMovableByWindowBackground = false
+        hidesOnDeactivate = false
+        becomesKeyOnlyIfNeeded = true
+        isReleasedWhenClosed = false
+        animationBehavior = .none
+        appearance = NSAppearance(named: .darkAqua)
+    }
 }
 
-private struct IslandPanelContent: View {
-    @ObservedObject var model: IslandViewModel
-    let actions: IslandActions
-    let resetPosition: () -> Void
-    let movePanel: @MainActor @Sendable (CGSize) -> Void
+/// Shape-accurate hit testing. Everything outside the shape passes clicks to
+/// whatever is underneath: menu bar items, other windows, the desktop.
+final class IslandHostingView: NSHostingView<IslandRoot> {
+    /// Interactive region in this view's top-left coordinate space.
+    var hitRect: () -> CGRect = { .zero }
 
-    var body: some View {
-        IslandView(model: model, actions: actions, onMove: movePanel)
-            .contextMenu {
-                Button("Stop", systemImage: "stop.fill", action: actions.stop)
-                Button("Cancel", systemImage: "xmark", action: actions.cancel)
-                Button("Open App", systemImage: "macwindow", action: actions.openApp)
-                Button("Settings", systemImage: "gearshape", action: actions.openSettings)
-                Button("Reset Position", systemImage: "arrow.uturn.backward", action: resetPosition)
-                Button("Quit Superflow", systemImage: "power", action: actions.quit)
+    required init(rootView: IslandRoot) {
+        super.init(rootView: rootView)
+        sizingOptions = []
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    /// A notch screen reports a top safe-area inset. It would push the content down.
+    override var safeAreaInsets: NSEdgeInsets { NSEdgeInsets() }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let local = convert(point, from: superview)
+        let y = isFlipped ? local.y : bounds.height - local.y
+        return hitRect().contains(CGPoint(x: local.x, y: y)) ? super.hitTest(point) : nil
+    }
+}
+
+/// Placement, screens and focus. The window moves only while the Island is idle
+/// and therefore invisible, and never with an animation.
+@MainActor
+public final class IslandController {
+    public let model: IslandModel
+
+    private let panel = IslandPanel()
+    private let host: IslandHostingView
+    private var observers: [NSObjectProtocol] = []
+    private var outsideMonitors: [Any] = []
+    private var pendingReseat = false
+    private var didStart = false
+
+    public init(model: IslandModel) {
+        self.model = model
+        host = IslandHostingView(rootView: IslandRoot(model: model))
+        host.hitRect = { [unowned model] in
+            IslandLayout.hitRect(model.phase, model.geometry)
+        }
+        panel.contentView = host
+        panel.onCancel = { [unowned model] in model.send(.dismissed) }
+        model.placement = { [weak self] in self?.place($0) }
+        model.phaseDidChange = { [weak self] in self?.phaseChanged($0) }
+    }
+
+    public func start() {
+        guard !didStart else { return }
+        didStart = true
+        place(.home)
+        panel.orderFrontRegardless()
+
+        let center = NotificationCenter.default
+        let workspace = NSWorkspace.shared.notificationCenter
+        observers = [
+            center.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
+                               object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.screensChanged() }
+            },
+            workspace.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification,
+                                  object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.panel.orderFrontRegardless() }
+            },
+            workspace.addObserver(forName: NSWorkspace.screensDidWakeNotification,
+                                  object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.screensChanged() }
+            },
+        ]
+    }
+
+    // MARK: placement
+
+    /// Moves the window. Called only while the Island is idle and invisible.
+    private func place(_ target: IslandPlacement) {
+        let screen = target == .home
+            ? (IslandScreens.home ?? IslandScreens.active)
+            : IslandScreens.active
+        guard let screen else { return }
+        let geometry = NotchGeometry(screen: screen)
+        if geometry != model.geometry {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { model.geometry = geometry }
+        }
+        let size = IslandLayout.canvas
+        let x = ((geometry.centerX - size.width / 2) * geometry.scale).rounded() / geometry.scale
+        let y = geometry.frame.maxY - size.height
+        panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height),
+                       display: false)
+        panel.orderFrontRegardless()
+    }
+
+    private func screensChanged() {
+        guard model.phase == .idle else {
+            pendingReseat = true
+            return
+        }
+        place(.home)
+    }
+
+    // MARK: phase side effects owned by AppKit
+
+    private func phaseChanged(_ phase: IslandPhase) {
+        if phase == .idle, pendingReseat {
+            pendingReseat = false
+            place(.home)
+        }
+
+        // Key status only for the click-opened card, so Escape works.
+        if case .recent = phase {
+            panel.allowsKey = true
+            panel.makeKey()
+        } else {
+            if panel.isKeyWindow { panel.resignKey() }
+            panel.allowsKey = false
+        }
+
+        // Outside click closes the click-opened card only. The failure card
+        // survives outside clicks on purpose: the owner may click into the
+        // target field and the transcript must not vanish.
+        outsideMonitors.forEach(NSEvent.removeMonitor)
+        outsideMonitors = []
+        if case .recent = phase {
+            let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown]
+            if let global = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] _ in
+                MainActor.assumeIsolated { self?.model.send(.dismissed) }
+            }) {
+                outsideMonitors.append(global)
             }
+            if let local = NSEvent.addLocalMonitorForEvents(matching: mask, handler: { [weak self] event in
+                if let self, event.window !== self.panel {
+                    MainActor.assumeIsolated { self.model.send(.dismissed) }
+                }
+                return event
+            }) {
+                outsideMonitors.append(local)
+            }
+        }
     }
 }

@@ -31,6 +31,22 @@ final class DownloadTelemetryTests: XCTestCase {
         meter.end()
     }
 
+    /// FluidAudio's ASR caches publish a fraction and no length. The row still needs a
+    /// total or it cannot grow into its readout, so it comes from the bytes that landed.
+    func testTotalIsDerivedWhenTheServerPublishesNoLength() {
+        let measured = TransferSnapshot(label: "nemotron-3.5-asr-streaming-0.6b",
+                                        receivedBytes: 38_000_000, totalBytes: nil,
+                                        bytesPerSecond: 3_400_000)
+        XCTAssertNil(measured.fraction)
+        XCTAssertEqual(measured.totalBytes(estimatedFrom: 0.08), 475_000_000)
+        XCTAssertNil(measured.totalBytes(estimatedFrom: 0))
+        XCTAssertNil(measured.totalBytes(estimatedFrom: nil))
+
+        let published = TransferSnapshot(label: "s1-mini", receivedBytes: 242_000_000,
+                                         totalBytes: 484_219_808, bytesPerSecond: 3_800_000)
+        XCTAssertEqual(published.totalBytes(estimatedFrom: 0.1), 484_219_808)
+    }
+
     func testRateIsMeasuredFromBytesOverTime() async throws {
         let meter = DownloadTelemetry()
         meter.begin(label: "throughput", totalBytes: 10_000_000)

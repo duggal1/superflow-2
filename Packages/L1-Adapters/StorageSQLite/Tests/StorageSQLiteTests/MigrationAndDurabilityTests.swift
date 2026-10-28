@@ -69,7 +69,7 @@ final class MigrationAndDurabilityTests: XCTestCase {
         XCTAssertEqual(found.map(\.id), [SessionID("v1-session")])
 
         let connection = try SQLiteConnection(path: url.path)
-        XCTAssertEqual(connection.userVersion, 2)
+        XCTAssertEqual(connection.userVersion, 3)
         let sessionIndexes = try indexNames(connection, table: "sessions")
         let segmentIndexes = try indexNames(connection, table: "segments")
         XCTAssertTrue(sessionIndexes.contains("sessions_status"))
@@ -88,7 +88,7 @@ final class MigrationAndDurabilityTests: XCTestCase {
         let count = try await second.sessionCount(kind: nil)
         XCTAssertEqual(count, 1)
         let connection = try SQLiteConnection(path: url.path)
-        XCTAssertEqual(connection.userVersion, 2)
+        XCTAssertEqual(connection.userVersion, 3)
     }
 
     func testFailedMigrationRollsBackAndFactoryQuarantines() async throws {
@@ -144,6 +144,29 @@ final class MigrationAndDurabilityTests: XCTestCase {
         XCTAssertEqual(found.map(\.id), [session.id])
         let unsafe = try await store.sessions(kind: nil, query: "\"unbalanced", limit: 10, offset: 0)
         XCTAssertTrue(unsafe.isEmpty)
+    }
+
+    func testAudioMetadataRoundTripsAndClears() async throws {
+        let store = try SQLiteStore(path: databaseURL().path)
+        var session = SessionRecord(id: SessionID("audio"), kind: .dictation,
+                                    modelProfile: ModelProfile.default.id)
+        try await store.createSession(session)
+
+        let peaks = Data([0, 64, 128, 255])
+        try await store.setAudio(session: session.id, duration: 1.4, peaks: peaks)
+        session = try await store.session(session.id) ?? session
+        XCTAssertEqual(session.audioDuration ?? -1, 1.4, accuracy: 0.001)
+        XCTAssertEqual(session.audioPeaks, peaks)
+
+        let withAudio = try await store.sessionsWithAudio()
+        XCTAssertEqual(withAudio.map(\.value), ["audio"])
+
+        try await store.clearAudio(session: session.id)
+        let cleared = try await store.session(session.id)
+        XCTAssertNil(cleared?.audioDuration)
+        XCTAssertNil(cleared?.audioPeaks)
+        let remaining = try await store.sessionsWithAudio()
+        XCTAssertTrue(remaining.isEmpty)
     }
 
     func testDataSurvivesRelaunch() async throws {

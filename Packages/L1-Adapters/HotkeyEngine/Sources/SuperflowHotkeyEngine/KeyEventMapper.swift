@@ -38,4 +38,10 @@ public enum KeyEventMapper {
             return KeyEvent(kind: .otherKeyDown(UInt16(clamping: keyCode)), timestampNs: timestampNs)
         }
     }
+
+    /// True for events the insertion backend posted itself. Both taps drop these
+    /// so Superflow never reacts to its own synthetic Cmd+V or Fn flag change.
+    public static func isSynthetic(_ event: CGEvent) -> Bool {
+        event.getIntegerValueField(.eventSourceUserData) == SyntheticInputMarker.value
+    }
 }

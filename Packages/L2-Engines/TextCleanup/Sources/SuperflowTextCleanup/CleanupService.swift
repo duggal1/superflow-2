@@ -57,7 +57,8 @@ public actor CleanupService {
         await cleaner.countTokens(text)
     }
 
-    public func clean(_ input: String, context: TextContext) async -> CleanupOutcome {
+    public func clean(_ input: String, protected: Protected = Protected(),
+                      context: TextContext) async -> CleanupOutcome {
         let tier0 = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !tier0.isEmpty else {
             return CleanupOutcome(text: "", state: .skipped, chunks: [], diagnostics: [])
@@ -74,7 +75,7 @@ public actor CleanupService {
         let configured = context.interactive ? context.settings.interactiveDeadlineMs : context.settings.backgroundDeadlineMs
         let ceiling = context.interactive ? config.interactiveDeadlineMs : config.backgroundDeadlineMs
         let deadline = min(max(1, configured), max(1, ceiling))
-        let planner = ChunkPlanner(config: config, protected: contextProtected(context))
+        let planner = ChunkPlanner(config: config, protected: protected)
         let plans = await planner.plan(tier0) { await self.cleaner.countTokens($0) }
         guard !plans.isEmpty else {
             return CleanupOutcome(text: tier0, state: .fallback, chunks: [], diagnostics: [])
@@ -89,7 +90,8 @@ public actor CleanupService {
                         return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback)
                     }
                     await self.semaphore.acquire()
-                    let result = await self.cleanChunk(plan, deadlineMs: deadline, depth: 0, context: context)
+                    let result = await self.cleanChunk(plan, deadlineMs: deadline, depth: 0,
+                                                       protected: protected, context: context)
                     await self.semaphore.release()
                     return result
                 }
@@ -108,18 +110,16 @@ public actor CleanupService {
                               chunks: outcomes, diagnostics: diagnostics)
     }
 
-    private func contextProtected(_ context: TextContext) -> Protected {
-        Protected()
-    }
-
-    private func cleanChunk(_ plan: ChunkPlan, deadlineMs: Int, depth: Int, context: TextContext) async -> ChunkOutcome {
+    private func cleanChunk(_ plan: ChunkPlan, deadlineMs: Int, depth: Int,
+                            protected: Protected, context: TextContext) async -> ChunkOutcome {
         let start = DispatchTime.now().uptimeNanoseconds
         do {
             let result = try await withDeadline(ms: deadlineMs) {
                 try await self.cleaner.clean(plan.text, options: CleanOptions(
                     styling: context.settings.cleanupStyling,
-                    structure: context.settings.cleanupStructure,
-                    context: context.settings.cleanupContext,
+                    structure: CleanupStructureDetector.structure(
+                        for: plan.text, configured: context.settings.cleanupStructure),
+                    context: context.cleanupContext,
                     deadlineMs: deadlineMs,
                     maxNewTokens: self.config.maxNewTokens))
             }
@@ -127,12 +127,14 @@ public actor CleanupService {
 
             if let reason = truncation.detect(input: plan.text, output: result.text, hitTokenCap: result.hitTokenCap),
                depth < config.retryDepth {
-                let halves = splitForRetry(plan.text)
+                let halves = splitForRetry(plan.text, protected: protected)
                 if halves.count == 2 {
                     let a = await cleanChunk(ChunkPlan(index: plan.index, text: halves[0], tokens: 0),
-                                             deadlineMs: deadlineMs, depth: depth + 1, context: context)
+                                             deadlineMs: deadlineMs, depth: depth + 1,
+                                             protected: protected, context: context)
                     let b = await cleanChunk(ChunkPlan(index: plan.index, text: halves[1], tokens: 0),
-                                             deadlineMs: deadlineMs, depth: depth + 1, context: context)
+                                             deadlineMs: deadlineMs, depth: depth + 1,
+                                             protected: protected, context: context)
                     let text = SeamRepair.stitch([a.text, b.text])
                     let state: CleanupState = (a.state == .cleaned && b.state == .cleaned) ? .cleaned : .fallback
                     return ChunkOutcome(index: plan.index, text: text, state: state,
@@ -153,12 +155,14 @@ public actor CleanupService {
         } catch {
             let elapsed = Int((DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
             if depth < config.retryDepth, !(error is CancellationError) {
-                let halves = splitForRetry(plan.text)
+                let halves = splitForRetry(plan.text, protected: protected)
                 if halves.count == 2 {
                     let a = await cleanChunk(ChunkPlan(index: plan.index, text: halves[0], tokens: 0),
-                                             deadlineMs: deadlineMs, depth: depth + 1, context: context)
+                                             deadlineMs: deadlineMs, depth: depth + 1,
+                                             protected: protected, context: context)
                     let b = await cleanChunk(ChunkPlan(index: plan.index, text: halves[1], tokens: 0),
-                                             deadlineMs: deadlineMs, depth: depth + 1, context: context)
+                                             deadlineMs: deadlineMs, depth: depth + 1,
+                                             protected: protected, context: context)
                     let state: CleanupState = (a.state == .cleaned && b.state == .cleaned) ? .cleaned : .fallback
                     return ChunkOutcome(index: plan.index, text: SeamRepair.stitch([a.text, b.text]), state: state,
                                         latencyMs: elapsed, attempts: a.attempts + b.attempts + 1,
@@ -173,7 +177,7 @@ public actor CleanupService {
         ChunkOutcome(index: plan.index, text: plan.text, state: .fallback, latencyMs: elapsed, reason: reason)
     }
 
-    private func splitForRetry(_ text: String) -> [String] {
+    private func splitForRetry(_ text: String, protected: Protected) -> [String] {
         let (sentences, remainder) = SentenceSplitter.split(text)
         if sentences.count >= 2 {
             let mid = sentences.count / 2
@@ -186,7 +190,7 @@ public actor CleanupService {
         let mid = tokens.count / 2
         var index = mid
         if index > 0, index < tokens.count,
-           Protected().overlaps(tokens[index].range, in: text, detect: false) {
+           protected.overlaps(tokens[index].range, in: text, detect: false) {
             index = min(tokens.count - 1, index + 1)
         }
         let a = tokens[0..<index].map(\.full).joined(separator: " ")
@@ -215,7 +219,7 @@ public struct CleanupStage: TextStage {
 
     public func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
         guard !draft.shortCircuit else { return draft }
-        let outcome = await service.clean(draft.text, context: context)
+        let outcome = await service.clean(draft.text, protected: draft.protected, context: context)
         var output = draft
         output.text = outcome.text
         output.cleanupState = outcome.state

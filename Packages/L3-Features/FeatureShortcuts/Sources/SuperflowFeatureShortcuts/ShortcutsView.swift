@@ -1,21 +1,17 @@
 import AppKit
 import SuperflowDesignSystem
-import SuperflowIcons
 import SuperflowKernel
 import SuperflowTextLexicon
-import SuperflowTextShortcuts
 import SuperflowUIComponents
 import SwiftUI
 import UniformTypeIdentifiers
 
 public struct ShortcutsView: View {
     @ObservedObject private var model: ShortcutsViewModel
-    @State private var trigger = ""
-    @State private var content = ""
-    @State private var expandedID: String?
+    @Environment(DialogHost.self) private var dialogs
+    @State private var scope: EntryScope = .personal
     @State private var importing = false
     @State private var searchFocus = false
-    @FocusState private var triggerFocused: Bool
 
     public init(model: ShortcutsViewModel) {
         self.model = model
@@ -23,26 +19,32 @@ public struct ShortcutsView: View {
 
     public var body: some View {
         Page(title: "Shortcuts") {
-            SearchField(text: $model.query, prompt: "Search shortcuts", isFocused: $searchFocus)
-        } trailing: {
-            ActionMenu(actions: [
-                .init("Import…") { importing = true },
-                .init("Export…") { export() },
-            ])
-            AppButton("Add shortcut", glyph: .add, kind: .primary, height: Layout.control) {
-                triggerFocused = true
-            }
-        } content: {
-            composer
-            if model.isEmpty {
+            ListControls(scope: $scope, scopes: EntryScope.items,
+                         query: $model.query, prompt: "Search shortcuts",
+                         searchFocus: $searchFocus, addTitle: "Add shortcut",
+                         menu: [
+                            .init("Import…") { importing = true },
+                            .init("Export…") { export() },
+                         ],
+                         onAdd: add)
+            if scope == .shared {
+                EmptyState("Nothing shared yet.",
+                           message: "Shared shortcuts appear here.",
+                           density: .pane)
+                    .frame(minHeight: 320)
+            } else if model.isEmpty {
                 EmptyState("Nothing here yet.",
-                           message: "Add a phrase above. Say it while dictating and the text lands in full.")
+                           message: "Press ⌘N to add a phrase.")
+                    .frame(minHeight: 320)
             } else {
                 list
             }
         }
         .task { await model.load() }
         .searchShortcut($searchFocus)
+        .background {
+            HiddenShortcut("Add shortcut", key: "n") { add() }
+        }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
             switch result {
             case .success(let url):
@@ -59,76 +61,41 @@ public struct ShortcutsView: View {
         }
     }
 
-    private var composer: some View {
-        Card {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                HStack(spacing: Space.sm) {
-                    Text("Say")
-                        .font(Typography.body)
-                        .foregroundStyle(Tok.text2)
-                    AppField("Trigger", prompt: "sign off", text: $trigger,
-                             onSubmit: add)
-                        .frame(maxWidth: 260)
-                        .focused($triggerFocused)
-                    Spacer(minLength: Space.md)
-                }
-                AppTextEditor("Shortcut text", text: $content, minHeight: 96)
-                if let counter = byteCounter {
-                    Text(counter)
-                        .font(Typography.secondary)
-                        .foregroundStyle(Tok.text2)
-                }
-            }
-        }
-    }
-
-    private var canAdd: Bool {
-        !trigger.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    /// The limit is stated only when it is close: never as a permanent footnote.
-    private var byteCounter: String? {
-        let limit = ShortcutsStage.maxContentBytes
-        let bytes = content.utf8.count
-        guard bytes > Int(Double(limit) * 0.8) else { return nil }
-        return "\(bytes / 1024) KB of \(limit / 1024) KB"
-    }
-
-    private func add() {
-        guard canAdd else { return }
-        let draft = ShortcutDraft(trigger: trigger, content: content)
-        Task {
-            if await model.save(draft) {
-                trigger = ""
-                content = ""
-                triggerFocused = true
-            }
-        }
-    }
-
     private var list: some View {
-        VStack(spacing: 2) {
+        LazyVGrid(columns: [.init(.flexible(), spacing: 16), .init(.flexible())],
+                  alignment: .leading, spacing: 4) {
             ForEach(model.visibleEntries) { entry in
-                VStack(spacing: 2) {
-                    EntryRow(trigger: entry.trigger,
-                             result: firstLine(entry.content),
-                             badge: entry.match == .inline ? "Inline" : nil,
-                             badgeVariant: .blue,
-                             isDisabled: !entry.enabled,
-                             onOpen: { expandedID = expandedID == entry.id ? nil : entry.id },
-                             onDelete: { Task { await model.delete(entry) } })
-                    if expandedID == entry.id {
-                        ShortcutRowEditor(model: model, entry: entry) { expandedID = nil }
-                    }
-                }
+                EntryRow(trigger: entry.trigger,
+                         result: firstLine(entry.content),
+                         badge: entry.match == .inline ? "Inline" : nil,
+                         badgeVariant: .blue,
+                         isDisabled: !entry.enabled,
+                         onOpen: { edit(entry) },
+                         onDelete: { Task { await model.delete(entry) } })
             }
         }
     }
 
     private func firstLine(_ text: String) -> String {
-        let line = text.split(separator: "\n", omittingEmptySubsequences: false).first.map(String.init) ?? ""
+        let line = text.split(separator: "\n", omittingEmptySubsequences: false)
+            .first.map(String.init) ?? ""
         return line.isEmpty ? text : line
+    }
+
+    private func add() {
+        dialogs.present {
+            ShortcutDialog { draft in
+                Task { _ = await model.save(draft) }
+            }
+        }
+    }
+
+    private func edit(_ entry: ShortcutEntry) {
+        dialogs.present {
+            ShortcutDialog(existing: entry) { draft in
+                Task { _ = await model.save(draft) }
+            }
+        }
     }
 
     private func export() {

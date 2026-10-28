@@ -142,7 +142,7 @@ final class OnboardingViewModelTests: XCTestCase {
         await advanceTo(.models, in: model)
         XCTAssertTrue(model.speechReady)
         XCTAssertTrue(model.canAdvance)
-        XCTAssertEqual(model.speechName, ModelProfile.parakeetEOU120M.displayName)
+        XCTAssertEqual(model.speechName, ModelProfile.nemotron35Streaming.displayName)
         XCTAssertEqual(model.speechDetail, "Ready")
         XCTAssertFalse(model.needsDownload)
         XCTAssertEqual(model.primaryTitle, "Continue")

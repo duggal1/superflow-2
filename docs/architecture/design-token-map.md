@@ -11,7 +11,7 @@
 | Type roles | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Typography.swift` | `DESIGN.md` §5 | Albert Sans at 350 (500 for emphasis) for every UI role, SF Pro for the numeric metric; Serif Vinci Italic only at 28 (page/empty titles) and 40 (onboarding). |
 | Motion | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/Motion.swift` | `DESIGN.md` §11 | hover 0.10/0.22, settle 0.28, entrance 0.78, slide 0.30, fade 0.18, menu 0.20/0.12, stagger 0.07, snappy/smooth. |
 | Appearance | `Packages/L4-UI/DesignSystem/Sources/SuperflowDesignSystem/ThemeStore.swift` | `DESIGN.md` §2 | Persisted light/dark theme shared by the Island and main window. |
-| Glass and material fallback | `Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Glass.swift` | `DESIGN.md` §3 | `GlassSurface` / `GlassGroup` / `FloatingPanel` for the Island, command palette and toasts only. Content uses `Tok.surface`. |
+| Glass and material fallback | `Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Glass.swift` | `DESIGN.md` §3 | `GlassSurface` / `GlassGroup` / `FloatingPanel` for sidebar menus, the command palette and toasts only. The Island is opaque black and uses no material. |
 
 ## Interaction primitives
 
@@ -45,12 +45,17 @@
 
 ## Island geometry
 
+Source: `FeatureIsland/IslandLayout.swift`, `NotchGeometry.swift`, `NotchShape.swift`. `DESIGN.md` §8.18.
+
 | Token | Source | Value / rule |
 |---|---|---|
-| Compact / expanded widths | `FeatureIsland/IslandMetrics.swift` | 280 pt / 460 pt; must match the AppKit panel. |
-| Compact / expanded heights | `FeatureIsland/IslandMetrics.swift` | 60 pt / 160 pt. |
-| Top inset | `FeatureIsland/IslandMetrics.swift` | `Layout.islandTopInset` (6 pt). |
-| Drag threshold | `FeatureIsland/IslandDragPolicy.swift` | `Layout.islandDragThreshold` (4 pt) radial distance. |
+| Window canvas | `IslandLayout.canvas` | 520 × 128, never resizes; pinned at `screen.frame.maxY - 128` |
+| Notch | `NotchGeometry` | read from `safeAreaInsets.top` + `auxiliaryTopLeftArea` / `auxiliaryTopRightArea`; never hardcoded |
+| Wing | `IslandLayout.wing` | 56 per side, content inset 16, body `notchW + 112` × `band` |
+| Card | `IslandLayout.cardWidth` | 480 × `band + 60`, padding 20, gap 12, row 28, bottom 20 |
+| Radii | `IslandBox.top` / `.bottom` | idle 0/12, hover 6/12, wings 6/14, card 12/24 |
+| Hit rect | `IslandLayout.hitRect` | idle notch = the notch rect with 0 slop; other states frame + 4; click-through elsewhere |
+| Waveform | `PixelWaveform`, `WaveformModel` | 11 × 7, cell 2, gap 1, levels 0...3, 30 Hz |
 
 ## Accessibility and appearance checks
 

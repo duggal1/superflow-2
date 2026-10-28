@@ -10,7 +10,7 @@ public actor PracticeRunner: PracticeDictation {
     private var activeStream: (any RecognitionStream)?
 
     public init(audio: any AudioSource, recognizer: any SpeechRecognizer,
-                profile: String = ModelProfile.parakeetEOU120M.id) {
+                profile: String = ModelProfile.default.id) {
         self.audio = audio
         self.recognizer = recognizer
         self.profile = profile

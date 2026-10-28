@@ -1,6 +1,14 @@
 import Foundation
 import SuperflowKernel
 
+/// The two nullable audio columns, kept out of `TranscriptRepository` so a test
+/// double can save transcripts without pretending to archive audio.
+public protocol AudioMetadataStore: Sendable {
+    func setAudio(session: SessionID, duration: TimeInterval, peaks: Data) async throws
+    func clearAudio(session: SessionID) async throws
+    func sessionsWithAudio() async throws -> [SessionID]
+}
+
 public protocol TranscriptRepository: Sendable {
     func createSession(_ s: SessionRecord) async throws
     func appendSegment(_ s: Segment) async throws

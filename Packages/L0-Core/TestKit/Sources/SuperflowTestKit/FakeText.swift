@@ -69,16 +69,45 @@ public actor FakeGrammarChecker: GrammarChecker {
 public actor RecordingInserter: TextInserter {
     public private(set) var inserted: [String] = []
     public private(set) var attempts = 0
+    public private(set) var prepareCalls = 0
+    /// Ordered trace: "frontmost", "prepare", "insert:<strategy>".
+    public private(set) var events: [String] = []
     public var outcome: InsertionOutcome = .pasted
+    private var autoDelayMs = 0
+    private var eventLog: (@Sendable (String) async -> Void)?
+
     public init() {}
     public func setOutcome(_ o: InsertionOutcome) { outcome = o }
+    public func setAutoDelay(ms: Int) { autoDelayMs = ms }
+    public func setEventLog(_ log: @escaping @Sendable (String) async -> Void) { eventLog = log }
+
+    private func record(_ event: String) async {
+        events.append(event)
+        if let eventLog { await eventLog(event) }
+    }
+
     public func insert(_ text: String, strategy: InsertionStrategy) async throws -> InsertionOutcome {
+        if strategy == .auto, autoDelayMs > 0 {
+            try? await Task.sleep(for: .milliseconds(autoDelayMs))
+        }
         attempts += 1
+        await record("insert:\(strategy.rawValue)")
         if case .blockedSecureField = outcome { return outcome }
         inserted.append(text)
+        // A clipboard-only request can never report a paste.
+        if strategy == .clipboardOnly { return .clipboardOnly(reason: "clipboard") }
         return outcome
     }
-    public func frontmostBundleID() async -> String? { "com.test.frontmost" }
+
+    public func frontmostBundleID() async -> String? {
+        await record("frontmost")
+        return "com.test.frontmost"
+    }
+
+    public func prepareForInsertion() async {
+        prepareCalls += 1
+        await record("prepare")
+    }
 }
 
 public struct NullMetrics: MetricsSink {

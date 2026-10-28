@@ -83,7 +83,7 @@ public struct OnboardingView: View {
             Text("Speak. It types.").displayStyle(size: TypeScale.displaySize).clearsPixels()
             FnDemo()
             Text("Everything runs on this Mac. No account, no cloud, no telemetry.")
-                .font(.system(size: 13)).foregroundStyle(Tok.text2).clearsPixels()
+                .appType(.body).foregroundStyle(Tok.text2).clearsPixels()
         }
     }
 
@@ -124,7 +124,7 @@ public struct OnboardingView: View {
                              detail: model.speechDetail,
                              state: model.speechReady ? .installed : (model.isDownloadingSpeech ? .downloading(model.speechProgress) : (model.speechError.map { .failed($0) } ?? .idle)),
                              totalBytes: model.speechTotalBytes) {
-                    NVIDIAIcon(size: 20, tint: Tok.text)
+                    NVIDIAIcon(size: 24)
                 } trailing: {
                     speechStatus
                 }
@@ -133,9 +133,9 @@ public struct OnboardingView: View {
                                  detail: model.cleanupDetail,
                                  state: cleanupIsDownloading ? .downloading(model.cleanupProgress) : (model.cleanupWanted ? .idle : .idle),
                                  totalBytes: model.cleanupTotalBytes) {
-                        Icon(.cleanup, size: 16, tint: Tok.text)
+                        S1MiniMark(size: 24)
                     } trailing: {
-                        SettingToggle("Download the cleanup model", isOn: Binding(
+                        SettingToggle("Download S1-mini", isOn: Binding(
                             get: { model.cleanupWanted },
                             set: { value in Task { await model.setCleanupWanted(value) } }))
                     }

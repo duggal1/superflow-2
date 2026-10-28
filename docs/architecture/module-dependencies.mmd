@@ -19,6 +19,7 @@ flowchart TB
     Packages_L1_Adapters_LLMLlamaCpp["LLMLlamaCpp"]
     Packages_L1_Adapters_ModelStore["ModelStore"]
     Packages_L1_Adapters_PermissionsKit["PermissionsKit"]
+    Packages_L1_Adapters_ProjectIndex["ProjectIndex"]
     Packages_L1_Adapters_StorageSQLite["StorageSQLite"]
     Packages_L1_Adapters_SystemAudioCapture["SystemAudioCapture"]
     Packages_L1_Adapters_TextInsertion["TextInsertion"]
@@ -31,8 +32,10 @@ flowchart TB
     Packages_L2_Engines_SessionEngine["SessionEngine"]
     Packages_L2_Engines_StatsEngine["StatsEngine"]
     Packages_L2_Engines_TextCleanup["TextCleanup"]
+    Packages_L2_Engines_TextCodeAware["TextCodeAware"]
     Packages_L2_Engines_TextCodeSpeak["TextCodeSpeak"]
     Packages_L2_Engines_TextCommands["TextCommands"]
+    Packages_L2_Engines_TextDisfluency["TextDisfluency"]
     Packages_L2_Engines_TextGrammarGate["TextGrammarGate"]
     Packages_L2_Engines_TextLexicon["TextLexicon"]
     Packages_L2_Engines_TextLineFormat["TextLineFormat"]
@@ -62,6 +65,7 @@ flowchart TB
   App_SuperflowApp --> App_InferenceHelper
   App_SuperflowApp --> Packages_L0_Core_Kernel
   App_SuperflowApp --> Packages_L0_Core_Ports
+  App_SuperflowApp --> Packages_L0_Core_TestKit
   App_SuperflowApp --> Packages_L1_Adapters_ASRFluidAudio
   App_SuperflowApp --> Packages_L1_Adapters_AudioCapture
   App_SuperflowApp --> Packages_L1_Adapters_AudioJournal
@@ -72,6 +76,7 @@ flowchart TB
   App_SuperflowApp --> Packages_L1_Adapters_LLMLlamaCpp
   App_SuperflowApp --> Packages_L1_Adapters_ModelStore
   App_SuperflowApp --> Packages_L1_Adapters_PermissionsKit
+  App_SuperflowApp --> Packages_L1_Adapters_ProjectIndex
   App_SuperflowApp --> Packages_L1_Adapters_StorageSQLite
   App_SuperflowApp --> Packages_L1_Adapters_SystemAudioCapture
   App_SuperflowApp --> Packages_L1_Adapters_TextInsertion
@@ -115,6 +120,7 @@ flowchart TB
   Packages_L1_Adapters_ModelStore --> Packages_L0_Core_Ports
   Packages_L1_Adapters_PermissionsKit --> Packages_L0_Core_Kernel
   Packages_L1_Adapters_PermissionsKit --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_ProjectIndex --> Packages_L0_Core_Kernel
   Packages_L1_Adapters_StorageSQLite --> Packages_L0_Core_Kernel
   Packages_L1_Adapters_StorageSQLite --> Packages_L0_Core_Ports
   Packages_L1_Adapters_StorageSQLite --> Packages_L0_Core_TestKit
@@ -141,10 +147,14 @@ flowchart TB
   Packages_L2_Engines_TextCleanup --> Packages_L0_Core_Kernel
   Packages_L2_Engines_TextCleanup --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextCleanup --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_TextCodeAware --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextCodeAware --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextCodeSpeak --> Packages_L0_Core_Kernel
   Packages_L2_Engines_TextCodeSpeak --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextCommands --> Packages_L0_Core_Kernel
   Packages_L2_Engines_TextCommands --> Packages_L0_Core_Ports
+  Packages_L2_Engines_TextDisfluency --> Packages_L0_Core_Kernel
+  Packages_L2_Engines_TextDisfluency --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextGrammarGate --> Packages_L0_Core_Kernel
   Packages_L2_Engines_TextGrammarGate --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextGrammarGate --> Packages_L0_Core_TestKit
@@ -158,8 +168,10 @@ flowchart TB
   Packages_L2_Engines_TextPipeline --> Packages_L0_Core_Ports
   Packages_L2_Engines_TextPipeline --> Packages_L0_Core_TestKit
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCleanup
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCodeAware
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCodeSpeak
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextCommands
+  Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextDisfluency
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextGrammarGate
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextLexicon
   Packages_L2_Engines_TextPipeline --> Packages_L2_Engines_TextLineFormat

@@ -20,6 +20,7 @@ public struct MainWindowRootView: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var menuHost = MenuHost()
+    @State private var dialogHost = DialogHost()
 
     public init(coordinator: AppCoordinator) {
         self.coordinator = coordinator
@@ -87,7 +88,9 @@ public struct MainWindowRootView: View {
         .ignoresSafeArea()
         .coordinateSpace(name: WindowSpace.name)
         .overlay { MenuLayer() }
+        .overlay { DialogLayer() }
         .environment(menuHost)
+        .environment(dialogHost)
         .environment(\.openModels, { windowController.show(.models) })
         .background(WindowChrome(kind: .main))
         .frame(minWidth: Layout.windowMinWidth, minHeight: Layout.windowMinHeight)
@@ -233,27 +236,18 @@ private struct SidebarRow: View {
     }
 }
 
-/// 6pt dot plus one word. The state source is unchanged; only the view is new.
+/// One implementation with onboarding: the sidebar footer is a `StatusNote`.
 private struct SidebarStatus: View {
     let status: EngineStatus
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Space.xs) {
-                DotView(status.tone)
-                Text(status.label)
-                    .font(Typography.secondary)
-                    .foregroundStyle(Tok.text2)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 28)
-            .contentShape(.capsule)
+            StatusNote(text: status.label, level: status.level)
         }
         .buttonStyle(PressStyle())
-        .focusStep(Capsule())
+        .contentShape(.rect(cornerRadius: Radius.nested, style: .continuous))
+        .focusStep(.rect(cornerRadius: Radius.nested, style: .continuous))
         .clickable()
         .help(status.label)
         .accessibilityLabel("Engine status: \(status.label)")
@@ -297,6 +291,14 @@ private enum EngineStatus {
         case .ready: .green
         case .warming, .listening: .orange
         case .noMicrophone: .rose
+        }
+    }
+
+    var level: DotLevel {
+        switch self {
+        case .ready: .success
+        case .warming, .listening: .warning
+        case .noMicrophone: .error
         }
     }
 

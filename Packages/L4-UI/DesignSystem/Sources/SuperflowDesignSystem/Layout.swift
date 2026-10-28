@@ -29,8 +29,6 @@ public enum Radius {
     public static let field: CGFloat = 8
     public static let badge: CGFloat = 8
     public static let chip: CGFloat = 6
-    public static let islandCompact: CGFloat = 22
-    public static let islandExpanded: CGFloat = 26
 }
 
 public enum ControlHeight {
@@ -55,8 +53,6 @@ public enum Layout {
     /// Floor for the onboarding primary button, wide enough for "Open Superflow",
     /// so the label can change mid-step without the button resizing under the pointer.
     public static let onboardingPrimaryWidth: CGFloat = 168
-    public static let islandDragThreshold: CGFloat = 4
-    public static let islandTopInset: CGFloat = 6
 
     // Pass 2 structure. One left edge, one bar height, one control height.
     /// Sidebar width. The detail pane starts here, and every page insets by `pad`.

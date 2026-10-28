@@ -69,8 +69,9 @@ final class PipelineGoldenTests: XCTestCase {
             grammarPolicy: .default
         )
         XCTAssertEqual(pipeline.stageIDs,
-                       ["commands", "shortcuts", "numbers", "lexicon", "cleanup",
-                        "numbers.assert", "lexicon.assert", "grammar", "lineformat"])
+                       ["commands", "shortcuts", "disfluency", "numbers", "lexicon",
+                        "codeAware", "cleanup", "numbers.assert", "lexicon.assert",
+                        "grammar", "lineformat"])
     }
 
     func testShortcutShortCircuitsEveryLaterStage() async throws {

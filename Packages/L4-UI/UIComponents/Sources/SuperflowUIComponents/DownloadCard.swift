@@ -40,7 +40,7 @@ public struct DownloadCard<Leading: View, Trailing: View>: View {
     private var showReadout: Bool { if case .downloading(let p) = state, p != nil, totalBytes != nil { true } else { false } }
     private var total: Double { Double(totalBytes ?? 0) }
     private var done: Double { total * (progress ?? 0) }
-    private var metricFont: Font { .system(size: 28, weight: .medium) }
+    private var metricFont: Font { AppType.metric.font }
     private var rollAnimation: Animation? { reduceMotion ? nil : .snappy(duration: 0.25) }
 
     private var fillAmount: Double {
@@ -62,7 +62,7 @@ public struct DownloadCard<Leading: View, Trailing: View>: View {
         .frame(maxWidth: .infinity)
         .background {
             FrontShape(progress: fillAmount, scale: scale)
-                .fill(Tok.accentSoft)
+                .fill(Tok.accentFill)
                 .opacity(fillVisible ? 1 : 0)
                 .animation(reduceMotion ? nil : Motion.settle, value: fillAmount)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: fillVisible)

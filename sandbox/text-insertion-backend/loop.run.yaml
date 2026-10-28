@@ -1,0 +1,12 @@
+prompt: >-
+  Fix the Superflow text-insertion backend. Use the supplied TextInsertion.swift as the
+  behavioural source of truth, but adapt it to the repository's L0/L1 package boundaries,
+  Swift 6 strict concurrency, 400-line file limit, and existing TextInserter port.
+  Integrate prepare-at-record-start and paste-at-submit, and make HotkeyEngine ignore
+  synthetic events it posted itself.
+repo: /Users/harshitduggal/workspace/superflow
+plan_file: /Users/harshitduggal/workspace/superflow/sandbox/text-insertion-backend/plan.md
+tasks_file: /Users/harshitduggal/workspace/superflow/sandbox/text-insertion-backend/tasks.json
+pr_loc: "40-400"
+sandbox_root: /Users/harshitduggal/workspace/superflow/sandbox/text-insertion-backend
+budget: 3

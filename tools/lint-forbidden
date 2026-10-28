@@ -105,11 +105,11 @@ report_matches 'NavigationSplitView|NavigationStack|\.searchable\(|\.toolbar \{|
 report_matches '\.popover\(' \
     'Menus and dropdowns render in MenuLayer. No .popover anywhere.' "${ui_roots[@]}"
 
-report_matches 'AppSlider' \
-    'AppSlider is deleted. Use TimingSlider, which wraps the native Slider.' "${ui_roots[@]}"
+report_matches '\bTimingSlider\b' \
+    'TimingSlider is deleted. Use AppSlider (pass 3).' "${ui_roots[@]}"
 
 report_outside '(^|[^A-Za-z])Slider\(' "UIComponents/Sources/SuperflowUIComponents/Sliders\.swift:" \
-    'Sliders are the native Slider, wrapped once in TimingSlider.' "${ui_roots[@]}"
+    'Sliders are AppSlider. The native Slider is allowed only inside AppSlider (VoiceOver).' "${ui_roots[@]}"
 
 report_outside 'isMovableByWindowBackground = true' \
     "UIComponents/Sources/SuperflowUIComponents/Chrome\.swift:" \
@@ -149,14 +149,14 @@ done < <(rg -n -o '(^|[^A-Za-z])Icon\([^)]*size: [0-9]+' "${glob[@]}" \
     "$repo_root/App/SuperflowApp" || true)
 
 # Pass 3 additions.
-report_matches '\bfocusRing\(' 'focusRing is deleted; use focusStep.' "${ui_roots[@]}"
+report_matches '\bfocusRing\(' 'focusRing is deleted; use keyboardFocusRing.' "${ui_roots[@]}"
 
 # .focusable without .focusEffectDisabled in same file (already handled above).
 
 report_matches '\bProgressRow\b' 'ProgressRow is deleted; use DownloadCard.' "${ui_roots[@]}"
 report_matches '\bContributionGrid\(' 'ContributionGrid view is deleted; use ActivityYear.' "${ui_roots[@]}"
 report_matches 'ContributionGrid\.ramp' 'Use Ramp.blue instead of ContributionGrid.ramp.' "${ui_roots[@]}"
-report_matches '\bAppSlider\b' 'AppSlider is deleted.' "${ui_roots[@]}"
+
 report_matches '\bClearKey\b' 'ClearKey replaced by ShellKey.' "${ui_roots[@]}"
 
 # .pointerStyle outside clickable() and scrubbable()
@@ -165,20 +165,51 @@ report_matches '\bClearKey\b' 'ClearKey replaced by ShellKey.' "${ui_roots[@]}"
 report_outside '\.pointerStyle' "UIComponents/Sources/SuperflowUIComponents/Pointer\.swift:"     'pointerStyle is only available through clickable() and scrubbable().' "${ui_roots[@]}"
 
 report_matches '\bPicker\b|\.pickerStyle\(' 'No native Picker; use Dropdown.' "${ui_roots[@]}"
+
+# Pass 3 type law: text comes from AppType, never a raw size. Monospaced faces
+# and the icon family are the only exceptions.
+report_outside '\.font\(\.system\(size:' \
+    "AppType\.swift:|UIComponents/Sources/|Icons/Sources/|design: \.monospaced" \
+    'Text size must come from AppType; only SF Mono (design: .monospaced) is exempt.' "${ui_roots[@]}"
+
+# Pass 3 dialogs: no system sheets, alerts or confirmation dialogs.
+report_matches '\.sheet\(|\.alert\(|\.confirmationDialog\(' \
+    'Dialogs use DialogHost / DialogLayer. System sheets, alerts and confirmation dialogs are banned.' "${ui_roots[@]}"
+
+# History has one date vocabulary.
+report_matches '\.formatted\(date:|DateFormatter' \
+    'History dates come from Humanize, never from a formatter.' \
+    "$repo_root/Packages/L3-Features/FeatureHistory"
+
+report_outside 'AVAudioPlayer' "FeatureHistory/Sources/SuperflowFeatureHistory/AudioPreview\.swift:" \
+    'AVAudioPlayer lives only in the History audio preview.' "${ui_roots[@]}"
+report_outside 'AVAudioFile\(forWriting' "AudioArchive\.swift:" \
+    'Audio files are written only by AudioArchiveWriter.' "${ui_roots[@]}"
+
+# Pass 3 settings rows all carry a glyph.
+report_matches 'SettingRow\("' \
+    'Every SettingRow takes a Glyph first (pass 3).' "${ui_roots[@]}"
+report_matches 'help:' \
+    'Help text is banned in Settings.' "$repo_root/Packages/L3-Features/FeatureSettings"
+
+# The only white in the chrome is the toggle knob.
+report_outside '(^|[^A-Za-z])Color\.white|\.fill\(\.white\)' \
+    "UIComponents/Sources/SuperflowUIComponents/(Controls|Buttons)\.swift:" \
+    'Raw white is allowed only for the toggle knob and primary button label.' "${ui_roots[@]}"
 # Menu( and Menu { outside UIComponents
 report_outside '(^|[^A-Za-z])Menu[[:space:]]*[\{(]' "UIComponents/Sources/SuperflowUIComponents/"     'Native menus are replaced by ActionMenu/Dropdown.' "${ui_roots[@]}"
 report_matches '\.popover\(' 'No .popover; use MenuLayer.' "${ui_roots[@]}"
 
 # Text buttons are 24 or 28 tall. Nothing else, anywhere.
-report_matches 'height: ControlHeight\.(large|onboardingCTA)' \
-    'Text buttons are 24 or 28 tall; 32 is only the search field and BarIconButton.' "${ui_roots[@]}"
+report_matches 'height: ControlHeight\.onboardingCTA' \
+    'Text buttons are 24, 28 or 32 tall.' "${ui_roots[@]}"
 while IFS= read -r match; do
     [[ -z "$match" ]] && continue
     size="$(printf '%s' "$match" | sed -E 's/.*height: ([0-9]+).*/\1/')"
     case "$size" in
-        24|28) ;;
+        24|28|32) ;;
         *)
-            printf 'AppButton height %s is not 24 or 28: %s\n' "$size" "$match" >&2
+            printf 'AppButton height %s is not 24, 28 or 32: %s\n' "$size" "$match" >&2
             violations=$((violations + 1))
             ;;
     esac
@@ -196,8 +227,80 @@ if ! grep -R "\.models" "$repo_root/App/SuperflowApp/Sources/SuperflowAppCore/Wi
     violations=$((violations + 1))
 fi
 
-# Image(" outside VendorMark
-report_outside 'Image\("' "UIComponents/Sources/SuperflowUIComponents/.*VendorMark\|FeatureSettings/Sources/SuperflowFeatureSettings/ModelsView.swift"     'Image(" is only allowed in VendorMark.' "${ui_roots[@]}"
+# Image(" outside ModelMark: vendor art is bundled once and framed once.
+report_outside 'Image\("' "FeatureSettings/Sources/SuperflowFeatureSettings/ModelsView.swift" \
+    'Image(" is only allowed in ModelMark.' "${ui_roots[@]}"
+
+# Pass 4: the Island is welded to the notch. It is hardware, not a material.
+island_feature="$repo_root/Packages/L3-Features/FeatureIsland/Sources"
+island_app=(
+    "$repo_root/App/SuperflowApp/Sources/SuperflowAppCore/Windowing/IslandPanelController.swift"
+    "$repo_root/App/SuperflowApp/Sources/SuperflowAppCore/IslandBridge.swift"
+)
+
+report_matches 'visibleFrame|GlassSurface|glassEffect\(|\.(ultraThin|thin|regular|thick|ultraThick)Material' \
+    'The Island never uses visibleFrame or a material. It is opaque black at screen.frame.maxY.' \
+    "$island_feature" "${island_app[@]}"
+
+report_matches 'DragGesture|\.draggable\(|isMovableByWindowBackground = true' \
+    'The Island is attached, never draggable.' "$island_feature" "${island_app[@]}"
+
+report_outside 'setFrame\(' "IslandPanelController\.swift:" \
+    'The Island window frame is set only by IslandController.place().' \
+    "$island_feature" "${island_app[@]}"
+
+report_outside 'NSWindow\.Level\(' "IslandPanelController\.swift:" \
+    'The Island panel is the only window that raises its level.' \
+    "$island_feature" "${island_app[@]}"
+
+report_matches 'showIdlePill|"island\.origin|"island\.position' \
+    'The idle pill and the persisted Island origin are deleted.' "$island_feature"
+
+report_outside 'LinearGradient' "FeatureIsland/Sources/SuperflowFeatureIsland/EdgeFade\.swift:" \
+    'A gradient is allowed only as EdgeFade'"'"'s text mask.' "$island_feature" "${island_app[@]}"
+
+# Blur is a transition only, and 6 is its ceiling.
+while IFS= read -r match; do
+    [[ -z "$match" ]] && continue
+    radius="$(printf '%s' "$match" | sed -E 's/.*radius: ([0-9]+).*/\1/')"
+    if (( radius > 6 )); then
+        printf 'Blur radius %s exceeds 6: %s\n' "$radius" "$match" >&2
+        violations=$((violations + 1))
+    fi
+done < <(rg -n -o '\.blur\(radius: [0-9]+' "${glob[@]}" "$island_feature" "${island_app[@]}" || true)
+
+# The old hardcoded panel sizes and glass radii must never come back.
+while IFS= read -r match; do
+    [[ -z "$match" ]] && continue
+    printf 'Island size or radius is a literal from the deleted panel: %s\n' "$match" >&2
+    violations=$((violations + 1))
+done < <(rg -n '(width|height|top|bottom|radius|Radius)\s*[:=]\s*(280|460|22|26)([^0-9]|$)' \
+    "${glob[@]}" "$island_feature" "${island_app[@]}" || true)
+
+# Switches over IslandPhase are exhaustive; a `default` erases the compiler's
+# check, so the two files that switch on it may not use one.
+report_matches 'default:' \
+    'Switches over IslandPhase must be exhaustive. No default: in the model or root view.' \
+    "$island_feature/SuperflowFeatureIsland/IslandModel.swift" \
+    "$island_feature/SuperflowFeatureIsland/IslandRoot.swift"
+
+# Pass 3: one ring, and it is ours.
+# Every file that makes a view focusable must also kill the system ring.
+while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    if ! grep -q 'focusEffectDisabled' "$file"; then
+        printf 'A focusable view without focusEffectDisabled: %s\n' "$file" >&2
+        violations=$((violations + 1))
+    fi
+done < <(rg -l '\.focusable\(' "$repo_root/Packages" "$repo_root/App/SuperflowApp" \
+    --glob '!**/.build/**' || true)
+
+# Event monitors have exactly three owners: the keyboard/pointer modality switch,
+# the Island's outside-click monitors, and the onboarding fn demo.
+report_outside 'NSEvent\.addLocalMonitorForEvents|NSEvent\.addGlobalMonitorForEvents' \
+    "UIComponents/Sources/SuperflowUIComponents/InputModality\.swift:|IslandPanelController\.swift:|FeatureOnboarding/Sources/SuperflowFeatureOnboarding/FnDemo\.swift:" \
+    'Event monitors live in InputModality, the Island panel and the onboarding fn demo.' \
+    "$repo_root/Packages" "$repo_root/App/SuperflowApp"
 
 if (( violations > 0 )); then
     printf 'Forbidden-pattern lint found %d violation(s).\n' "$violations" >&2

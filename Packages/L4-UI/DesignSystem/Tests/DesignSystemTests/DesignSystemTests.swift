@@ -38,6 +38,11 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(Tok.Hex.accentPressed, 0x1D4ED8)
         XCTAssertEqual(Tok.Hex.accentTextDark, 0x60A5FA)
         XCTAssertEqual(Tok.Hex.accentSoftLight, 0xDBEAFE)
+        XCTAssertEqual(Tok.Hex.accentSoftDark, 0x2563EB)
+        // The download fill is the same blue 600, one stronger alpha, so a dark card
+        // reads blue instead of navy.
+        XCTAssertEqual(Tok.Hex.accentFillDarkAlpha, 0.5)
+        XCTAssertGreaterThan(Tok.Hex.accentFillDarkAlpha, Tok.Hex.accentSoftDarkAlpha)
     }
 
     func testHexColorConvertsToRGB() {
@@ -94,8 +99,6 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(Radius.field, 8)
         XCTAssertEqual(Radius.badge, 8)
         XCTAssertEqual(Radius.chip, 6)
-        XCTAssertEqual(Radius.islandCompact, 22)
-        XCTAssertEqual(Radius.islandExpanded, 26)
         XCTAssertEqual(ControlHeight.small, 24)
         XCTAssertEqual(ControlHeight.regular, 28)
         XCTAssertEqual(ControlHeight.large, 32)
@@ -108,8 +111,6 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(Layout.windowMinHeight, 560)
         XCTAssertEqual(Layout.onboardingWidth, 640)
         XCTAssertEqual(Layout.onboardingHeight, 520)
-        XCTAssertEqual(Layout.islandDragThreshold, 4)
-        XCTAssertEqual(Layout.islandTopInset, 6)
     }
 
     func testMotionNumbers() {

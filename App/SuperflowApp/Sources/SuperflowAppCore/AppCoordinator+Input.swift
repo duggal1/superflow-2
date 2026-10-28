@@ -88,18 +88,22 @@ extension AppCoordinator {
         for action in actions {
             switch action {
             case .startSpeculative(.dictation):
+                islandBridge?.holdBegan()
                 await menuBarController.startDictation()
             case .startSpeculative(.meeting):
                 await menuBarController.startMeeting()
             case .holdBegan:
                 break
             case .beginHandsFree:
+                islandBridge?.holdBegan()
                 await menuBarController.beginHandsFreeDictation()
             case .latchMeeting:
                 break
             case .submit(let kind):
+                if kind == .dictation { islandBridge?.holdEnded() }
                 await menuBarController.stop(kind)
             case .cancel(let kind, let reason):
+                if kind == .dictation { islandBridge?.cancelled() }
                 await menuBarController.cancel(kind, cue: reason == .escape)
             }
         }

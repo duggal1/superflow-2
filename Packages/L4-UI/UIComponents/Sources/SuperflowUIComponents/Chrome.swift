@@ -30,6 +30,12 @@ public struct WindowChrome: NSViewRepresentable {
         let kind = kind
         view.configure = { window in
             window.makeFirstResponder(nil)
+            // The system ring is the pass-3 defect: with Full Keyboard Access on,
+            // macOS hands the first key view focus when the window opens and the
+            // container draws Apple's own ring around itself. Ours is the only
+            // ring, and it is drawn for keyboard navigation only (§3).
+            window.contentView?.focusRingType = .none
+            DispatchQueue.main.async { window.makeFirstResponder(nil) }
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             window.styleMask.insert(.fullSizeContentView)

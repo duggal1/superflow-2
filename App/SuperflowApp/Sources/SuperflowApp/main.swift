@@ -3,6 +3,7 @@ import SwiftUI
 import SuperflowAppCore
 import SuperflowDesignSystem
 import SuperflowIcons
+import SuperflowUIComponents
 
 /// Orders the main window front and activates the app on launch. Swapping the activation policy
 /// away from `.accessory` was necessary but not sufficient: SwiftUI presented the window behind
@@ -15,6 +16,9 @@ final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
         // face silently and every title would fall back to the system serif. UI text is SF Pro
         // and never depends on a bundled file.
         AppFont.registerBundledFonts()
+        // One owner of "keyboard or pointer": the focus ring is drawn for keyboard
+        // navigation only, so the monitor has to exist before the first window does.
+        InputModality.shared.start()
         // The one system-level smoothing knob CoreText still reads before the
         // process starts drawing. The per-window context work lives in FontSmoothing.
         UserDefaults.standard.register(defaults: ["AppleFontSmoothing": 3])

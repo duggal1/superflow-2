@@ -1,0 +1,46 @@
+{
+  "cases": [
+    {
+      "name": "repeated pronoun",
+      "input": "I I I think the build is ready",
+      "expected": "I think the build is ready",
+      "source": "push-to-talk dictation with a false start"
+    },
+    {
+      "name": "repeated article and verb",
+      "input": "we need to to check the the file",
+      "expected": "we need to check the file",
+      "source": "common ASR stutter on function words"
+    },
+    {
+      "name": "filler is left to the cleanup model by default",
+      "input": "so um the the plan is is ready",
+      "expected": "so um the plan is ready",
+      "source": "filler prepass is off; duplicates still collapse"
+    },
+    {
+      "name": "three repeats become one",
+      "input": "that that that is the point",
+      "expected": "that is the point",
+      "source": "run longer than the threshold"
+    },
+    {
+      "name": "ordinary prose is untouched",
+      "input": "the quick brown fox jumps over the lazy dog",
+      "expected": "the quick brown fox jumps over the lazy dog",
+      "source": "no duplicate run present"
+    },
+    {
+      "name": "two separate repeated words",
+      "input": "this is is fine and that that works",
+      "expected": "this is fine and that works",
+      "source": "two independent runs in one line"
+    },
+    {
+      "name": "newlines and list items are preserved",
+      "input": "first item\n- the the second\n- third",
+      "expected": "first item\n- the second\n- third",
+      "source": "line structure must survive the pass"
+    }
+  ]
+}

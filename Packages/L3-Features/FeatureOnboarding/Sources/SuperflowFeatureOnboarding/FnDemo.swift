@@ -100,7 +100,7 @@ struct HeroKeyCap: View {
     var down = false
     var body: some View {
         Text(label)
-            .font(.system(size: 16, weight: .medium)).foregroundStyle(Tok.text)
+            .appType(.title).foregroundStyle(Tok.text)
             .frame(width: 72, height: 48)
             .background(down ? Tok.controlPressed : Tok.controlHover, in: .rect(cornerRadius: Radius.nested, style: .continuous))
             .offset(y: down ? 4 : 0)
@@ -129,7 +129,7 @@ struct FnDemo: View {
                     .accessibilityAction {
                         Task { press(); try? await Task.sleep(for: .milliseconds(700)); release() }
                     }
-                Text("Hold, speak, release.").font(.system(size: 15)).foregroundStyle(Tok.text).clearsPixels()
+                Text("Hold, speak, release.").appType(.reading).foregroundStyle(Tok.text).clearsPixels()
             }
             TypedLine(text: "The budget is $12,000, and we meet on Tuesday at 3 PM.", trigger: bloom.releases)
                 .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
@@ -161,7 +161,7 @@ struct TypedLine: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 2) {
-            Text(String(text.prefix(count))).font(.system(size: 15)).foregroundStyle(Tok.text)
+            Text(String(text.prefix(count))).appType(.reading).foregroundStyle(Tok.text)
             if caret { Rectangle().fill(Tok.text).frame(width: 2, height: 16) }
         }
         .task(id: trigger) {

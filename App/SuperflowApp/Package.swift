@@ -11,6 +11,7 @@ let package = Package(
     dependencies: [
         .package(path: "../../Packages/L0-Core/Kernel"),
         .package(path: "../../Packages/L0-Core/Ports"),
+        .package(path: "../../Packages/L0-Core/TestKit"),
         .package(path: "../../Packages/L1-Adapters/ASRFluidAudio"),
         .package(path: "../../Packages/L1-Adapters/AudioCapture"),
         .package(path: "../../Packages/L1-Adapters/AudioJournal"),
@@ -21,6 +22,7 @@ let package = Package(
         .package(path: "../../Packages/L1-Adapters/LLMLlamaCpp"),
         .package(path: "../../Packages/L1-Adapters/ModelStore"),
         .package(path: "../../Packages/L1-Adapters/PermissionsKit"),
+        .package(path: "../../Packages/L1-Adapters/ProjectIndex"),
         .package(path: "../../Packages/L1-Adapters/StorageSQLite"),
         .package(path: "../../Packages/L1-Adapters/SystemAudioCapture"),
         .package(path: "../../Packages/L1-Adapters/TextInsertion"),
@@ -59,6 +61,7 @@ let package = Package(
                 .product(name: "SuperflowLLMCore", package: "LLMLlamaCpp"),
                 .product(name: "SuperflowModelStore", package: "ModelStore"),
                 .product(name: "SuperflowPermissionsKit", package: "PermissionsKit"),
+                .product(name: "SuperflowProjectIndex", package: "ProjectIndex"),
                 .product(name: "SuperflowStorageSQLite", package: "StorageSQLite"),
                 .product(name: "SuperflowSystemAudioCapture", package: "SystemAudioCapture"),
                 .product(name: "SuperflowTextInsertion", package: "TextInsertion"),
@@ -88,6 +91,8 @@ let package = Package(
             dependencies: [
                 "SuperflowAppCore",
                 .product(name: "SuperflowIcons", package: "Icons"),
+                // The launch-time input-modality monitor (pass 3 §3).
+                .product(name: "SuperflowUIComponents", package: "UIComponents"),
             ]
         ),
         .testTarget(
@@ -96,6 +101,7 @@ let package = Package(
                 "SuperflowAppCore",
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowStorageSQLite", package: "StorageSQLite"),
+                .product(name: "SuperflowTestKit", package: "TestKit"),
             ]
         ),
     ],

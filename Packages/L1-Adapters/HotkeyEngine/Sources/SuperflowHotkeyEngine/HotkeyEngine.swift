@@ -204,6 +204,8 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             }
             return Unmanaged.passUnretained(event)
         }
+        // Our own synthetic paste must never reach the gesture recogniser.
+        if KeyEventMapper.isSynthetic(event) { return Unmanaged.passUnretained(event) }
         let timestamp = event.timestamp
         switch type {
         case .flagsChanged:
@@ -240,6 +242,8 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             }
             return Unmanaged.passUnretained(event)
         }
+        // Never swallow or map a chord this app posted itself.
+        if KeyEventMapper.isSynthetic(event) { return Unmanaged.passUnretained(event) }
         guard type == .keyDown else { return Unmanaged.passUnretained(event) }
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         guard keyCode == KeyCode.enter || keyCode == KeyCode.escape else {

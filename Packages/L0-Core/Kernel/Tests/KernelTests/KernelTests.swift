@@ -19,7 +19,7 @@ final class KernelTests: XCTestCase {
         let settings = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
 
         XCTAssertEqual(settings.theme, .system)
-        XCTAssertEqual(settings.asrProfile, ModelProfile.parakeetEOU120M.id)
+        XCTAssertEqual(settings.asrProfile, ModelProfile.nemotron35Streaming.id)
         XCTAssertFalse(settings.onboardingComplete)
         XCTAssertTrue(settings.cleanupEnabled)
     }

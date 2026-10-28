@@ -80,9 +80,14 @@ public final class SettingsViewModel: ObservableObject {
     public var diagnosticsAvailable: Bool { diagnostics != nil }
 
     public var profile: ModelProfile { ModelProfile.byID(settings.asrProfile) }
+    /// Streaming only, default first. Dictation has no batch path.
     public var profileOptions: [String] {
-        ModelProfile.all
-            .filter { $0.supportsLiveDictation || $0.id == settings.asrProfile }
+        ModelProfile.streamingProfiles
+            .sorted { lhs, rhs in
+                if lhs.id == ModelProfile.default.id { return true }
+                if rhs.id == ModelProfile.default.id { return false }
+                return lhs.displayName < rhs.displayName
+            }
             .map(\.id)
     }
 

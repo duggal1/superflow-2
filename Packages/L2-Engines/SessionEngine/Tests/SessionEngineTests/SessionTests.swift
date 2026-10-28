@@ -20,9 +20,11 @@ final class SessionTests: XCTestCase {
                         cleaner: FakeTextCleaner = FakeTextCleaner(.identity),
                         repo: InMemoryRepository = InMemoryRepository(),
                         journals: FakeJournalStore = FakeJournalStore(),
-                        inserter: RecordingInserter = RecordingInserter()) -> SessionEngine {
+                        inserter: RecordingInserter = RecordingInserter(),
+                        deadline: Duration = .seconds(8)) -> SessionEngine {
         SessionEngine(audio: audio, recognizer: recognizer, pipeline: pipeline(cleaner),
-                      repository: repo, journals: journals, inserter: inserter)
+                      repository: repo, journals: journals, inserter: inserter,
+                      insertionDeadline: deadline)
     }
 
     func testStartRecordsAndStopInserts() async throws {
@@ -233,4 +235,46 @@ final class SessionTests: XCTestCase {
         // A failed start must not leave a live input stream running.
         XCTAssertEqual(audio.stopCount, 1)
     }
+
+    /// The adapter must see the frontmost app before warm-up so Chromium/Electron
+    /// have the whole recording to expose their Accessibility tree.
+    func testStartPreparesBeforeWarmUpAndStopInserts() async throws {
+        let log = OrderLog()
+        let inserter = RecordingInserter()
+        await inserter.setEventLog { await log.append($0) }
+        let recognizer = FakeSpeechRecognizer(script: ["hello world"], samplesPerSegment: 80_000)
+        await recognizer.setOnWarmUp { await log.append("warmup") }
+
+        let engine = engine(recognizer: recognizer, inserter: inserter)
+        _ = try await engine.start()
+        _ = await engine.stop()
+
+        let events = await log.events
+        XCTAssertEqual(events, ["frontmost", "prepare", "warmup", "insert:auto"])
+        let prepares = await inserter.prepareCalls
+        XCTAssertEqual(prepares, 1)
+    }
+
+    /// A stuck insert must not leave the user with no copy: the deadline path
+    /// writes the transcript with `.clipboardOnly` before claiming it is there.
+    func testInsertionDeadlineFallsBackToClipboardOnly() async throws {
+        let inserter = RecordingInserter()
+        await inserter.setAutoDelay(ms: 300)
+        let engine = engine(inserter: inserter, deadline: .milliseconds(10))
+
+        _ = try await engine.start()
+        let outcome = await engine.stop()
+
+        guard case .clipboardOnly = outcome?.insertion else {
+            return XCTFail("expected clipboardOnly fallback, got \(String(describing: outcome?.insertion))")
+        }
+        let events = await inserter.events
+        XCTAssertTrue(events.contains("insert:clipboardOnly"), "events: \(events)")
+    }
+}
+
+/// Shared ordered log for assertions that span two test doubles.
+actor OrderLog {
+    private(set) var events: [String] = []
+    func append(_ event: String) { events.append(event) }
 }

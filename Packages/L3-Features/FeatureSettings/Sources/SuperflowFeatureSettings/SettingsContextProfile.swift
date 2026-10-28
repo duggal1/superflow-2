@@ -83,7 +83,7 @@ struct ContextProfileCard: View {
                         row(choice)
                     }
                     note
-                    SettingRow("Cleanup context", filter: query) {
+                    SettingRow(.cleanup, "Cleanup context", filter: query) {
                         Dropdown(selection: $model.settings.cleanupContext,
                                  options: Self.contextOptions,
                                  label: "Cleanup context")

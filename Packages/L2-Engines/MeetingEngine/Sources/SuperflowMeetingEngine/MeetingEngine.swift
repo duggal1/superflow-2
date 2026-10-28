@@ -27,6 +27,8 @@ public actor MeetingEngine {
     let repository: any TranscriptRepository
     let journals: any JournalStore
     var settings: AppSettings
+    /// Explicit project scope shared with every turn's cleanup context.
+    var project: ProjectContext?
     let clock: TimeSource
 
     public nonisolated let events: AsyncStream<MeetingEvent>
@@ -54,7 +56,8 @@ public actor MeetingEngine {
     public init(mic: any AudioSource, system: (any AudioSource)?, recognizer: any SpeechRecognizer,
                 diarizer: (any SpeakerDiarizer)? = nil, pipeline: TextPipeline,
                 repository: any TranscriptRepository, journals: any JournalStore,
-                settings: AppSettings = .default, clock: TimeSource = SystemTimeSource()) {
+                settings: AppSettings = .default, project: ProjectContext? = nil,
+                clock: TimeSource = SystemTimeSource()) {
         self.mic = mic
         self.system = system
         self.recognizer = recognizer
@@ -63,6 +66,7 @@ public actor MeetingEngine {
         self.repository = repository
         self.journals = journals
         self.settings = settings
+        self.project = project
         self.clock = clock
         (events, continuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(256))
     }
@@ -82,6 +86,10 @@ public actor MeetingEngine {
     public func update(pipeline: TextPipeline, settings: AppSettings) {
         self.pipeline = pipeline
         self.settings = settings
+    }
+
+    public func update(project: ProjectContext?) {
+        self.project = project
     }
 
     public func start() async throws -> SessionID {

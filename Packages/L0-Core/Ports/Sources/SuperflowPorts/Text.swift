@@ -75,4 +75,11 @@ public enum InsertionOutcome: Sendable, Equatable {
 public protocol TextInserter: Sendable {
     func insert(_ text: String, strategy: InsertionStrategy) async throws -> InsertionOutcome
     func frontmostBundleID() async -> String?
+    /// Called when recording starts, before model warm-up, so an adapter can ask
+    /// the target app to build its Accessibility tree while the user speaks.
+    func prepareForInsertion() async
+}
+
+public extension TextInserter {
+    func prepareForInsertion() async {}
 }

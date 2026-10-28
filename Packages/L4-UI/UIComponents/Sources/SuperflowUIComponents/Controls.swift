@@ -55,7 +55,10 @@ public struct Segmented<Value: Hashable>: View {
         .focusable()
         .focusEffectDisabled()
         .focused($focused)
-        .focusStep()
+        // The ring, not a wash: pass 3 replaced focusStep. This control keeps its
+        // own focus state, so it draws the ring itself instead of reading the
+        // environment (which only reflects a focusable ancestor).
+        .overlay { FocusRing(radius: 14, active: focused && InputModality.shared.isKeyboard) }
         .onKeyPress(.leftArrow) { step(-1); return .handled }
         .onKeyPress(.rightArrow) { step(1); return .handled }
         .accessibilityElement(children: .contain)
@@ -68,46 +71,58 @@ public struct Segmented<Value: Hashable>: View {
     }
 }
 
+/// Track 40 x 24, knob 20 (26 pressed), inset 2, Blue 600 on. White knob in
+/// both modes: it always sits on the track, never on the card.
 public struct AppToggleStyle: ToggleStyle {
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
-        Button { configuration.isOn.toggle() } label: { Color.clear.frame(width: 38, height: 32) }
-            .buttonStyle(SwitchStyle(isOn: configuration.isOn))
-            .focusStep(Capsule())
-            .clickable()
-            .accessibilityAddTraits(.isToggle)
-            .accessibilityValue(configuration.isOn ? "On" : "Off")
+        Button {
+            configuration.isOn.toggle()
+            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        } label: {
+            Color.clear.frame(width: 40, height: 32)
+        }
+        .buttonStyle(SwitchFace(isOn: configuration.isOn))
+        .focusEffectDisabled()
+        .clickable()
+        .accessibilityAddTraits(.isToggle)
+        .accessibilityValue(configuration.isOn ? "On" : "Off")
     }
 
-    private struct SwitchStyle: ButtonStyle {
+    private struct SwitchFace: ButtonStyle {
         let isOn: Bool
-        func makeBody(configuration: Configuration) -> some View { Face(isOn: isOn, pressed: configuration.isPressed) }
+        func makeBody(configuration: Configuration) -> some View {
+            Face(isOn: isOn, pressed: configuration.isPressed)
+        }
+
         private struct Face: View {
             let isOn: Bool
             let pressed: Bool
             @Environment(\.isEnabled) private var enabled
             @Environment(\.accessibilityReduceMotion) private var reduce
             @State private var hover = false
-            private var track: Color {
-                guard isOn else { return Tok.controlPressed }
-                return pressed ? Tok.accentPressed : hover ? Tok.accentHover : Tok.accent
-            }
+
             var body: some View {
-                let knob: CGFloat = pressed ? 22 : 18
-                Capsule().fill(track)
-                    .frame(width: 38, height: 22)
-                    .overlay(alignment: .leading) {
-                        Capsule().fill(.white).frame(width: knob, height: 18).padding(2)
-                            .offset(x: isOn ? 34 - knob : 0)
-                    }
-                    .frame(height: 32)
-                    .contentShape(.rect)
-                    .opacity(enabled ? 1 : Opacity.disabled)
-                    .animation(reduce ? nil : .snappy(duration: 0.22), value: isOn)
-                    .animation(reduce ? nil : .snappy(duration: 0.12), value: pressed)
-                    .animation(.easeOut(duration: 0.10), value: hover)
-                    .onHover { hover = $0 }
+                let knob: CGFloat = pressed ? 26 : 20
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(isOn ? (hover ? Tok.accentHover : Tok.accent) : Tok.toggleOff)
+                        .frame(width: 40, height: 24)
+                    Capsule()
+                        .fill(.white)
+                        .frame(width: knob, height: 20)
+                        .offset(x: isOn ? 40 - 2 - knob : 2)
+                }
+                .frame(width: 40, height: 32)
+                .contentShape(.rect)
+                .opacity(enabled ? 1 : Opacity.disabled)
+                .keyboardFocusRing(radius: 12)
+                .animation(reduce ? nil : .snappy(duration: 0.22), value: isOn)
+                .animation(reduce ? nil : .snappy(duration: 0.12), value: pressed)
+                .animation(.easeOut(duration: 0.10), value: hover)
+                .onHover { hover = $0 }
+                .pixelAudit("Toggle")
             }
         }
     }

@@ -1,0 +1,840 @@
+{
+  "objective": "Replace Superflow's minimal SystemTextInserter with the full paste backend described in the supplied TextInsertion.swift, adapted to L0/L1 boundaries, Swift 6 strict concurrency, and the 400-line file limit. The backend must detect focus, verify Accessibility trust, validate the target app, resolve the layout-correct Cmd+V key, write a transient clipboard entry, verify the paste, fall back to AX insertion, restore the clipboard only when safe, and report an outcome the Island can turn into its existing copy-transcript card. HotkeyEngine must ignore the synthetic events this backend posts, and the Island failure card must use the finalized transcript rather than the last partial.",
+  "end_state": "Packages/L1-Adapters/TextInsertion builds and tests cleanly under Swift 6.4 with no transcript text in logs. SystemTextInserter still conforms to SuperflowPorts.TextInserter and now exposes prepareForInsertion() at record start, a detailed TextInsertionReport, strategy-correct paste/AX/clipboard behavior, secure-field blocking, a never-lose-text failure path, and 500 ms guarded clipboard restore after paste or AX success. HotkeyEngine ignores marker-tagged events in both taps. SessionEngine prepares before warm-up and inserts under an 8 s deadline with a clipboardOnly fallback. IslandBridge feeds the failure card the finalized repository transcript. make lint, the four targeted package tests/builds, and the manual matrix pass.",
+  "non_goals": [
+    "Fn double-tap or right-Command gesture changes; only synthetic-event filtering is in scope.",
+    "Escape-undo window.",
+    "Filler/duplicate cleanup, GPU/model work, or prompt files.",
+    "New Island UI: the failure/copy card already exists; only its transcript source is corrected.",
+    "Rewriting the Accessibility/TCC permission flow.",
+    "App Store sandboxing or a new distribution mechanism.",
+    "Changing the existing InsertionOutcome cases beyond the additive prepare hook."
+  ],
+  "environment": {
+    "language": "Swift 6 (strict concurrency, swiftLanguageModes [.v6])",
+    "runtime": "macOS 15+ deployment target; verified on Swift 6.4 / Xcode 27.1 / macOS 27.2 SDK",
+    "package_manager": "SwiftPM",
+    "os": "macOS (Apple Silicon)",
+    "test_command": "swift test --package-path Packages/L1-Adapters/TextInsertion && swift test --package-path Packages/L1-Adapters/HotkeyEngine && swift test --package-path Packages/L2-Engines/SessionEngine && swift build --package-path App/SuperflowApp && make lint",
+    "notes": "Repository has a 400-line hard limit per Swift source file (tools/lint-forbidden) and forbids print() in packages/app. The current TextInsertion package builds today. Swift and Xcode are installed in this environment. The supplied reference file is vendored under sandbox/text-insertion-backend/reference/TextInsertion.swift and is not compiled."
+  },
+  "components": [
+    {
+      "id": "c1",
+      "name": "Cross-layer contracts",
+      "description": "A single synthetic-event marker constant in L0 Kernel, an additive prepareForInsertion() requirement on the L0 TextInserter port with a default no-op, and no duplicate public type names between Ports and the TextInsertion adapter."
+    },
+    {
+      "id": "c2",
+      "name": "Focus inspection",
+      "description": "Main-actor-confined AX target wrapper, pure value+range replacement, pure role/subrole/settable classification, secure-field detection, Chromium detection, and record-start AX preparation."
+    },
+    {
+      "id": "c3",
+      "name": "Paste engine",
+      "description": "Clipboard snapshot and transient write, guarded restore, modifier release wait, layout-aware key resolution, private-source Cmd+V with a marker, paste verification, and Accessibility insertion fallback."
+    },
+    {
+      "id": "c4",
+      "name": "Report and adapter",
+      "description": "A detailed TextInsertionReport with a fixed step vocabulary and a SystemTextInserter adapter that maps every result to the existing SuperflowPorts.InsertionOutcome while preserving each InsertionStrategy's semantics."
+    },
+    {
+      "id": "c5",
+      "name": "Session and Island integration",
+      "description": "SessionEngine prepares at record start, inserts under a safe deadline with a clipboard fallback, and IslandBridge rebuilds a failure card from the finalized repository record."
+    },
+    {
+      "id": "c6",
+      "name": "Hotkey isolation",
+      "description": "Both HotkeyEngine event taps drop events whose eventSourceUserData equals the synthetic marker so the app never reacts to its own Cmd+V."
+    },
+    {
+      "id": "c7",
+      "name": "Verification and docs",
+      "description": "Unit, service, cross-package, and manual tests plus an ADR, permissions runbook note, and PLAN.md section update."
+    }
+  ],
+  "open_questions": [
+    "For a secure field, should the transcript be auto-copied as concealed clipboard text, or only offered through the Island Copy button? This plan keeps the existing safe behavior (do not write the clipboard) and relies on the Island card.",
+    "Should an Accessibility-fallback success restore the old clipboard after the same 500 ms delay, or immediately? This plan uses the same guarded 500 ms delay for both success paths.",
+    "If the user switches apps during a long recording, should the transcript go to the app that was frontmost at record start or to the current frontmost app? This plan uses the current app unless Superflow itself is frontmost, then the captured start PID."
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Kernel synthetic-event marker",
+      "serves": ["c1", "c6"],
+      "description": "Add one L0 Kernel constant that both the insertion adapter and the hotkey adapter use to recognise their own synthetic Cmd+V events. Kernel must not import CoreGraphics; it only publishes the Int64 value.",
+      "building_blocks": [
+        "public enum SyntheticInputMarker with public static let value: Int64 = 0x5346_5041_5354_4531"
+      ],
+      "tools": ["swift test --package-path Packages/L0-Core/Kernel"],
+      "packages": ["SwiftPM", "XCTest"],
+      "files": [
+        {
+          "path": "Packages/L0-Core/Kernel/Sources/SuperflowKernel/SyntheticInput.swift",
+          "action": "create",
+          "what": "SyntheticInputMarker enum with the ASCII 'SFPASTE1' marker value and a doc comment naming CGEventField.eventSourceUserData."
+        },
+        {
+          "path": "Packages/L0-Core/Kernel/Tests/KernelTests/SyntheticInputTests.swift",
+          "action": "create",
+          "what": "XCTest asserting the exact marker value and that it is stable across two reads."
+        }
+      ],
+      "subtasks": [
+        {"id": "T1.1", "description": "Create SyntheticInput.swift with SyntheticInputMarker.value = 0x5346_5041_5354_4531."},
+        {"id": "T1.2", "description": "Add a doc comment stating the value is written to CGEventField.eventSourceUserData."},
+        {"id": "T1.3", "description": "Create SyntheticInputTests.swift with XCTAssertEqual(SyntheticInputMarker.value, 0x5346_5041_5354_4531)."},
+        {"id": "T1.4", "description": "Run swift test --package-path Packages/L0-Core/Kernel."}
+      ],
+      "tests": [
+        {"description": "Marker value is exactly 0x5346_5041_5354_4531 and is a compile-time constant.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "Kernel imports no CoreGraphics or ApplicationServices for this file.",
+        "SyntheticInputMarker.value equals 0x5346_5041_5354_4531.",
+        "Kernel package tests pass."
+      ],
+      "depends_on": [],
+      "estimated_loc": 60,
+      "suggested_skills": []
+    },
+    {
+      "id": "T2",
+      "title": "Add prepareForInsertion() to the TextInserter port",
+      "serves": ["c1", "c5"],
+      "description": "Extend the existing SuperflowPorts.TextInserter protocol with an additive prepareForInsertion() requirement and a default no-op implementation so every existing conformer, including RecordingInserter and test doubles, keeps compiling. SystemTextInserter will override it later.",
+      "building_blocks": [
+        "protocol requirement func prepareForInsertion() async",
+        "public extension TextInserter { func prepareForInsertion() async {} }",
+        "Ports unit test proving the default is callable"
+      ],
+      "tools": ["swift test --package-path Packages/L0-Core/Ports", "swift test --package-path Packages/L0-Core/TestKit"],
+      "packages": ["SwiftPM", "XCTest"],
+      "files": [
+        {
+          "path": "Packages/L0-Core/Ports/Sources/SuperflowPorts/Text.swift",
+          "action": "modify",
+          "what": "Add prepareForInsertion() to TextInserter and the default extension; keep insert(_:strategy:) and frontmostBundleID() unchanged."
+        },
+        {
+          "path": "Packages/L0-Core/Ports/Tests/PortsTests/PortsDefaultTests.swift",
+          "action": "modify",
+          "what": "Add a test with a tiny private conformer that omits prepareForInsertion() and asserts the default call completes."
+        }
+      ],
+      "subtasks": [
+        {"id": "T2.1", "description": "Declare func prepareForInsertion() async in the TextInserter protocol."},
+        {"id": "T2.2", "description": "Add a public extension TextInserter default implementation that does nothing."},
+        {"id": "T2.3", "description": "Add a PortsTests conformer that relies on the default and await its prepareForInsertion()."},
+        {"id": "T2.4", "description": "Run Ports and TestKit package tests."}
+      ],
+      "tests": [
+        {"description": "A TextInserter conformer that does not implement prepareForInsertion() still compiles and the default call succeeds.", "kind": "unit"},
+        {"description": "RecordingInserter and TextInserterContract still compile unchanged.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "TextInserter has the new async prepareForInsertion() requirement with a default no-op.",
+        "No existing conformer in Packages or App requires a source change.",
+        "Ports and TestKit tests pass."
+      ],
+      "depends_on": [],
+      "estimated_loc": 70,
+      "suggested_skills": []
+    },
+    {
+      "id": "T3",
+      "title": "Insertion types, options, report, and layout key resolver",
+      "serves": ["c2", "c3"],
+      "description": "Create the Sendable value types that replace the colliding InsertionOutcome and hold the detailed report, plus the main-actor key resolver that finds the physical key producing v while Command is held. The options must encode the four strategy orders T8 needs, not just a generic paste chain.",
+      "building_blocks": [
+        "InsertionFocus, InsertionMethod, InsertionFailure, TextInsertionResult",
+        "TextInsertionOptions with allowPaste, preferAccessibility, allowAccessibilityFallback, writeClipboardOnFailure",
+        "TextInsertionReport with result/focus/axTrusted/keyCode/steps/durationMs/clipboardRestoreScheduled",
+        "PasteKeyResolving protocol and LayoutPasteKeyResolver"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/TextInsertion"],
+      "packages": ["SwiftPM", "XCTest", "ApplicationServices", "Carbon"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/InsertionTypes.swift",
+          "action": "create",
+          "what": "All public Sendable enums/structs listed in plan.md, including options defaults and PasteKeyResolving."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/LayoutPasteKeyResolver.swift",
+          "action": "create",
+          "what": "@MainActor LayoutPasteKeyResolver using TISCopyCurrentASCIICapableKeyboardLayoutInputSource, UCKeyTranslate with cmdKey modifier state, fallback kVK_ANSI_V."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/InsertionTypesTests.swift",
+          "action": "create",
+          "what": "Default-value and equivalence tests for options/report/result/focus; fallback key-code test."
+        }
+      ],
+      "subtasks": [
+        {"id": "T3.1", "description": "Define InsertionFocus with editable(role:), notEditable(reason:), secure, unknown(reason:)."},
+        {"id": "T3.2", "description": "Define InsertionMethod, InsertionFailure, and TextInsertionResult exactly as plan.md lists."},
+        {"id": "T3.3", "description": "Define TextInsertionOptions with targetPID, restoreClipboard=true, clipboardRestoreDelay=.milliseconds(500), verifyTimeout=.milliseconds(400), modifierReleaseTimeout=.milliseconds(300), allowPaste=true, preferAccessibility=false, allowAccessibilityFallback=true, writeClipboardOnFailure=true, postTap=.cghidEventTap, and public init()."},
+        {"id": "T3.4", "description": "Define TextInsertionReport with public vars and a public memberwise init."},
+        {"id": "T3.5", "description": "Define @MainActor PasteKeyResolving and LayoutPasteKeyResolver; expose static let fallbackKeyCode: CGKeyCode = CGKeyCode(kVK_ANSI_V)."},
+        {"id": "T3.6", "description": "Implement keyCodeForPasteLetter(): resolve TIS data with Unmanaged<CFData>.fromOpaque, scan 0..<128 with UCKeyTranslate and command modifier state, return v/V match else fallback."},
+        {"id": "T3.7", "description": "Write defaults tests and assert LayoutPasteKeyResolver.fallbackKeyCode == 9 and keyCodeForPasteLetter() is in 0..<128."}
+      ],
+      "tests": [
+        {"description": "TextInsertionOptions defaults match the plan (500/400/300, restore true, allowPaste true, allowAccessibilityFallback true, writeClipboardOnFailure true, cghidEventTap).", "kind": "unit"},
+        {"description": "TextInsertionResult and InsertionFocus are Equatable and distinguish secure from editable.", "kind": "unit"},
+        {"description": "LayoutPasteKeyResolver returns a valid CGKeyCode and falls back to 9 when TIS data is unavailable.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "No type named InsertionOutcome is declared in SuperflowTextInsertion.",
+        "All new types are Sendable and usable from an actor.",
+        "The options can express paste-only, accessibility-only, auto, and clipboard-only behavior.",
+        "The resolver is @MainActor and uses the Unmanaged<CFData> TIS pattern, not unsafeBitCast.",
+        "InsertionTypesTests passes."
+      ],
+      "depends_on": [],
+      "estimated_loc": 240,
+      "suggested_skills": []
+    },
+    {
+      "id": "T4a",
+      "title": "AX target, value replacement, and role classifier",
+      "serves": ["c2"],
+      "description": "Add the only place that stores an AXUIElement: a @MainActor AXTextTarget class. Add a pure role classifier and a pure value+range replacement helper so the AX fallback keeps the existing kAXSelectedText -> kAXValue + selected-range behavior rather than weakening it.",
+      "building_blocks": [
+        "@MainActor final class AXTextTarget: InsertionTarget",
+        "AXRoleClassifier pure function",
+        "AXValueReplacement.replacing(value:range:with:)",
+        "AXUIElementSetMessagingTimeout 0.3 s"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/TextInsertion"],
+      "packages": ["SwiftPM", "XCTest", "ApplicationServices", "AppKit"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/AXTextTarget.swift",
+          "action": "create",
+          "what": "@MainActor final class holding AXUIElement; characterCount, selectionLength, insertSelectedText (selected text first, then value+range), isSelectedTextSettable."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/AXValueReplacement.swift",
+          "action": "create",
+          "what": "Pure helper that replaces a clamped selected range in a String, or appends when range is nil."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/AXRoleClassifier.swift",
+          "action": "create",
+          "what": "Pure classify(role:subrole:valueSettable:hasEditableAncestor:) -> InsertionFocus with the role sets from plan.md; AXWindow/AXGroup/AXScrollArea -> unknown."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/AXRoleClassifierTests.swift",
+          "action": "create",
+          "what": "Table-driven tests for secure, editable roles, settable value, editable ancestor, unambiguous non-editable roles, and window/group/scroll-area -> unknown."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/AXValueReplacementTests.swift",
+          "action": "create",
+          "what": "Replacement at a selected range, clamping an out-of-bounds range, and append when range is nil."
+        }
+      ],
+      "subtasks": [
+        {"id": "T4a.1", "description": "Define @MainActor public protocol InsertionTarget: AnyObject, Sendable with characterCount(), selectionLength(), insertSelectedText(_:)."},
+        {"id": "T4a.2", "description": "Implement AXTextTarget around one AXUIElement; set messaging timeout 0.3 s in init."},
+        {"id": "T4a.3", "description": "Implement characterCount using kAXNumberOfCharactersAttribute when available, else (kAXValueAttribute as? String)?.utf16.count, else nil."},
+        {"id": "T4a.4", "description": "Implement selectionLength via kAXSelectedTextRangeAttribute and AXValueGetValue(.cfRange)."},
+        {"id": "T4a.5", "description": "Implement insertSelectedText: require AXIsAttributeSettable on kAXSelectedTextAttribute, then set selected text; if that fails, read kAXValueAttribute and kAXSelectedTextRangeAttribute, use AXValueReplacement, and set kAXValueAttribute."},
+        {"id": "T4a.6", "description": "Implement AXRoleClassifier.classify with editableRoles, unambiguous nonEditableRoles, secure subrole/role, settable value, editable ancestor, default unknown."},
+        {"id": "T4a.7", "description": "Write AXRoleClassifierTests and AXValueReplacementTests covering every branch."}
+      ],
+      "tests": [
+        {"description": "AXSecureTextField role or subrole classifies as secure.", "kind": "unit"},
+        {"description": "AXTextField/AXTextArea/AXComboBox/AXSearchField classify editable; settable value and AXEditableAncestor also classify editable.", "kind": "unit"},
+        {"description": "AXButton/AXStaticText/AXList/AXMenuItem classify notEditable; AXWindow/AXGroup/AXScrollArea classify unknown.", "kind": "unit"},
+        {"description": "AXValueReplacement replaces a selected range, clamps an out-of-bounds range, and appends when range is nil.", "kind": "unit"},
+        {"description": "AXTextTarget.characterCount returns nil rather than crashing when the attribute is absent.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "No AXUIElement is stored in a Sendable struct or passed as a non-Sendable argument across an actor boundary; it lives only inside @MainActor AXTextTarget.",
+        "The AX fallback keeps both selected-text and value+range insertion paths.",
+        "Focus classification matches the table in plan.md.",
+        "AXRoleClassifierTests and AXValueReplacementTests pass."
+      ],
+      "depends_on": ["T3"],
+      "estimated_loc": 220,
+      "suggested_skills": []
+    },
+    {
+      "id": "T4b",
+      "title": "AX focus inspector, Chromium detection, and prepare",
+      "serves": ["c2"],
+      "description": "Add the @MainActor AXFocusInspector that finds the focused element, validates pid ownership for the system-wide fallback, detects Chromium/Electron bundles, and prepares AXManualAccessibility at record start. Keep the pure framework-name check separate so it is testable.",
+      "building_blocks": [
+        "@MainActor AXFocusInspector: FocusInspecting",
+        "ChromiumDetector.isChromium(frameworkNames:)",
+        "preparedPIDs set + 0.3 s messaging timeouts",
+        "AXManualAccessibility only; never AXEnhancedUserInterface"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/TextInsertion"],
+      "packages": ["SwiftPM", "XCTest", "ApplicationServices", "AppKit"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/AXFocusInspector.swift",
+          "action": "create",
+          "what": "@MainActor AXFocusInspector: inspect(pid:), focusedElement(pid:), system-wide fallback with pid check, isChromiumBased(pid:), prepare(pid:), ChromiumDetector pure helper."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/AXFocusInspectorTests.swift",
+          "action": "create",
+          "what": "ChromiumDetector tests for Electron/Chrome/Chromium Embedded/Edge framework names and a negative case; inspect-with-invalid-pid returns unknown without crashing."
+        }
+      ],
+      "subtasks": [
+        {"id": "T4b.1", "description": "Define @MainActor public protocol FocusInspecting: AnyObject, Sendable with inspect(pid:) -> (focus, target) and prepare(pid:)."},
+        {"id": "T4b.2", "description": "Implement AXFocusInspector.inspect: app kAXFocusedUIElementAttribute first with 0.3 s timeout."},
+        {"id": "T4b.3", "description": "Add system-wide fallback only when AXUIElementGetPid equals the requested pid; otherwise return unknown/no-focused-element."},
+        {"id": "T4b.4", "description": "Return AXTextTarget + AXRoleClassifier.classify(...) for a valid element; map .apiDisabled to unknown(api-disabled)."},
+        {"id": "T4b.5", "description": "Implement ChromiumDetector.isChromium(frameworkNames:) matching Electron Framework, Chrome Framework, Chromium Embedded Framework, Edge Framework."},
+        {"id": "T4b.6", "description": "Implement isChromiumBased(pid:) reading Contents/Frameworks names and caching by pid."},
+        {"id": "T4b.7", "description": "Implement prepare(pid:) guarded by AXIsProcessTrusted and preparedPIDs; set only AXManualAccessibility=true."},
+        {"id": "T4b.8", "description": "Write AXFocusInspectorTests for the pure detector and an invalid pid."}
+      ],
+      "tests": [
+        {"description": "ChromiumDetector matches each of the four framework names and rejects unrelated names.", "kind": "unit"},
+        {"description": "inspect(pid:) with an invalid pid returns unknown and no target instead of crashing.", "kind": "unit"},
+        {"description": "prepare(pid:) is idempotent per pid and does not set AXEnhancedUserInterface.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "Only AXFocusInspector/AXTextTarget touch AXUIElement, and both are @MainActor.",
+        "No focused element on a Chromium app -> unknown (paste attempted); on a native app also unknown (paste attempted), never a hard no-editable.",
+        "prepare(pid:) sets AXManualAccessibility only.",
+        "AXFocusInspectorTests passes."
+      ],
+      "depends_on": ["T4a"],
+      "estimated_loc": 220,
+      "suggested_skills": []
+    },
+    {
+      "id": "T5",
+      "title": "Clipboard snapshot and transient pasteboard",
+      "serves": ["c3"],
+      "description": "Move the existing PasteboardSnapshot out of SystemTextInserter.swift into its own file, add a completeness flag and size cap, and add a PasteboardAccess implementation that writes all three nspasteboard.org markers with empty data and restores only when changeCount still matches. Keep the old initializer/restore signatures so the current inserter and its tests stay green at the end of this task.",
+      "building_blocks": [
+        "PasteboardSnapshot(pasteboard:maxBytes:) with isComplete and 64 MB cap",
+        "PasteboardAccess protocol",
+        "SystemPasteboard: @unchecked Sendable wrapper over NSPasteboard"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/TextInsertion"],
+      "packages": ["SwiftPM", "XCTest", "AppKit"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/PasteboardSnapshot.swift",
+          "action": "create",
+          "what": "Sendable snapshot of all items/types, maxBytes cap, isComplete, init(pasteboard:maxBytes:), restore(into:onlyIfChangeCount:)."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/SystemPasteboard.swift",
+          "action": "create",
+          "what": "PasteboardAccess protocol + SystemPasteboard wrapper: changeCount, writeTransient, snapshot, restore."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/SystemTextInserter.swift",
+          "action": "modify",
+          "what": "Delete the old PasteboardSnapshot struct; move the two PasteboardType extensions into SystemPasteboard.swift so the old tests and inserter keep compiling. Do not change the old inserter's call sites."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/PasteboardSnapshotTests.swift",
+          "action": "create",
+          "what": "Tests for multi-type restore, change-count race refusal, maxBytes/incomplete refusal, and the three transient markers. Leave the old snapshot tests in TextInsertionTests.swift in place until T8."
+        }
+      ],
+      "subtasks": [
+        {"id": "T5.1", "description": "Create PasteboardSnapshot with items [[Entry]] where Entry has type:String and data:Data; conform to Sendable."},
+        {"id": "T5.2", "description": "Pin init(pasteboard: NSPasteboard, maxBytes: Int = 64 * 1024 * 1024) so PasteboardSnapshot(pasteboard:) keeps compiling."},
+        {"id": "T5.3", "description": "Capture every type with item.data(forType:); set isComplete=false when any read fails; return an empty incomplete snapshot above maxBytes."},
+        {"id": "T5.4", "description": "Pin restore(into:onlyIfChangeCount:) signature; compare changeCount first, clearContents, rebuild items, writeObjects, and add an isComplete guard."},
+        {"id": "T5.5", "description": "Create PasteboardAccess with async changeCount, writeTransient, snapshot(maxBytes:), restore(_:ifChangeCount:)."},
+        {"id": "T5.6", "description": "Implement SystemPasteboard.writeTransient: clearContents, one NSPasteboardItem, .string text, empty Data for org.nspasteboard.TransientType, ConcealedType, AutoGeneratedType, writeObjects, return changeCount."},
+        {"id": "T5.7", "description": "Add PasteboardSnapshotTests; do not delete the old tests yet."},
+        {"id": "T5.8", "description": "Run the full TextInsertion suite at the end of the task and keep it green with the unmodified SystemTextInserter."}
+      ],
+      "tests": [
+        {"description": "Snapshot restores string and PNG data when changeCount is unchanged.", "kind": "unit"},
+        {"description": "Restore is refused when changeCount differs.", "kind": "unit"},
+        {"description": "A snapshot above maxBytes is marked incomplete and is not used for restore.", "kind": "unit"},
+        {"description": "writeTransient sets all three org.nspasteboard markers to empty Data and returns the new changeCount.", "kind": "unit"},
+        {"description": "The existing TextInsertionTests snapshot tests still pass after the move.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "PasteboardSnapshot is Sendable and has no NSPasteboard stored.",
+        "PasteboardSnapshot(pasteboard:) and restore(into:onlyIfChangeCount:) keep their old call signatures.",
+        "All three nspasteboard.org marker types are written with empty Data, not the text '1'.",
+        "Restore never clears a newer clipboard.",
+        "The package tests pass at the end of T5, before T8 rewrites the adapter."
+      ],
+      "depends_on": ["T3"],
+      "estimated_loc": 220,
+      "suggested_skills": []
+    },
+    {
+      "id": "T6",
+      "title": "Private-source synthetic paste poster",
+      "serves": ["c3", "c6"],
+      "description": "Create the event poster that sends Cmd+V from a private CGEventSource with explicit Command flags and the L0 marker, and expose a testable event factory and injected sleeper. It must never inherit physically held modifiers.",
+      "building_blocks": [
+        "CGEventPastePoster: PasteEventPosting",
+        "SyntheticInput.isSynthetic(_ event:)",
+        "init(postTap:sleep:) and a counted sleeper in tests",
+        "keyDown/keyUp pair with 8 ms gap"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/TextInsertion"],
+      "packages": ["SwiftPM", "XCTest", "CoreGraphics", "ApplicationServices"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/PasteEventPoster.swift",
+          "action": "create",
+          "what": "CGEventPastePoster with isTrusted, postPaste(keyCode:), init(postTap:sleep:), static makeEvent(keyCode:down:source:), and SyntheticInput.isSynthetic."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/PasteEventPosterTests.swift",
+          "action": "create",
+          "what": "Tests flags == .maskCommand, marker field set, synthetic detection, and the 8 ms sleeper call."
+        }
+      ],
+      "subtasks": [
+        {"id": "T6.1", "description": "Define public protocol PasteEventPosting: Sendable with var isTrusted: Bool and func postPaste(keyCode: CGKeyCode) async -> Bool."},
+        {"id": "T6.2", "description": "Implement CGEventPastePoster init(postTap: CGEventTapLocation = .cghidEventTap, sleep: @escaping @Sendable (Duration) async -> Void = { try? await Task.sleep(for: $0) })."},
+        {"id": "T6.3", "description": "Create events from CGEventSource(stateID: .privateState); set event.flags = .maskCommand and eventSourceUserData = SyntheticInputMarker.value on both down and up."},
+        {"id": "T6.4", "description": "Post key-down, await sleep(.milliseconds(8)), post key-up, and return false if either CGEvent cannot be created."},
+        {"id": "T6.5", "description": "Expose static makeEvent(keyCode:down:source:) for tests and SyntheticInput.isSynthetic(_ event:) comparing eventSourceUserData."},
+        {"id": "T6.6", "description": "Write tests for flags, marker, detection, and a counted sleeper receiving .milliseconds(8)."}
+      ],
+      "tests": [
+        {"description": "Created key-down and key-up events carry .maskCommand and the synthetic marker.", "kind": "unit"},
+        {"description": "isSynthetic is true only when eventSourceUserData equals the Kernel marker.", "kind": "unit"},
+        {"description": "postPaste awaits the injected sleeper exactly once with .milliseconds(8).", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "The poster defaults to .cghidEventTap and never uses .combinedSessionState (code-review check; no unit test can observe the source).",
+        "Both events carry the exact Kernel marker.",
+        "The 8 ms gap is implemented through the injected sleeper.",
+        "PasteEventPosterTests passes."
+      ],
+      "depends_on": ["T1", "T3"],
+      "estimated_loc": 160,
+      "suggested_skills": []
+    },
+    {
+      "id": "T7a",
+      "title": "Restore scheduler, secure-input probe, and report builder",
+      "serves": ["c4"],
+      "description": "Add the injectable restore scheduler so tests can await the clipboard restore instead of sleeping, a secure-input probe for Terminal/password prompts, and a report builder that owns the fixed step vocabulary and duration calculation.",
+      "building_blocks": [
+        "RestoreScheduling protocol + DetachedRestoreScheduler",
+        "SecureInput.isActive() using IsSecureEventInputEnabled",
+        "InsertionReportBuilder with the frozen step tags"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/TextInsertion"],
+      "packages": ["SwiftPM", "XCTest", "Carbon", "Foundation"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/InsertionRestore.swift",
+          "action": "create",
+          "what": "RestoreScheduling protocol with schedule(after:_:)->Task<Void,Never>, DetachedRestoreScheduler, SecureInput.isActive()."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/InsertionReportBuilder.swift",
+          "action": "create",
+          "what": "Builder that appends tags from the frozen vocabulary, measures ContinuousClock duration in ms, and assembles TextInsertionReport."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/InsertionRestoreTests.swift",
+          "action": "create",
+          "what": "Tests for scheduler action execution, report duration >= 0, and step tags never containing transcript text."
+        }
+      ],
+      "subtasks": [
+        {"id": "T7a.1", "description": "Define public protocol RestoreScheduling: Sendable with @discardableResult schedule(after:_:)->Task<Void,Never>."},
+        {"id": "T7a.2", "description": "Implement DetachedRestoreScheduler returning Task.detached { try? await Task.sleep(for: delay); await action() }."},
+        {"id": "T7a.3", "description": "Implement SecureInput.isActive() returning IsSecureEventInputEnabled()."},
+        {"id": "T7a.4", "description": "Define InsertionReportBuilder with start Instant, steps:[String], append(_ tag: String), and build(result:focus:axTrusted:keyCode:restoreScheduled:)."},
+        {"id": "T7a.5", "description": "Freeze the tag vocabulary from plan.md; do not accept free-form text."},
+        {"id": "T7a.6", "description": "Write tests for scheduler execution, duration >= 0, and no transcript in steps."}
+      ],
+      "tests": [
+        {"description": "The injected scheduler runs its action and can be awaited by a test helper.", "kind": "unit"},
+        {"description": "Report duration is non-negative and the report carries the supplied tags.", "kind": "unit"},
+        {"description": "Step tags never contain transcript text.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "The production scheduler is detached and non-blocking; tests can use an inline scheduler.",
+        "SecureInput.isActive() is callable from the service without importing Carbon there.",
+        "The step vocabulary is defined in one place.",
+        "InsertionRestoreTests passes."
+      ],
+      "depends_on": ["T3"],
+      "estimated_loc": 160,
+      "suggested_skills": []
+    },
+    {
+      "id": "T7b",
+      "title": "TextInsertionService decision tree",
+      "serves": ["c3", "c4"],
+      "description": "Create the actor that owns the full decision tree: empty text, trust check, focus classification, target resolution with prepared-PID consumption, clipboard snapshot and transient write, modifier wait, secure-input skip, key resolution, Cmd+V, verification, AX fallback, strategy options, success/failure result, and guarded delayed restore. All dependencies are injected protocols so the tree is testable without AX or a real keyboard.",
+      "building_blocks": [
+        "public actor TextInsertionService with injected init and @MainActor live factory",
+        "prepare(targetPID:) with preparedAt/TTL and consume-once semantics",
+        "focusState(for:), insert(_:options:)",
+        "strategy options: allowPaste/preferAccessibility/allowAccessibilityFallback",
+        "Restore after paste OR AX success, only if changeCount matches"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/TextInsertion"],
+      "packages": ["SwiftPM", "XCTest", "Foundation", "CoreGraphics", "OSLog"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/TextInsertionService.swift",
+          "action": "create",
+          "what": "The actor, injected init, @MainActor live(pasteboard:) factory, prepared-target TTL, full decision tree, Logger with step tags only."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/TextInsertionServiceTests.swift",
+          "action": "create",
+          "what": "Fakes for focus target/inspector, clipboard, poster, key resolver, frontmost apps, restore scheduler, secure input, and sleeper; the full decision-table tests."
+        }
+      ],
+      "subtasks": [
+        {"id": "T7b.1", "description": "Define init(focus:clipboard:poster:keyResolver:apps:restoreScheduler:secureInput:sleep:preparedTargetTTL:) with production defaults only in the @MainActor live factory."},
+        {"id": "T7b.2", "description": "Implement @MainActor static func live(pasteboard: NSPasteboard = .general) constructing AXFocusInspector, SystemPasteboard, CGEventPastePoster, LayoutPasteKeyResolver, WorkspaceFrontmostApps, DetachedRestoreScheduler."},
+        {"id": "T7b.3", "description": "Implement prepare(targetPID:) storing (pid, now) and calling focus.prepare(pid:)."},
+        {"id": "T7b.4", "description": "Implement focusState(for:) returning .unknown(ax-not-trusted) when untrusted, else focus.inspect(pid:).focus."},
+        {"id": "T7b.5", "description": "Implement insert: empty -> .notInserted(.emptyText,false); untrusted -> writeTransient and .accessibilityNotTrusted with textOnClipboard."},
+        {"id": "T7b.6", "description": "Resolve target PID: current frontmost; if current == selfPID use preparedPID and activate/wait up to 300 ms; if nil use preparedPID; ignore prepared if older than TTL; consume prepared after resolution."},
+        {"id": "T7b.7", "description": "Inspect target: .secure -> .notInserted(.secureField,false) with no clipboard write; .notEditable/.unknown follow the paste attempt path."},
+        {"id": "T7b.8", "description": "Capture baseline only when target.characterCount() != nil and selectionLength() == 0."},
+        {"id": "T7b.9", "description": "Snapshot clipboard unless restoreClipboard is false; writeTransient and record ourChangeCount; return .eventPostFailed if the write fails."},
+        {"id": "T7b.10", "description": "Await modifier release up to modifierReleaseTimeout; if secureInput() skip paste with step secure-input; resolve key code on MainActor; postPaste."},
+        {"id": "T7b.11", "description": "Verify by polling characterCount every 40 ms up to verifyTimeout when baseline exists; otherwise unverifiable."},
+        {"id": "T7b.12", "description": "If preferAccessibility, try AX first; else paste first. If paste unobserved and allowAccessibilityFallback, try AX. If allowPaste is false, never post Cmd+V."},
+        {"id": "T7b.13", "description": "On unobserved paste, call target.insertSelectedText; verify the same way; set method .accessibility and ax-verified on success."},
+        {"id": "T7b.14", "description": "On total failure: if writeClipboardOnFailure, writeTransient (if not already written) so textOnClipboard is true; return .notInserted with the correct failure. Never restore."},
+        {"id": "T7b.15", "description": "On success schedule restore through restoreScheduler after clipboardRestoreDelay and restore only if changeCount == ourChangeCount and snapshot.isComplete."},
+        {"id": "T7b.16", "description": "Build TextInsertionReport through InsertionReportBuilder; log only outcome and steps with subsystem com.superflow.app, category text-insertion."}
+      ],
+      "tests": [
+        {"description": "Empty text returns .emptyText and does not touch the clipboard.", "kind": "unit"},
+        {"description": "Untrusted AX before and after prepare returns .accessibilityNotTrusted with textOnClipboard true when the transient write succeeds.", "kind": "unit"},
+        {"description": "Secure field returns .secureField and never writes the clipboard or calls insert.", "kind": "unit"},
+        {"description": "Not-editable and unknown targets attempt paste; no-editable failure writes transient text when writeClipboardOnFailure is true.", "kind": "unit"},
+        {"description": "Paste verified by a count change returns .inserted(.paste, verified: true).", "kind": "unit"},
+        {"description": "Paste unobserved then AX success returns .inserted(.accessibility, verified: true) and restores the clipboard.", "kind": "unit"},
+        {"description": "Paste and AX both fail returns .pasteNotObserved with textOnClipboard true and does not restore.", "kind": "unit"},
+        {"description": "A newer clipboard write prevents restore.", "kind": "unit"},
+        {"description": "When Superflow is frontmost, the service activates the prepared PID; when another app is frontmost, it uses that app.", "kind": "unit"},
+        {"description": "A prepared PID older than preparedTargetTTL is never activated, and a prepared PID is consumed after one insert.", "kind": "unit"},
+        {"description": "secureInput() true skips Cmd+V, records secure-input, and falls back to AX.", "kind": "unit"},
+        {"description": "allowPaste=false never posts; allowAccessibilityFallback=false never calls AX; preferAccessibility=true calls AX first.", "kind": "unit"},
+        {"description": "steps contains only tags and never the transcript text.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "The actor has no stored AXUIElement and no non-Sendable stored property.",
+        "The four strategy orders are expressible through options and covered by tests.",
+        "Every non-secure failure either writes the transcript or leaves it recoverable and reports textOnClipboard accurately.",
+        "Restore happens after both paste and AX success, and only when changeCount is unchanged.",
+        "No transcript text appears in logs or steps.",
+        "TextInsertionService.swift is under 250 lines; if it grows, split the target resolver into its own file before exceeding 400.",
+        "TextInsertionServiceTests passes."
+      ],
+      "depends_on": ["T4b", "T5", "T6", "T7a"],
+      "estimated_loc": 280,
+      "suggested_skills": []
+    },
+    {
+      "id": "T8",
+      "title": "SystemTextInserter adapter and outcome mapping",
+      "serves": ["c4", "c5"],
+      "description": "Rewrite SystemTextInserter to own one TextInsertionService and map its report to the existing SuperflowPorts.InsertionOutcome, preserving each strategy's semantics and the existing contract tests. It also implements prepareForInsertion() by capturing the frontmost PID and calling service.prepare(targetPID:), and keeps frontmostBundleID().",
+      "building_blocks": [
+        "SystemTextInserter: TextInserter, @unchecked Sendable",
+        "@MainActor convenience init(pasteboard:) + nonisolated init(service:)",
+        "strategy switch mapping table",
+        "prepareForInsertion() capturing NSWorkspace frontmost PID"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/TextInsertion", "swift build --package-path App/SuperflowApp"],
+      "packages": ["SwiftPM", "XCTest", "AppKit", "SuperflowPorts", "SuperflowKernel"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Sources/SuperflowTextInsertion/SystemTextInserter.swift",
+          "action": "modify",
+          "what": "Replace the old paste/AX implementation with the service adapter, mapping, prepare hook, and @MainActor convenience init. Delete old KeyEventPosting/CGKeyEventPoster/AccessibilityInserting/AXTextInserter definitions that moved to T4a/T6."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/TextInsertionTests.swift",
+          "action": "delete",
+          "what": "Replaced by SystemTextInserterTests.swift."
+        },
+        {
+          "path": "Packages/L1-Adapters/TextInsertion/Tests/TextInsertionTests/SystemTextInserterTests.swift",
+          "action": "create",
+          "what": "The old 9 behavioural tests rewritten against the service, plus strategy-mapping, secure clipboardOnly, and prepare-hook tests."
+        }
+      ],
+      "subtasks": [
+        {"id": "T8.1", "description": "Implement insert(_:strategy:): empty -> .pasted; .clipboardOnly -> focus check, secure -> .blockedSecureField, else writeTransient + .clipboardOnly; .accessibility -> preferAccessibility, allowPaste=false; .pasteboard -> allowAccessibilityFallback=false; .auto -> defaults."},
+        {"id": "T8.2", "description": "Map .inserted(.paste) -> .pasted, .inserted(.accessibility) -> .accessibility, .secureField -> .blockedSecureField, .emptyText -> .pasted, all other .notInserted -> .clipboardOnly(reason: failure tag)."},
+        {"id": "T8.3", "description": "Implement prepareForInsertion() reading NSWorkspace.shared.frontmostApplication?.processIdentifier on MainActor and calling the owned service.prepare(targetPID:)."},
+        {"id": "T8.4", "description": "Implement frontmostBundleID() via MainActor NSWorkspace.frontmostApplication?.bundleIdentifier."},
+        {"id": "T8.5", "description": "Implement @MainActor convenience init(pasteboard: = .general) using TextInsertionService.live, and nonisolated init(service:) for tests."},
+        {"id": "T8.6", "description": "Port the old tests: empty no-op, secure never touched, clipboardOnly markers, auto fallback to AX, both-fail clipboard, restore after success, TextInserterContract."},
+        {"id": "T8.7", "description": "Add tests for each strategy, secure clipboardOnly, and prepareForInsertion calling service.prepare."},
+        {"id": "T8.8", "description": "Run the TextInsertion suite and swift build --package-path App/SuperflowApp; AppEnvironment must need no source change."}
+      ],
+      "tests": [
+        {"description": "TextInserterContract passes against the new adapter.", "kind": "unit"},
+        {"description": "Empty text returns .pasted and leaves the clipboard unchanged.", "kind": "unit"},
+        {"description": "Secure field returns .blockedSecureField and never writes the clipboard.", "kind": "unit"},
+        {"description": "clipboardOnly on a secure field returns .blockedSecureField without writing; on a normal field it writes markers and returns .clipboardOnly.", "kind": "unit"},
+        {"description": "auto returns .accessibility when paste fails but AX succeeds; both-fail returns .clipboardOnly with the text on the clipboard.", "kind": "unit"},
+        {"description": "pasteboard and accessibility strategies set the documented options.", "kind": "unit"},
+        {"description": "prepareForInsertion() calls the service once with the frontmost PID.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "SystemTextInserter still conforms to TextInserter and AppEnvironment still compiles with SystemTextInserter().",
+        "Every InsertionStrategy maps as the table in plan.md.",
+        "Expected insertion failures never throw; they return the correct InsertionOutcome.",
+        "The old 9 behaviours remain covered and the new adapter tests pass.",
+        "The app package builds."
+      ],
+      "depends_on": ["T2", "T7b"],
+      "estimated_loc": 240,
+      "suggested_skills": []
+    },
+    {
+      "id": "T8b",
+      "title": "Island failure card uses the finalized transcript",
+      "serves": ["c5"],
+      "description": "Stop IslandBridge from calling fail(id: nil) when an insert outcome is .clipboardOnly or .blockedSecureField. Let the existing .finished(id, .complete) branch call fail(id: id), which rebuilds the card from the repository record, and add a test proving the card text is the finalized transcript, not the last partial.",
+      "building_blocks": [
+        "IslandBridge.handle(.inserted) sets didLand=false and defers to .finished",
+        "AppCoreTests IslandBridge test with InMemoryRepository",
+        "TestKit added as a test-only dependency"
+      ],
+      "tools": ["swift test --package-path App/SuperflowApp"],
+      "packages": ["SwiftPM", "XCTest", "SuperflowTestKit"],
+      "files": [
+        {
+          "path": "App/SuperflowApp/Sources/SuperflowAppCore/IslandBridge.swift",
+          "action": "modify",
+          "what": "In case .inserted, for .clipboardOnly/.blockedSecureField set didLand=false and return without fail(id: nil); .finished(.complete) already calls fail(id: id)."
+        },
+        {
+          "path": "App/SuperflowApp/Tests/SuperflowAppCoreTests/IslandBridgeTests.swift",
+          "action": "create",
+          "what": "Feed .state(.inserting), .partial('stale'), .inserted(.clipboardOnly), .finished(id, .complete); assert pasteFailed transcript text equals the repository segments, not 'stale'."
+        },
+        {
+          "path": "App/SuperflowApp/Package.swift",
+          "action": "modify",
+          "what": "Add the TestKit package path and SuperflowTestKit product to the SuperflowAppCoreTests target only."
+        }
+      ],
+      "subtasks": [
+        {"id": "T8b.1", "description": "Change the .inserted failure cases to set didLand=false and return; do not call fail(id: nil)."},
+        {"id": "T8b.2", "description": "Add TestKit to the App package and SuperflowAppCoreTests target."},
+        {"id": "T8b.3", "description": "Create a session with two segments in InMemoryRepository and start IslandBridge with a test AsyncStream."},
+        {"id": "T8b.4", "description": "Collect the box.events stream until pasteFailed; assert the transcript text is the joined finalized segments."},
+        {"id": "T8b.5", "description": "Also assert the last partial never appears in the failure card."}
+      ],
+      "tests": [
+        {"description": "A .clipboardOnly outcome followed by .finished(.complete) emits pasteFailed with the finalized repository transcript.", "kind": "integration"},
+        {"description": "The last .partial text does not appear in the failure transcript.", "kind": "integration"},
+        {"description": "A successful .inserted(.pasted) still emits landed and no failure card.", "kind": "integration"}
+      ],
+      "acceptance_criteria": [
+        "No fail(id: nil) remains in the .inserted failure path.",
+        "The failure card is built from the finalized record via the existing .finished branch.",
+        "No new Island UI is added.",
+        "SuperflowApp tests pass."
+      ],
+      "depends_on": ["T8"],
+      "estimated_loc": 120,
+      "suggested_skills": []
+    },
+    {
+      "id": "T9",
+      "title": "Hotkey taps ignore synthetic events",
+      "serves": ["c6"],
+      "description": "Harden both HotkeyEngine tap callbacks to return the event unchanged when its eventSourceUserData equals SyntheticInputMarker.value. This is defence-in-depth: the current gesture state is usually idle by insertion time, but a marked keyDown must never be able to cancel dictation if the state is armed.",
+      "building_blocks": [
+        "KeyEventMapper.isSynthetic(_ event: CGEvent) -> Bool",
+        "early-return guard at the top of handlePassive and handleActive",
+        "CGEvent marker test"
+      ],
+      "tools": ["swift test --package-path Packages/L1-Adapters/HotkeyEngine"],
+      "packages": ["SwiftPM", "XCTest", "CoreGraphics", "SuperflowKernel"],
+      "files": [
+        {
+          "path": "Packages/L1-Adapters/HotkeyEngine/Sources/SuperflowHotkeyEngine/KeyEventMapper.swift",
+          "action": "modify",
+          "what": "Add public static func isSynthetic(_ event: CGEvent) -> Bool comparing eventSourceUserData to SyntheticInputMarker.value."
+        },
+        {
+          "path": "Packages/L1-Adapters/HotkeyEngine/Sources/SuperflowHotkeyEngine/HotkeyEngine.swift",
+          "action": "modify",
+          "what": "In handlePassive and handleActive, after tap-disabled handling, return Unmanaged.passUnretained(event) when KeyEventMapper.isSynthetic(event) is true."
+        },
+        {
+          "path": "Packages/L1-Adapters/HotkeyEngine/Tests/HotkeyEngineTests/KeyEventMapperTests.swift",
+          "action": "modify",
+          "what": "Add tests: marked key event is synthetic, unmarked is not, and an empty user-data field is not."
+        }
+      ],
+      "subtasks": [
+        {"id": "T9.1", "description": "Add isSynthetic comparing event.getIntegerValueField(.eventSourceUserData) to SyntheticInputMarker.value."},
+        {"id": "T9.2", "description": "Add the early-return guard to handlePassive before any mapping or continuation.yield."},
+        {"id": "T9.3", "description": "Add the same guard to handleActive before Enter/Escape handling."},
+        {"id": "T9.4", "description": "Write CGEvent tests for marked/unmarked events."},
+        {"id": "T9.5", "description": "Record in the PR description that the gesture state is usually idle at insertion time, so this is hardening rather than a currently reproducing bug."}
+      ],
+      "tests": [
+        {"description": "A key-down CGEvent with eventSourceUserData = marker is reported synthetic.", "kind": "unit"},
+        {"description": "The same event with a different user-data value is not synthetic.", "kind": "unit"},
+        {"description": "A plain CGEvent with no user data is not synthetic.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "Both callback paths check the marker before mapping/yielding/swallowing.",
+        "No change to non-synthetic Fn/right-Command/Enter/Escape behavior.",
+        "HotkeyEngine tests pass."
+      ],
+      "depends_on": ["T1"],
+      "estimated_loc": 80,
+      "suggested_skills": []
+    },
+    {
+      "id": "T10",
+      "title": "Prepare and safe insertion deadline at record start/submit",
+      "serves": ["c5"],
+      "description": "Call prepareForInsertion() immediately after reading the frontmost bundle id and before warm-up, raise the insert deadline from 3 s to an injectable 8 s default, and make the catch path write the transcript to the clipboard before claiming it is there. Extend TestKit recording doubles and assert the order.",
+      "building_blocks": [
+        "await inserter.prepareForInsertion() in start()",
+        "insertionDeadline: Duration = .seconds(8) init parameter",
+        "catch: try? await inserter.insert(text, strategy: .clipboardOnly)",
+        "RecordingInserter events + FakeSpeechRecognizer.onWarmUp"
+      ],
+      "tools": ["swift test --package-path Packages/L2-Engines/SessionEngine", "swift test --package-path Packages/L0-Core/TestKit"],
+      "packages": ["SwiftPM", "XCTest"],
+      "files": [
+        {
+          "path": "Packages/L2-Engines/SessionEngine/Sources/SuperflowSessionEngine/SessionEngine.swift",
+          "action": "modify",
+          "what": "Add insertionDeadline init parameter (default .seconds(8)); replace insertionMs; call await inserter.prepareForInsertion() after frontmostBundleID and before createSession/warm-up; in catch, try? await inserter.insert(text, strategy: .clipboardOnly) before the notice."
+        },
+        {
+          "path": "Packages/L0-Core/TestKit/Sources/SuperflowTestKit/FakeText.swift",
+          "action": "modify",
+          "what": "RecordingInserter: prepareCalls counter and ordered events ['frontmost','prepare','insert']."
+        },
+        {
+          "path": "Packages/L0-Core/TestKit/Sources/SuperflowTestKit/FakeRecognition.swift",
+          "action": "modify",
+          "what": "FakeSpeechRecognizer: optional onWarmUp closure invoked at the start of warmUp(profile:)."
+        },
+        {
+          "path": "Packages/L2-Engines/SessionEngine/Tests/SessionEngineTests/SessionTests.swift",
+          "action": "modify",
+          "what": "Assert one prepare call, order prepare-before-warmUp-before-insert, and the deadline fallback writes clipboardOnly."
+        }
+      ],
+      "subtasks": [
+        {"id": "T10.1", "description": "Add insertionDeadline: Duration = .seconds(8) to SessionEngine.init and store it."},
+        {"id": "T10.2", "description": "Replace withDeadline(.milliseconds(insertionMs)) with withDeadline(insertionDeadline)."},
+        {"id": "T10.3", "description": "Insert await inserter.prepareForInsertion() in start() after frontmostBundleID and before createSession/warm-up."},
+        {"id": "T10.4", "description": "In the insertion catch, try? await inserter.insert(text, strategy: .clipboardOnly) before emitting the notice."},
+        {"id": "T10.5", "description": "Add prepareCalls and ordered events (frontmost/prepare/insert) to RecordingInserter; add onWarmUp to FakeSpeechRecognizer."},
+        {"id": "T10.6", "description": "Write a test with a shared log asserting frontmost -> prepare -> warmUp -> insert."},
+        {"id": "T10.7", "description": "Write a test with insertionDeadline .milliseconds(10) and a slow .auto insert that records the .clipboardOnly fallback."}
+      ],
+      "tests": [
+        {"description": "start() calls prepareForInsertion() exactly once before warmUp.", "kind": "unit"},
+        {"description": "stop() still calls insert(_:strategy:) after prepare.", "kind": "unit"},
+        {"description": "A start failure after prepare does not insert.", "kind": "unit"},
+        {"description": "A deadline hit triggers a .clipboardOnly fallback before the notice.", "kind": "unit"}
+      ],
+      "acceptance_criteria": [
+        "prepareForInsertion() runs before warm-up and before createSession in start().",
+        "The insertion deadline defaults to 8 s and is injectable for tests.",
+        "The catch path attempts a clipboardOnly write before claiming the text is on the clipboard.",
+        "SessionEngine and TestKit tests pass."
+      ],
+      "depends_on": ["T2"],
+      "estimated_loc": 100,
+      "suggested_skills": []
+    },
+    {
+      "id": "T11",
+      "title": "ADR, permissions runbook, and full verification",
+      "serves": ["c7"],
+      "description": "Record the insertion-backend decisions in an ADR, update the permissions runbook with the stale-TCC diagnosis and reset command, update PLAN.md section 15 (500 ms, verification, AX fallback, secure-field policy), then run the full build/test/lint and the manual matrix.",
+      "building_blocks": [
+        "ADR 0021: types, marker, target resolution, clipboard policy, secure field policy, secure input",
+        "runbook: stable signing + tccutil reset",
+        "PLAN.md section 15 update",
+        "verification checklist"
+      ],
+      "tools": [
+        "swift test --package-path Packages/L1-Adapters/TextInsertion",
+        "swift test --package-path Packages/L1-Adapters/HotkeyEngine",
+        "swift test --package-path Packages/L2-Engines/SessionEngine",
+        "swift test --package-path App/SuperflowApp",
+        "swift build --package-path App/SuperflowApp",
+        "make lint",
+        "make verify"
+      ],
+      "packages": ["SwiftPM", "XCTest"],
+      "files": [
+        {
+          "path": "docs/adr/0021-text-insertion-backend.md",
+          "action": "create",
+          "what": "Short ADR: why TextInsertionResult is local, why AXTextTarget is @MainActor, marker contract, prepared-PID TTL, target resolution, 500 ms restore, secure-field and secure-input policy."
+        },
+        {
+          "path": "docs/runbooks/permissions.md",
+          "action": "modify",
+          "what": "Add a stale-TCC section: ad-hoc/unsigned rebuilds change identity; AXIsProcessTrusted false though toggle is ON; stable signing + tccutil reset Accessibility <bundle.id>."
+        },
+        {
+          "path": "PLAN.md",
+          "action": "modify",
+          "what": "Section 15: 250 ms -> 500 ms, character-count verification, AX fallback, synthetic marker, and secure-field policy matching the code (never insert; Island Copy button rather than auto-clipboard)."
+        }
+      ],
+      "subtasks": [
+        {"id": "T11.1", "description": "Write docs/adr/0021-text-insertion-backend.md with the decisions and rejected alternatives."},
+        {"id": "T11.2", "description": "Add the stale-Accessibility diagnosis and tccutil reset command to docs/runbooks/permissions.md."},
+        {"id": "T11.3", "description": "Update PLAN.md section 15: delay, verification, AX fallback, marker, and secure-field policy."},
+        {"id": "T11.4", "description": "Run the four package test/build commands and make lint; fix any warnings they surface."},
+        {"id": "T11.5", "description": "Run make verify if time permits; otherwise record the exact commands and results."},
+        {"id": "T11.6", "description": "Manual matrix: TextEdit, Notes, Slack, Chrome, VS Code, Terminal, password field, Finder desktop; check report.steps and confirm no transcript in logs."}
+      ],
+      "tests": [
+        {"description": "make lint passes: no file over 400 lines, no print(), dependency layers valid.", "kind": "integration"},
+        {"description": "All TextInsertion, HotkeyEngine, SessionEngine, and App builds/tests pass.", "kind": "integration"},
+        {"description": "Manual: text lands in TextEdit, Notes, Slack, Chrome, VS Code, Terminal.", "kind": "manual"},
+        {"description": "Manual: password field is blocked and the Island shows the copy card with the finalized transcript.", "kind": "manual"},
+        {"description": "Manual: Finder desktop / no text field shows the copy card without a false success.", "kind": "manual"},
+        {"description": "Manual: with stale TCC, report.steps contains ax-untrusted and no silent drop occurs.", "kind": "manual"}
+      ],
+      "acceptance_criteria": [
+        "ADR and runbook are merged.",
+        "PLAN.md and code agree on the 500 ms restore, verification, and secure-field policy.",
+        "make lint is green and the four targeted test/build commands pass.",
+        "The manual matrix is recorded, including the stale-TCC case.",
+        "No transcript text appears in Console logs for subsystem com.superflow.app, category text-insertion."
+      ],
+      "depends_on": ["T8b", "T9", "T10"],
+      "estimated_loc": 120,
+      "suggested_skills": []
+    }
+  ],
+  "order": ["T1", "T2", "T3", "T4a", "T4b", "T5", "T6", "T7a", "T7b", "T8", "T8b", "T9", "T10", "T11"]
+}

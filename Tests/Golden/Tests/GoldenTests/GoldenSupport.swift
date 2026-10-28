@@ -28,7 +28,8 @@ enum Golden {
                              shortcuts: [ShortcutEntry] = [],
                              cleaner: CleanupService? = nil,
                              grammar: (any GrammarChecker)? = nil,
-                             grammarPolicy: GrammarGatePolicy = .default) -> TextPipeline {
+                             grammarPolicy: GrammarGatePolicy = .default,
+                             project: ProjectContext? = nil) -> TextPipeline {
         TextPipelineBuilder.make(
             settings: settings,
             dependencies: TextPipelineDependencies(
@@ -36,7 +37,8 @@ enum Golden {
                 shortcuts: shortcuts,
                 cleaner: cleaner,
                 grammarChecker: grammar,
-                grammarPolicy: grammarPolicy
+                grammarPolicy: grammarPolicy,
+                project: project
             )
         )
     }

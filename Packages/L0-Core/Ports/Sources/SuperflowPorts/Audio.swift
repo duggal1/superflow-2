@@ -39,6 +39,35 @@ public protocol AudioJournalWriter: Sendable {
     var isDegraded: Bool { get async }
 }
 
+/// A finished dictation clip: the audio the recognizer actually heard, plus the
+/// waveform peaks computed while writing so the player never decodes to draw.
+public struct ArchivedAudio: Sendable, Equatable {
+    public let url: URL
+    public let duration: TimeInterval
+    /// 20 peaks per second, one byte each, 0...255.
+    public let peaks: [UInt8]
+    public init(url: URL, duration: TimeInterval, peaks: [UInt8]) {
+        self.url = url
+        self.duration = duration
+        self.peaks = peaks
+    }
+}
+
+/// Copies samples and returns. Encoding and disk I/O happen elsewhere.
+public protocol AudioArchiveWriter: Sendable {
+    func append(_ chunk: AudioChunk) async
+    /// Closes the file. Returns nil when nothing usable was written.
+    func finish() async -> ArchivedAudio?
+    func discard() async
+}
+
+public protocol AudioArchiveStore: Sendable {
+    func makeWriter(session: SessionID) async throws -> any AudioArchiveWriter
+    func delete(session: SessionID) async
+    /// Removes clips older than the retention setting. Nil means keep forever.
+    func sweep(olderThanDays days: Int?) async
+}
+
 public protocol JournalStore: Sendable {
     /// Opens a lane whose first sample is `startingSample` on the shared session clock. Mic lanes
     /// start at 0; the meeting system lane starts at its shared-clock offset so journaled sample

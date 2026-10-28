@@ -55,18 +55,21 @@ public struct RowButton<Content: View>: View {
     }
 }
 
-/// One settings row: a clear label on the left, one control column on the right.
-/// There is no `help` parameter, so help text cannot come back. Every control
-/// column is 280 wide, which is what makes every slider track share one edge.
+/// One settings row: a bare glyph in a fixed column, a label, one control. Every
+/// row has an icon, so the page reads consistently and the label column never
+/// moves. There is no `help` parameter, so help text cannot come back.
 public struct SettingRow<Control: View>: View {
-    /// The shared control column. Matches TimingSlider's fixed width.
-    public static var controlWidth: CGFloat { 280 }
+    /// The glyph column, identical on every row.
+    public static var iconColumn: CGFloat { 20 }
 
+    private let glyph: Glyph
     private let title: String
     private let filter: String
     private let control: Control
 
-    public init(_ title: String, filter: String = "", @ViewBuilder control: () -> Control) {
+    public init(_ glyph: Glyph, _ title: String, filter: String = "",
+                @ViewBuilder control: () -> Control) {
+        self.glyph = glyph
         self.title = title
         self.filter = filter.trimmingCharacters(in: .whitespacesAndNewlines)
         self.control = control()
@@ -78,14 +81,16 @@ public struct SettingRow<Control: View>: View {
 
     public var body: some View {
         if visible {
-            HStack(spacing: Space.lg) {
+            HStack(spacing: Space.sm) {
+                Icon(glyph, size: 14, tint: Tok.text)
+                    .frame(width: Self.iconColumn, height: Self.iconColumn)
                 Text(title)
-                    .font(Typography.bodyMedium)
+                    .appType(.label)
                     .foregroundStyle(Tok.text)
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                Spacer(minLength: Space.md)
                 control
-                    .frame(width: Self.controlWidth, height: 44, alignment: .trailing)
             }
+            .frame(minHeight: 48)
             .accessibilityElement(children: .contain)
         }
     }
@@ -138,13 +143,13 @@ public struct EntryRow: View {
         } content: {
             HStack(spacing: Space.md) {
                 Text(trigger)
-                    .font(Typography.body)
+                    .appType(.body)
                     .foregroundStyle(Tok.text2)
-                    .frame(width: 200, alignment: .leading)
+                    .frame(minWidth: 96, maxWidth: 180, alignment: .leading)
                     .lineLimit(1)
                 Icon(.arrow, size: 12, tint: Tok.text2)
                 Text(result)
-                    .font(Typography.bodyMedium)
+                    .appType(.label)
                     .foregroundStyle(isDisabled ? Tok.text2 : Tok.text)
                     .lineLimit(1)
                 Spacer(minLength: Space.md)

@@ -82,6 +82,17 @@ final class PortsDefaultTests: XCTestCase {
         XCTAssertNotEqual(InsertionOutcome.pasted, .blockedSecureField)
     }
 
+    func testTextInserterPreparationDefaultsToANoOp() async throws {
+        let inserter = MinimalInserter()
+        // A conformer written before the hook existed must keep compiling and
+        // gain a safe no-op rather than an insertion failure.
+        await inserter.prepareForInsertion()
+        let outcome = try await inserter.insert("text", strategy: .auto)
+        XCTAssertEqual(outcome, .pasted)
+        let bundle = await inserter.frontmostBundleID()
+        XCTAssertNil(bundle)
+    }
+
     func testNoopMetricsAcceptsSamples() {
         let metrics = NoopMetrics()
         metrics.record("stage", valueMs: 1)
@@ -139,6 +150,15 @@ private actor AvailableModelProvider: ModelProvider {
         _ = progress
         throw SuperflowError.modelUnavailable("llm")
     }
+}
+
+/// Implements only the original `TextInserter` requirements on purpose.
+private struct MinimalInserter: TextInserter {
+    func insert(_ text: String, strategy: InsertionStrategy) async throws -> InsertionOutcome {
+        .pasted
+    }
+
+    func frontmostBundleID() async -> String? { nil }
 }
 
 private actor MinimalDiarizer: SpeakerDiarizer {

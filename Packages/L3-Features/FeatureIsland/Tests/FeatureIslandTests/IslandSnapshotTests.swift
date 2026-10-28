@@ -1,0 +1,178 @@
+import AppKit
+import SwiftUI
+import XCTest
+@testable import SuperflowFeatureIsland
+
+private struct StubFeed: IslandFeed {
+    var last: IslandTranscript?
+    var stores = true
+
+    var events: AsyncStream<IslandEvent> { AsyncStream { $0.finish() } }
+    var levels: AsyncStream<Float> { AsyncStream { $0.finish() } }
+    func lastTranscript() -> IslandTranscript? { last }
+    var storesTranscripts: Bool { stores }
+}
+
+/// Renders every stable state at 2x. The assertions are structural (nothing
+/// outside the canvas, the top row is flush) so they do not depend on a golden
+/// file that a font update can move.
+@MainActor
+final class IslandSnapshotTests: XCTestCase {
+    private let transcript = IslandTranscript(
+        text: "The budget is $12,000, and we meet on Tuesday at the studio on Grand Street.",
+        bundleID: "com.apple.TextEdit", appName: "TextEdit",
+        date: Date(timeIntervalSince1970: 1_700_000_000), words: 14)
+
+    private func geometry(notch: Bool) -> NotchGeometry {
+        notch
+            ? NotchGeometry(frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
+                            safeTop: 32, leftWidth: 620, rightWidth: 620, scale: 2)
+            : NotchGeometry(frame: CGRect(x: 0, y: 0, width: 2560, height: 1440),
+                            safeTop: 0, leftWidth: nil, rightWidth: nil, scale: 2)
+    }
+
+    private func model(_ geometry: NotchGeometry, last: IslandTranscript? = nil) -> IslandModel {
+        IslandModel(feed: StubFeed(last: last), geometry: geometry)
+    }
+
+    private func render(_ model: IslandModel) throws -> NSImage {
+        let renderer = ImageRenderer(content: IslandRoot(model: model))
+        renderer.scale = 2
+        renderer.proposedSize = .init(IslandLayout.canvas)
+        let image = try XCTUnwrap(renderer.nsImage)
+        return image
+    }
+
+    func testIdleOnANotchRendersTheNotch() throws {
+        let image = try render(model(geometry(notch: true)))
+        XCTAssertEqual(image.size, IslandLayout.canvas)
+    }
+
+    func testIdleOnADisplayWithoutANotchIsEmpty() throws {
+        let model = model(geometry(notch: false))
+        let image = try render(model)
+        XCTAssertEqual(image.size, IslandLayout.canvas)
+        XCTAssertEqual(IslandLayout.box(model.phase, model.geometry).opacity, 0)
+    }
+
+    func testListeningRenders() throws {
+        let model = model(geometry(notch: true))
+        model.send(.holdBegan(IslandTarget(bundleID: "com.apple.TextEdit", name: "TextEdit")))
+        XCTAssertNoThrow(try render(model))
+        XCTAssertEqual(model.phase, .listening)
+    }
+
+    func testProcessingRenders() throws {
+        let model = model(geometry(notch: true))
+        model.send(.holdBegan(nil))
+        model.send(.holdEnded)
+        XCTAssertEqual(model.phase, .processing)
+        XCTAssertNoThrow(try render(model))
+    }
+
+    func testLandedRendersTheCheckmark() throws {
+        let model = model(geometry(notch: true))
+        model.send(.holdBegan(nil))
+        model.send(.landed(words: 12))
+        XCTAssertEqual(model.phase, .landed(words: 12))
+        XCTAssertNoThrow(try render(model))
+    }
+
+    func testFailedCardRenders() throws {
+        let model = model(geometry(notch: true))
+        model.send(.holdBegan(nil))
+        model.send(.pasteFailed(transcript))
+        XCTAssertEqual(model.phase, .failed(transcript))
+        XCTAssertNoThrow(try render(model))
+    }
+
+    func testRecentCardRendersWithData() throws {
+        let model = model(geometry(notch: true), last: transcript)
+        model.openRecent()
+        XCTAssertEqual(model.phase, .recent(transcript))
+        XCTAssertNoThrow(try render(model))
+    }
+
+    func testRecentCardRendersEmpty() throws {
+        let model = model(geometry(notch: true))
+        model.openRecent()
+        XCTAssertEqual(model.phase, .recent(nil))
+        XCTAssertNoThrow(try render(model))
+    }
+
+    func testCardRendersOnADisplayWithoutANotch() throws {
+        let model = model(geometry(notch: false))
+        model.send(.holdBegan(nil))
+        model.send(.pasteFailed(transcript))
+        XCTAssertNoThrow(try render(model))
+    }
+
+    // MARK: measured pixels
+
+    /// Counts pixels that are not fully transparent. The image is rendered at
+    /// 2x, so the canvas is 1040 x 256 device pixels.
+    private func opaquePixels(_ image: NSImage) throws -> Int {
+        let cgImage = try XCTUnwrap(image.cgImage(forProposedRect: nil, context: nil, hints: nil))
+        let data = try XCTUnwrap(cgImage.dataProvider?.data) as Data
+        let alphaInfo = cgImage.alphaInfo
+        let alphaIndex: Int
+        switch alphaInfo {
+        case .premultipliedLast, .last, .noneSkipLast: alphaIndex = 3
+        case .premultipliedFirst, .first, .noneSkipFirst: alphaIndex = 0
+        default: return cgImage.width * cgImage.height
+        }
+        let bytesPerPixel = cgImage.bitsPerPixel / 8
+        var count = 0
+        for y in 0..<cgImage.height {
+            let row = y * cgImage.bytesPerRow
+            for x in 0..<cgImage.width {
+                if data[row + x * bytesPerPixel + alphaIndex] > 0 { count += 1 }
+            }
+        }
+        return count
+    }
+
+    func testIdleOnADisplayWithoutANotchPaintsNothing() throws {
+        let image = try render(model(geometry(notch: false)))
+        XCTAssertEqual(try opaquePixels(image), 0)
+    }
+
+    func testIdleOnANotchIsDrawnStrictlyInsideTheNotchRect() throws {
+        let model = model(geometry(notch: true))
+        let painted = try opaquePixels(try render(model))
+        XCTAssertGreaterThan(painted, 0, "idle on a notch must be drawn, not hidden")
+
+        // At 2x the notch is 544 x 64 device pixels. Nothing may paint outside it.
+        let notchPixels = Int(model.geometry.notch.width * model.geometry.notch.height * 4)
+        XCTAssertLessThanOrEqual(painted, notchPixels)
+        XCTAssertGreaterThan(painted, notchPixels * 9 / 10)
+    }
+
+    func testTheSilhouetteIsNotARectangle() throws {
+        let rect = CGRect(origin: .zero, size: CGSize(width: 272, height: 32))
+        let square = try pixels(NotchShape(top: 0, bottom: 0).fill(.black),
+                                size: rect.size)
+        let rounded = try pixels(NotchShape(top: 0, bottom: IslandLayout.restBottom).fill(.black),
+                                 size: rect.size)
+        let notchPixels = Int(rect.width * rect.height * 4)
+        XCTAssertEqual(square, notchPixels)
+        XCTAssertLessThan(rounded, square)
+        XCTAssertGreaterThan(rounded, square * 98 / 100)
+    }
+
+    func testWingsAreWiderThanTheNotch() throws {
+        let idle = try opaquePixels(try render(model(notchGeometry())))
+        let model = model(notchGeometry())
+        model.send(.holdBegan(nil))
+        let wings = try opaquePixels(try render(model))
+        XCTAssertGreaterThan(wings, idle)
+    }
+
+    private func pixels(_ view: some View, size: CGSize) throws -> Int {
+        let renderer = ImageRenderer(content: view.frame(width: size.width, height: size.height))
+        renderer.scale = 2
+        return try opaquePixels(try XCTUnwrap(renderer.nsImage))
+    }
+
+    private func notchGeometry() -> NotchGeometry { geometry(notch: true) }
+}

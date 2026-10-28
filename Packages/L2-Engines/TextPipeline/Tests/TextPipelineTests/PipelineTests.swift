@@ -43,8 +43,8 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
-            "commands", "shortcuts", "numbers", "lexicon", "cleanup",
-            "numbers.assert", "lexicon.assert", "grammar", "lineformat",
+            "commands", "shortcuts", "disfluency", "numbers", "lexicon", "codeAware",
+            "cleanup", "numbers.assert", "lexicon.assert", "grammar", "lineformat",
         ])
     }
 
@@ -55,7 +55,8 @@ final class PipelineTests: XCTestCase {
         settings.harperEnabled = false
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs,
-                       ["shortcuts", "numbers", "lexicon", "numbers.assert", "lexicon.assert", "lineformat"])
+                       ["shortcuts", "disfluency", "numbers", "lexicon", "codeAware",
+                        "numbers.assert", "lexicon.assert", "lineformat"])
     }
 
     func testCodeSpeakIsOptInAndRunsAfterNumbers() async {
@@ -68,13 +69,35 @@ final class PipelineTests: XCTestCase {
 
         settings.codeSpeakEnabled = true
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
-        XCTAssertEqual(Array(pipeline.stageIDs.prefix(4)),
-                       ["commands", "shortcuts", "numbers", "codeSpeak"])
+        XCTAssertEqual(Array(pipeline.stageIDs.prefix(5)),
+                       ["commands", "shortcuts", "disfluency", "numbers", "codeSpeak"])
         let index = pipeline.stageIDs.firstIndex(of: "codeSpeak")
         XCTAssertEqual(index.map { pipeline.stageIDs[$0 + 1] }, "lexicon")
 
         let result = await pipeline.run("snake case user id", context: TextContext(settings: settings))
         XCTAssertEqual(result.text, "user_id")
+    }
+
+    func testDisfluencyAndCodeAwareRunBeforeCleanup() async {
+        var settings = AppSettings.default
+        settings.cleanupEnabled = false
+        settings.lineFormat.capitalize = false
+        settings.lineFormat.finalPeriod = false
+        let project = ProjectContext(root: FileManager.default.temporaryDirectory,
+                                     paths: ["src/main.ts"], isCoding: true,
+                                     approvedByUser: true)
+        let pipeline = TextPipelineBuilder.make(
+            settings: settings, dependencies: TextPipelineDependencies(project: project))
+        let ids = pipeline.stageIDs
+        XCTAssertLessThan(try XCTUnwrap(ids.firstIndex(of: "disfluency")),
+                          try XCTUnwrap(ids.firstIndex(of: "numbers")))
+        XCTAssertLessThan(try XCTUnwrap(ids.firstIndex(of: "lexicon")),
+                          try XCTUnwrap(ids.firstIndex(of: "codeAware")))
+        XCTAssertLessThan(try XCTUnwrap(ids.firstIndex(of: "codeAware")),
+                          try XCTUnwrap(ids.firstIndex(of: "numbers.assert")))
+        let result = await pipeline.run("I I I want to open src slash main",
+                                        context: TextContext(settings: settings, project: project))
+        XCTAssertEqual(result.text, "I want to open src/main.ts")
     }
 
     func testShortcutExpandsVerbatimAndShortCircuits() async {

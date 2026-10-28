@@ -26,6 +26,33 @@ public extension View {
     }
 }
 
+/// Increase Contrast for a shape that is not a rounded rectangle (the Island's
+/// notch silhouette). Lives here because strokes are only allowed in this file.
+public struct ShapeContrastStroke<S: Shape>: ViewModifier {
+    @Environment(\.colorSchemeContrast) private var contrast
+    public let shape: S
+
+    public init(shape: S) {
+        self.shape = shape
+    }
+
+    public func body(content: Content) -> some View {
+        content.overlay {
+            if contrast == .increased {
+                shape
+                    .stroke(Tok.contrastStroke, lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+}
+
+public extension View {
+    func contrastStroke<S: Shape>(_ shape: S) -> some View {
+        modifier(ShapeContrastStroke(shape: shape))
+    }
+}
+
 public func cellHash(_ i: Int, _ j: Int, _ seed: UInt32) -> CGFloat {
     var h = UInt32(truncatingIfNeeded: i) &* 374761393
         &+ UInt32(truncatingIfNeeded: j) &* 668265263

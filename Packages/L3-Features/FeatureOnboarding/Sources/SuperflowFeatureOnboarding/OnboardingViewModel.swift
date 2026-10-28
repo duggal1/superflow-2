@@ -26,7 +26,8 @@ public final class OnboardingViewModel: ObservableObject {
     @Published public private(set) var cleanupTransfer: TransferSnapshot?
     @Published public private(set) var cleanupError: String?
     @Published public private(set) var isDownloadingCleanup = false
-    /// The cleanup model is optional, so the row carries its own switch.
+    /// Cleanup is on for every dictation by default; the row still carries its own
+    /// switch so the owner can decline the download.
     @Published public var cleanupWanted = true
 
     @Published public private(set) var permissionsSkipped = false
@@ -69,6 +70,9 @@ public final class OnboardingViewModel: ObservableObject {
         self.practice = practice
         self.toast = toast
         self.settings = initial
+        // Setup always installs the streaming Nemotron 3.5 profile. Dictation has
+        // no batch path, and the owner asked for this to be the forced default.
+        self.settings.asrProfile = ModelProfile.default.id
         self.onFinish = onFinish
     }
 
@@ -124,8 +128,8 @@ public final class OnboardingViewModel: ObservableObject {
         }
     }
 
-    public var speechTotalBytes: Int64? { speechTransfer?.totalBytes }
-    public var cleanupTotalBytes: Int64? { cleanupTransfer?.totalBytes }
+    public var speechTotalBytes: Int64? { speechTransfer?.totalBytes(estimatedFrom: speechProgress) }
+    public var cleanupTotalBytes: Int64? { cleanupTransfer?.totalBytes(estimatedFrom: cleanupProgress) }
 
     public var speechDetail: String {
         if speechReady { return "Ready" }
@@ -142,7 +146,7 @@ public final class OnboardingViewModel: ObservableObject {
             return TransferText.progress(cleanupProgress, transfer: cleanupTransfer)
         }
         if cleanupError != nil { return "Download failed" }
-        return "Removes filler words and fixes punctuation. Optional."
+        return "Cleans every dictation. On by default."
     }
 
     public func status(for permission: Permission) -> PermissionStatus {

@@ -22,6 +22,16 @@ public struct TransferSnapshot: Sendable, Equatable {
         guard let totalBytes, totalBytes > 0 else { return nil }
         return min(1, Double(receivedBytes) / Double(totalBytes))
     }
+
+    /// The byte count this transfer is heading for. A server that publishes a length
+    /// reports it; the FluidAudio caches do not, so it is derived from the bytes that
+    /// did land against the fraction the transfer reports. Nil until both exist, which
+    /// is what keeps a row from growing into its readout with nothing to put there.
+    public func totalBytes(estimatedFrom fraction: Double?) -> Int64? {
+        if let totalBytes { return totalBytes }
+        guard let fraction, fraction > 0.01, receivedBytes > 0 else { return nil }
+        return max(receivedBytes, Int64((Double(receivedBytes) / fraction).rounded()))
+    }
 }
 
 /// One process-wide meter shared by the transfer layer and the screens that

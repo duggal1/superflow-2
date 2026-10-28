@@ -18,6 +18,10 @@ public enum Motion {
     public static let menuIn: Animation = .smooth(duration: 0.20)
     public static let menuOut: Animation = .easeOut(duration: 0.12)
 
+    // Pass 4: the Island. Content enters after the shape has started to open.
+    public static let islandIn = Animation.smooth(duration: 0.30).delay(0.10)
+    public static let islandOut = Animation.easeOut(duration: 0.10)
+
     public static func entrance(index: Int) -> Animation {
         enter.delay(Double(index) * stagger)
     }

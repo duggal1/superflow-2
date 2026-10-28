@@ -119,18 +119,6 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(model.settings.displayName, "Harshit")
     }
 
-    func testIdlePillSettingDefaultsOffAndPersists() async {
-        let model = makeModel()
-        await model.load()
-        XCTAssertFalse(model.settings.showIdlePill)
-        model.settings.showIdlePill = true
-        XCTAssertTrue(model.hasChanges)
-        let saved = await model.save()
-        XCTAssertTrue(saved)
-        let persisted = await store.load()
-        XCTAssertTrue(persisted.showIdlePill)
-    }
-
     func testLaunchAtLoginIsAppliedAndFailureReverts() async {
         let model = makeModel()
         await model.load()
@@ -187,7 +175,8 @@ final class SettingsViewModelTests: XCTestCase {
 
         model.setProfile("parakeet-tdt-0.6b-v3")
 
-        XCTAssertEqual(model.settings.asrProfile, ModelProfile.parakeetEOU120M.id)
+        // The batch profile is refused, so the previous selection stands.
+        XCTAssertEqual(model.settings.asrProfile, ModelProfile.nemotron35Streaming.id)
         XCTAssertEqual(model.toast.current?.style, .warning)
         XCTAssertFalse(ModelProfile.parakeetTDTV3.supportsLiveDictation)
     }

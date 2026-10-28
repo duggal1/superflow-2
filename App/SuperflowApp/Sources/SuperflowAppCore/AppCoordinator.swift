@@ -30,7 +30,8 @@ public final class AppCoordinator: ObservableObject {
     public let themeStore: ThemeStore
     public let mainWindowController: MainWindowController
     public let menuBarController: MenuBarController
-    public let islandPanelController: IslandPanelController?
+    public let islandController: IslandController?
+    let islandBridge: IslandBridge?
 
     public lazy var commandPaletteModel = AppCommandPalette.make(
         onSelectSection: { [weak self] in self?.mainWindowController.show($0) },
@@ -67,7 +68,11 @@ public final class AppCoordinator: ObservableObject {
 
     public lazy var historyModel: HistoryViewModel? = {
         guard let environment else { return nil }
-        return HistoryViewModel(repository: environment.transcripts, inserter: environment.textInserter)
+        return HistoryViewModel(
+            repository: environment.transcripts,
+            inserter: environment.textInserter,
+            onDeleteAudio: { session in await environment.audioArchive.delete(session: session) }
+        )
     }()
 
     public lazy var dictionaryModel: DictionaryViewModel? = {
@@ -94,7 +99,10 @@ public final class AppCoordinator: ObservableObject {
 
     public lazy var modelsModel: ModelsViewModel? = {
         guard let environment else { return nil }
-        return ModelsViewModel()
+        return ModelsViewModel(models: environment.modelProvider,
+                               diarizer: environment.diarizer,
+                               asrProfile: settings.asrProfile,
+                               cleanupEnabled: { [weak self] in self?.settings.cleanupEnabled ?? true })
     }()
 
     public lazy var settingsModel: SettingsViewModel? = {
@@ -155,58 +163,59 @@ public final class AppCoordinator: ObservableObject {
         )
         menuBarController = menu
         if let environment {
-            let islandModel = IslandViewModel()
-            let actions = IslandActions(
-                stop: { [weak menu] in
-                    Task { @MainActor in await menu?.stopActiveSession() }
-                },
-                cancel: { [weak menu] in
-                    Task { @MainActor in await menu?.cancelActiveSession() }
-                },
-                openApp: { [weak menu] in
-                    Task { @MainActor in menu?.showMainWindow() }
-                },
-                openSettings: { [weak menu] in
-                    Task { @MainActor in menu?.showMainWindow(.settings) }
-                },
-                quit: { [weak menu] in
-                    Task { @MainActor in await menu?.quit() }
-                }
-            )
-            islandPanelController = IslandPanelController(
-                session: environment.sessionEngine,
-                meeting: environment.meetingEngine,
-                model: islandModel,
-                actions: actions,
-                sessionEvents: sessionEventRelay.subscribe(),
-                meetingEvents: meetingEventRelay.subscribe()
-            )
+            let bridge = IslandBridge(transcripts: environment.transcripts)
+            let islandModel = IslandModel(feed: bridge.feed, geometry: Self.initialGeometry())
+            islandBridge = bridge
+            islandController = IslandController(model: islandModel)
         } else {
-            islandPanelController = nil
+            islandBridge = nil
+            islandController = nil
         }
+    }
+
+    /// The Island starts at the notch display, or wherever the pointer is if the
+    /// Mac has no notch. `IslandController` re-seats it on every display change.
+    private static func initialGeometry() -> NotchGeometry {
+        if let screen = IslandScreens.home ?? IslandScreens.active {
+            return NotchGeometry(screen: screen)
+        }
+        return NotchGeometry(frame: .zero, safeTop: 0, leftWidth: nil, rightWidth: nil, scale: 2)
     }
     public func launch() async {
         guard !didLaunch else { return }
         didLaunch = true
+        StaleDefaults.removeIslandLegacy()
         guard let environment else {
             isLoaded = true
             return
         }
 
         settings = await environment.settingsStore.load()
+        // Onboarding is asked once. If the stored row lost the flag (fresh database,
+        // quarantined file, a write that never landed) but the owner already finished,
+        // restore it instead of sending them through setup again.
+        if settings.onboardingComplete {
+            OnboardingCheckpoint.markComplete()
+        } else if OnboardingCheckpoint.isComplete() {
+            settings.onboardingComplete = true
+            await environment.settingsStore.save(settings)
+        }
         // Fn is Superflow's dictation key, so put the Globe binding in the Do Nothing state first.
         environment.claimFunctionKey()
         themeStore.mode = settings.theme
-        islandPanelController?.model.setShowIdlePill(settings.showIdlePill)
+        islandBridge?.setStoresTranscripts(!settings.noTranscriptStorage)
         await environment.transcripts.setNoTranscriptStorage(settings.noTranscriptStorage)
         await purgeExpiredTranscripts()
+        await sweepAudioArchive()
         scheduleRetentionPurge()
         await environment.practiceRunner.update(profile: settings.asrProfile)
         gesture.update(config: settings.gesture)
         await refreshPipeline()
+        islandBridge?.start(events: sessionEventRelay.subscribe())
         startEventRelays()
         menuBarController.observe()
-        islandPanelController?.startObserving()
+        islandController?.start()
+        Task { await islandBridge?.refreshLastTranscript() }
         observePermissionChanges(environment.permissionGate)
         menuBarController.setRecoveryReady(false)
         let shouldWarmModels = settings.onboardingComplete
@@ -239,7 +248,7 @@ public final class AppCoordinator: ObservableObject {
         let retentionChanged = settings.retentionDays != updated.retentionDays
         settings = updated
         themeStore.mode = updated.theme
-        islandPanelController?.model.setShowIdlePill(updated.showIdlePill)
+        islandBridge?.setStoresTranscripts(!updated.noTranscriptStorage)
         guard let environment else { return }
         if retentionChanged { await purgeExpiredTranscripts() }
         await environment.transcripts.setNoTranscriptStorage(updated.noTranscriptStorage)
@@ -254,6 +263,7 @@ public final class AppCoordinator: ObservableObject {
     }
 
     public func completeOnboarding(_ updated: AppSettings) async {
+        OnboardingCheckpoint.markComplete()
         await applySettings(updated)
         mainWindowController.show(.dashboard)
     }
@@ -286,6 +296,22 @@ public final class AppCoordinator: ObservableObject {
                 }
                 guard !Task.isCancelled else { return }
                 await self?.purgeExpiredTranscripts()
+                await self?.sweepAudioArchive()
+            }
+        }
+    }
+
+    /// Removes clips past the retention setting, then clears the two columns for
+    /// any row whose file is gone. Runs at launch and once a day.
+    private func sweepAudioArchive() async {
+        guard let environment, settings.keepAudio else { return }
+        await environment.audioArchive.sweep(olderThanDays: settings.audioRetentionDays)
+        guard settings.audioRetentionDays != nil else { return }
+        guard let ids = try? await environment.database.sessionsWithAudio() else { return }
+        for id in ids {
+            let url = AudioArchiveLocation.url(for: id)
+            if !FileManager.default.fileExists(atPath: url.path) {
+                try? await environment.database.clearAudio(session: id)
             }
         }
     }

@@ -41,8 +41,11 @@ public final class HistoryViewModel: ObservableObject {
     private let repository: any TranscriptRepository
     private let inserter: any TextInserter
     private let pageSize: Int
+    private let onDeleteAudio: (@Sendable (SessionID) async -> Void)?
     private var offset = 0
     private var deleted: DeletedSession?
+    /// The file outlives the row until the undo toast expires.
+    private var pendingAudioDeletion: Task<Void, Never>?
 
     private struct DeletedSession {
         var record: SessionRecord
@@ -51,11 +54,13 @@ public final class HistoryViewModel: ObservableObject {
     }
 
     public init(repository: any TranscriptRepository, inserter: any TextInserter,
-                toast: ToastCenter = ToastCenter(), pageSize: Int = 40) {
+                toast: ToastCenter = ToastCenter(), pageSize: Int = 40,
+                onDeleteAudio: (@Sendable (SessionID) async -> Void)? = nil) {
         self.repository = repository
         self.inserter = inserter
         self.toast = toast
         self.pageSize = max(1, pageSize)
+        self.onDeleteAudio = onDeleteAudio
     }
 
     public var selectedSession: SessionRecord? {
@@ -159,7 +164,16 @@ public final class HistoryViewModel: ObservableObject {
             selectedID = nil
             self.segments = []
             self.speakers = []
+            let deletedID = record.id
             await load()
+            let deleteAudio = onDeleteAudio
+            pendingAudioDeletion?.cancel()
+            pendingAudioDeletion = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(6))
+                guard !Task.isCancelled else { return }
+                await deleteAudio?(deletedID)
+                self?.pendingAudioDeletion = nil
+            }
             toast.show("Session deleted.", style: .info, actionTitle: "Undo") { [weak self] in
                 Task { await self?.undoDelete() }
             }
@@ -169,6 +183,8 @@ public final class HistoryViewModel: ObservableObject {
     }
 
     public func undoDelete() async {
+        pendingAudioDeletion?.cancel()
+        pendingAudioDeletion = nil
         guard let deleted else { return }
         do {
             try await repository.createSession(deleted.record)

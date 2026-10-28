@@ -53,15 +53,33 @@ public struct LineFormatter: Sendable {
     }
 
     /// Convenience for batch callers.
+    ///
+    /// Fenced code passes through untouched and inline code, paths and
+    /// filenames are masked before formatting, so capitalization, punctuation
+    /// spacing and sentence splitting cannot rewrite code.
     public static func format(_ text: String, settings: LineFormatSettings = LineFormatSettings()) -> String {
-        var formatter = LineFormatter(settings: settings)
-        var blocks = formatter.feed(text)
-        blocks.append(contentsOf: formatter.finish())
-        return blocks.joined(separator: formatter.separator)
+        let separator = settings.breakStyle == .paragraph ? "\n\n" : "\n"
+        var output: [String] = []
+        for segment in FencedBlocks.split(text) {
+            switch segment {
+            case .code(let code):
+                output.append(code)
+            case .prose(let prose):
+                var preserver = CodePreserver()
+                let masked = preserver.mask(prose)
+                var formatter = LineFormatter(settings: settings)
+                var blocks = formatter.feed(masked)
+                blocks.append(contentsOf: formatter.finish())
+                let formatted = preserver.restore(blocks.joined(separator: formatter.separator))
+                if !formatted.isEmpty { output.append(formatted) }
+            }
+        }
+        return output.joined(separator: separator)
     }
 
     // MARK: feeding
     private mutating func append(_ line: String, hardEnd: Bool, into emitted: inout [String]) {
+        let line = ListFormatter.normalize(line)
         if carry.isEmpty {
             carry = line
         } else if line.isEmpty {
@@ -286,10 +304,7 @@ public struct LineFormatStage: TextStage {
 
     public func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
         var output = draft
-        var formatter = LineFormatter(settings: settings)
-        var blocks = formatter.feed(draft.text)
-        blocks.append(contentsOf: formatter.finish())
-        var text = blocks.joined(separator: formatter.separator)
+        var text = LineFormatter.format(draft.text, settings: settings)
         if settings.trailingSpace && !text.isEmpty && !text.hasSuffix(" ") { text += " " }
         output.text = text
         return output

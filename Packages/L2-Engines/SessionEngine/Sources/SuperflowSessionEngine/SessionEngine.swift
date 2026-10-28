@@ -11,10 +11,14 @@ public actor SessionEngine {
     private var pipeline: TextPipeline
     private let repository: any TranscriptRepository
     private let journals: any JournalStore
+    private let archive: (any AudioArchiveStore)?
     private let inserter: any TextInserter
     private let metrics: MetricsSink
     private let clock: TimeSource
     private var settings: AppSettings
+    /// Session-scoped project passed to the pipeline context. Never discovered by
+    /// the text stages; nil means no filesystem scope is exposed.
+    private var project: ProjectContext?
 
     public nonisolated let events: AsyncStream<SessionEvent>
     private let continuation: AsyncStream<SessionEvent>.Continuation
@@ -23,6 +27,7 @@ public actor SessionEngine {
     private var record: SessionRecord?
     private var recognitionStream: (any RecognitionStream)?
     private var writer: (any AudioJournalWriter)?
+    private var archiveWriter: (any AudioArchiveWriter)?
     private var sampleTask: Task<Void, Never>?
     private var eventTask: Task<Void, Never>?
     private var recognitionTask: Task<Void, Never>?
@@ -30,9 +35,10 @@ public actor SessionEngine {
     private var nextIndex = 0
     private var lastEndMs = 0
     private var cumulativeTokenCount = 0
-    private var levelCounter = 0
-    private var journalWarned = false
-    private var insertionMs = 3_000
+    var levelCounter = 0
+    var journalWarned = false
+    /// Worst case: modifier wait + key resolution + verify + AX fallback + re-verify.
+    private let insertionDeadline: Duration
     /// Bounded model waits. A Core ML call cannot be cancelled, so a deadline abandons the call
     /// and lets the session continue instead of wedging in `warming`/`finalizing` forever. The
     /// warm-up bound is generous because the first prediction on a cold machine pays the ANE
@@ -42,17 +48,22 @@ public actor SessionEngine {
 
     public init(audio: any AudioSource, recognizer: any SpeechRecognizer, pipeline: TextPipeline,
                 repository: any TranscriptRepository, journals: any JournalStore,
-                inserter: any TextInserter, settings: AppSettings = .default,
-                metrics: MetricsSink = NoopMetrics(), clock: TimeSource = SystemTimeSource()) {
+                inserter: any TextInserter, archive: (any AudioArchiveStore)? = nil,
+                settings: AppSettings = .default, project: ProjectContext? = nil,
+                metrics: MetricsSink = NoopMetrics(), clock: TimeSource = SystemTimeSource(),
+                insertionDeadline: Duration = .seconds(8)) {
         self.audio = audio
         self.recognizer = recognizer
         self.pipeline = pipeline
         self.repository = repository
         self.journals = journals
+        self.archive = archive
         self.inserter = inserter
         self.settings = settings
+        self.project = project
         self.metrics = metrics
         self.clock = clock
+        self.insertionDeadline = insertionDeadline
         (events, continuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(256))
     }
 
@@ -61,6 +72,12 @@ public actor SessionEngine {
 
     public func update(settings: AppSettings) async {
         self.settings = settings
+    }
+
+    /// Replaces the explicit project scope for the rest of the session. Cleanup
+    /// rows already queued keep the scope they captured.
+    public func update(project: ProjectContext?) async {
+        self.project = project
     }
 
     /// Replaces the pipeline after a settings, dictionary or shortcut change.
@@ -105,6 +122,8 @@ public actor SessionEngine {
         }
 
         let bundleID = await inserter.frontmostBundleID()
+        // Let Chromium/Electron build their Accessibility tree while the user speaks.
+        await inserter.prepareForInsertion()
         var newRecord = SessionRecord(kind: .dictation, status: .recording,
                                       frontmostBundleID: bundleID, modelProfile: settings.asrProfile)
         try await repository.createSession(newRecord)
@@ -112,6 +131,7 @@ public actor SessionEngine {
         resetBuffers()
         recognitionStream = nil
         writer = nil
+        archiveWriter = nil
         sampleTask = nil
         eventTask = nil
         recognitionTask = nil
@@ -133,6 +153,13 @@ public actor SessionEngine {
                                                               startingSample: 0)
             writer = journalWriter
             await reportJournalIfDegraded(journalWriter)
+            // The clip is exactly what the recognizer heard, written from the same
+            // buffers. "Don't store transcripts" means nothing is ever written.
+            var clip: (any AudioArchiveWriter)?
+            if settings.keepAudio, !settings.noTranscriptStorage {
+                clip = try? await archive?.makeWriter(session: newRecord.id)
+                archiveWriter = clip
+            }
             let streams = try await audio.start()
             let recognition = try await withDeadline(modelDeadline, label: "recognition stream") {
                 try await recognizer.makeStream(profile: profile, source: .mic)
@@ -152,7 +179,8 @@ public actor SessionEngine {
                 await self?.consumeRecognition(recognition, session: id)
             }
             sampleTask = Task { [weak self] in
-                await self?.consumeAudio(streams.samples, writer: journalWriter, stream: recognition)
+                await self?.consumeAudio(streams.samples, writer: journalWriter,
+                                         archive: clip, stream: recognition)
             }
             eventTask = Task { [weak self] in
                 await self?.consumeAudioEvents(streams.events)
@@ -165,6 +193,9 @@ public actor SessionEngine {
             recognitionStream = nil
             _ = await writer?.close()
             writer = nil
+            await archiveWriter?.discard()
+            archiveWriter = nil
+            await archive?.delete(session: newRecord.id)
             if !settings.keepJournals { await journals.delete(session: newRecord.id) }
             try? await repository.finalizeSession(newRecord.id, endedAt: clock.now(), status: .failed,
                                                   durationMs: 0, wordCount: 0, cleanupState: .skipped)
@@ -218,6 +249,19 @@ public actor SessionEngine {
         let text = assembledText ?? ""
         let words = wordCount(text)
         let duration = max(lastEndMs, Int(clock.now().timeIntervalSince(record.startedAt) * 1000))
+
+        // No speech means no clip worth keeping: discard it rather than spend rows
+        // on a player for silence.
+        if let clip = archiveWriter {
+            archiveWriter = nil
+            if words == 0 {
+                await clip.discard()
+            } else if let archived = await clip.finish(),
+                      let store = repository as? any AudioMetadataStore {
+                try? await store.setAudio(session: record.id, duration: archived.duration,
+                                          peaks: Data(archived.peaks))
+            }
+        }
         metrics.record("session.stop.ms", valueMs: Double((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000))
 
         var finalized = false
@@ -235,13 +279,17 @@ public actor SessionEngine {
         if !text.isEmpty {
             transition(.inserting)
             do {
-                insertion = try await withDeadline(.milliseconds(insertionMs), label: "insertion") { [inserter] in
+                insertion = try await withDeadline(insertionDeadline, label: "insertion") { [inserter] in
                     try await inserter.insert(text, strategy: .auto)
                 }
                 if let insertion { emit(.inserted(insertion)) }
             } catch {
                 emit(.notice("Could not insert automatically. The text is on the clipboard and in History."))
-                insertion = .clipboardOnly(reason: error.localizedDescription)
+                // Make the notice true: the deadline may have fired before the adapter
+                // had a chance to leave the transcript on the clipboard.
+                let fallback = try? await inserter.insert(text, strategy: .clipboardOnly)
+                insertion = fallback ?? .clipboardOnly(reason: error.localizedDescription)
+                if let fallback { emit(.inserted(fallback)) }
             }
         }
         if !settings.keepJournals, finalized { await journals.delete(session: record.id) }
@@ -269,7 +317,10 @@ public actor SessionEngine {
         await audio.stop()
         await recognitionStream?.finish()
         _ = await writer?.close()
+        await archiveWriter?.discard()
+        archiveWriter = nil
         if let id {
+            await archive?.delete(session: id)
             await journals.delete(session: id)
             try? await repository.deleteSession(id)
             emit(.finished(id, .cancelled))
@@ -279,40 +330,6 @@ public actor SessionEngine {
         eventTask = nil
         record = nil
         resetBuffers()
-    }
-
-    // MARK: capture
-
-    private func consumeAudio(_ samples: AsyncStream<AudioChunk>, writer: (any AudioJournalWriter)?,
-                              stream: any RecognitionStream) async {
-        for await chunk in samples {
-            if let writer {
-                await writer.append(chunk)
-                // Journaling can stop mid-session (disk full / IO error). Keep
-                // transcribing, but tell the user crash recovery is now off.
-                if !journalWarned, await writer.isDegraded {
-                    journalWarned = true
-                    emit(.notice("Audio journal stopped (disk). Transcription continues, crash recovery is off."))
-                }
-            }
-            await stream.feed(chunk)
-            levelCounter += 1
-            if levelCounter % 4 == 0 {
-                let rms = Self.rms(chunk.samples)
-                emit(.level(rms))
-            }
-        }
-    }
-
-    private func consumeAudioEvents(_ events: AsyncStream<AudioEvent>) async {
-        for await event in events {
-            switch event {
-            case .routeChanged: emit(.notice("Audio route changed; capture rebuilt."))
-            case .failed(let message): emit(.notice("Audio problem: \(message)"))
-            case .permissionRevoked: emit(.notice("Microphone permission was revoked. Stopping safely."))
-            case .stopped: break
-            }
-        }
     }
 
     private func consumeRecognition(_ stream: any RecognitionStream, session: SessionID) async {
@@ -347,7 +364,8 @@ public actor SessionEngine {
         if let tokens { cumulativeTokenCount += tokens }
         let interactive = raw.endMs <= 30_000 && withinInteractiveBudget
         await cleanupCoordinator?.submit(index: index, interactive: interactive,
-                                          pipeline: pipeline, settings: settings)
+                                          pipeline: pipeline, settings: settings,
+                                          project: project)
     }
 
     // MARK: assembly
@@ -375,22 +393,8 @@ public actor SessionEngine {
         emit(.state(next))
     }
 
-    private func emit(_ event: SessionEvent) {
+    func emit(_ event: SessionEvent) {
         continuation.yield(event)
     }
 
-    private static func rms(_ samples: [Float]) -> Float {
-        guard !samples.isEmpty else { return 0 }
-        var sum: Float = 0
-        for sample in samples { sum += sample * sample }
-        return min(1, (sum / Float(samples.count)).squareRoot() * 6)
-    }
-
-    /// A degraded lane still records and transcribes; only crash recovery is off. Say so in the
-    /// notice channel the Island already renders, rather than failing or staying silent.
-    private func reportJournalIfDegraded(_ journalWriter: any AudioJournalWriter) async {
-        guard !journalWarned, await journalWriter.isDegraded else { return }
-        journalWarned = true
-        emit(.notice("Crash recovery is off: not enough free disk space for the audio journal. Dictation keeps working and your transcript is still saved."))
-    }
 }

@@ -233,6 +233,7 @@ public struct CleanupCard: View {
                         CleanupLine(tokens: tokens, phase: phase)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .task(id: run) { await play() }

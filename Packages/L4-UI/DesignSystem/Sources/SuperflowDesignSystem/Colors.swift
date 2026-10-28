@@ -26,7 +26,7 @@ import SwiftUI
 //
 // Accent: blue 600 #2563EB is the base. Hover #1D4ED8 / #3B82F6, pressed #1D4ED8.
 //         Blue 800 is removed from every control. accent text #2563EB / #60A5FA,
-//         soft #DBEAFE / #2563EB at 17%.
+//         soft #DBEAFE / #2563EB at 17%, fill #DBEAFE / #2563EB at 50%.
 //
 // Activity ramp: Ramp.blue, five steps, dark first then light (ActivityYear, ThroughputStrip).
 //
@@ -117,6 +117,10 @@ public enum Tok {
         public static let accentTextDark: UInt32 = 0x60A5FA
         public static let accentSoftLight: UInt32 = 0xDBEAFE
         public static let accentSoftDark: UInt32 = 0x2563EB
+        /// `accentSoft` is a wash for text backgrounds; `accentFill` is a large area and
+        /// needs more of the same blue to read as blue on a dark card.
+        public static let accentSoftDarkAlpha: Double = 0.17
+        public static let accentFillDarkAlpha: Double = 0.5
         public static let onAccent: UInt32 = 0xFFFFFF
         public static let fieldLight: UInt32 = 0xEAEAEA
         public static let fieldDark: UInt32 = 0x101010
@@ -158,7 +162,12 @@ public enum Tok {
     public static let accentPressed = Color(hex: Hex.accentPressed)
     public static let accentText = HexColor(light: Hex.accentTextLight, dark: Hex.accentTextDark).color
     public static let accentSoft = HexColor(light: Hex.accentSoftLight, dark: Hex.accentSoftDark,
-                                            darkAlpha: 0.17).color
+                                            darkAlpha: Hex.accentSoftDarkAlpha).color
+    /// The progress fill of a card, one step stronger than `accentSoft`: blue 600 at
+    /// half strength over the surface, so a running download reads as blue rather
+    /// than as a darker navy. Light keeps the blue 100 wash.
+    public static let accentFill = HexColor(light: Hex.accentSoftLight, dark: Hex.accentSoftDark,
+                                            darkAlpha: Hex.accentFillDarkAlpha).color
     public static let onAccent = Color(hex: Hex.onAccent)
 
     /// Increase Contrast is the only place a border is allowed on a surface.
@@ -171,6 +180,24 @@ public enum Tok {
 
     /// The command-palette scrim. The one translucent black in the app.
     public static let scrim = Color(hex: 0x000000, alpha: 0.18)
+
+    /// The off track of a switch. Light is darker than `controlPressed` so the
+    /// white knob never disappears on a white card.
+    public static let toggleOff = HexColor(light: 0xB0B0B0, dark: 0x2E2E2E).color
+
+    /// Dialog scrim: flatter and deeper than the palette's, so a form reads as
+    /// modal. Light and dark differ on purpose.
+    public static let modalScrim = Color(light: Color(hex: 0x000000, alpha: 0.28),
+                                         dark: Color(hex: 0x000000, alpha: 0.55))
+
+    /// The Island body. True black in both appearances: it must merge with the
+    /// hardware notch. This is the only opaque-black surface in the app.
+    public static let island = Color(hex: 0x000000)
+
+    /// The one vendor colour in the app: NVIDIA green, taken from the vendor's own
+    /// logo asset. Vendor marks are the only place a non-token hue is allowed, and
+    /// it is a token precisely so it appears exactly once.
+    public static let brandNvidia = Color(hex: 0x87D501)
 }
 
 public enum Ramp {

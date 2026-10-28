@@ -64,44 +64,38 @@ public struct AppField: View {
 /// indicator, and the I-beam is preserved.
 public struct AppTextField: View {
     @Binding private var text: String
-    private let label: String
     private let prompt: String
-    private let onCanvas: Bool
+    private let mono: Bool
+    private let autofocus: Bool
     @FocusState private var focused: Bool
     @State private var hover = false
 
-    public init(text: Binding<String>, label: String, prompt: String = "",
-                onCanvas: Bool = false) {
+    public init(text: Binding<String>, prompt: String, mono: Bool = false,
+                autofocus: Bool = false) {
         _text = text
-        self.label = label
         self.prompt = prompt
-        self.onCanvas = onCanvas
-    }
-
-    private var active: Bool { focused || hover }
-
-    private var fill: Color {
-        if onCanvas { return active ? Tok.fieldHover : Tok.field }
-        return active ? Tok.control : Tok.well
+        self.mono = mono
+        self.autofocus = autofocus
     }
 
     public var body: some View {
         TextField("", text: $text, prompt: Text(prompt).foregroundStyle(Tok.text2))
             .textFieldStyle(.plain)
-            .font(Typography.body)
+            .font(mono ? .system(size: 13, design: .monospaced) : AppType.body.font)
             .foregroundStyle(Tok.text)
             .tint(Tok.accent)
             .focused($focused)
-            .padding(.horizontal, Space.sm)
-            .frame(height: ControlHeight.regular)
-            .background(fill, in: .rect(cornerRadius: Radius.field, style: .continuous))
-            .contrastStroke(radius: Radius.field)
-            .contentShape(.rect(cornerRadius: Radius.field))
+            .focusEffectDisabled()
+            .padding(.horizontal, 12)
+            .frame(height: 32)
+            .background(focused || hover ? Tok.bg : Tok.well,
+                        in: .rect(cornerRadius: Radius.field, style: .continuous))
+            .contentShape(.rect(cornerRadius: Radius.field, style: .continuous))
             .onTapGesture { focused = true }
             .onHover { hover = $0 }
-            .animation(.easeOut(duration: 0.15), value: focused)
-            .animation(.easeOut(duration: 0.15), value: hover)
-            .accessibilityLabel(label)
+            .animation(.easeOut(duration: 0.15), value: focused || hover)
+            .task { if autofocus { focused = true } }
+            .pixelAudit("AppTextField")
     }
 }
 

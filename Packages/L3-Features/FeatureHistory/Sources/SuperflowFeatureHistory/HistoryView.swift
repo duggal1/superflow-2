@@ -1,6 +1,8 @@
+import AppKit
 import SuperflowDesignSystem
 import SuperflowIcons
 import SuperflowKernel
+import SuperflowPorts
 import SuperflowUIComponents
 import SwiftUI
 
@@ -8,9 +10,7 @@ import SwiftUI
 /// pane you can read, copy and compare against the raw text.
 public struct HistoryView: View {
     @ObservedObject private var model: HistoryViewModel
-    @State private var today = LocalDay.string(for: Date())
     @State private var searchFocus = false
-    @FocusState private var listFocus: Bool
 
     public init(model: HistoryViewModel) {
         self.model = model
@@ -20,22 +20,13 @@ public struct HistoryView: View {
         SplitPage(title: "History") {
             SearchField(text: $model.query, prompt: "Search transcripts", isFocused: $searchFocus)
         } trailing: {
-            BarIconButton(glyph: .copy, label: "Copy transcript") {
-                Task { await model.copySelected() }
-            }
-            .disabled(model.selectedID == nil)
-            BarIconButton(glyph: .delete, label: "Delete session") {
-                Task { await model.deleteSelected() }
-            }
-            .disabled(model.selectedID == nil)
+            EmptyView()
         } list: {
             listPane
-                .padding(.leading, Space.lg)
+                .padding(.leading, 20)
                 .padding(.trailing, Space.md)
         } detail: {
             detailPane
-                .padding(.trailing, Layout.pad)
-                .padding(.top, Space.xs)
         }
         .searchShortcut($searchFocus)
         .task { await model.load() }
@@ -52,7 +43,7 @@ public struct HistoryView: View {
     // MARK: list
 
     private var groups: [HistoryGrouping.Day] {
-        HistoryGrouping.days(model.sessions, today: today)
+        HistoryGrouping.days(model.sessions)
     }
 
     private var trimmedQuery: String {
@@ -63,7 +54,7 @@ public struct HistoryView: View {
     private var listPane: some View {
         if model.isLoading && model.sessions.isEmpty {
             Text("Reading your library…")
-                .font(Typography.body)
+                .appType(.body)
                 .foregroundStyle(Tok.text2)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, Space.xl)
@@ -84,8 +75,8 @@ public struct HistoryView: View {
                                 row(session)
                             }
                         } header: {
-                            Text(HistoryGrouping.label(for: group.day, today: today))
-                                .font(Typography.secondary)
+                            Text(HistoryGrouping.label(for: group.day))
+                                .appType(.caption)
                                 .foregroundStyle(Tok.text2)
                                 .padding(.horizontal, Space.xs)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -107,35 +98,38 @@ public struct HistoryView: View {
     }
 
     private func row(_ session: SessionRecord) -> some View {
-        RowButton(session.displayTitle, height: 56, selected: session.id == model.selectedID) {
+        RowButton(title(for: session), height: 56, selected: session.id == model.selectedID) {
             Task { await model.select(session.id) }
         } content: {
-            HStack(alignment: .center, spacing: Space.sm) {
+            HStack(spacing: 12) {
                 appIcon(session)
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: Space.xs) {
-                        Text(session.displayTitle)
-                            .font(Typography.body)
-                            .foregroundStyle(Tok.text)
-                            .lineLimit(2)
-                        if session.kind == .meeting {
-                            Badge("Meeting", variant: .violet, size: .sm)
+                    Text(session.wordCount == 0 ? "No speech" : title(for: session))
+                        .appType(.label)
+                        .foregroundStyle(session.wordCount == 0 ? Tok.text2 : Tok.text)
+                        .lineLimit(1)
+                    HStack(spacing: 8) {
+                        TimelineView(.everyMinute) { context in
+                            Text(Humanize.when(session.startedAt, now: context.date))
+                        }
+                        Spacer(minLength: 8)
+                        if session.wordCount > 0 {
+                            Text(Humanize.words(session.wordCount)).monospacedDigit()
                         }
                     }
-                    HStack(spacing: Space.xxs) {
-                        Text(HistoryGrouping.timeLabel(session.startedAt))
-                            .font(Typography.secondary)
-                            .foregroundStyle(Tok.text2)
-                        Spacer(minLength: Space.xs)
-                        Text("\(session.wordCount.formatted()) words")
-                            .font(Typography.secondary)
-                            .monospacedDigit()
-                            .foregroundStyle(Tok.text2)
-                    }
+                    .appType(.caption)
+                    .foregroundStyle(Tok.text2)
                 }
             }
-            .padding(.horizontal, Space.xs)
+            .padding(.horizontal, 12)
         }
+        .pixelAudit("HistoryRow")
+    }
+
+    private func title(for session: SessionRecord) -> String {
+        if let preview = session.preview, !preview.isEmpty { return preview }
+        if let title = session.title, !title.isEmpty { return title }
+        return "No speech"
     }
 
     @ViewBuilder
@@ -157,78 +151,76 @@ public struct HistoryView: View {
     @ViewBuilder
     private var detailPane: some View {
         if let session = model.selectedSession {
-            VStack(alignment: .leading, spacing: Space.md) {
-                header(session)
-                Segmented(selection: $model.showRaw, items: [
-                    Segmented.Item("Cleaned", value: false),
-                    Segmented.Item("Raw", value: true),
-                ])
-                transcript
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    HistoryDetailHeader(session: session,
+                                        appName: AppInfo.name(for: session.frontmostBundleID),
+                                        onCopy: { Task { await model.copySelected() } },
+                                        onDelete: { Task { await model.deleteSelected() } })
+                    if let audio = audioURL(for: session) {
+                        AudioPreview(url: audio)
+                            .id(session.id)
+                    }
+                    VStack(alignment: .leading, spacing: 16) {
+                        Segmented(selection: $model.showRaw, items: [
+                            Segmented.Item("Cleaned", value: false),
+                            Segmented.Item("Raw", value: true),
+                        ])
+                        transcript
+                    }
+                }
+                .padding(.horizontal, Layout.pad)
+                .padding(.top, Space.xxs)
+                .padding(.bottom, 48)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .scrollEdgeSoft()
         } else {
             VStack(spacing: Space.sm) {
                 PixelStop(cells: 11, cell: 3)
                 Text("Select a session.")
-                    .font(Typography.headline)
+                    .appType(.title)
                     .foregroundStyle(Tok.text)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    private func header(_ session: SessionRecord) -> some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
-            Text(AppInfo.name(for: session.frontmostBundleID))
-                .font(Typography.headline)
-                .foregroundStyle(Tok.text)
-            HStack(spacing: Space.sm) {
-                Text(HistoryGrouping.timeLabel(session.startedAt))
-                    .monospacedDigit()
-                Text(session.durationLabel)
-                    .monospacedDigit()
-                Spacer(minLength: Space.md)
-                Text("\(session.wordCount.formatted()) words")
-                    .monospacedDigit()
-            }
-            .font(Typography.secondary)
-            .foregroundStyle(Tok.text2)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
+    /// The file is the source of truth. Peaks and duration stay in the archive
+    /// for retention; the spectrogram is computed from the audio itself.
+    private func audioURL(for session: SessionRecord) -> URL? {
+        let url = AudioArchiveLocation.url(for: session.id)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
     }
 
     @ViewBuilder
     private var transcript: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                ForEach(model.segments) { segment in
-                    segmentView(segment)
-                }
+        VStack(alignment: .leading, spacing: Space.sm) {
+            ForEach(model.segments) { segment in
+                segmentView(segment)
             }
-            .frame(maxWidth: Space.proseMaxWidth, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, Space.lg)
         }
-        .scrollEdgeSoft()
+        .frame(maxWidth: Space.proseMaxWidth, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .textSelection(.enabled)
     }
 
     private func segmentView(_ segment: Segment) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             if let speaker = model.speakerName(for: segment) {
                 Text(speaker)
-                    .font(Typography.secondaryMedium)
+                    .appType(.label)
                     .foregroundStyle(Tok.text2)
             }
             if model.showRaw {
                 Text(rawText(segment))
             } else {
                 Text(model.displayText(for: segment))
-                    .font(Typography.large)
+                    .appType(.reading)
                     .foregroundStyle(Tok.text)
             }
         }
-        .textSelection(.enabled)
         .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -238,11 +230,82 @@ public struct HistoryView: View {
         let pieces = TextDiff.segments(reference: segment.bestText, candidate: segment.rawText)
         for piece in pieces {
             var run = AttributedString(piece.text)
-            run.font = Typography.large
+            run.font = AppType.reading.font
             run.foregroundColor = piece.changed ? Tok.text : Tok.text2
             if piece.changed { run.backgroundColor = Tok.accentSoft }
             attributed += run
         }
         return attributed
+    }
+}
+
+/// Actions live next to the thing they act on: Copy and Delete sit on the
+/// session's own header row, and the glyph (not its hit target) lands on the
+/// content edge.
+struct HistoryDetailHeader: View {
+    let session: SessionRecord
+    let appName: String
+    let onCopy: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 12) {
+                if let image = AppInfo.icon(for: session.frontmostBundleID) {
+                    Image(nsImage: image)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 20, height: 20)
+                        .accessibilityHidden(true)
+                } else {
+                    Icon(.waveform, size: 14, tint: Tok.text2)
+                        .frame(width: 20, height: 20)
+                }
+                Text(appName)
+                    .appType(.title)
+                    .foregroundStyle(Tok.text)
+                Spacer(minLength: 16)
+                HStack(spacing: 4) {
+                    CopyButton(action: onCopy)
+                    BarIconButton(glyph: .delete, label: "Delete session", action: onDelete)
+                }
+                // A 32pt hit target around a 16pt glyph: pull it out by 8 so the
+                // glyph sits on the content edge (law 4).
+                .padding(.trailing, -8)
+            }
+            .frame(height: 32)
+
+            HStack(spacing: 12) {
+                TimelineView(.everyMinute) { context in
+                    Text(Humanize.when(session.startedAt, now: context.date))
+                }
+                Text(Humanize.duration(TimeInterval(session.durationMs) / 1000))
+                Text(Humanize.words(session.wordCount)).monospacedDigit()
+            }
+            .appType(.caption)
+            .foregroundStyle(Tok.text2)
+            .padding(.leading, 32)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isHeader)
+        .pixelAudit("HistoryDetailHeader")
+    }
+}
+
+/// Copy confirms in place: the glyph morphs to a checkmark for 1.2 s.
+struct CopyButton: View {
+    let action: () -> Void
+    @State private var done = false
+
+    var body: some View {
+        BarIconButton(glyph: done ? .checkmark : .copy, label: "Copy transcript") {
+            action()
+            done = true
+            Task {
+                try? await Task.sleep(for: .seconds(1.2))
+                done = false
+            }
+        }
+        .animation(.snappy(duration: 0.2), value: done)
     }
 }

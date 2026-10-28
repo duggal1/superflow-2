@@ -138,11 +138,19 @@ public struct SessionRecord: Sendable, Codable, Hashable, Identifiable {
     public var cleanupState: CleanupState
     public var title: String?
     public var localDay: String
+    /// The archived clip's length. Nil when no audio was kept.
+    public var audioDuration: TimeInterval?
+    /// One byte per 50 ms of precomputed waveform, so the player never decodes audio to draw.
+    public var audioPeaks: Data?
+    /// The first line of the transcript, read with the row. Not a stored column.
+    public var preview: String?
 
     public init(id: SessionID = SessionID(), kind: SessionKind, startedAt: Date = Date(), endedAt: Date? = nil,
                 status: SessionStatus = .recording, frontmostBundleID: String? = nil, modelProfile: String,
                 durationMs: Int = 0, wordCount: Int = 0, cleanupState: CleanupState = .pending,
-                title: String? = nil, localDay: String? = nil) {
+                title: String? = nil, localDay: String? = nil,
+                audioDuration: TimeInterval? = nil, audioPeaks: Data? = nil,
+                preview: String? = nil) {
         self.id = id
         self.kind = kind
         self.startedAt = startedAt
@@ -155,6 +163,9 @@ public struct SessionRecord: Sendable, Codable, Hashable, Identifiable {
         self.cleanupState = cleanupState
         self.title = title
         self.localDay = localDay ?? LocalDay.string(for: startedAt)
+        self.audioDuration = audioDuration
+        self.audioPeaks = audioPeaks
+        self.preview = preview
     }
 
     public var displayTitle: String {
@@ -169,6 +180,20 @@ public struct SessionRecord: Sendable, Codable, Hashable, Identifiable {
         if s >= 3600 { return String(format: "%dh %02dm", s / 3600, (s % 3600) / 60) }
         if s >= 60 { return String(format: "%dm %02ds", s / 60, s % 60) }
         return "\(s)s"
+    }
+}
+
+/// Where archived dictation audio lives. Path math only: the file itself is
+/// written and read by an adapter, never by a feature.
+public enum AudioArchiveLocation {
+    public static func directory(fileManager: FileManager = .default) -> URL {
+        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+        return base.appendingPathComponent("Superflow/Audio", isDirectory: true)
+    }
+
+    public static func url(for session: SessionID, fileManager: FileManager = .default) -> URL {
+        directory(fileManager: fileManager).appendingPathComponent("\(session.value).m4a")
     }
 }
 
@@ -339,7 +364,16 @@ public struct ModelProfile: Sendable, Hashable, Identifiable {
         .parakeetTDTV3,
     ]
 
+    /// The one dictation profile the app installs, offers first and falls back to.
+    public static var `default`: ModelProfile { .nemotron35Streaming }
+
+    /// Every profile that can drive live dictation. Batch-only entries stay in
+    /// `all` for the Models page but are never selectable for dictation.
+    public static var streamingProfiles: [ModelProfile] {
+        all.filter(\.supportsLiveDictation)
+    }
+
     public static func byID(_ id: String) -> ModelProfile {
-        all.first { $0.id == id } ?? .parakeetEOU120M
+        all.first { $0.id == id } ?? .nemotron35Streaming
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 
 public enum BreakStyle: String, Codable, Sendable, CaseIterable {
     case paragraph, newline
-    public var label: String { self == .paragraph ? "Blank line" : "Single newline" }
+    public var label: String { self == .paragraph ? "Blank line" : "New line" }
 }
 public enum LargeNumberStyle: String, Codable, Sendable, CaseIterable {
     case abbreviated, full
@@ -40,6 +40,46 @@ public struct LineFormatSettings: Codable, Sendable, Equatable {
     }
 }
 
+/// Deterministic disfluency cleanup that runs before any model sees the text.
+public struct DisfluencySettings: Codable, Sendable, Equatable {
+    public var enabled: Bool = true
+    /// Collapse runs of identical consecutive tokens once the run reaches the
+    /// threshold. Default 2 turns "the the the" into "the".
+    public var collapseDuplicates: Bool = true
+    public var duplicateThreshold: Int = 2
+    /// Optional, measured-on-real-dictations pre-pass. Off by default because
+    /// the cleanup model owns contextual filler removal.
+    public var fillerPrepass: Bool = false
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = DisfluencySettings()
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? d.enabled
+        collapseDuplicates = try c.decodeIfPresent(Bool.self, forKey: .collapseDuplicates)
+            ?? d.collapseDuplicates
+        duplicateThreshold = max(2, try c.decodeIfPresent(Int.self, forKey: .duplicateThreshold)
+            ?? d.duplicateThreshold)
+        fillerPrepass = try c.decodeIfPresent(Bool.self, forKey: .fillerPrepass) ?? d.fillerPrepass
+    }
+}
+
+/// Deterministic spoken-code cleanup: filenames, extensions and bounded,
+/// project-relative path resolution.
+public struct CodeAwareSettings: Codable, Sendable, Equatable {
+    public var enabled: Bool = true
+    public var normalizeFilenames: Bool = true
+    public var resolvePaths: Bool = true
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = CodeAwareSettings()
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? d.enabled
+        normalizeFilenames = try c.decodeIfPresent(Bool.self, forKey: .normalizeFilenames)
+            ?? d.normalizeFilenames
+        resolvePaths = try c.decodeIfPresent(Bool.self, forKey: .resolvePaths) ?? d.resolvePaths
+    }
+}
+
 public struct GestureConfig: Codable, Sendable, Equatable {
     public var holdMs: Int = 200
     public var doubleTapMs: Int = 350
@@ -56,11 +96,15 @@ public struct GestureConfig: Codable, Sendable, Equatable {
 
 public struct AppSettings: Codable, Sendable, Equatable {
     public var theme: ThemeMode = .system
-    public var asrProfile: String = ModelProfile.parakeetEOU120M.id
+    /// Nemotron 3.5 ASR Streaming 0.6B is the model the app installs and runs. It is
+    /// the default in one place only, so onboarding and the Models page cannot drift.
+    public var asrProfile: String = ModelProfile.default.id
     public var cleanupEnabled = true
     public var harperEnabled = false
     public var commandsEnabled = true
     public var codeSpeakEnabled = false
+    public var disfluency = DisfluencySettings()
+    public var codeAware = CodeAwareSettings()
     public var numberStyle: LargeNumberStyle = .abbreviated
     public var spellOutSmallNumbers = true
     public var lineFormat = LineFormatSettings()
@@ -70,8 +114,12 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var launchAtLogin = false
     public var retentionDays: Int? = nil
     public var noTranscriptStorage = false
+    /// Archived dictation audio. On by default: you cannot check what the model
+    /// heard if the clip is thrown away. "Don't store transcripts" wins over this.
+    public var keepAudio = true
+    /// Nil keeps clips forever. Default is one week.
+    public var audioRetentionDays: Int? = 7
     public var keepJournals = false
-    public var showIdlePill = false
     public var cleanupStyling = "semi-formal"
     public var cleanupStructure = "prose"
     public var cleanupContext = "general"
@@ -87,11 +135,19 @@ public struct AppSettings: Codable, Sendable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = AppSettings()
         theme = try c.decodeIfPresent(ThemeMode.self, forKey: .theme) ?? d.theme
-        asrProfile = try c.decodeIfPresent(String.self, forKey: .asrProfile) ?? d.asrProfile
+        // Streaming only. A stored batch profile (or a removed one) is replaced
+        // with the default instead of being allowed onto the dictation path.
+        let storedProfile = try c.decodeIfPresent(String.self, forKey: .asrProfile) ?? d.asrProfile
+        let resolved = ModelProfile.byID(storedProfile)
+        asrProfile = resolved.id == storedProfile && resolved.supportsLiveDictation
+            ? storedProfile
+            : ModelProfile.default.id
         cleanupEnabled = try c.decodeIfPresent(Bool.self, forKey: .cleanupEnabled) ?? d.cleanupEnabled
         harperEnabled = try c.decodeIfPresent(Bool.self, forKey: .harperEnabled) ?? d.harperEnabled
         commandsEnabled = try c.decodeIfPresent(Bool.self, forKey: .commandsEnabled) ?? d.commandsEnabled
         codeSpeakEnabled = try c.decodeIfPresent(Bool.self, forKey: .codeSpeakEnabled) ?? d.codeSpeakEnabled
+        disfluency = try c.decodeIfPresent(DisfluencySettings.self, forKey: .disfluency) ?? d.disfluency
+        codeAware = try c.decodeIfPresent(CodeAwareSettings.self, forKey: .codeAware) ?? d.codeAware
         numberStyle = try c.decodeIfPresent(LargeNumberStyle.self, forKey: .numberStyle) ?? d.numberStyle
         spellOutSmallNumbers = try c.decodeIfPresent(Bool.self, forKey: .spellOutSmallNumbers) ?? d.spellOutSmallNumbers
         lineFormat = try c.decodeIfPresent(LineFormatSettings.self, forKey: .lineFormat) ?? d.lineFormat
@@ -101,8 +157,12 @@ public struct AppSettings: Codable, Sendable, Equatable {
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         retentionDays = try c.decodeIfPresent(Int.self, forKey: .retentionDays) ?? d.retentionDays
         noTranscriptStorage = try c.decodeIfPresent(Bool.self, forKey: .noTranscriptStorage) ?? d.noTranscriptStorage
+        keepAudio = try c.decodeIfPresent(Bool.self, forKey: .keepAudio) ?? d.keepAudio
+        // An explicit null means "keep forever"; an absent key means "use the default".
+        audioRetentionDays = c.contains(.audioRetentionDays)
+            ? try c.decodeIfPresent(Int.self, forKey: .audioRetentionDays)
+            : d.audioRetentionDays
         keepJournals = try c.decodeIfPresent(Bool.self, forKey: .keepJournals) ?? d.keepJournals
-        showIdlePill = try c.decodeIfPresent(Bool.self, forKey: .showIdlePill) ?? d.showIdlePill
         cleanupStyling = try c.decodeIfPresent(String.self, forKey: .cleanupStyling) ?? d.cleanupStyling
         cleanupStructure = try c.decodeIfPresent(String.self, forKey: .cleanupStructure) ?? d.cleanupStructure
         cleanupContext = try c.decodeIfPresent(String.self, forKey: .cleanupContext) ?? d.cleanupContext

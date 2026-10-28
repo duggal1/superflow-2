@@ -33,7 +33,7 @@ extension MeetingEngine {
             await dropOverlappingMicTurns(turn, session: session)
         }
         let context = TextContext(source: source, speakerID: speakerID, interactive: false,
-                                  settings: settings)
+                                  settings: settings, project: project)
         pipelineTasks[index] = Task { [weak self, pipeline] in
             let result = await pipeline.run(raw.text, context: context)
             guard !Task.isCancelled else { return }

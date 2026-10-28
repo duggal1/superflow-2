@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import SuperflowKernel
+import SuperflowUIComponents
 
 /// The frontmost app's real icon and name, straight from the workspace.
 @MainActor
@@ -33,21 +34,22 @@ enum AppInfo {
     }
 }
 
+/// Sticky day groups. Labels come from `Humanize`, never from a date formatter
+/// in this feature.
 enum HistoryGrouping {
     struct Day: Identifiable {
-        let day: String
+        let day: Date
         let sessions: [SessionRecord]
 
-        var id: String { day }
+        var id: Date { day }
     }
 
-    /// Sessions arrive newest first; grouping keeps that order and labels the
-    /// two days people actually recognise.
-    static func days(_ sessions: [SessionRecord], today: String, calendar: Calendar = .current) -> [Day] {
-        var order: [String] = []
-        var buckets: [String: [SessionRecord]] = [:]
+    /// Sessions arrive newest first; grouping keeps that order.
+    static func days(_ sessions: [SessionRecord], calendar: Calendar = .current) -> [Day] {
+        var order: [Date] = []
+        var buckets: [Date: [SessionRecord]] = [:]
         for session in sessions {
-            let key = session.localDay
+            let key = calendar.startOfDay(for: session.startedAt)
             if buckets[key] == nil {
                 order.append(key)
                 buckets[key] = []
@@ -57,25 +59,7 @@ enum HistoryGrouping {
         return order.map { Day(day: $0, sessions: buckets[$0] ?? []) }
     }
 
-    static func label(for day: String, today: String, calendar: Calendar = .current) -> String {
-        if day == today { return "Today" }
-        if let date = LocalDay.date(from: day, calendar: calendar),
-           let yesterday = calendar.date(byAdding: .day, value: -1,
-                                         to: LocalDay.date(from: today, calendar: calendar) ?? Date()),
-           calendar.isDate(date, inSameDayAs: yesterday) {
-            return "Yesterday"
-        }
-        guard let date = LocalDay.date(from: day, calendar: calendar) else { return day }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
-    }
-
-    static func timeLabel(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        formatter.dateStyle = .none
-        return formatter.string(from: date)
+    static func label(for day: Date, now: Date = .now) -> String {
+        Humanize.day(day, now: now)
     }
 }

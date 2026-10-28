@@ -33,8 +33,8 @@ public enum Glyph: String, CaseIterable, Sendable {
     case arrow = "arrow.right"
     case close = "xmark"
     case stop = "stop"
-    case play = "play"
-    case pause = "pause"
+    case play = "play.fill"
+    case pause = "pause.fill"
     case undo = "arrow.uturn.backward"
     case download = "arrow.down"
     case arrowUp = "arrow.up"
@@ -61,6 +61,26 @@ public enum Glyph: String, CaseIterable, Sendable {
     case timeSaved = "hourglass"
     case speed = "gauge.with.dots.needle.33percent"
     case streak = "flame"
+
+    // Settings rows (pass 3). Bare symbols only, never an enclosing variant.
+    case person = "person"
+    case appearance = "circle.lefthalf.filled"
+    case power = "power"
+    case capsuleShape = "capsule"
+    case handTap = "hand.tap"
+    case timer = "timer"
+    case eyeSlash = "eye.slash"
+    case clock = "clock"
+    case diagnostics = "doc.text.magnifyingglass"
+    case licenses = "doc.text"
+    case number = "number"
+    case textSize = "textformat.size.larger"
+    case textAppend = "text.append"
+    case space = "space"
+    case paragraph = "paragraphsign"
+    case blocks = "text.alignleft"
+    case code = "chevron.left.forwardslash.chevron.right"
+    case chart = "chart.bar"
 }
 
 public enum IconWeight: Sendable {
@@ -96,6 +116,7 @@ public struct Icon: View {
 
     public var body: some View {
         Image(systemName: glyph.rawValue)
+            .contentTransition(.symbolEffect(.replace))
             .font(.system(size: size, weight: weight.fontWeight))
             .symbolRenderingMode(.monochrome)
             .foregroundStyle(tint ?? Tok.text2)

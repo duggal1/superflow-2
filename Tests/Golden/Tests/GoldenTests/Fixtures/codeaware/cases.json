@@ -1,0 +1,96 @@
+{
+  "paths": [
+    "lib/backend/",
+    "lib/backend/main/engine/router/prospect-main-engine.ts",
+    "src/main.ts",
+    "src/other/main.ts",
+    "src/other/unique-widget.tsx"
+  ],
+  "cases": [
+    {
+      "name": "spelled extension",
+      "input": "hero dot t s x",
+      "expected": "hero.tsx",
+      "source": "letter-by-letter extension"
+    },
+    {
+      "name": "multi-word filename with spelled extension",
+      "input": "prospect main engine dot t s",
+      "expected": "prospect-main-engine.ts",
+      "source": "three-word stem before dot"
+    },
+    {
+      "name": "already formatted filename is idempotent",
+      "input": "hero.tsx",
+      "expected": "hero.tsx",
+      "source": "no double conversion"
+    },
+    {
+      "name": "bare extension in a coding session",
+      "input": "hero tsx",
+      "expected": "hero.tsx",
+      "source": "coding sessions can drop the spoken dot"
+    },
+    {
+      "name": "bare extension in prose is left alone",
+      "input": "hero tsx",
+      "expected": "hero tsx",
+      "coding": false,
+      "source": "prose must not be rewritten"
+    },
+    {
+      "name": "extension word inside prose is not a filename",
+      "input": "renders tsx files",
+      "expected": "renders tsx files",
+      "source": "the extension does not end the clause"
+    },
+    {
+      "name": "explicit file cue creates a slug",
+      "input": "the file prospect main engine",
+      "expected": "the file prospect-main-engine",
+      "source": "only an explicit cue may join words"
+    },
+    {
+      "name": "no unique index match leaves the words alone",
+      "input": "prospect main engine notes",
+      "expected": "prospect main engine notes",
+      "source": "precision beats recall"
+    },
+    {
+      "name": "unique project path resolves",
+      "input": "fix prospect main engine",
+      "expected": "fix lib/backend/main/engine/router/prospect-main-engine.ts",
+      "source": "one unique match in the injected index"
+    },
+    {
+      "name": "spoken slash path resolves",
+      "input": "open src slash main",
+      "expected": "open src/main.ts",
+      "source": "separator words become slashes"
+    },
+    {
+      "name": "directory intent keeps the trailing slash",
+      "input": "go to lib backend folder",
+      "expected": "go to lib/backend/",
+      "source": "folder is a directory cue"
+    },
+    {
+      "name": "filename component resolves",
+      "input": "open unique widget",
+      "expected": "open src/other/unique-widget.tsx",
+      "source": "camel and kebab components are indexed"
+    },
+    {
+      "name": "ambiguous path is left untouched",
+      "input": "open src",
+      "expected": "open src",
+      "source": "two files share this key"
+    },
+    {
+      "name": "common single word stays prose",
+      "input": "open main",
+      "expected": "open main",
+      "source": "common English words never resolve alone"
+    }
+  ]
+}

@@ -36,7 +36,7 @@ public struct MeetingsView: View {
                     },
                 ])
                 AppButton("Copy Markdown", glyph: .copy, kind: .primary,
-                          height: Layout.control, enabled: model.selectedDocument != nil) {
+                          height: ControlHeight.regular, enabled: model.selectedDocument != nil) {
                     Task { await model.copySelected() }
                 }
             }
