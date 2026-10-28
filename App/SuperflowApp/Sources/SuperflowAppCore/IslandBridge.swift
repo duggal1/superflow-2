@@ -181,6 +181,15 @@ final class IslandBridge {
         box.send(.notice(notice))
     }
 
+    /// The session refused to open — the model is still loading, the microphone
+    /// is gone, a meeting is running. Retracting to nothing reads as a dead key,
+    /// so the notch says why instead.
+    func refused(_ message: String) {
+        box.send(.notice(IslandNotice(kind: .info,
+                                      title: "Can't listen yet.",
+                                      detail: message)))
+    }
+
     // MARK: session events
 
     private func handle(_ event: SessionEvent) async {

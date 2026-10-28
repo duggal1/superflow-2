@@ -101,8 +101,12 @@ extension AppCoordinator {
                 islandBridge?.holdBegan()
                 await menuBarController.startDictation()
                 // A refused start (model still loading, no recovery) emits no
-                // session event, so retract the Island here or it hangs open.
-                if !menuBarController.sessionState.isActive { islandBridge?.cancelled() }
+                // session event. Say why in the notch: silently retracting looks
+                // exactly like a dead fn key.
+                if !menuBarController.sessionState.isActive {
+                    islandBridge?.refused(menuBarController.error
+                        ?? "The microphone did not open. Hold fn again.")
+                }
             case .startSpeculative(.meeting):
                 // A single right-⌘ tap starts a meeting speculatively. Do not
                 // raise the Island for it: the tap may turn out to be nothing,
@@ -113,10 +117,20 @@ extension AppCoordinator {
             case .beginHandsFree:
                 // Only promise hands-free once the session is actually open.
                 await menuBarController.beginHandsFreeDictation()
-                if menuBarController.sessionState.isActive { islandBridge?.handsFreeBegan() }
+                if menuBarController.sessionState.isActive {
+                    islandBridge?.handsFreeBegan()
+                } else {
+                    islandBridge?.refused(menuBarController.error
+                        ?? "The microphone did not open. Hold fn again.")
+                }
             case .latchMeeting:
                 await menuBarController.beginLatchedMeeting()
-                if menuBarController.meetingState.isActive { islandBridge?.meetingBegan() }
+                if menuBarController.meetingState.isActive {
+                    islandBridge?.meetingBegan()
+                } else {
+                    islandBridge?.refused(menuBarController.error
+                        ?? "The meeting could not start.")
+                }
             case .submit(let kind):
                 islandBridge?.holdEnded()
                 await menuBarController.stop(kind)
