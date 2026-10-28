@@ -8,8 +8,8 @@ import SwiftUI
 ///
 /// The microphone is already closed by the time this card appears, so the card
 /// does not pretend to resume. It keeps the words: Undo copies them to the
-/// clipboard and says so, and the countdown is drawn in whole cells rather than
-/// a spinner, so the deadline is legible at a glance.
+/// clipboard and says so, and the countdown is a pixel rail that drains in whole
+/// cells, so the deadline is legible at a glance without a spinner.
 struct UndoContent: View {
     let model: IslandModel
     let undo: IslandUndo
@@ -49,7 +49,7 @@ struct UndoContent: View {
                 }
 
                 HStack(spacing: 8) {
-                    UndoTimer(remaining: model.undoRemaining, total: IslandModel.undoWindow)
+                    CountdownNumeral(deadline: model.undoDeadline)
                     BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
                 }
                 .padding(.trailing, pad - 8)
@@ -94,6 +94,10 @@ struct UndoContent: View {
                      : held.map { "You were \($0) in. Undo copies the words back." }
                         ?? "Escape stopped it. Undo copies the words back.")
                 Spacer(minLength: 0)
+                if let deadline = model.undoDeadline {
+                    PixelCountdown(deadline: deadline, total: TimeInterval(IslandModel.undoWindow))
+                        .accessibilityLabel("\(model.undoRemaining) seconds left to undo")
+                }
                 if !undo.isEmpty {
                     Text("⌘V")
                         .monospacedDigit()
@@ -113,8 +117,10 @@ struct UndoContent: View {
 
 /// An OS-style notice that lands in the notch instead of Notification Centre.
 ///
-/// It carries the same anatomy as the undo card: the brand and its mark in the
-/// band, a title, a detail, and a rail that counts the seconds it has left.
+/// It carries the same anatomy as the undo card: the brand and a pixel mark in
+/// the band, a title, a detail, and a rail that counts the seconds it has left.
+/// The mark is the kind (spark, flame, tick, up arrow, dot); a milestone adds one
+/// 700 ms burst behind it and nothing else celebrates.
 struct NoticeContent: View {
     let model: IslandModel
     let notice: IslandNotice
@@ -123,12 +129,11 @@ struct NoticeContent: View {
 
     var body: some View {
         let geometry = model.geometry
-        let total = Int(IslandModel.noticeSeconds)
 
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 HStack(spacing: 8) {
-                    NoticeMark()
+                    NoticeMark(kind: notice.kind)
                         .frame(width: 20, height: 20)
                     Text("Superflow")
                         .appType(.label)
@@ -143,7 +148,12 @@ struct NoticeContent: View {
                 }
 
                 HStack(spacing: 12) {
-                    NoticeTimer(remaining: model.noticeRemaining, total: total)
+                    if let deadline = model.noticeDeadline {
+                        PixelCountdown(deadline: deadline,
+                                       total: IslandModel.noticeSeconds,
+                                       cells: 10)
+                            .accessibilityLabel("Closes in \(model.noticeRemaining) seconds")
+                    }
                     BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
                 }
                 .padding(.trailing, pad - 8)

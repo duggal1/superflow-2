@@ -5,16 +5,17 @@ import SwiftUI
 ///
 /// There is no plate. The old note sat on `Tok.surface`, which read as a black
 /// hole in the sidebar at night; the fix is to delete the plate, not the pixels.
-/// State is carried by a 6 × 5 mark of 3 pt cells and, only while the work is
-/// genuinely indeterminate, a 4 pt scan rail under the label:
+/// State is carried by a 5 × 5 brand disc of 3 pt cells and, only while the work
+/// is genuinely indeterminate, a 4 pt scan rail under the label:
 ///
-/// - **caret** — one lit centre cell with its ring dimmed. Ready, or an error the
-///   label already explains.
-/// - **comet** — a head with a dithered trail and the rail beneath it, stepping
-///   left to right every 160 ms. Only for work with no end to show: a model
-///   loading, or the microphone live while you speak.
-/// - **slab** — a solid 3 × 5 block. Failure, unmistakable by shape, so no status
-///   hue is needed anywhere in the note.
+/// - **disc** — a filled pixel circle. Green when the engine is ready, blue while
+///   a model is loading or the microphone is live.
+/// - **ring** — the same circle, hollow, in `statusBad`. Failure is the one state
+///   that carries a hue of its own, and the hole makes it unmistakable by shape.
+/// - **dither** — every other cell, in `text2`. A deterministic half-power state
+///   (basic cleanup) that must not pretend to be working.
+/// - **fill** — while indeterminate, the disc fills outward from the centre in
+///   eight steps. Reduce Motion holds the full disc.
 public struct StatusNote: View {
     public let text: String
     public var level: DotLevel = .warning
@@ -40,7 +41,7 @@ public struct StatusNote: View {
             }
 
             StatusScanRail(active: working)
-                .padding(.leading, 33)
+                .padding(.leading, 29)
         }
         .padding(.horizontal, 10)
         .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
@@ -48,78 +49,79 @@ public struct StatusNote: View {
     }
 }
 
-/// 6 × 5 cells of 3 pt with 1 pt gaps (23 × 19), whole device pixels, never
+/// 5 × 5 cells of 3 pt with 1 pt gaps (19 × 19), whole device pixels, never
 /// antialiased. The 3/1 pair is a glyph-scale exception to the 4 pt grid and
 /// lives only here.
 private struct StatusPixelMark: View {
     let level: DotLevel
     let working: Bool
 
-    @Environment(\.displayScale) private var scale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    static let cols = 6
-    static let rows = 5
+    static let disc = [
+        ".###.",
+        "#####",
+        "#####",
+        "#####",
+        ".###.",
+    ]
+    static let ring = [
+        ".###.",
+        "#...#",
+        "#...#",
+        "#...#",
+        ".###.",
+    ]
     static let cell: CGFloat = 3
     static let gap: CGFloat = 1
-    static let step: TimeInterval = 0.16
+    static let step: TimeInterval = 0.14
+    static let steps = 8
 
-    private var width: CGFloat {
-        CGFloat(Self.cols) * Self.cell + CGFloat(Self.cols - 1) * Self.gap
-    }
-    private var height: CGFloat {
-        CGFloat(Self.rows) * Self.cell + CGFloat(Self.rows - 1) * Self.gap
-    }
+    private var width: CGFloat { CGFloat(5) * Self.cell + CGFloat(4) * Self.gap }
+    private var height: CGFloat { width }
 
     var body: some View {
         let animating = working && !reduceMotion
         TimelineView(.animation(minimumInterval: Self.step, paused: !animating)) { context in
-            let frame = animating
-                ? Int(context.date.timeIntervalSinceReferenceDate / Self.step)
-                : 0
-            Canvas { ctx, _ in draw(&ctx, frame: frame, animating: animating) }
+            let step = animating
+                ? Int(context.date.timeIntervalSinceReferenceDate / Self.step) % Self.steps
+                : Self.steps
+            Canvas { ctx, _ in draw(&ctx, step: step, animating: animating) }
         }
         .frame(width: width, height: height)
         .accessibilityHidden(true)
     }
 
-    private func draw(_ ctx: inout GraphicsContext, frame: Int, animating: Bool) {
-        let cell = Self.cell
+    private func draw(_ ctx: inout GraphicsContext, step: Int, animating: Bool) {
+        let rows = level == .error ? Self.ring : Self.disc
         let pitch = Self.cell + Self.gap
-        // The head sweeps one cell past the right edge and returns, so the mark
-        // reads as motion instead of a loop that visibly restarts on the last column.
-        let head = frame % (Self.cols + 3) - 1
-        let quiet = Tok.text2.opacity(0.16)
 
-        for row in 0..<Self.rows {
-            for col in 0..<Self.cols {
-                let tone: Color
-                if level == .error {
-                    // Shape carries the failure. A 3-wide slab is enough.
-                    tone = col < 3 ? Tok.text : .clear
-                } else if animating {
-                    let distance = head - col
-                    switch distance {
-                    case 0:  tone = Ramp.blue[4]
-                    case 1:  tone = (col + row) % 2 == 0 ? Ramp.blue[3] : Ramp.blue[2]
-                    case 2:  tone = Ramp.blue[2]
-                    case 3:  tone = Ramp.blue[1]
-                    default: tone = quiet
-                    }
-                } else {
-                    let dx = abs(col - (Self.cols - 1) / 2)
-                    let dy = abs(row - (Self.rows - 1) / 2)
-                    if dx == 0 && dy == 0 {
-                        tone = Ramp.blue[4]
-                    } else if dx + dy == 1 {
-                        tone = Ramp.blue[2]
+        for (row, line) in rows.enumerated() {
+            for (column, character) in line.enumerated() where character == "#" {
+                let distance = hypot(Double(column) - 2, Double(row) - 2)
+                let tone: Color?
+                switch level {
+                case .success:
+                    tone = Tok.statusOK
+                case .error:
+                    tone = Tok.statusBad
+                case .warning, .info:
+                    if animating {
+                        // The disc fills outward from the centre: a warm-up with
+                        // a direction, not a pulse with no end.
+                        tone = distance <= Double(step) * 0.45 ? Ramp.blue[4]
+                            : Tok.washStrong
+                    } else if level == .warning {
+                        // Half-power dither. Basic cleanup is deterministic, so
+                        // it must not animate.
+                        tone = (column + row) % 2 == 0 ? Tok.text2 : nil
                     } else {
-                        tone = quiet
+                        tone = Ramp.blue[4]
                     }
                 }
-                guard tone != .clear else { continue }
-                let rect = CGRect(x: CGFloat(col) * pitch, y: CGFloat(row) * pitch,
-                                  width: cell, height: cell)
+                guard let tone else { continue }
+                let rect = CGRect(x: CGFloat(column) * pitch, y: CGFloat(row) * pitch,
+                                  width: Self.cell, height: Self.cell)
                 ctx.fill(Path(rect), with: .color(tone), style: FillStyle(antialiased: false))
             }
         }

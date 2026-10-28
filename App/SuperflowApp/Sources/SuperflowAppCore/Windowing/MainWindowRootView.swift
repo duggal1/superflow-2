@@ -248,16 +248,26 @@ private struct SidebarRow: View {
 }
 
 /// One implementation with onboarding: the sidebar footer is a `StatusNote`.
+/// The only chrome the footer gets is a wash on hover — no plate, no stroke, no
+/// fill at rest, so the mark sits directly on the sidebar blur.
 private struct SidebarStatus: View {
     let status: EngineStatus
     let action: () -> Void
 
+    @State private var hover = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Button(action: action) {
             StatusNote(text: status.label, level: status.level, working: status.isWorking)
+                .background(hover ? Tok.wash : .clear,
+                            in: .rect(cornerRadius: Radius.nested, style: .continuous))
+                .contentShape(.rect(cornerRadius: Radius.nested, style: .continuous))
         }
         .buttonStyle(PressStyle())
-        .contentShape(.rect(cornerRadius: Radius.nested, style: .continuous))
+        .onHover { hover = $0 }
+        .animation(reduceMotion ? nil : (hover ? Motion.hoverIn : Motion.hoverOut),
+                   value: hover)
         .focusStep(.rect(cornerRadius: Radius.nested, style: .continuous))
         .clickable()
         .help(status.label)

@@ -14,7 +14,7 @@ public struct IslandRoot: View {
     }
 
     public var body: some View {
-        let box = IslandLayout.box(model.phase, model.geometry)
+        let box = IslandLayout.box(model.phase, model.geometry, hint: model.hint)
         let size = box.frameSize
 
         ZStack(alignment: .top) {

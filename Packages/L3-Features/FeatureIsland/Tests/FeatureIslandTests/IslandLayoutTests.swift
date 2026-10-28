@@ -22,11 +22,13 @@ final class IslandLayoutTests: XCTestCase {
     func testEveryBoxFitsTheCanvas() {
         for geometry in [notch, plain] {
             for phase in phases {
-                let size = IslandLayout.box(phase, geometry).frameSize
-                XCTAssertLessThanOrEqual(size.width, IslandLayout.canvas.width, "\(phase)")
-                XCTAssertLessThanOrEqual(size.height, IslandLayout.canvas.height, "\(phase)")
-                XCTAssertGreaterThan(size.width, 0, "\(phase)")
-                XCTAssertGreaterThan(size.height, 0, "\(phase)")
+                for hint in [false, true] {
+                    let size = IslandLayout.box(phase, geometry, hint: hint).frameSize
+                    XCTAssertLessThanOrEqual(size.width, IslandLayout.canvas.width, "\(phase)")
+                    XCTAssertLessThanOrEqual(size.height, IslandLayout.canvas.height, "\(phase)")
+                    XCTAssertGreaterThan(size.width, 0, "\(phase)")
+                    XCTAssertGreaterThan(size.height, 0, "\(phase)")
+                }
             }
         }
     }
@@ -89,6 +91,23 @@ final class IslandLayoutTests: XCTestCase {
         XCTAssertEqual(body.width, notch.notch.width + 112)
         XCTAssertEqual(body.height, notch.band)
         XCTAssertEqual(IslandLayout.box(.landed(words: 1), notch), IslandLayout.box(.listening, notch))
+    }
+
+    /// The key hints are part of the silhouette: the live wings grow by exactly
+    /// one shelf, and no other phase grows at all.
+    func testHintShelfGrowsOnlyTheLiveModes() {
+        XCTAssertEqual(IslandLayout.box(.handsFree, notch, hint: true).body.height,
+                       notch.band + IslandLayout.hintShelf)
+        XCTAssertEqual(IslandLayout.box(.meeting, notch, hint: true).body.height,
+                       notch.band + IslandLayout.hintShelf)
+        for phase in [IslandPhase.listening, .processing, .landed(words: 2)] {
+            XCTAssertEqual(IslandLayout.box(phase, notch, hint: true).body.height, notch.band,
+                           "\(phase)")
+        }
+        XCTAssertGreaterThan(IslandLayout.hitRect(.meeting, notch, hint: true).height,
+                             IslandLayout.hitRect(.meeting, notch).height)
+        XCTAssertEqual(IslandLayout.hitRect(.handsFree, notch, hint: true).height,
+                       IslandLayout.hitRect(.meeting, notch, hint: true).height)
     }
 
     func testIdleOnADisplayWithoutANotchIsInvisible() {

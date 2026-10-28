@@ -29,6 +29,7 @@ import SwiftUI
 //         soft #DBEAFE / #2563EB at 17%, fill #DBEAFE / #2563EB at 50%.
 //
 // Activity ramp: Ramp.blue, five steps, dark first then light (ActivityYear, ThroughputStrip).
+// Status: statusOK green 600/400 and statusBad red 600/400, engine marks only.
 //
 // Spacing 4·8·12·16·20·24·32·48·64 (Space). Page padding 32, section gap 32,
 //   card padding 20.
@@ -184,6 +185,13 @@ public enum Tok {
     /// The off track of a switch. Light is darker than `controlPressed` so the
     /// white knob never disappears on a white card.
     public static let toggleOff = HexColor(light: 0xB0B0B0, dark: 0x2E2E2E).color
+
+    /// Engine status. Success and failure are the only states allowed a hue of
+    /// their own; every other status uses the blue activity ramp or `text2`.
+    /// Light sits on the 600 step, dark on the 400 step, so the mark keeps its
+    /// contrast against both appearances of the sidebar blur.
+    public static let statusOK = HexColor(light: 0x16A34A, dark: 0x4ADE80).color
+    public static let statusBad = HexColor(light: 0xDC2626, dark: 0xF87171).color
 
     /// Dialog scrim: flatter and deeper than the palette's, so a form reads as
     /// modal. Light and dark differ on purpose.

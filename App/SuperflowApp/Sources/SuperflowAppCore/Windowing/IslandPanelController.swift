@@ -82,7 +82,7 @@ public final class IslandController {
         self.model = model
         host = IslandHostingView(rootView: IslandRoot(model: model))
         host.hitRect = { [unowned model] in
-            IslandLayout.hitRect(model.phase, model.geometry)
+            IslandLayout.hitRect(model.phase, model.geometry, hint: model.hint)
         }
         panel.contentView = host
         panel.onCancel = { [unowned model] in model.send(.dismissed) }

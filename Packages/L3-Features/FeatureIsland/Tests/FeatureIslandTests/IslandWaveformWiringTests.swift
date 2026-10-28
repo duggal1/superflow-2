@@ -48,11 +48,12 @@ final class IslandWaveformWiringTests: XCTestCase {
         }
         try await Task.sleep(for: .milliseconds(200))
 
-        XCTAssertGreaterThan(model.waveform.history[0], 0,
+        XCTAssertGreaterThan(model.waveform.trail[0], 0,
                              "fn opened the Island but no level reached the meter")
     }
 
-    func testListeningPaintsBlueCellsInTheRightWing() throws {        let model = IslandModel(feed: LevelFeed(), geometry: geometry())
+    func testListeningPaintsBlueCellsInTheRightWing() throws {
+        let model = IslandModel(feed: LevelFeed(), geometry: geometry())
         model.send(.holdBegan(IslandTarget(bundleID: "com.apple.TextEdit", name: "TextEdit")))
         model.waveform.setLive(true)
         for _ in 0..<6 { model.waveform.tick(level: 1) }
@@ -62,6 +63,18 @@ final class IslandWaveformWiringTests: XCTestCase {
         let left = (IslandLayout.canvas.width - rect.width) / 2 + rect.width - 56
         let blue = bluePixels(in: image, x: Int(left * 2)..<Int((left + 56) * 2), y: 0..<Int(32 * 2))
         XCTAssertGreaterThan(blue, 20, "the meter drew no lit cells in the trailing wing")
+    }
+
+    /// The "no waveform" bug in one assertion: silence must still paint a
+    /// visible blue dotted line. The old meter drew it in `controlPressed`
+    /// (near-black) on a black Island, so an idle input looked like a dead view.
+    func testSilenceIsAVisibleBlueDottedLine() throws {
+        let trail = [Float](repeating: 0, count: WaveformModel.depth)
+        let renderer = ImageRenderer(content: IslandPixelMeter(trail: trail))
+        renderer.scale = 2
+        let image = try XCTUnwrap(renderer.nsImage)
+        let blue = bluePixels(in: image, x: 0..<64, y: 0..<40)
+        XCTAssertGreaterThan(blue, 0, "silence drew nothing; the meter reads as dead")
     }
 
     func testARefusalNoticeReplacesTheMeterInsteadOfVanishing() {

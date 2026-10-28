@@ -11,12 +11,18 @@ public final class IslandModel {
     public private(set) var copied = false
     /// Seconds left on the "was that a mistake?" card.
     public private(set) var undoRemaining = 0
-    /// Seconds left before an OS-style notice leaves on its own. Drawn as a
-    /// one-cell-per-second rail, so the card never disappears unannounced.
+    /// Seconds left before an OS-style notice leaves on its own, drawn as a
+    /// one-cell-per-second rail so the card never disappears unannounced.
     public private(set) var noticeRemaining = 0
-    /// Seconds the current capture has run. The meeting wing reads it: a meeting
-    /// is a duration, not a mode.
+    /// Seconds the current capture has run. A meeting is a duration, not a mode.
     public private(set) var elapsed = 0
+    /// True while the key hints are up. The shelf is part of the silhouette, so
+    /// the shape grows by `IslandLayout.hintShelf`.
+    public private(set) var hint = false
+    /// Countdowns are deadline-based: the rail drains continuously and the
+    /// numeral is derived from the same instant.
+    public private(set) var undoDeadline: Date?
+    public private(set) var noticeDeadline: Date?
     public var geometry: NotchGeometry
     public private(set) var target: IslandTarget?
     public let waveform = WaveformModel()
@@ -37,6 +43,7 @@ public final class IslandModel {
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var undoTask: Task<Void, Never>?
     @ObservationIgnored private var noticeTask: Task<Void, Never>?
+    @ObservationIgnored private var hintTask: Task<Void, Never>?
     @ObservationIgnored private var consumers: [Task<Void, Never>] = []
     @ObservationIgnored private var recordedAt: Date?
     @ObservationIgnored private var pendingNotice: IslandNotice?
@@ -65,6 +72,7 @@ public final class IslandModel {
         ticker?.cancel()
         undoTask?.cancel()
         noticeTask?.cancel()
+        hintTask?.cancel()
     }
 
     // MARK: input
@@ -187,12 +195,14 @@ public final class IslandModel {
         } else {
             undoTask?.cancel()
             undoRemaining = 0
+            undoDeadline = nil
         }
         if case .notice = next {
             // The notice owns its own timeout.
         } else {
             noticeTask?.cancel()
             noticeRemaining = 0
+            noticeDeadline = nil
         }
 
         // Move the window only while it is invisible, never animated.
@@ -225,6 +235,7 @@ public final class IslandModel {
         }
 
         sideEffects(next)
+        updateHint(next)
         phaseDidChange(next)
 
         switch next {
@@ -240,9 +251,11 @@ public final class IslandModel {
             }
         case .undo(let undo):
             undoRemaining = Self.undoWindow
+            undoDeadline = Date().addingTimeInterval(TimeInterval(Self.undoWindow))
             startUndoCountdown(undo)
         case .notice:
             noticeRemaining = Int(Self.noticeSeconds)
+            noticeDeadline = Date().addingTimeInterval(Self.noticeSeconds)
             scheduleNoticeTimeout()
         case .failed:
             if feed.storesTranscripts { scheduleFailureTimeout(ms: 12_000) }
@@ -306,6 +319,35 @@ public final class IslandModel {
         }
     }
 
+    /// The key hints belong to a live mode, not to a card. They arrive with the
+    /// mode and leave after 2.4 s: long enough to read once, short enough that a
+    /// long meeting is not permanently wearing a keyboard tutorial.
+    private func updateHint(_ next: IslandPhase) {
+        hintTask?.cancel()
+        hintTask = nil
+        switch next {
+        case .handsFree, .meeting:
+            setHint(true)
+            hintTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(2.4))
+                guard !Task.isCancelled else { return }
+                self?.setHint(false)
+            }
+        case .idle, .hover, .listening, .processing, .landed, .undo, .failed, .recent, .notice:
+            setHint(false)
+        }
+    }
+
+    private func setHint(_ on: Bool) {
+        guard hint != on else { return }
+        let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if reduce {
+            hint = on
+        } else {
+            withAnimation(.smooth(duration: 0.30)) { hint = on }
+        }
+    }
+
     private func after(_ ms: Int, _ body: @escaping @MainActor () -> Void) {
         timer?.cancel()
         timer = Task {
@@ -335,41 +377,5 @@ public final class IslandModel {
     private func stopTicker() {
         ticker?.cancel()
         ticker = nil
-    }
-
-    // MARK: side effects
-
-    private func sideEffects(_ phase: IslandPhase) {
-        let performer = NSHapticFeedbackManager.defaultPerformer
-        switch phase {
-        case .listening: performer.perform(.alignment, performanceTime: .default)
-        case .handsFree: performer.perform(.levelChange, performanceTime: .default)
-        case .meeting: performer.perform(.alignment, performanceTime: .default)
-        case .landed: performer.perform(.levelChange, performanceTime: .default)
-        case .failed, .undo: performer.perform(.generic, performanceTime: .default)
-        case .notice: performer.perform(.alignment, performanceTime: .default)
-        case .idle, .hover, .processing, .recent: break
-        }
-
-        let line: String? = switch phase {
-        case .listening: "Listening"
-        case .handsFree: "Listening hands-free. Press fn or Return to type it."
-        case .meeting: "Meeting recording. Return to stop, Escape to cancel."
-        case .landed: "Pasted"
-        case .failed: "Couldn't paste. Transcript ready to copy."
-        case .undo: "Escape pressed. Was that a mistake? Undo is available for six seconds."
-        case .notice(let notice): notice.title
-        case .idle, .hover, .processing, .recent: nil
-        }
-        if let line {
-            NSAccessibility.post(
-                element: NSApp as Any,
-                notification: .announcementRequested,
-                userInfo: [
-                    .announcement: line,
-                    .priority: NSAccessibilityPriorityLevel.high.rawValue,
-                ]
-            )
-        }
     }
 }

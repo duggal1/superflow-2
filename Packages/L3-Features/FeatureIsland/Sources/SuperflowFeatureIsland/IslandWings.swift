@@ -6,74 +6,101 @@ import SwiftUI
 /// Compact state: what you are talking to on the left of the notch, one signal on
 /// the right. Both hug their outer edge and stay centred on the band.
 ///
-/// The right signal is the pixel meter for every capturing state, including the
-/// cleanup that follows the release, so the Island never goes blank between the
-/// microphone closing and the text landing.
+/// Each live mode names its own promise in pixels instead of words: the meter
+/// for a dictation, a lock for hands-free, the brand disc plus a clock for a
+/// meeting. The key hints are a temporary 32 pt shelf under the band, part of
+/// the silhouette rather than an overlay, so the shape grows to hold them.
 struct WingsContent: View {
     let model: IslandModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var phase: IslandPhase { model.phase }
+
     var body: some View {
         let geometry = model.geometry
         let gap = geometry.hasNotch ? geometry.notch.width : IslandLayout.nonNotchGap
-        let wing = IslandLayout.wingWidth(model.phase, gap: gap)
+        let wing = IslandLayout.wingWidth(phase, gap: gap)
 
-        HStack(spacing: 0) {
-            leading
-                .padding(.leading, wing == IslandLayout.wing ? IslandLayout.wingInset : 12)
-                .frame(width: wing, alignment: .leading)
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                leading
+                    .padding(.leading, wing == IslandLayout.wing
+                             ? IslandLayout.wingInset : 12)
+                    .frame(width: wing, alignment: .leading)
 
-            Color.clear.frame(width: gap)
+                Color.clear.frame(width: gap)
 
-            trailing
-                .padding(.trailing, IslandLayout.wingInset)
-                .frame(width: wing, alignment: .trailing)
+                trailing
+                    .padding(.trailing, IslandLayout.wingInset)
+                    .frame(width: wing, alignment: .trailing)
+            }
+            .frame(height: geometry.band)
+
+            if model.hint, let hints {
+                HintShelf(items: hints)
+                    .transition(.opacity)
+            }
+
+            Spacer(minLength: 0)
         }
-        .frame(height: geometry.band)
+        .animation(reduceMotion ? nil : .smooth(duration: 0.30), value: model.hint)
     }
 
     @ViewBuilder private var leading: some View {
-        switch model.phase {
+        switch phase {
         case .handsFree:
-            ModeLabel(text: "Hands-free", glyph: .waveform)
-        case .meeting:
-            ModeLabel(text: "Meeting", glyph: .meetings)
-        case .listening, .processing, .landed:
-            if let bundleID = model.target?.bundleID {
-                AppIcon(bundleID: bundleID, size: 20)
-            } else {
-                Icon(.mic, size: 14, tint: Tok.text)
+            HStack(spacing: 8) {
+                TargetIcon(bundleID: model.target?.bundleID)
+                PixelBitmap(rows: PixelBitmap.lock, develop: 0.12)
             }
+            .accessibilityLabel("Hands-free dictation")
+        case .meeting:
+            HStack(spacing: 8) {
+                RecordDisc()
+                Text(Self.clock(model.elapsed))
+                    .appType(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(Tok.text)
+                    .contentTransition(.numericText(value: Double(model.elapsed)))
+                    .accessibilityLabel("Meeting running for \(Self.spoken(model.elapsed))")
+            }
+        case .listening, .processing, .landed:
+            TargetIcon(bundleID: model.target?.bundleID)
         case .idle, .hover, .failed, .recent, .undo, .notice:
             EmptyView()
         }
     }
 
     @ViewBuilder private var trailing: some View {
-        switch model.phase {
-        case .listening, .handsFree:
-            PixelWaveform(history: model.waveform.history)
+        switch phase {
+        case .listening:
+            IslandPixelMeter(trail: model.waveform.trail)
+                .transition(.islandContent(reduceMotion: reduceMotion))
+        case .handsFree:
+            // A latched session is wider than a held one: there is no key to
+            // release, so the meter has more history to show.
+            IslandPixelMeter(trail: model.waveform.trail, columns: 15)
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .meeting:
-            HStack(spacing: 8) {
-                Text(Self.clock(model.elapsed))
-                    .appType(.caption)
-                    .monospacedDigit()
-                    .foregroundStyle(Tok.text2)
-                    .contentTransition(.numericText(value: Double(model.elapsed)))
-                    .accessibilityLabel("Meeting running for \(Self.spoken(model.elapsed))")
-                PixelWaveform(history: model.waveform.history)
-            }
-            .transition(.islandContent(reduceMotion: reduceMotion))
+            IslandPixelBarcode(trail: model.waveform.trail)
+                .transition(.islandContent(reduceMotion: reduceMotion))
         case .processing:
-            PixelWaveform(history: model.waveform.history, ambient: true)
+            IslandWait()
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .landed:
-            Icon(.checkmark, size: 14, weight: .medium, tint: Tok.text)
+            PixelBitmap(rows: PixelBitmap.check, develop: 0.16)
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .idle, .hover, .failed, .recent, .undo, .notice:
             EmptyView()
+        }
+    }
+
+    private var hints: [(key: String, label: String)]? {
+        switch phase {
+        case .handsFree: [(key: "fn / ⏎", label: "Send"), (key: "esc", label: "Cancel")]
+        case .meeting: [(key: "⌘ ×2", label: "Save"), (key: "esc", label: "Discard")]
+        default: nil
         }
     }
 
@@ -90,5 +117,57 @@ struct WingsContent: View {
         let total = max(0, seconds), m = total / 60, s = total % 60
         guard m > 0 else { return "\(s) seconds" }
         return "\(m) minutes \(s) seconds"
+    }
+}
+
+/// The real icon of the app the text will land in. The microphone stands in only
+/// when the target is unknown.
+struct TargetIcon: View {
+    let bundleID: String?
+
+    var body: some View {
+        if let bundleID {
+            AppIcon(bundleID: bundleID, size: 20)
+        } else {
+            Icon(.mic, size: 14, tint: Tok.text2)
+                .frame(width: 20, height: 20)
+        }
+    }
+}
+
+/// "fn / ⏎ Send · esc Cancel". One row, centred, never wider than the wings.
+struct HintShelf: View {
+    let items: [(key: String, label: String)]
+
+    var body: some View {
+        HStack(spacing: 20) {
+            ForEach(items.indices, id: \.self) { index in
+                HStack(spacing: 8) {
+                    HintKey(label: items[index].key)
+                    Text(items[index].label)
+                        .appType(.caption)
+                        .foregroundStyle(Tok.text2)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: IslandLayout.hintShelf)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A keycap at caption scale. The one place in the Island with a fill other
+/// than black: the cap has to read as a key, not as a label.
+struct HintKey: View {
+    let label: String
+
+    var body: some View {
+        Text(label)
+            .appType(.caption)
+            .foregroundStyle(Tok.text)
+            .padding(.horizontal, 6)
+            .frame(minWidth: 20, minHeight: 20)
+            .background(Tok.control, in: .rect(cornerRadius: Radius.chip,
+                                               style: .continuous))
     }
 }

@@ -92,6 +92,40 @@ final class IslandSnapshotTests: XCTestCase {
         XCTAssertNoThrow(try render(model))
     }
 
+    /// A latched dictation is a different promise from a held one, so it must
+    /// render with its lock mark and the key shelf in the silhouette.
+    func testHandsFreeRendersWithTheHintShelf() throws {
+        let model = model(geometry(notch: true))
+        model.send(.holdBegan(nil))
+        model.send(.handsFreeBegan(nil))
+        XCTAssertEqual(model.phase, .handsFree)
+        XCTAssertTrue(model.hint)
+        XCTAssertEqual(IslandLayout.box(model.phase, model.geometry, hint: model.hint).body.height,
+                       model.geometry.band + IslandLayout.hintShelf)
+        XCTAssertNoThrow(try render(model))
+    }
+
+    /// A meeting is a duration: the band carries the record disc and the clock,
+    /// the wing carries the scrolling barcode.
+    func testMeetingRendersTheBarcode() throws {
+        let model = model(geometry(notch: true))
+        model.send(.holdBegan(nil))
+        model.send(.meetingBegan(nil))
+        XCTAssertEqual(model.phase, .meeting)
+        XCTAssertNoThrow(try render(model))
+    }
+
+    func testNoticeCardRenders() throws {
+        let model = model(geometry(notch: true))
+        model.send(.notice(IslandNotice(kind: .milestone, title: "1,000 words.",
+                                        detail: "10,000 words dictated with Superflow.")))
+        guard case .notice = model.phase else {
+            return XCTFail("a notice should be shown, got \(model.phase)")
+        }
+        XCTAssertNotNil(model.noticeDeadline)
+        XCTAssertNoThrow(try render(model))
+    }
+
     func testFailedCardRenders() throws {
         let model = model(geometry(notch: true))
         model.send(.holdBegan(nil))

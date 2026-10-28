@@ -78,6 +78,9 @@ public enum IslandLayout {
     public static let wingMeeting: CGFloat = 136
     public static let wingInset: CGFloat = 14
     public static let nonNotchGap: CGFloat = 16
+    /// The key hints under a live mode. The wings grow by this much while the
+    /// shelf is up, so the silhouette never clips a keycap.
+    public static let hintShelf: CGFloat = 32
 
     public static let cardWidth: CGFloat = 480
     public static let cardPad: CGFloat = 20
@@ -105,7 +108,8 @@ public enum IslandLayout {
         band + cardGap + cardRow + cardRowGap + cardMeta + cardPad
     }
 
-    public static func box(_ phase: IslandPhase, _ geometry: NotchGeometry) -> IslandBox {
+    public static func box(_ phase: IslandPhase, _ geometry: NotchGeometry,
+                           hint: Bool = false) -> IslandBox {
         let gap = geometry.hasNotch ? geometry.notch.width : nonNotchGap
         switch phase {
         case .idle:
@@ -117,9 +121,16 @@ public enum IslandLayout {
             return IslandBox(body: .init(width: geometry.notch.width + 8,
                                          height: geometry.notch.height + 4),
                              top: 6, bottom: restBottom, opacity: 1)
-        case .listening, .handsFree, .meeting, .processing, .landed:
+        case .listening, .processing, .landed:
             return IslandBox(body: .init(width: gap + 2 * wingWidth(phase, gap: gap),
                                          height: geometry.band),
+                             top: 6, bottom: 14, opacity: 1)
+        case .handsFree, .meeting:
+            // The key hints are a temporary extra row under the band. They are
+            // part of the silhouette, not an overlay, so nothing is clipped and
+            // hit testing grows with them.
+            return IslandBox(body: .init(width: gap + 2 * wingWidth(phase, gap: gap),
+                                         height: geometry.band + (hint ? hintShelf : 0)),
                              top: 6, bottom: 14, opacity: 1)
         case .failed, .recent, .undo, .notice:
             return IslandBox(body: .init(width: cardWidth,
@@ -130,9 +141,10 @@ public enum IslandLayout {
 
     /// Interactive region in canvas coordinates (origin top-left). Everything
     /// outside it is click-through.
-    public static func hitRect(_ phase: IslandPhase, _ geometry: NotchGeometry) -> CGRect {
+    public static func hitRect(_ phase: IslandPhase, _ geometry: NotchGeometry,
+                               hint: Bool = false) -> CGRect {
         if phase == .idle, !geometry.hasNotch { return .zero }
-        let size = box(phase, geometry).frameSize
+        let size = box(phase, geometry, hint: hint).frameSize
         let slop: CGFloat = phase.isRest ? 0 : 4
         return CGRect(x: (canvas.width - size.width) / 2, y: 0,
                       width: size.width, height: size.height)
