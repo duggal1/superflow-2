@@ -1,20 +1,24 @@
 import SwiftUI
 
-/// One reducer, one phase, eleven values. Push-to-talk, hands-free and a latched
-/// meeting are three different promises, so the notch says which one is live;
-/// an Escape it may regret and a milestone worth saying out loud are the two
-/// cards the old Island could not draw.
+/// One reducer, one phase. Push-to-talk, hands-free, a latched meeting and the
+/// meeting panel are four different promises, so the notch says which one is
+/// live; an Escape it may regret, the last few dictations and a milestone worth
+/// saying out loud are the cards the Island can open.
 public enum IslandPhase: Equatable, Sendable {
     case idle
     case hover
     case listening
     case handsFree
     case meeting
+    /// The meeting wings clicked open: timer, word count, talk share.
+    case meetingPanel
     case processing
     case landed(words: Int)
     case undo(IslandUndo)
     case failed(IslandTranscript)
     case recent(IslandTranscript?)
+    /// The last five dictations, opened by clicking an always-on Island.
+    case history
     case notice(IslandNotice)
 }
 
@@ -25,7 +29,7 @@ public extension IslandPhase {
         switch self {
         case .idle, .hover: .rest
         case .listening, .handsFree, .meeting, .processing, .landed: .wings
-        case .failed, .recent, .undo, .notice: .card
+        case .failed, .recent, .history, .undo, .notice, .meetingPanel: .card
         }
     }
 
@@ -33,14 +37,16 @@ public extension IslandPhase {
 
     var isBusy: Bool {
         switch self {
-        case .listening, .handsFree, .meeting, .processing: true
-        case .idle, .hover, .landed, .undo, .failed, .recent, .notice: false
+        case .listening, .handsFree, .meeting, .meetingPanel, .processing: true
+        case .idle, .hover, .landed, .undo, .failed, .recent, .history, .notice: false
         }
     }
 
+    /// A live meeting is not dismissable: clicking outside must not end a
+    /// recording. The panel collapses instead.
     var isDismissable: Bool {
         switch self {
-        case .failed, .recent, .landed, .undo, .notice: true
+        case .failed, .recent, .history, .landed, .undo, .notice, .meetingPanel: true
         case .idle, .hover, .listening, .handsFree, .meeting, .processing: false
         }
     }
@@ -68,19 +74,25 @@ public struct IslandBox: Equatable, Sendable {
 }
 
 public enum IslandLayout {
-    /// The window never changes size. Every state is drawn inside this canvas, top-centred.
-    public static let canvas = CGSize(width: 520, height: 128)
+    /// The window never changes size. Every state is drawn inside this canvas,
+    /// top-centred. Tall enough for the history panel; the transparent area
+    /// below the silhouette stays click-through through `hitRect`.
+    public static let canvas = CGSize(width: 520, height: 360)
 
-    /// Hands-free spends 48 more points on the name of the mode. A meeting spends
-    /// another 32 on top: it also has to say how long it has been running.
+    /// Each wing's width, per the design: a held dictation is 56, a latched one
+    /// 84, a meeting 116. The flares sit outside the body, so a wide notch on a
+    /// narrow canvas could push the silhouette past the window: the wanted width
+    /// is clamped to what the canvas has left after the notch and both flares.
     public static let wing: CGFloat = 56
-    public static let wingWide: CGFloat = 104
-    public static let wingMeeting: CGFloat = 136
+    public static let wingWide: CGFloat = 84
+    public static let wingMeeting: CGFloat = 116
     public static let wingInset: CGFloat = 14
     public static let nonNotchGap: CGFloat = 16
     /// The key hints under a live mode. The wings grow by this much while the
     /// shelf is up, so the silhouette never clips a keycap.
     public static let hintShelf: CGFloat = 32
+    /// The streaming line is taller than the hint shelf: it holds real type.
+    public static let liveShelf: CGFloat = 40
 
     public static let cardWidth: CGFloat = 480
     public static let cardPad: CGFloat = 20
@@ -89,13 +101,12 @@ public enum IslandLayout {
     public static let cardRow: CGFloat = 28
     public static let cardMeta: CGFloat = 16
     public static let restBottom: CGFloat = 12
+    /// Cards taller than band + 60 grow by whole rows at this step.
+    public static let cardStep: CGFloat = 44
 
-    /// One wing's width. The flares sit outside the body, so a wide notch on a
-    /// narrow canvas could push the silhouette past the window: the wanted width
-    /// is clamped to what the canvas has left after the notch and both flares.
     public static func wingWidth(_ phase: IslandPhase, gap: CGFloat) -> CGFloat {
         let wanted: CGFloat = switch phase {
-        case .meeting: wingMeeting
+        case .meeting, .meetingPanel: wingMeeting
         case .handsFree: wingWide
         default: wing
         }
@@ -104,47 +115,84 @@ public enum IslandLayout {
     }
 
     /// band + gap + transcript + gap + meta + bottom padding, on the 4 pt grid.
-    public static func cardHeight(_ band: CGFloat) -> CGFloat {
-        band + cardGap + cardRow + cardRowGap + cardMeta + cardPad
+    public static func cardHeight(_ band: CGFloat, below: CGFloat = 60) -> CGFloat {
+        band + below
     }
 
     public static func box(_ phase: IslandPhase, _ geometry: NotchGeometry,
-                           hint: Bool = false) -> IslandBox {
+                           hint: Bool = false, live: Bool = false,
+                           prefs: IslandPrefs = IslandPrefs()) -> IslandBox {
         let gap = geometry.hasNotch ? geometry.notch.width : nonNotchGap
+        let wing = wingWidth(phase, gap: gap)
+
+        func wings(_ extra: CGFloat, below: CGFloat = 0, top: CGFloat = 6,
+                   bottom: CGFloat = 14) -> IslandBox {
+            IslandBox(body: .init(width: gap + extra, height: geometry.band + below),
+                      top: top, bottom: bottom, opacity: 1)
+        }
+        func wide(_ extra: CGFloat, below: CGFloat) -> IslandBox {
+            IslandBox(body: .init(width: max(gap + extra, 400),
+                                  height: geometry.band + below),
+                      top: 8, bottom: 18, opacity: 1)
+        }
+        func card(_ below: CGFloat = 60) -> IslandBox {
+            IslandBox(body: .init(width: cardWidth, height: cardHeight(geometry.band, below: below)),
+                      top: 12, bottom: 24, opacity: 1)
+        }
+
         switch phase {
         case .idle:
-            return geometry.hasNotch
-                ? IslandBox(body: geometry.notch, top: 0, bottom: restBottom, opacity: 1)
+            if geometry.hasNotch {
+                return IslandBox(body: geometry.notch, top: 0, bottom: restBottom, opacity: 1)
+            }
+            // "Always show Island" puts a small black pill on a notch-less
+            // display instead of hiding the Island entirely.
+            return prefs.alwaysOn
+                ? IslandBox(body: .init(width: 232, height: geometry.band + 8),
+                            top: 6, bottom: 14, opacity: 1)
                 : IslandBox(body: .init(width: gap + wing, height: geometry.band - 8),
                             top: 0, bottom: 14, opacity: 0)
         case .hover:
-            return IslandBox(body: .init(width: geometry.notch.width + 8,
-                                         height: geometry.notch.height + 4),
-                             top: 6, bottom: restBottom, opacity: 1)
-        case .listening, .processing, .landed:
-            return IslandBox(body: .init(width: gap + 2 * wingWidth(phase, gap: gap),
-                                         height: geometry.band),
-                             top: 6, bottom: 14, opacity: 1)
-        case .handsFree, .meeting:
-            // The key hints are a temporary extra row under the band. They are
-            // part of the silhouette, not an overlay, so nothing is clipped and
-            // hit testing grows with them.
-            return IslandBox(body: .init(width: gap + 2 * wingWidth(phase, gap: gap),
-                                         height: geometry.band + (hint ? hintShelf : 0)),
-                             top: 6, bottom: 14, opacity: 1)
-        case .failed, .recent, .undo, .notice:
-            return IslandBox(body: .init(width: cardWidth,
-                                         height: cardHeight(geometry.band)),
-                             top: 12, bottom: 24, opacity: 1)
+            return prefs.alwaysOn
+                ? IslandBox(body: .init(width: max(geometry.notch.width + 8, 232),
+                                        height: geometry.band + 28),
+                            top: 6, bottom: 14, opacity: 1)
+                : IslandBox(body: .init(width: geometry.notch.width + 8,
+                                        height: geometry.notch.height + 4),
+                            top: 6, bottom: restBottom, opacity: 1)
+        case .listening:
+            if live { return wide(112, below: liveShelf) }
+            return wings(2 * wing)
+        case .handsFree:
+            if live { return wide(168, below: liveShelf) }
+            return wings(2 * wing, below: hint ? hintShelf : 0,
+                         top: hint ? 8 : 6, bottom: hint ? 18 : 14)
+        case .meeting:
+            if live { return wide(232, below: liveShelf) }
+            return wings(2 * wing, below: hint ? hintShelf : 0,
+                         top: hint ? 8 : 6, bottom: hint ? 18 : 14)
+        case .processing, .landed:
+            return wings(2 * wingWidth(.processing, gap: gap))
+        case .meetingPanel:
+            return card(168)
+        case .failed:
+            return card(148)
+        case .history:
+            return card(296)
+        case .recent, .undo:
+            return card()
+        case .notice:
+            return card(76)
         }
     }
 
     /// Interactive region in canvas coordinates (origin top-left). Everything
     /// outside it is click-through.
     public static func hitRect(_ phase: IslandPhase, _ geometry: NotchGeometry,
-                               hint: Bool = false) -> CGRect {
-        if phase == .idle, !geometry.hasNotch { return .zero }
-        let size = box(phase, geometry, hint: hint).frameSize
+                               hint: Bool = false, live: Bool = false,
+                               prefs: IslandPrefs = IslandPrefs()) -> CGRect {
+        if phase == .idle, !geometry.hasNotch, !prefs.alwaysOn { return .zero }
+        let size = box(phase, geometry, hint: hint, live: live, prefs: prefs).frameSize
         let slop: CGFloat = phase.isRest ? 0 : 4
         return CGRect(x: (canvas.width - size.width) / 2, y: 0,
                       width: size.width, height: size.height)

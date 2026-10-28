@@ -40,6 +40,11 @@ struct WingsContent: View {
             if model.hint, let hints {
                 HintShelf(items: hints)
                     .transition(.opacity)
+            } else if model.prefs.liveText {
+                LiveLine(live: model.live)
+                    .padding(.horizontal, 20)
+                    .frame(height: IslandLayout.liveShelf)
+                    .transition(.opacity)
             }
 
             Spacer(minLength: 0)
@@ -67,7 +72,7 @@ struct WingsContent: View {
             }
         case .listening, .processing, .landed:
             TargetIcon(bundleID: model.target?.bundleID)
-        case .idle, .hover, .failed, .recent, .undo, .notice:
+        case .idle, .hover, .meetingPanel, .failed, .recent, .history, .undo, .notice:
             EmptyView()
         }
     }
@@ -91,7 +96,7 @@ struct WingsContent: View {
         case .landed:
             PixelBitmap(rows: PixelBitmap.check, develop: 0.16)
                 .transition(.islandContent(reduceMotion: reduceMotion))
-        case .idle, .hover, .failed, .recent, .undo, .notice:
+        case .idle, .hover, .meetingPanel, .failed, .recent, .history, .undo, .notice:
             EmptyView()
         }
     }

@@ -64,11 +64,37 @@ public struct IslandNotice: Equatable, Sendable {
     public let kind: Kind
     public let title: String
     public let detail: String
+    /// The number the card counts up to: words for a milestone, days for a
+    /// streak. Nil for notices that are only a sentence.
+    public let value: Int?
+    /// A verb for the one button a notice may carry. Nil draws no button.
+    public let action: String?
+    /// Stale notices never show. The model drops anything older than two
+    /// minutes instead of queueing yesterday's milestone behind today's work.
+    public let postedAt: Date
 
-    public init(kind: Kind, title: String, detail: String) {
+    public init(kind: Kind, title: String, detail: String, action: String? = nil,
+                value: Int? = nil, postedAt: Date = .now) {
         self.kind = kind
         self.title = title
         self.detail = detail
+        self.action = action
+        self.value = value
+        self.postedAt = postedAt
+    }
+
+    public static func milestone(words: Int) -> IslandNotice {
+        .init(kind: .milestone, title: "\(words.formatted()) words",
+              detail: "dictated by you", value: words)
+    }
+
+    public static func streak(days: Int) -> IslandNotice {
+        .init(kind: .streak, title: "\(days)-day streak",
+              detail: "keep it going tomorrow", value: days)
+    }
+
+    public static func modelReady(_ name: String) -> IslandNotice {
+        .init(kind: .modelReady, title: name, detail: "installed and ready")
     }
 }
 
@@ -84,6 +110,10 @@ public enum IslandEvent: Equatable, Sendable {
     case landed(words: Int)
     case pasteFailed(IslandTranscript)
     case notice(IslandNotice)
+    /// A click on the notch or on the meeting wings. The model resolves the
+    /// target: history when "Always show Island" is on, the meeting panel while
+    /// recording, the last dictation otherwise.
+    case notchClicked
     case dismissed
 }
 
@@ -92,7 +122,15 @@ public protocol IslandFeed: Sendable {
     var events: AsyncStream<IslandEvent> { get }
     /// Microphone level, 0...1, already mapped from dBFS, about 30 Hz, only while capturing.
     var levels: AsyncStream<Float> { get }
+    /// Streaming partials. Always produced; the model decides whether to keep them.
+    var live: AsyncStream<LiveText> { get }
+    /// Meeting words and talk share, about 1 Hz while a meeting is recording.
+    var pulses: AsyncStream<MeetingPulse> { get }
     /// The last stored dictation. nil when "Don't store transcripts" is on or nothing exists yet.
     func lastTranscript() -> IslandTranscript?
+    /// The last `limit` dictations, newest first. Empty when storage is off.
+    func history(limit: Int) -> [IslandTranscript]
+    /// Words dictated today, meetings excluded.
+    func wordsToday() -> Int
     var storesTranscripts: Bool { get }
 }

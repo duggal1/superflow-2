@@ -22,14 +22,28 @@ public enum IslandReducer {
             return phase.isBusy ? .failed(transcript) : phase
         case .notice(let notice):
             switch phase {
-            case .failed, .undo, .recent:
-                // A failure or a live undo owns the card. Never cover it.
+            case .failed, .undo, .recent, .history:
+                // A failure, a live undo or a card the owner opened owns the
+                // Island. A notification never covers it.
                 return phase
-            case .idle, .hover, .listening, .handsFree, .meeting, .processing, .landed, .notice:
+            case .idle, .hover, .listening, .handsFree, .meeting, .meetingPanel,
+                 .processing, .landed, .notice:
                 return .notice(notice)
             }
+        case .notchClicked:
+            // The model resolves the target, because it is the only thing that
+            // knows the prefs and what the feed stored.
+            return phase
         case .dismissed:
-            return phase.isDismissable ? .idle : phase
+            switch phase {
+            case .meetingPanel:
+                // Never end a meeting from a click outside: collapse instead.
+                return .meeting
+            case .failed, .recent, .history, .landed, .undo, .notice:
+                return .idle
+            case .idle, .hover, .listening, .handsFree, .meeting, .processing:
+                return phase
+            }
         }
     }
 }

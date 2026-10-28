@@ -117,10 +117,10 @@ struct UndoContent: View {
 
 /// An OS-style notice that lands in the notch instead of Notification Centre.
 ///
-/// It carries the same anatomy as the undo card: the brand and a pixel mark in
-/// the band, a title, a detail, and a rail that counts the seconds it has left.
-/// The mark is the kind (spark, flame, tick, up arrow, dot); a milestone adds one
-/// 700 ms burst behind it and nothing else celebrates.
+/// It grows out of the notch and is absorbed back into it. The band carries the
+/// kind's pixel mark, the body carries the number (counted up in whole steps) or
+/// the sentence, and a rail counts the seconds it has left. Only genuine
+/// notifications get this far; the app's notifier gates them.
 struct NoticeContent: View {
     let model: IslandModel
     let notice: IslandNotice
@@ -132,16 +132,10 @@ struct NoticeContent: View {
 
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    NoticeMark(kind: notice.kind)
-                        .frame(width: 20, height: 20)
-                    Text("Superflow")
-                        .appType(.label)
-                        .foregroundStyle(Tok.text)
-                        .lineLimit(1)
-                }
-                .padding(.leading, pad)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                NoticeMark(kind: notice.kind)
+                    .frame(width: 20, height: 20)
+                    .padding(.leading, pad)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 if geometry.hasNotch {
                     Color.clear.frame(width: geometry.notch.width)
@@ -161,25 +155,63 @@ struct NoticeContent: View {
             }
             .frame(height: geometry.band)
 
-            Text(notice.title)
-                .appType(.reading)
-                .foregroundStyle(Tok.text)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, IslandLayout.cardGap)
-                .padding(.horizontal, pad)
-                .frame(height: IslandLayout.cardRow)
+            HStack(alignment: .lastTextBaseline, spacing: 8) {
+                if let value = notice.value {
+                    CountUp(value: value)
+                    Text(notice.kind == .streak ? "days in a row" : "words, dictated by you")
+                        .appType(.caption)
+                        .foregroundStyle(Tok.text2)
+                } else {
+                    Text(notice.title)
+                        .appType(.title)
+                        .foregroundStyle(Tok.text)
+                    Text(notice.detail)
+                        .appType(.caption)
+                        .foregroundStyle(Tok.text2)
+                }
 
-            Text(notice.detail)
-                .appType(.caption)
-                .foregroundStyle(Tok.text2)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, IslandLayout.cardRowGap)
-                .padding(.horizontal, pad)
-                .frame(height: IslandLayout.cardMeta)
+                Spacer(minLength: 12)
+
+                if let action = notice.action {
+                    AppButton(action, glyph: nil, kind: .secondary, height: 28) {
+                        model.openNotice(notice)
+                    }
+                    .fixedSize()
+                }
+            }
+            .lineLimit(1)
+            .frame(minHeight: 36)
+            .padding(.top, IslandLayout.cardGap)
+            .padding(.horizontal, pad)
 
             Spacer(minLength: 0)
         }
+    }
+}
+
+/// Counts up in 14 whole steps over 0.7 s. The final frame is always the exact
+/// value, and the hidden final number reserves its width so nothing reflows.
+struct CountUp: View {
+    let value: Int
+
+    @State private var born = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduce
+
+    var body: some View {
+        let value = value
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduce)) { timeline in
+            let progress = reduce ? 1 : min(1, timeline.date.timeIntervalSince(born) / 0.7)
+            let shown = progress >= 1
+                ? value
+                : Int(Double(value) * (progress * 14).rounded(.down) / 14)
+            ZStack(alignment: .leading) {
+                Text(value.formatted()).hidden()
+                Text(shown.formatted()).contentTransition(.numericText())
+            }
+            .appType(.metric)
+            .monospacedDigit()
+            .foregroundStyle(Tok.text)
+        }
+        .accessibilityLabel("\(value.formatted())")
     }
 }

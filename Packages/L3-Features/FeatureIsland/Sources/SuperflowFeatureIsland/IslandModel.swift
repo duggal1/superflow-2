@@ -8,14 +8,16 @@ public enum IslandPlacement: Sendable { case home, active }
 @MainActor @Observable
 public final class IslandModel {
     public private(set) var phase: IslandPhase = .idle
-    public private(set) var copied = false
+    public internal(set) var copiedID: String?
+    /// True while the last copy is still being acknowledged.
+    public var copied: Bool { copiedID != nil }
     /// Seconds left on the "was that a mistake?" card.
     public private(set) var undoRemaining = 0
     /// Seconds left before an OS-style notice leaves on its own, drawn as a
     /// one-cell-per-second rail so the card never disappears unannounced.
     public private(set) var noticeRemaining = 0
     /// Seconds the current capture has run. A meeting is a duration, not a mode.
-    public private(set) var elapsed = 0
+    public internal(set) var elapsed = 0
     /// True while the key hints are up. The shelf is part of the silhouette, so
     /// the shape grows by `IslandLayout.hintShelf`.
     public private(set) var hint = false
@@ -23,8 +25,30 @@ public final class IslandModel {
     /// numeral is derived from the same instant.
     public private(set) var undoDeadline: Date?
     public private(set) var noticeDeadline: Date?
+
+    // MARK: live state (mirrored from the feed, never invented here)
+
+    /// The two Settings switches, mirrored so a change of mind needs no relaunch.
+    public internal(set) var prefs = IslandPrefs()
+    /// Newest first, read when a card opens, never streamed.
+    public internal(set) var history: [IslandTranscript] = []
+    /// Words dictated today, meetings excluded. The hover shelf reads it.
+    public internal(set) var today = 0
+    /// The current partial. Empty unless `prefs.liveText` is on.
+    public internal(set) var live = LiveText.empty
+    /// Meeting words and talk share.
+    public internal(set) var pulse = MeetingPulse.empty
+    /// When the current meeting started. The panel's clock reads it.
+    public internal(set) var meetingStart: Date?
+    /// Opens the History window from the Island's history card. Set by the app.
+    @ObservationIgnored public var showHistory: () -> Void = {}
+    /// Re-inserts a transcript that never landed. Set by the app.
+    @ObservationIgnored public var rePaste: (IslandTranscript) -> Void = { _ in }
+    /// Runs the one button a notice may carry. Set by the app.
+    @ObservationIgnored public var noticeAction: (IslandNotice) -> Void = { _ in }
+
     public var geometry: NotchGeometry
-    public private(set) var target: IslandTarget?
+    public internal(set) var target: IslandTarget?
     public let waveform = WaveformModel()
 
     /// Escape only earns an undo card after this many seconds of recording.
@@ -38,14 +62,14 @@ public final class IslandModel {
     @ObservationIgnored public var placement: (IslandPlacement) -> Void = { _ in }
     @ObservationIgnored public var phaseDidChange: (IslandPhase) -> Void = { _ in }
     @ObservationIgnored private var latestLevel: Float = 0
-    @ObservationIgnored private var timer: Task<Void, Never>?
-    @ObservationIgnored private var hoverTask: Task<Void, Never>?
+    @ObservationIgnored var timer: Task<Void, Never>?
+    @ObservationIgnored var hoverTask: Task<Void, Never>?
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var undoTask: Task<Void, Never>?
-    @ObservationIgnored private var noticeTask: Task<Void, Never>?
+    @ObservationIgnored var noticeTask: Task<Void, Never>?
     @ObservationIgnored private var hintTask: Task<Void, Never>?
     @ObservationIgnored private var consumers: [Task<Void, Never>] = []
-    @ObservationIgnored private var recordedAt: Date?
+    @ObservationIgnored var recordedAt: Date?
     @ObservationIgnored private var pendingNotice: IslandNotice?
     @ObservationIgnored private var totalWords = 0
     @ObservationIgnored private var nextMilestone = 1_000
@@ -62,6 +86,19 @@ public final class IslandModel {
                 guard let levels = self?.feed.levels else { return }
                 for await level in levels { self?.latestLevel = level }
             },
+            // Streaming always runs. The model only keeps the text when the
+            // setting is on, so the engine does the same work either way.
+            Task { [weak self] in
+                guard let live = self?.feed.live else { return }
+                for await text in live {
+                    guard let self, self.prefs.liveText else { continue }
+                    self.live = text
+                }
+            },
+            Task { [weak self] in
+                guard let pulses = self?.feed.pulses else { return }
+                for await pulse in pulses { self?.pulse = pulse }
+            },
         ]
     }
 
@@ -75,121 +112,13 @@ public final class IslandModel {
         hintTask?.cancel()
     }
 
-    // MARK: input
-
-    public func send(_ event: IslandEvent) {
-        switch event {
-        case .holdBegan(let target):
-            begin(target)
-        case .handsFreeBegan(let target):
-            begin(target)
-        case .meetingBegan(let target):
-            begin(target)
-        case .escapeCancelled(let text):
-            offerUndo(text)
-            return
-        case .holdEnded, .cancelled, .landed, .pasteFailed, .notice, .dismissed:
-            break
-        }
-        go(IslandReducer.reduce(phase, event))
-    }
-
-    private func begin(_ target: IslandTarget?) {
-        self.target = target
-        recordedAt = Date()
-        elapsed = 0
-        hoverTask?.cancel()
-    }
-
-    /// Fully dynamic: only a recording that ran long enough to be worth keeping
-    /// raises the card. A quick Escape just closes the Island.
-    private func offerUndo(_ text: String) {
-        let elapsed = recordedAt.map { Date().timeIntervalSince($0) } ?? 0
-        guard phase.isBusy, elapsed >= Self.undoMinimumSeconds else {
-            go(.idle)
-            return
-        }
-        go(.undo(IslandUndo(text: text.trimmingCharacters(in: .whitespacesAndNewlines),
-                            bundleID: target?.bundleID,
-                            appName: target?.name,
-                            seconds: elapsed)))
-    }
-
-    /// Pointer over the notch. 120 ms dwell, so sweeping across to a menu item does not flicker.
-    public func hoverChanged(_ inside: Bool) {
-        switch phase {
-        case .idle where inside && geometry.hasNotch:
-            hoverTask?.cancel()
-            hoverTask = Task { [weak self] in
-                try? await Task.sleep(for: .milliseconds(120))
-                guard !Task.isCancelled else { return }
-                self?.go(.hover)
-            }
-        case .idle:
-            hoverTask?.cancel()
-        case .hover where !inside:
-            go(.idle)
-        case .failed:
-            if inside {
-                timer?.cancel()
-            } else {
-                scheduleFailureTimeout(ms: 4_000)
-            }
-        case .notice:
-            if inside {
-                noticeTask?.cancel()
-            } else {
-                scheduleNoticeTimeout()
-            }
-        case .hover, .listening, .handsFree, .meeting, .processing, .landed, .undo, .recent:
-            break
-        }
-    }
-
-    /// Click on the notch. The owner can always reach the last dictation.
-    public func openRecent() {
-        guard phase.isRest, geometry.hasNotch else { return }
-        hoverTask?.cancel()
-        go(.recent(feed.lastTranscript()))
-    }
-
-    /// An OS-style notice, drawn in the Island. The milestone below is the first
-    /// caller; the app can post any other with the same API.
-    public func notify(_ notice: IslandNotice) {
-        go(.notice(notice))
-    }
-
-    public func copy(_ transcript: IslandTranscript) {
-        copyText(transcript.text)
-        copied = true
-        after(900) { [weak self] in self?.send(.dismissed) }
-    }
-
-    /// Undo means "keep the words". The microphone is already closed, so the one
-    /// honest recovery is the clipboard: the card says so and copies on click.
-    public func keepUndo(_ undo: IslandUndo) {
-        guard !undo.isEmpty else {
-            go(.idle)
-            return
-        }
-        copyText(undo.text)
-        copied = true
-        after(1_400) { [weak self] in self?.go(.idle) }
-    }
-
-    private func copyText(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
-    }
-
     // MARK: transitions
 
-    private func go(_ next: IslandPhase) {
+    func go(_ next: IslandPhase) {
         guard next != phase else { return }
         let prev = phase
         timer?.cancel()
-        copied = false
+        copiedID = nil
         if case .undo = next {
             // The countdown owns its own task.
         } else {
@@ -214,14 +143,14 @@ public final class IslandModel {
 
         // The meter runs from the first frame of the session until cleanup ends.
         switch next {
-        case .listening, .handsFree, .meeting:
+        case .listening, .handsFree, .meeting, .meetingPanel:
             if !prev.isBusy { waveform.reset() }
             waveform.setLive(true)
             startTicker()
         case .processing:
             waveform.setLive(false)
             startTicker()
-        case .idle, .hover, .landed, .undo, .failed, .recent, .notice:
+        case .idle, .hover, .landed, .undo, .failed, .recent, .history, .notice:
             waveform.setLive(false)
             stopTicker()
             elapsed = 0
@@ -261,10 +190,13 @@ public final class IslandModel {
             if feed.storesTranscripts { scheduleFailureTimeout(ms: 12_000) }
         case .idle:
             recordedAt = nil
+            meetingStart = nil
+            live = .empty
             if !prev.isRest {
                 after(420) { [weak self] in self?.placement(.home) }
             }
-        case .hover, .listening, .handsFree, .meeting, .processing, .recent:
+        case .hover, .listening, .handsFree, .meeting, .meetingPanel, .processing,
+             .recent, .history:
             break
         }
     }
@@ -277,17 +209,18 @@ public final class IslandModel {
         pendingNotice = IslandNotice(
             kind: .milestone,
             title: "\(nextMilestone.formatted()) words.",
-            detail: "\(totalWords.formatted()) words dictated with Superflow."
+            detail: "\(totalWords.formatted()) words dictated with Superflow.",
+            value: nextMilestone
         )
         nextMilestone *= 2
     }
 
-    private func scheduleFailureTimeout(ms: Int) {
+    func scheduleFailureTimeout(ms: Int) {
         guard feed.storesTranscripts else { return }
         after(ms) { [weak self] in self?.go(.idle) }
     }
 
-    private func scheduleNoticeTimeout() {
+    func scheduleNoticeTimeout() {
         noticeTask?.cancel()
         guard noticeRemaining > 0 else {
             go(.idle)
@@ -333,7 +266,7 @@ public final class IslandModel {
                 guard !Task.isCancelled else { return }
                 self?.setHint(false)
             }
-        case .idle, .hover, .listening, .processing, .landed, .undo, .failed, .recent, .notice:
+        case .idle, .hover, .listening, .processing, .landed, .undo, .failed, .recent, .history, .meetingPanel, .notice:
             setHint(false)
         }
     }
@@ -348,7 +281,7 @@ public final class IslandModel {
         }
     }
 
-    private func after(_ ms: Int, _ body: @escaping @MainActor () -> Void) {
+    func after(_ ms: Int, _ body: @escaping @MainActor () -> Void) {
         timer?.cancel()
         timer = Task {
             try? await Task.sleep(for: .milliseconds(ms))

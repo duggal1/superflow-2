@@ -13,8 +13,11 @@ public struct IslandRoot: View {
         self.model = model
     }
 
+    private var live: Bool { model.prefs.liveText }
+
     public var body: some View {
-        let box = IslandLayout.box(model.phase, model.geometry, hint: model.hint)
+        let box = IslandLayout.box(model.phase, model.geometry,
+                                   hint: model.hint, live: live, prefs: model.prefs)
         let size = box.frameSize
 
         ZStack(alignment: .top) {
@@ -32,8 +35,11 @@ public struct IslandRoot: View {
                         .clipShape(NotchShape(top: 0, bottom: box.bottom))
                 }
                 .overlay {
-                    if model.phase.isRest, model.geometry.hasNotch {
-                        SurfaceButton("Show last dictation") { model.openRecent() }
+                    // One click target for the rest states and for the meeting
+                    // wings. It sits above the content, so it opens panels; every
+                    // card draws its own controls and is never covered.
+                    if clickTarget {
+                        SurfaceButton(clickLabel) { model.send(.notchClicked) }
                     }
                 }
                 .onHover { model.hoverChanged($0) }
@@ -44,19 +50,49 @@ public struct IslandRoot: View {
         .environment(\.colorScheme, .dark)
     }
 
+    /// Rest is clickable on a notch, and always clickable when the pill is shown
+    /// on a display without one.
+    private var clickTarget: Bool {
+        switch model.phase {
+        case .idle: model.geometry.hasNotch || model.prefs.alwaysOn
+        case .hover, .meeting: true
+        case .listening, .handsFree, .meetingPanel, .processing, .landed, .undo,
+             .failed, .recent, .history, .notice: false
+        }
+    }
+
+    private var clickLabel: String {
+        switch model.phase {
+        case .meeting: "Open meeting panel"
+        case .idle, .hover:
+            model.prefs.alwaysOn ? "Show recent dictations" : "Show last dictation"
+        case .listening, .handsFree, .meetingPanel, .processing, .landed, .undo,
+             .failed, .recent, .history, .notice:
+            "Show last dictation"
+        }
+    }
+
     @ViewBuilder private var content: some View {
         switch model.phase {
         case .listening, .handsFree, .meeting, .processing, .landed:
             WingsContent(model: model)
                 .id("wings")
                 .transition(.islandContent(reduceMotion: reduceMotion))
+        case .meetingPanel:
+            MeetingPanel(model: model)
+                .id("meeting-panel")
+                .transition(.islandContent(reduceMotion: reduceMotion))
         case .failed(let transcript):
-            CardContent(model: model, kind: .failed, transcript: transcript)
+            PasteFailedCard(model: model, transcript: transcript)
                 .id("card")
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .recent(let transcript):
             CardContent(model: model, kind: .recent, transcript: transcript)
                 .id("card")
+                .transition(.islandContent(reduceMotion: reduceMotion))
+        case .history:
+            HistoryPanel(model: model)
+                .id("history")
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .undo(let undo):
             UndoContent(model: model, undo: undo)
@@ -67,11 +103,13 @@ public struct IslandRoot: View {
                 .id("notice")
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .hover:
-            HoverMark()
+            HoverShelf(model: model)
                 .id("hover")
                 .transition(.opacity)
         case .idle:
-            EmptyView()
+            IdleMark(model: model)
+                .id("idle")
+                .transition(.opacity)
         }
     }
 }

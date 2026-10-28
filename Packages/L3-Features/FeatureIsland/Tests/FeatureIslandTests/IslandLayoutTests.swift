@@ -14,8 +14,8 @@ final class IslandLayoutTests: XCTestCase {
     private let notice = IslandNotice(kind: .milestone, title: "1,000 words.", detail: "Kept.")
 
     private var phases: [IslandPhase] {
-        [.idle, .hover, .listening, .handsFree, .meeting, .processing, .landed(words: 2),
-         .undo(undo), .notice(notice),
+        [.idle, .hover, .listening, .handsFree, .meeting, .meetingPanel, .processing,
+         .landed(words: 2), .undo(undo), .notice(notice), .history,
          .failed(transcript), .recent(transcript), .recent(nil)]
     }
 
@@ -63,13 +63,20 @@ final class IslandLayoutTests: XCTestCase {
 
     func testCardBodyHeightFitsBandRowAndMeta() {
         for geometry in [notch, plain] {
+            // The failure card is three lines plus an action row, the history
+            // panel is five rows plus a footer, and the meeting panel carries a
+            // metric, a share bar and a legend.
             XCTAssertEqual(IslandLayout.box(.failed(transcript), geometry).body.height,
-                           IslandLayout.cardHeight(geometry.band))
+                           IslandLayout.cardHeight(geometry.band, below: 148))
+            XCTAssertEqual(IslandLayout.box(.history, geometry).body.height,
+                           IslandLayout.cardHeight(geometry.band, below: 296))
+            XCTAssertEqual(IslandLayout.box(.meetingPanel, geometry).body.height,
+                           IslandLayout.cardHeight(geometry.band, below: 168))
+            XCTAssertEqual(IslandLayout.box(.notice(notice), geometry).body.height,
+                           IslandLayout.cardHeight(geometry.band, below: 76))
             XCTAssertEqual(IslandLayout.box(.recent(nil), geometry).body.height,
                            IslandLayout.cardHeight(geometry.band))
             XCTAssertEqual(IslandLayout.box(.undo(undo), geometry).body.height,
-                           IslandLayout.cardHeight(geometry.band))
-            XCTAssertEqual(IslandLayout.box(.notice(notice), geometry).body.height,
                            IslandLayout.cardHeight(geometry.band))
         }
     }
@@ -82,7 +89,7 @@ final class IslandLayoutTests: XCTestCase {
         XCTAssertEqual(IslandLayout.box(.meeting, notch).body.width,
                        notch.notch.width + 2 * IslandLayout.wingWidth(.meeting, gap: notch.notch.width))
         XCTAssertEqual(IslandLayout.wingWidth(.meeting, gap: notch.notch.width),
-                         (IslandLayout.canvas.width - notch.notch.width - 12) / 2)
+                       IslandLayout.wingMeeting)
         XCTAssertEqual(IslandLayout.box(.handsFree, notch).body.height, notch.band)
     }
 
