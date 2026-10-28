@@ -58,14 +58,40 @@ public struct FluidAudioModelHubDownloader: FluidAudioModelDownloading {
                                         config: config,
                                         progressHandler: handler)
         case .nemotronMultilingual(let languageDirectory, let chunkMs):
+            // A subdirectory download is saved at `to/<remote path>`, so `to` has to be the
+            // repo folder the catalog reads from. Passing the cache root put the tree at
+            // `<cache>/latin/2240ms`, one level above `modelDirectory`, and every completed
+            // download then failed integrity verification against an empty directory.
+            let subdirectory = "\(languageDirectory)/\(chunkMs)ms"
+            let repoDirectory = cacheRoot.appendingPathComponent(
+                Repo.nemotronMultilingual.folderName, isDirectory: true)
+            Self.adoptFlatCacheIfNeeded(cacheRoot: cacheRoot, subdirectory: subdirectory,
+                                        repoDirectory: repoDirectory)
             try await ModelHub.download(.nemotronMultilingual,
-                                        subdirectory: "\(languageDirectory)/\(chunkMs)ms",
-                                        to: cacheRoot,
+                                        subdirectory: subdirectory,
+                                        to: repoDirectory,
                                         config: config,
                                         progressHandler: handler,
                                         shouldSkip: { $0.contains(".mlpackage") })
         }
         progress(1)
+    }
+
+    /// Builds before this fix downloaded the multilingual tier straight into the cache
+    /// root. Move that tree under the repo folder so an existing 584 MB install verifies
+    /// instead of being fetched a second time.
+    static func adoptFlatCacheIfNeeded(cacheRoot: URL, subdirectory: String,
+                                       repoDirectory: URL,
+                                       fileManager: FileManager = .default) {
+        let legacy = cacheRoot.appendingPathComponent(subdirectory, isDirectory: true)
+        let destination = repoDirectory.appendingPathComponent(subdirectory, isDirectory: true)
+        guard !fileManager.fileExists(atPath: destination.path),
+              fileManager.fileExists(atPath: legacy.path) else {
+            return
+        }
+        try? fileManager.createDirectory(at: destination.deletingLastPathComponent(),
+                                         withIntermediateDirectories: true)
+        try? fileManager.moveItem(at: legacy, to: destination)
     }
 }
 

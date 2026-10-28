@@ -181,6 +181,41 @@ final class FluidAudioModelDownloaderTests: XCTestCase {
         XCTAssertFalse(first.isEmpty)
     }
 
+    /// The multilingual tier is downloaded by subdirectory, and FluidAudio saves it under
+    /// whatever directory it is handed. That directory must be the repo folder in
+    /// `FluidAudioCatalog.modelDirectory`, or the finished download never verifies.
+    func testFlatMultilingualCacheMovesUnderTheRepoFolder() throws {
+        let root = emptyRoot()
+        let subdirectory = "latin/2240ms"
+        let legacy = root.appendingPathComponent(subdirectory, isDirectory: true)
+        try FileManager.default.createDirectory(at: legacy, withIntermediateDirectories: true)
+        let weight = legacy.appendingPathComponent("encoder.mlmodelc")
+        try Data("weights".utf8).write(to: weight)
+
+        let repoDirectory = root.appendingPathComponent(Repo.nemotronMultilingual.folderName,
+                                                        isDirectory: true)
+        FluidAudioModelHubDownloader.adoptFlatCacheIfNeeded(
+            cacheRoot: root, subdirectory: subdirectory, repoDirectory: repoDirectory)
+
+        let moved = repoDirectory.appendingPathComponent(subdirectory, isDirectory: true)
+            .appendingPathComponent("encoder.mlmodelc")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: moved.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: weight.path))
+    }
+
+    /// The catalog, not the downloader, owns the destination. Assert they agree so a
+    /// change to one side cannot silently strand the other.
+    func testMultilingualDownloadDirectoryIsTheCatalogDirectory() throws {
+        let root = emptyRoot()
+        let profile = try XCTUnwrap(FluidAudioCatalog.profile(
+            for: ModelProfile.nemotron35Streaming.id))
+        let expected = root
+            .appendingPathComponent(Repo.nemotronMultilingual.folderName, isDirectory: true)
+            .appendingPathComponent("latin/2240ms", isDirectory: true)
+        XCTAssertEqual(FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: root).path,
+                       expected.path)
+    }
+
     func testInvalidateRemovesCacheAndMarker() throws {
         let root = try makeModelCache(profileID: ModelProfile.parakeetEOU120M.id)
         let profile = try XCTUnwrap(FluidAudioCatalog.profile(for: ModelProfile.parakeetEOU120M.id))
