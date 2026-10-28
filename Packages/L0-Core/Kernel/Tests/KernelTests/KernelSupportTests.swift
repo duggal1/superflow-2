@@ -63,6 +63,22 @@ final class KernelSupportTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: encoded), settings)
     }
 
+    /// The compute choice is a stored setting, so an old row without the key
+    /// must keep the pre-existing GPU behaviour and the choice must survive
+    /// a save/load cycle.
+    func testCleanupComputeDefaultsToGPUAndRoundTrips() throws {
+        let missing = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
+        XCTAssertEqual(missing.cleanupCompute, .gpu)
+        XCTAssertEqual(ModelCompute.allCases.map(\.label), ["GPU", "CPU"])
+
+        let cpu = try JSONDecoder().decode(AppSettings.self,
+                                           from: Data(#"{"cleanupCompute":"cpu"}"#.utf8))
+        XCTAssertEqual(cpu.cleanupCompute, .cpu)
+
+        let encoded = try JSONEncoder().encode(cpu)
+        XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: encoded).cleanupCompute, .cpu)
+    }
+
     func testModelProfileLookupFallsBackToNemotron35() {
         XCTAssertEqual(ModelProfile.byID(ModelProfile.parakeetEOU120M.id),
                        ModelProfile.parakeetEOU120M)

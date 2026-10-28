@@ -33,15 +33,22 @@ public enum LlamaLogging {
 /// serializes Metal access and keeps one model mapping resident.
 public actor LlamaCppRuntime: LlamaRuntime {
     private var resources: LlamaResources?
+    private var loadedCompute: ModelCompute?
 
     public init() {}
 
-    public func load(modelURL: URL) async throws {
-        guard resources == nil else { return }
+    public func load(modelURL: URL, compute: ModelCompute) async throws {
+        if resources != nil, loadedCompute == compute { return }
+        // The same file requested with a different placement: drop the old
+        // weights first so the setting actually takes effect without a restart.
+        resources = nil
+        loadedCompute = nil
         llama_backend_init()
 
         var modelParams = llama_model_default_params()
-        modelParams.n_gpu_layers = -1
+        // llama.cpp's split knob: -1 offloads every layer to Metal, 0 keeps the
+        // whole model on the CPU.
+        modelParams.n_gpu_layers = compute == .gpu ? -1 : 0
         guard let loadedModel = llama_model_load_from_file(modelURL.path, modelParams) else {
             throw SuperflowError.modelUnavailable("llama.cpp could not load \(modelURL.lastPathComponent)")
         }
@@ -61,6 +68,7 @@ public actor LlamaCppRuntime: LlamaRuntime {
             throw SuperflowError.modelUnavailable("llama.cpp could not access the model vocabulary")
         }
         resources = LlamaResources(model: loadedModel, context: loadedContext, vocabulary: vocabulary)
+        loadedCompute = compute
     }
 
     public func countTokens(_ text: String) async -> Int? {

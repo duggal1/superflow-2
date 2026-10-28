@@ -1,5 +1,6 @@
 import Foundation
 import SuperflowInferenceHelperProtocol
+import SuperflowKernel
 import SuperflowLLMCore
 import SuperflowLLMLlamaCpp
 
@@ -17,7 +18,8 @@ import SuperflowLLMLlamaCpp
         reply(Self.version)
     }
 
-    public func prepareModel(atPath path: String, reply: @escaping (Bool, String?) -> Void) {
+    public func prepareModel(atPath path: String, gpu: Bool,
+                             reply: @escaping (Bool, String?) -> Void) {
         guard !path.isEmpty else {
             reply(false, "Model path is empty.")
             return
@@ -31,9 +33,10 @@ import SuperflowLLMLlamaCpp
 
         let callback = HelperCallback(reply)
         let runtime = self.runtime
+        let compute: ModelCompute = gpu ? .gpu : .cpu
         Task {
             do {
-                try await runtime.load(modelURL: URL(fileURLWithPath: path))
+                try await runtime.load(modelURL: URL(fileURLWithPath: path), compute: compute)
                 callback.call((true, nil))
             } catch {
                 callback.call((false, error.localizedDescription))

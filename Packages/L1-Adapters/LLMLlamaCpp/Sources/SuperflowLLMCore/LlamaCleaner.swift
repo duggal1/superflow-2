@@ -115,7 +115,10 @@ public struct LlamaPrompt: Sendable {
 }
 
 public protocol LlamaRuntime: Sendable {
-    func load(modelURL: URL) async throws
+    /// Loads the model and is the only place compute is chosen. Re-loading the
+    /// same URL with a different `compute` must re-place the weights, because
+    /// the setting may be changed at runtime from Settings.
+    func load(modelURL: URL, compute: ModelCompute) async throws
     func countTokens(_ text: String) async -> Int?
     func complete(prompt: String, maxTokens: Int) async throws -> String
 }
@@ -126,7 +129,7 @@ public extension LlamaRuntime {
 
 public struct UnavailableLlamaRuntime: LlamaRuntime {
     public init() {}
-    public func load(modelURL: URL) async throws {
+    public func load(modelURL: URL, compute: ModelCompute) async throws {
         throw SuperflowError.modelUnavailable("llama.cpp is not available in this build.")
     }
     public func complete(prompt: String, maxTokens: Int) async throws -> String {
@@ -140,6 +143,9 @@ public actor LlamaCleaner: TextCleaner {
     private let modelProvider: any ModelProvider
     private let runtime: any LlamaRuntime
     private var ready = false
+    /// Compute the model is currently loaded with, so a settings change reloads
+    /// it instead of silently keeping the old placement.
+    private var loadedCompute: ModelCompute?
 
     public init(modelProvider: any ModelProvider, runtime: any LlamaRuntime) {
         self.modelProvider = modelProvider
@@ -148,10 +154,11 @@ public actor LlamaCleaner: TextCleaner {
 
     public var isReady: Bool { ready }
 
-    public func prepare() async throws {
-        guard !ready else { return }
+    public func prepare(compute: ModelCompute = .gpu) async throws {
+        if ready, loadedCompute == compute { return }
         let url = try await modelProvider.ensureLLM { _ in }
-        try await runtime.load(modelURL: url)
+        try await runtime.load(modelURL: url, compute: compute)
+        loadedCompute = compute
         ready = true
     }
 

@@ -24,12 +24,16 @@ private actor StubProvider: ModelProvider {
 private actor FakeRuntime: LlamaRuntime {
     var response: String
     var loadedURL: URL?
+    private(set) var loads: [ModelCompute] = []
     private(set) var prompts: [String] = []
     private(set) var outputCaps: [Int] = []
 
     init(response: String) { self.response = response }
 
-    func load(modelURL: URL) async throws { loadedURL = modelURL }
+    func load(modelURL: URL, compute: ModelCompute) async throws {
+        loadedURL = modelURL
+        loads.append(compute)
+    }
     func countTokens(_ text: String) async -> Int? { LlamaPrompt.estimateTokens(text) }
     func complete(prompt: String, maxTokens: Int) async throws -> String {
         prompts.append(prompt)
@@ -153,10 +157,32 @@ final class LlamaCleanerTests: XCTestCase {
         XCTAssertTrue(ready)
         let loaded = await runtime.loadedURL
         XCTAssertEqual(loaded, url)
+        let loads = await runtime.loads
+        XCTAssertEqual(loads, [.gpu])
 
         _ = try await cleaner.clean("again", options: CleanOptions())
         let prompts = await runtime.prompts
         XCTAssertEqual(prompts.count, 2)
+        let reloaded = await runtime.loads
+        XCTAssertEqual(reloaded, [.gpu], "the same compute must not reload the model")
+    }
+
+    /// Settings lets the owner move the cleanup model between GPU and CPU.
+    /// The choice has to reach the runtime every time it changes, and only
+    /// when it changes.
+    func testPrepareReloadsWhenComputeChanges() async throws {
+        let url = URL(fileURLWithPath: "/tmp/s1-mini.gguf")
+        let runtime = FakeRuntime(response: "Clean.")
+        let cleaner = LlamaCleaner(modelProvider: StubProvider(url: url), runtime: runtime)
+
+        try await cleaner.prepare(compute: .cpu)
+        try await cleaner.prepare(compute: .cpu)
+        var loads = await runtime.loads
+        XCTAssertEqual(loads, [.cpu])
+
+        try await cleaner.prepare(compute: .gpu)
+        loads = await runtime.loads
+        XCTAssertEqual(loads, [.cpu, .gpu])
     }
 
     /// S1-mini returns an empty string for filler-only or noise-only input.

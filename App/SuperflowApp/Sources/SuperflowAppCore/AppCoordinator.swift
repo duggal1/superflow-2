@@ -226,7 +226,7 @@ public final class AppCoordinator: ObservableObject {
             self.menuBarController.setRecoveryReady(true)
             await self.tryStartHotkeys()
         }
-        Task { _ = await environment.prepareInstalledCleanupModel() }
+        Task { _ = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute) }
         isLoaded = true
     }
 
@@ -246,6 +246,7 @@ public final class AppCoordinator: ObservableObject {
 
     public func applySettings(_ updated: AppSettings) async {
         let retentionChanged = settings.retentionDays != updated.retentionDays
+        let cleanupComputeChanged = settings.cleanupCompute != updated.cleanupCompute
         settings = updated
         themeStore.mode = updated.theme
         islandBridge?.setStoresTranscripts(!updated.noTranscriptStorage)
@@ -257,6 +258,9 @@ public final class AppCoordinator: ObservableObject {
         dashboardModel?.update(settings: updated)
         await refreshPipeline()
         await tryStartHotkeys()
+        // The cleanup model is already resident at this point, so switching
+        // CPU/GPU has to re-place its weights rather than wait for a relaunch.
+        if cleanupComputeChanged { await prepareCleanupModel() }
         if updated.onboardingComplete, await !environment.recognizer.isReady {
             Task { _ = await environment.sessionEngine.warmUp() }
         }
@@ -270,7 +274,7 @@ public final class AppCoordinator: ObservableObject {
 
     private func prepareCleanupModel() async {
         guard let environment else { return }
-        _ = await environment.prepareInstalledCleanupModel()
+        _ = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute)
     }
 
     private func recoverInterruptedSessions(environment: AppEnvironment) async {

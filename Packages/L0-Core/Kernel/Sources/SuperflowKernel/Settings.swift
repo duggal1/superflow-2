@@ -13,6 +13,13 @@ public enum ThemeMode: String, Codable, Sendable, CaseIterable {
     public var label: String { rawValue.capitalized }
 }
 
+/// Where the cleanup model runs. llama.cpp splits the model between Metal and
+/// CPU at load time, so this decides the split for every later completion.
+public enum ModelCompute: String, Codable, Sendable, CaseIterable {
+    case gpu, cpu
+    public var label: String { self == .gpu ? "GPU" : "CPU" }
+}
+
 public struct LineFormatSettings: Codable, Sendable, Equatable {
     public var minWords: Int = 25
     public var preferredMax: Int = 35
@@ -162,6 +169,10 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var interactiveDeadlineMs = 1500
     public var backgroundDeadlineMs = 30_000
     public var cleanupWorkers = 3
+    /// Compute the cleanup model runs on. GPU is the default because it is far
+    /// faster on Apple silicon; CPU is the escape hatch when Metal is busy,
+    /// unsupported, or the machine is better spent elsewhere.
+    public var cleanupCompute: ModelCompute = .gpu
     public var meetingsInStats = false
     public var onboardingComplete = false
     public init() {}
@@ -205,6 +216,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         interactiveDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .interactiveDeadlineMs) ?? d.interactiveDeadlineMs
         backgroundDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .backgroundDeadlineMs) ?? d.backgroundDeadlineMs
         cleanupWorkers = try c.decodeIfPresent(Int.self, forKey: .cleanupWorkers) ?? d.cleanupWorkers
+        cleanupCompute = try c.decodeIfPresent(ModelCompute.self, forKey: .cleanupCompute) ?? d.cleanupCompute
         meetingsInStats = try c.decodeIfPresent(Bool.self, forKey: .meetingsInStats) ?? d.meetingsInStats
         onboardingComplete = try c.decodeIfPresent(Bool.self, forKey: .onboardingComplete) ?? d.onboardingComplete
     }

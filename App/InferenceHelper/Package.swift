@@ -10,6 +10,7 @@ let package = Package(
         .executable(name: "SuperflowInferenceHelper", targets: ["SuperflowInferenceHelper"]),
     ],
     dependencies: [
+        .package(path: "../../Packages/L0-Core/Kernel"),
         .package(path: "../../Packages/L1-Adapters/LLMLlamaCpp"),
     ],
     targets: [
@@ -18,6 +19,7 @@ let package = Package(
             name: "SuperflowInferenceHelperCore",
             dependencies: [
                 "SuperflowInferenceHelperProtocol",
+                .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowLLMCore", package: "LLMLlamaCpp"),
                 .product(name: "SuperflowLLMLlamaCpp", package: "LLMLlamaCpp"),
             ]
@@ -31,6 +33,7 @@ let package = Package(
             dependencies: [
                 "SuperflowInferenceHelperCore",
                 "SuperflowInferenceHelperProtocol",
+                .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowLLMCore", package: "LLMLlamaCpp"),
                 .product(name: "SuperflowLLMLlamaCpp", package: "LLMLlamaCpp"),
             ],

@@ -213,10 +213,10 @@ public final class AppEnvironment {
         await hotkeySource.setFnSuppression(canSwallow)
     }
 
-    public func prepareInstalledCleanupModel() async -> Bool {
+    public func prepareInstalledCleanupModel(compute: ModelCompute = .gpu) async -> Bool {
         guard await modelProvider.llmModelURL() != nil else { return false }
         do {
-            try await llamaCleaner.prepare()
+            try await llamaCleaner.prepare(compute: compute)
             return true
         } catch {
             metrics.event("cleanup.model.unavailable", ["reason": error.localizedDescription])

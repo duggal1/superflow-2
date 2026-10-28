@@ -172,7 +172,8 @@ struct PrivacyTab: View {
 
 struct AdvancedTab: View {
     nonisolated static let titles = ["Typing speed", "Interactive deadline",
-                                     "Background deadline", "Cleanup workers"]
+                                     "Background deadline", "Cleanup workers",
+                                     "Cleanup compute"]
 
     @ObservedObject var model: SettingsViewModel
     let query: String
@@ -200,6 +201,11 @@ struct AdvancedTab: View {
                 AppStepper(value: $model.settings.cleanupWorkers,
                            range: SettingsValidation.cleanupWorkersRange,
                            label: "Cleanup workers")
+            }
+            SettingRow(.models, "Cleanup compute", filter: query) {
+                Dropdown(selection: $model.settings.cleanupCompute,
+                         options: ModelCompute.allCases.map { .init($0.label, value: $0) },
+                         label: "Cleanup compute")
             }
         }
     }

@@ -1,5 +1,6 @@
 import Foundation
 import SuperflowInferenceHelperProtocol
+import SuperflowKernel
 import SuperflowLLMCore
 
 /// Runs llama.cpp in the embedded helper process so inference failures do not
@@ -8,14 +9,18 @@ public actor XPCInferenceHelperRuntime: LlamaRuntime {
     private let serviceName: String
     private var connection: NSXPCConnection?
     private var modelURL: URL?
+    /// Compute the model was last requested on, so a dropped connection
+    /// reconnects with the same placement instead of reverting to the default.
+    private var compute: ModelCompute = .gpu
     private var ready = false
 
     public init(serviceName: String = "com.superflow.app.InferenceHelper") {
         self.serviceName = serviceName
     }
 
-    public func load(modelURL: URL) async throws {
+    public func load(modelURL: URL, compute: ModelCompute) async throws {
         self.modelURL = modelURL
+        self.compute = compute
         try await connectAndLoad(modelURL)
     }
 
@@ -71,7 +76,7 @@ public actor XPCInferenceHelperRuntime: LlamaRuntime {
         }
 
         let loaded: ModelLoadReply = try await request { proxy, finish in
-            proxy.prepareModel(atPath: modelURL.path) { success, message in
+            proxy.prepareModel(atPath: modelURL.path, gpu: compute == .gpu) { success, message in
                 finish(.success(ModelLoadReply(success: success, message: message)))
             }
         }
