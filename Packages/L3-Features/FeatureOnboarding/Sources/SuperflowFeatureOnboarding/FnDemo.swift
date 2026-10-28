@@ -100,12 +100,12 @@ struct HeroKeyCap: View {
     var down = false
     var body: some View {
         Text(label)
-            .appType(.title).foregroundStyle(Tok.text)
-            .frame(width: 72, height: 48)
-            .background(down ? Tok.controlPressed : Tok.controlHover, in: .rect(cornerRadius: Radius.nested, style: .continuous))
+            .appType(.label).foregroundStyle(Tok.text)
+            .frame(width: 48, height: 32)
+            .background(down ? Tok.controlPressed : Tok.controlHover, in: .rect(cornerRadius: Radius.field, style: .continuous))
             .offset(y: down ? 4 : 0)
             .animation(.snappy(duration: 0.12), value: down)
-            .background { RoundedRectangle(cornerRadius: Radius.nested, style: .continuous).fill(Tok.control).offset(y: 4) }
+            .background { RoundedRectangle(cornerRadius: Radius.field, style: .continuous).fill(Tok.control).offset(y: 4) }
             .padding(.bottom, 4)
     }
 }
@@ -122,7 +122,7 @@ struct FnDemo: View {
                     .contentShape(.rect)
                     .gesture(DragGesture(minimumDistance: 0).onChanged { _ in press() }.onEnded { _ in release() })
                     .clickable()
-                    .focusStep(RoundedRectangle(cornerRadius: Radius.nested, style: .continuous))
+                    .focusStep(RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
                     .accessibilityLabel("fn key")
                     .accessibilityHint("Press and hold to see what Superflow does")
                     .accessibilityAddTraits(.isButton)

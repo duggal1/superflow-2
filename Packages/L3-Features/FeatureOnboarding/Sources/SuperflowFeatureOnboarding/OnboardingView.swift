@@ -92,13 +92,11 @@ public struct OnboardingView: View {
     private var permissions: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             heading
+                .clearsPixels()
                 .reveal(0)
             VStack(spacing: Space.md) {
-                ForEach(Array(OnboardingViewModel.requiredPermissions.enumerated()),
-                        id: \.element) { index, permission in
-                    OnboardingPresentation.PermissionRow(
-                        model: model, permission: permission,
-                        accent: index == firstPendingIndex)
+                ForEach(OnboardingViewModel.requiredPermissions, id: \.self) { permission in
+                    OnboardingPresentation.PermissionRow(model: model, permission: permission)
                 }
                 OnboardingPresentation.GlobeRow(model: model)
             }
@@ -118,6 +116,7 @@ public struct OnboardingView: View {
     private var models: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             heading
+                .clearsPixels()
                 .reveal(0)
             VStack(spacing: Space.md) {
                 DownloadCard(title: model.speechName,
@@ -168,6 +167,7 @@ public struct OnboardingView: View {
     private var done: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             heading(stop: true)
+                .clearsPixels()
                 .reveal(0)
             VStack(alignment: .leading, spacing: Space.md) {
                 if model.practiceReady {
@@ -233,12 +233,6 @@ public struct OnboardingView: View {
 
     private var skipTitle: String? {
         model.step == .permissions && !model.permissionsGranted ? "Set up later" : nil
-    }
-
-    private var firstPendingIndex: Int? {
-        OnboardingViewModel.requiredPermissions.firstIndex {
-            model.status(for: $0) == .notDetermined
-        }
     }
 
     // MARK: motion

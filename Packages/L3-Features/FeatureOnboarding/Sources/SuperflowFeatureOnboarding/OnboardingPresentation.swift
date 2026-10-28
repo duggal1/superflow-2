@@ -16,8 +16,6 @@ enum OnboardingPresentation {
     struct PermissionRow: View {
         @ObservedObject var model: OnboardingViewModel
         let permission: Permission
-        /// Only the first row that still needs action carries the accent fill.
-        var accent: Bool = false
 
         var body: some View {
             let status = model.status(for: permission)
@@ -38,15 +36,17 @@ enum OnboardingPresentation {
             .accessibilityElement(children: .contain)
         }
 
+        /// Both actions are neutral, so Continue stays the only accent control on
+        /// the screen and the trailing column is one width for every row.
         @ViewBuilder
         private func control(_ status: PermissionStatus) -> some View {
             switch status {
             case .granted:
                 Badge("Granted", variant: .green, size: .sm)
             case .denied:
-                AppButton("Open Settings", kind: .link, action: open)
+                AppButton("Open Settings", kind: .secondary, height: ControlHeight.small, action: open)
             case .notDetermined:
-                AppButton("Grant", kind: accent ? .primary : .quiet, action: request)
+                AppButton("Grant", kind: .secondary, height: ControlHeight.small, action: request)
             }
         }
 
@@ -85,7 +85,7 @@ enum OnboardingPresentation {
         @ViewBuilder
         private var control: some View {
             if model.globeConflict {
-                AppButton("Open Keyboard settings", kind: .link, action: open)
+                AppButton("Open Keyboard settings", kind: .secondary, height: ControlHeight.small, action: open)
             } else if model.globeChecked {
                 Badge("Ready", variant: .green, size: .sm)
             }

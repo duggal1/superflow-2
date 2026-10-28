@@ -27,10 +27,16 @@ struct OnboardingShell<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            content
-                .frame(maxWidth: Layout.onboardingColumn, maxHeight: .infinity, alignment: .topLeading)
-                .padding(.top, Space.xxxl + Space.xs)
-                .clearsPixels()
+            // The step scrolls; the footer is pinned. On a 520 pt window the taller
+            // steps were pushing the primary button out of view.
+            ScrollView {
+                content
+                    .frame(width: Layout.onboardingColumn, alignment: .topLeading)
+                    .padding(.top, Space.xxl)
+                    .padding(.bottom, Space.xl)
+                    .frame(maxWidth: .infinity)
+            }
+            .scrollBounceBehavior(.basedOnSize)
             footer
         }
         .frame(width: Layout.onboardingWidth, height: Layout.onboardingHeight)
@@ -52,7 +58,13 @@ struct OnboardingShell<Content: View>: View {
     private var footer: some View {
         HStack(spacing: 0) {
             HStack(spacing: 0) {
-                if let backAction { AppButton("Back", kind: .quiet, action: backAction).padding(.leading, -12) }
+                if let backAction {
+                    AppButton("Back", kind: .quiet) {
+                        Sounds.play(.transcriptionCancel)
+                        backAction()
+                    }
+                    .padding(.leading, -12)
+                }
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity)
@@ -61,8 +73,17 @@ struct OnboardingShell<Content: View>: View {
 
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
-                if let skipTitle, let skipAction { AppButton(skipTitle, kind: .quiet, action: skipAction) }
-                AppButton(primaryTitle, kind: .primary, action: primaryAction).disabled(!primaryEnabled)
+                if let skipTitle, let skipAction {
+                    AppButton(skipTitle, kind: .quiet) {
+                        Sounds.play(.clickSoft)
+                        skipAction()
+                    }
+                }
+                AppButton(primaryTitle, kind: .primary) {
+                    Sounds.play(.clickSoft)
+                    primaryAction()
+                }
+                .disabled(!primaryEnabled)
             }
             .frame(maxWidth: .infinity)
         }

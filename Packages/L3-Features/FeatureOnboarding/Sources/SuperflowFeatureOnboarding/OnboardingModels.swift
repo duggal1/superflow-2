@@ -21,7 +21,7 @@ public enum OnboardingStep: String, CaseIterable, Sendable, Identifiable {
     public var title: String {
         switch self {
         case .welcome: "Speak. It types."
-        case .permissions: "Three permissions."
+        case .permissions: "Four permissions."
         case .models: "Download the models."
         case .done: "You're set."
         }

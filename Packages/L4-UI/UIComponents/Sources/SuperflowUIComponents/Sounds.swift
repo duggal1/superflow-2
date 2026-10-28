@@ -12,8 +12,8 @@ public enum SoundCue: String, Sendable, CaseIterable {
 /// and the user's alert volume without touching the microphone pipeline.
 @MainActor
 public enum Sounds {
-    /// Held so a short cue is not deallocated mid-playback.
-    private static var active: [NSSound] = []
+    /// Kept alive and reused, so a repeated click retriggers instead of stacking.
+    private static var cache: [SoundCue: NSSound] = [:]
 
     /// The cue's file, when the resource bundle actually contains it.
     public static func url(for cue: SoundCue) -> URL? {
@@ -21,12 +21,19 @@ public enum Sounds {
             ?? Bundle.module.url(forResource: cue.rawValue, withExtension: "mp3")
     }
 
-    public static func play(_ cue: SoundCue) {
-        guard let url = url(for: cue), let sound = NSSound(contentsOf: url, byReference: true) else {
-            return
-        }
-        active.removeAll { !$0.isPlaying }
-        active.append(sound)
+    public static func play(_ cue: SoundCue, volume: Float = 0.5) {
+        guard let sound = sound(for: cue) else { return }
+        sound.stop()
+        sound.volume = volume
         sound.play()
+    }
+
+    private static func sound(for cue: SoundCue) -> NSSound? {
+        if let cached = cache[cue] { return cached }
+        guard let url = url(for: cue), let sound = NSSound(contentsOf: url, byReference: true) else {
+            return nil
+        }
+        cache[cue] = sound
+        return sound
     }
 }
