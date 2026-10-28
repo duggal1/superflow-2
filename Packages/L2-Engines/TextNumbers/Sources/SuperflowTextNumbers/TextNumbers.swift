@@ -12,6 +12,7 @@ public enum TextNumbers {
         }
         while i < words.count {
             guard NumberLex.editable(words, i) else { output.append(words[i]); i += 1; continue }
+            if isListMarker(words, at: i) { output.append(words[i]); i += 1; continue }
             if let (clock, used) = NumberPieces.clock(words, i) { emit(clock, used); continue }
             if NumberPieces.yearContext(output), let (year, used) = NumberPieces.year(words, i) {
                 emit(String(year), used)
@@ -78,6 +79,15 @@ public enum TextNumbers {
             emit(core, used)
         }
         return output
+    }
+
+    private static func isListMarker(_ words: [Word], at index: Int) -> Bool {
+        guard index > 0, words[index - 1].key == "number", !words[index - 1].hardBreak,
+              let value = NumberLex.units[words[index].key], (1...10).contains(value) else { return false }
+        guard index + 1 < words.count, !words[index].hardBreak else { return true }
+        let next = words[index + 1].key
+        return !NumberLex.isNumberToken(next) && next != "point" && next != "percent"
+            && NumberPieces.currency[next] == nil && NumberPieces.techUnits[next] == nil
     }
 
     private static func digitize(_ words: [Word], _ i: Int, _ options: NumberOptions) -> Bool {

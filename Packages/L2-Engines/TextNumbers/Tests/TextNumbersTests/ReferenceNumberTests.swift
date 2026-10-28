@@ -115,4 +115,23 @@ final class ReferenceNumberTests: XCTestCase {
         XCTAssertEqual(render("one hundred hundred"), "100 hundred")
         XCTAssertEqual(render("one quadrillion"), "1,000,000,000,000,000")
     }
+
+    func testListMarkersStayUnprotectedForListPlanner() async {
+        let input = "tasks number one fix the parser number two check the input number three update the tests"
+        let words = TextNumbers.apply(Tokenizer.words(input))
+        XCTAssertEqual(Tokenizer.join(words), input)
+        for index in words.indices where ["one", "two", "three"].contains(words[index].key) {
+            XCTAssertFalse(words[index].protected)
+        }
+        var settings = AppSettings.default
+        settings.spellOutSmallNumbers = false
+        let result = await NumberCleanupStage().apply(TranscriptDraft(text: input),
+                                                       context: TextContext(settings: settings))
+        XCTAssertEqual(result.text, input)
+        XCTAssertFalse(result.protected.literals.contains("one"))
+        XCTAssertFalse(result.protected.literals.contains("two"))
+        XCTAssertFalse(result.protected.literals.contains("three"))
+        XCTAssertEqual(render("number one hundred"), "number 100")
+        XCTAssertEqual(render("number one two three"), "number 123")
+    }
 }
