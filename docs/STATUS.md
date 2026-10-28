@@ -1,6 +1,6 @@
 # Backend Run Status
 
-Updated: 2026-10-27
+Updated: 2026-10-29
 
 ## Milestones
 
@@ -10,6 +10,7 @@ Updated: 2026-10-27
 
 ## Current Work
 
+- **Corrected — ASR compute-units policy is a single pinned default.** The 2026-10-28 warm-start commit left `FluidAudioEngineLoader.computeUnits()` and the Silero VAD split across two decisions ("GPU is the product path" in code, CPU default in ADR 0014), with the VAD hardcoded to a different runtime from the recognizer. The policy is now one function resolved once per model load: owner decision 2026-10-29 makes **GPU (`.cpuAndGPU`)** the product default for the always-hot dictation path, the VAD follows the same policy so VAD and encoder never cross runtimes mid-recording, `SUPERFLOW_COMPUTE_UNITS` keeps its `cpu|gpu|ane|all` diagnostic aliases, `superflowctl campaign` defaults to `gpu`, and a unit test pins the default and aliases. CPU remains the measured throughput leader (ADR 0014) and is selectable as an override; switch the default back only with a new measured A/b at the 2240 ms tier.
 - **Done — speed A/B on the real 0.6B model (Release, 8.66 s clip, warm, 5 reps).** Compute units matter more than anything else on this M1 Air: `.cpuOnly` = **12.7x RTFx** at the 1120 ms tier (88.5 ms/chunk), `.cpuAndGPU` = 10.9x, `.cpuAndNeuralEngine` = **2.8x** (417 ms/chunk). The ANE path is 4.5x slower because Core ML splits this int8 encoder; the vendor's 66x/243x ANE numbers are M2/M5-class only. Switching to the **2240 ms tier on CPU** (vendor-recommended tier, 565 MB, downloaded and verified loadable) gives **22.4x median** on the product default path, 115 ms stop-to-text, 119 ms per 2.24 s chunk, 45 MB footprint after warm-up, +0 MB growth. That is a 9x improvement over the 2.8x ANE default and replaces the earlier 3.9x 1120 ms Debug-era figure.
 - **Done — `superflowctl bench`**: release-only small-clip harness (refuses Debug), 2 discarded warm-up passes, then N measured runs; reports RTFx, per-chunk p50/p95, stop-to-text, phys_footprint baseline/growth. Deliberately excludes journal and text pipeline so a slow stage cannot hide.
 - **In progress — remaining model set:** Silero VAD present at `.models/silero-vad/` (8,370,975 bytes), not yet separately validated. EOU (438 MB) and Sortformer (235 MB) downloads look complete; Parakeet Unified (588 MB) still needs checksum verification. None are on the default path.

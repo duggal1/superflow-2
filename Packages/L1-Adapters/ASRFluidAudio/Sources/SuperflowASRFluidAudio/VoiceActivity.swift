@@ -70,9 +70,10 @@ public actor SileroVoiceActivity: VoiceActivityClassifying {
 enum SileroVoiceActivityLoader {
     static func makeManager(modelURL: URL) throws -> VadManager {
         let configuration = MLModelConfiguration()
-        // Same GPU path as the recognizer: one ML runtime, no ANE/GPU serialisation
-        // between the VAD call and the encoder on every audio chunk.
-        configuration.computeUnits = .cpuAndGPU
+        // One ML runtime for the whole recording: the VAD follows the same locked
+        // compute-units policy as the recognizer, so the per-chunk encoder and VAD
+        // calls never cross device runtimes.
+        configuration.computeUnits = FluidAudioEngineLoader.computeUnits()
         let model = try MLModel(contentsOf: modelURL, configuration: configuration)
         return VadManager(config: .default, vadModel: model)
     }

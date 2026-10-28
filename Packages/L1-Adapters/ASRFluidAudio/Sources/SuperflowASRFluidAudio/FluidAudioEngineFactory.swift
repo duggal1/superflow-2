@@ -32,14 +32,26 @@ public enum FluidAudioEngineLoader {
         }
     }
 
-    /// GPU is the product path. Core ML has no GPU-only setting, so `.cpuAndGPU` is the
-    /// GPU runtime: it keeps the encoders on the GPU and still lets cheap shape work fall
-    /// back to the CPU instead of stalling. `.all` is deliberately not the default (it can
-    /// hand work to the ANE and serialize with the recognizer), and `.cpuOnly` is far too
-    /// slow to ship. `SUPERFLOW_COMPUTE_UNITS` exists only to diagnose a machine.
-    private static func computeUnits() -> MLComputeUnits {
-        switch ProcessInfo.processInfo.environment["SUPERFLOW_COMPUTE_UNITS"]?.lowercased() {
+    /// The locked product backend is GPU. Core ML has no GPU-only setting, so
+    /// `.cpuAndGPU` is the GPU runtime: the encoders run on the GPU and cheap
+    /// shape work falls back to the CPU instead of stalling. ADR 0014 measured
+    /// CPU throughput slightly ahead at the 1120 ms tier (12.7x vs 10.9x) while
+    /// the 2240 ms GPU comparison stayed outstanding, and `.cpuAndNeuralEngine`
+    /// is excluded (2.8x 4.5x slower here; vendor ANE numbers are M2/M5-class).
+    /// Owner decision 2026-10-29: GPU is the product default for the always-hot
+    /// dictation path. One policy resolves it per load: no runtime device
+    /// selection, no specialization churn, no repeated warm-up. The VAD shares
+    /// this same policy so the recognizer and VAD never hand work across
+    /// runtimes mid-recording. `SUPERFLOW_COMPUTE_UNITS` is the diagnostic
+    /// override for another machine.
+    static func computeUnits() -> MLComputeUnits {
+        computeUnits(ProcessInfo.processInfo.environment["SUPERFLOW_COMPUTE_UNITS"])
+    }
+
+    static func computeUnits(_ raw: String?) -> MLComputeUnits {
+        switch raw?.lowercased() {
         case "cpu": return .cpuOnly
+        case "gpu": return .cpuAndGPU
         case "ane": return .cpuAndNeuralEngine
         case "all": return .all
         default: return .cpuAndGPU
