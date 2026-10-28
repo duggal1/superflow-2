@@ -1,13 +1,21 @@
 import SwiftUI
 
+/// One reducer, one phase, eleven values. Push-to-talk, hands-free and a latched
+/// meeting are three different promises, so the notch says which one is live;
+/// an Escape it may regret and a milestone worth saying out loud are the two
+/// cards the old Island could not draw.
 public enum IslandPhase: Equatable, Sendable {
     case idle
     case hover
     case listening
+    case handsFree
+    case meeting
     case processing
     case landed(words: Int)
+    case undo(IslandUndo)
     case failed(IslandTranscript)
     case recent(IslandTranscript?)
+    case notice(IslandNotice)
 }
 
 public extension IslandPhase {
@@ -16,18 +24,33 @@ public extension IslandPhase {
     var kind: Kind {
         switch self {
         case .idle, .hover: .rest
-        case .listening, .processing, .landed: .wings
-        case .failed, .recent: .card
+        case .listening, .handsFree, .meeting, .processing, .landed: .wings
+        case .failed, .recent, .undo, .notice: .card
         }
     }
 
     var isRest: Bool { kind == .rest }
-    var isBusy: Bool { self == .listening || self == .processing }
+
+    var isBusy: Bool {
+        switch self {
+        case .listening, .handsFree, .meeting, .processing: true
+        case .idle, .hover, .landed, .undo, .failed, .recent, .notice: false
+        }
+    }
 
     var isDismissable: Bool {
         switch self {
-        case .failed, .recent, .landed: true
-        default: false
+        case .failed, .recent, .landed, .undo, .notice: true
+        case .idle, .hover, .listening, .handsFree, .meeting, .processing: false
+        }
+    }
+
+    /// Hands-free and meetings carry a word, so their wings are wide enough for
+    /// one. The three plain states keep the narrow wings.
+    var isWide: Bool {
+        switch self {
+        case .handsFree, .meeting: true
+        case .idle, .hover, .listening, .processing, .landed, .undo, .failed, .recent, .notice: false
         }
     }
 }
@@ -58,14 +81,27 @@ public enum IslandLayout {
     public static let canvas = CGSize(width: 520, height: 128)
 
     public static let wing: CGFloat = 56
-    public static let wingInset: CGFloat = 16
+    /// Hands-free and meeting spend 24 more points on the name of the mode.
+    public static let wingWide: CGFloat = 104
+    public static let wingInset: CGFloat = 14
     public static let nonNotchGap: CGFloat = 16
 
     public static let cardWidth: CGFloat = 480
     public static let cardPad: CGFloat = 20
     public static let cardGap: CGFloat = 12
+    public static let cardRowGap: CGFloat = 8
     public static let cardRow: CGFloat = 28
+    public static let cardMeta: CGFloat = 16
     public static let restBottom: CGFloat = 12
+
+    public static func wingWidth(_ phase: IslandPhase) -> CGFloat {
+        phase.isWide ? wingWide : wing
+    }
+
+    /// band + gap + transcript + gap + meta + bottom padding, on the 4 pt grid.
+    public static func cardHeight(_ band: CGFloat) -> CGFloat {
+        band + cardGap + cardRow + cardRowGap + cardMeta + cardPad
+    }
 
     public static func box(_ phase: IslandPhase, _ geometry: NotchGeometry) -> IslandBox {
         let gap = geometry.hasNotch ? geometry.notch.width : nonNotchGap
@@ -82,9 +118,12 @@ public enum IslandLayout {
         case .listening, .processing, .landed:
             return IslandBox(body: .init(width: gap + 2 * wing, height: geometry.band),
                              top: 6, bottom: 14, opacity: 1)
-        case .failed, .recent:
+        case .handsFree, .meeting:
+            return IslandBox(body: .init(width: gap + 2 * wingWide, height: geometry.band),
+                             top: 6, bottom: 14, opacity: 1)
+        case .failed, .recent, .undo, .notice:
             return IslandBox(body: .init(width: cardWidth,
-                                         height: geometry.band + cardGap + cardRow + cardPad),
+                                         height: cardHeight(geometry.band)),
                              top: 12, bottom: 24, opacity: 1)
         }
     }

@@ -6,6 +6,10 @@ import SwiftUI
 
 /// One component, two kinds. The failure card and the click-the-notch card share
 /// the same size and layout so they morph into each other on one curve.
+///
+/// Every card is band + transcript + meta: the band says what happened, the
+/// transcript is the thing you came for, and the meta says what to do next. No
+/// icon in the failure band: beside the notch there are only about 84 points.
 struct CardContent: View {
     enum Kind { case failed, recent }
 
@@ -38,13 +42,14 @@ struct CardContent: View {
                 .padding(.top, IslandLayout.cardGap)
                 .padding(.horizontal, pad)
 
+            meta
+                .padding(.top, IslandLayout.cardRowGap)
+                .padding(.horizontal, pad)
+
             Spacer(minLength: 0)
         }
     }
 
-    /// The band beside the notch is only about 100 pt wide. A failure spends it
-    /// on the one word that matters; a recent dictation spends it identifying the
-    /// app. Never both.
     private var leading: some View {
         HStack(spacing: 8) {
             if kind == .recent {
@@ -62,8 +67,6 @@ struct CardContent: View {
         }
     }
 
-    /// The band beside the notch is only about 100 pt wide, so the title stays
-    /// short on purpose. The transcript below carries the detail.
     private var title: String {
         switch kind {
         case .failed: "Not pasted."
@@ -115,5 +118,37 @@ struct CardContent: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(height: IslandLayout.cardRow)
         }
+    }
+
+    @ViewBuilder private var meta: some View {
+        HStack(spacing: 12) {
+            switch kind {
+            case .failed:
+                Text(transcript.map(pasteLine) ?? "The field refused the paste.")
+                Spacer(minLength: 0)
+                Text("⌘V")
+                    .appType(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(Tok.text2)
+            case .recent:
+                if let transcript {
+                    Text(Humanize.words(transcript.words))
+                        .monospacedDigit()
+                    Text("Dictation")
+                } else {
+                    Text("Nothing stored yet.")
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .appType(.caption)
+        .foregroundStyle(Tok.text2)
+        .lineLimit(1)
+        .frame(height: IslandLayout.cardMeta, alignment: .leading)
+    }
+
+    private func pasteLine(_ transcript: IslandTranscript) -> String {
+        guard let name = transcript.appName else { return "The field refused the paste." }
+        return "Paste blocked in \(name)."
     }
 }

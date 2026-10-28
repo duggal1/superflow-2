@@ -100,20 +100,35 @@ extension AppCoordinator {
             case .startSpeculative(.dictation):
                 islandBridge?.holdBegan()
                 await menuBarController.startDictation()
+                // A refused start (model still loading, no recovery) emits no
+                // session event, so retract the Island here or it hangs open.
+                if !menuBarController.sessionState.isActive { islandBridge?.cancelled() }
             case .startSpeculative(.meeting):
+                // A single right-⌘ tap starts a meeting speculatively. Do not
+                // raise the Island for it: the tap may turn out to be nothing,
+                // and a 350 ms flash in the notch reads as a glitch.
                 await menuBarController.startMeeting()
-            case .holdBegan:
-                break
+            case .holdBegan(let kind):
+                if kind == .meeting { islandBridge?.meetingBegan() }
             case .beginHandsFree:
-                islandBridge?.holdBegan()
+                // Only promise hands-free once the session is actually open.
                 await menuBarController.beginHandsFreeDictation()
+                if menuBarController.sessionState.isActive { islandBridge?.handsFreeBegan() }
             case .latchMeeting:
-                break
+                await menuBarController.beginLatchedMeeting()
+                if menuBarController.meetingState.isActive { islandBridge?.meetingBegan() }
             case .submit(let kind):
-                if kind == .dictation { islandBridge?.holdEnded() }
+                islandBridge?.holdEnded()
                 await menuBarController.stop(kind)
+                // Meeting events never reach the Island bridge, so close the
+                // notch here once the latched meeting has actually stopped.
+                if kind == .meeting { islandBridge?.cancelled() }
             case .cancel(let kind, let reason):
-                if kind == .dictation { islandBridge?.cancelled() }
+                if kind == .dictation, reason == .escape {
+                    islandBridge?.escaped()
+                } else {
+                    islandBridge?.cancelled()
+                }
                 await menuBarController.cancel(kind, cue: reason == .escape)
             }
         }

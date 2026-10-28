@@ -10,8 +10,12 @@ final class IslandLayoutTests: XCTestCase {
     private let plain = NotchGeometry(frame: CGRect(x: 0, y: 0, width: 2560, height: 1440),
                                       safeTop: 0, leftWidth: nil, rightWidth: nil, scale: 2)
 
+    private let undo = IslandUndo(text: "Hello", bundleID: nil, appName: nil)
+    private let notice = IslandNotice(kind: .milestone, title: "1,000 words.", detail: "Kept.")
+
     private var phases: [IslandPhase] {
-        [.idle, .hover, .listening, .processing, .landed(words: 2),
+        [.idle, .hover, .listening, .handsFree, .meeting, .processing, .landed(words: 2),
+         .undo(undo), .notice(notice),
          .failed(transcript), .recent(transcript), .recent(nil)]
     }
 
@@ -55,13 +59,25 @@ final class IslandLayoutTests: XCTestCase {
         XCTAssertEqual(IslandLayout.box(.hover, notch).bottom, IslandLayout.restBottom)
     }
 
-    func testCardBodyHeightIsBandPlusSixty() {
+    func testCardBodyHeightFitsBandRowAndMeta() {
         for geometry in [notch, plain] {
             XCTAssertEqual(IslandLayout.box(.failed(transcript), geometry).body.height,
-                           geometry.band + 60)
+                           IslandLayout.cardHeight(geometry.band))
             XCTAssertEqual(IslandLayout.box(.recent(nil), geometry).body.height,
-                           geometry.band + 60)
+                           IslandLayout.cardHeight(geometry.band))
+            XCTAssertEqual(IslandLayout.box(.undo(undo), geometry).body.height,
+                           IslandLayout.cardHeight(geometry.band))
+            XCTAssertEqual(IslandLayout.box(.notice(notice), geometry).body.height,
+                           IslandLayout.cardHeight(geometry.band))
         }
+    }
+
+    func testWideWingsNameTheModeAndTheOthersDoNot() {
+        XCTAssertEqual(IslandLayout.box(.handsFree, notch).body.width,
+                       notch.notch.width + 2 * IslandLayout.wingWide)
+        XCTAssertEqual(IslandLayout.box(.meeting, notch).body.width,
+                       notch.notch.width + 2 * IslandLayout.wingWide)
+        XCTAssertEqual(IslandLayout.box(.handsFree, notch).body.height, notch.band)
     }
 
     func testWingsAreTheNotchPlusTwoWings() {

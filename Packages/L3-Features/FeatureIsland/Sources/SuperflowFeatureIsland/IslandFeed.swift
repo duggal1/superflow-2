@@ -28,12 +28,55 @@ public struct IslandTranscript: Equatable, Sendable {
     }
 }
 
+/// The words an Escape threw away. Present only when the recording was long
+/// enough that the Escape was probably a mistake.
+public struct IslandUndo: Equatable, Sendable {
+    public let text: String
+    public let bundleID: String?
+    public let appName: String?
+
+    public init(text: String, bundleID: String?, appName: String?) {
+        self.text = text
+        self.bundleID = bundleID
+        self.appName = appName
+    }
+
+    public var isEmpty: Bool {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+/// An OS-style notification, drawn in the Island instead of Notification Centre.
+public struct IslandNotice: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable {
+        case milestone
+        case clipboard
+        case info
+    }
+
+    public let kind: Kind
+    public let title: String
+    public let detail: String
+
+    public init(kind: Kind, title: String, detail: String) {
+        self.kind = kind
+        self.title = title
+        self.detail = detail
+    }
+}
+
 public enum IslandEvent: Equatable, Sendable {
     case holdBegan(IslandTarget?)
+    case handsFreeBegan(IslandTarget?)
+    case meetingBegan(IslandTarget?)
     case holdEnded
+    /// Escape while the microphone was open. The text is whatever the recognizer
+    /// had produced at that instant, so a long dictation can still be recovered.
+    case escapeCancelled(text: String)
     case cancelled
     case landed(words: Int)
     case pasteFailed(IslandTranscript)
+    case notice(IslandNotice)
     case dismissed
 }
 

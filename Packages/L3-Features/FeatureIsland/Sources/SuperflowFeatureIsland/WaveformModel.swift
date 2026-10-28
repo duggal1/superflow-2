@@ -3,6 +3,12 @@ import Observation
 
 /// The pixel waveform's data. A tiny LED matrix mirrored about the centre column:
 /// newest level in the centre, older levels spreading outward.
+///
+/// While the microphone closes the last envelope keeps decaying instead of
+/// snapping to silence, and the ticker keeps running through `processing`. That
+/// tail is what the Island draws while cleanup runs, so the meter is present for
+/// the whole session instead of being replaced by a wait mark the moment fn is
+/// released. Silence itself is a dotted line, never a hidden view.
 @MainActor @Observable
 public final class WaveformModel {
     public static let columns = 11
@@ -24,9 +30,17 @@ public final class WaveformModel {
 
     /// 30 Hz. Fast attack, slow release, noise gate, quantised to whole cells.
     public func tick(level: Float) {
-        let target: Float = live ? (level < 0.05 ? 0 : level) : 0
-        smoothed += (target - smoothed) * (target > smoothed ? 0.6 : 0.25)
-        let half = min(Self.halfMax, Int(smoothed * Float(Self.halfMax + 1)))
+        let heard = live && level >= 0.05
+        let target: Float = heard ? min(1, level) : 0
+        // Attack is fast so a word lands within a frame or two; the release is
+        // slower while the mic is open (a natural tail) and slightly faster once
+        // it closes, so the cleanup meter empties instead of lingering.
+        let rate: Float = target > smoothed ? 0.55 : (live ? 0.25 : 0.30)
+        smoothed += (target - smoothed) * rate
+
+        let half = smoothed < 0.05
+            ? 0
+            : min(Self.halfMax, Int((smoothed * Float(Self.halfMax + 1)).rounded()))
         var next = history
         next.removeLast()
         next.insert(half, at: 0)

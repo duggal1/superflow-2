@@ -46,7 +46,7 @@ public struct IslandRoot: View {
 
     @ViewBuilder private var content: some View {
         switch model.phase {
-        case .listening, .processing, .landed:
+        case .listening, .handsFree, .meeting, .processing, .landed:
             WingsContent(model: model)
                 .id("wings")
                 .transition(.islandContent(reduceMotion: reduceMotion))
@@ -57,6 +57,14 @@ public struct IslandRoot: View {
         case .recent(let transcript):
             CardContent(model: model, kind: .recent, transcript: transcript)
                 .id("card")
+                .transition(.islandContent(reduceMotion: reduceMotion))
+        case .undo(let undo):
+            UndoContent(model: model, undo: undo)
+                .id("undo")
+                .transition(.islandContent(reduceMotion: reduceMotion))
+        case .notice(let notice):
+            NoticeContent(model: model, notice: notice)
+                .id("notice")
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .hover:
             HoverMark()

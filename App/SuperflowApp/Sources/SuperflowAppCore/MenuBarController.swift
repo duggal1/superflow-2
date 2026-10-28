@@ -126,9 +126,32 @@ public final class MenuBarController: ObservableObject {
 
     public func beginHandsFreeDictation() async {
         guard let session else { return }
+        // A double-tap lands after the speculative start, but if that start
+        // failed there is no session to latch. Start one rather than promise a
+        // microphone that is not open.
+        var state = await session.currentState
+        if !state.isActive {
+            await startDictation()
+            state = await session.currentState
+        }
+        guard state.isActive else { return }
         await session.setMode(.handsFree)
         sessionState = await session.currentState
         await hotkeys?.setActiveTap(true)
+    }
+
+    /// A latched meeting: the right-⌘ hold threshold, or the second tap. The
+    /// speculative start on the first key-down usually created it already, so
+    /// this fills the gap instead of starting a second one.
+    public func beginLatchedMeeting() async {
+        guard let meeting else { return }
+        let state = await meeting.currentState
+        if state.isActive {
+            meetingState = state
+            await hotkeys?.setActiveTap(true)
+        } else {
+            await startMeeting()
+        }
     }
 
     public func stopDictation() async {

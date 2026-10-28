@@ -138,11 +138,26 @@ final class IslandBridge {
     /// fn down, or hands-free engaged. Opens the Island immediately; the target
     /// app is resolved after the first frame so nothing waits on the OS.
     func holdBegan() {
+        begin { .holdBegan($0) }
+    }
+
+    /// A double-tap latched the microphone open. The session is already running,
+    /// so this only changes what the notch says, never the audio path.
+    func handsFreeBegan() {
+        begin { .handsFreeBegan($0) }
+    }
+
+    /// A latched meeting. Same rule: presentation only.
+    func meetingBegan() {
+        begin { .meetingBegan($0) }
+    }
+
+    private func begin(_ make: (IslandTarget?) -> IslandEvent) {
         sawInserting = false
         didLand = false
         latestText = ""
         target = Self.frontmostTarget()
-        box.send(.holdBegan(target))
+        box.send(make(target))
     }
 
     func holdEnded() {
@@ -152,6 +167,18 @@ final class IslandBridge {
     func cancelled() {
         box.send(.cancelled)
         reset()
+    }
+
+    /// Escape while recording. The recognizer's partial text rides along so a
+    /// long dictation can still be kept if the Escape was a mistake.
+    func escaped() {
+        box.send(.escapeCancelled(text: latestText))
+        reset()
+    }
+
+    /// An OS-style notice in the notch.
+    func notice(_ notice: IslandNotice) {
+        box.send(.notice(notice))
     }
 
     // MARK: session events

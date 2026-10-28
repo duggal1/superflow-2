@@ -15,42 +15,78 @@ struct HoverMark: View {
     }
 }
 
-/// Three 2 pt cells that step in place while the model finishes. This is the
-/// only looping mark in the app: an indeterminate wait has no end to show, so
-/// the loop is the honest form. Reduce Motion holds all three lit instead.
-struct PixelWait: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private static let cell: CGFloat = 2
-    private static let pitch: CGFloat = 6
-    private static let width = 3 * cell + 2 * (pitch - cell)
+/// "Hands-free" and "Meeting" are promises about what the keys will do, so the
+/// wing names them instead of showing the destination app icon. A bare symbol
+/// carries the mode; the word carries the meaning.
+struct ModeLabel: View {
+    let text: String
+    let glyph: Glyph
 
     var body: some View {
-        Group {
-            if reduceMotion {
-                row(active: nil)
-            } else {
-                TimelineView(.periodic(from: .now, by: 0.16)) { context in
-                    row(active: Int(context.date.timeIntervalSinceReferenceDate / 0.16) % 3)
+        HStack(spacing: 6) {
+            Icon(glyph, size: 12, weight: .medium, tint: Ramp.blue[4])
+                .frame(width: 12, height: 20)
+            Text(text)
+                .appType(.caption)
+                .foregroundStyle(Tok.text)
+                .lineLimit(1)
+                .fixedSize()
+        }
+    }
+}
+
+/// The six seconds an accidental Escape is held. One 4 x 12 cell per second,
+/// lit while the second is still on the table, plus the digit so the deadline is
+/// never ambiguous.
+struct UndoTimer: View {
+    let remaining: Int
+    let total: Int
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text("\(max(0, remaining))")
+                .appType(.label)
+                .monospacedDigit()
+                .foregroundStyle(Tok.text)
+                .contentTransition(.numericText(value: Double(max(0, remaining))))
+                .animation(.snappy(duration: 0.15), value: remaining)
+
+            HStack(spacing: 2) {
+                ForEach(0..<total, id: \.self) { index in
+                    Rectangle()
+                        .fill(index < remaining ? Ramp.blue[4] : Tok.control)
+                        .frame(width: 4, height: 12)
                 }
             }
+            .frame(width: CGFloat(total) * 6 - 2, height: 12)
+            .accessibilityHidden(true)
         }
-        .frame(width: Self.width, height: 20)
-        .accessibilityHidden(true)
+        .frame(width: 64, alignment: .trailing)
+        .accessibilityLabel("\(remaining) seconds left to undo")
     }
+}
 
-    private func row(active: Int?) -> some View {
-        HStack(spacing: Self.pitch - Self.cell) {
-            ForEach(0..<3, id: \.self) { index in
-                Rectangle()
-                    .fill(tone(index: index, active: active))
-                    .frame(width: Self.cell, height: Self.cell)
+/// A five-cell diamond of 2 pt cells. The notice's mark: one accent core with a
+/// dithered ring, the same language as the page full stop.
+struct NoticeMark: View {
+    private static let cells: [(Int, Int)] = [
+        (2, 0),
+        (1, 1), (2, 1), (3, 1),
+        (0, 2), (1, 2), (2, 2), (3, 2), (4, 2),
+        (1, 3), (2, 3), (3, 3),
+        (2, 4),
+    ]
+
+    var body: some View {
+        Canvas { context, _ in
+            for (x, y) in Self.cells {
+                let core = x == 2 && y == 2
+                let tone = core ? Ramp.blue[4] : (x + y) % 2 == 0 ? Ramp.blue[3] : Ramp.blue[2]
+                let rect = CGRect(x: CGFloat(x) * 4, y: CGFloat(y) * 4, width: 2, height: 2)
+                context.fill(Path(rect), with: .color(tone), style: FillStyle(antialiased: false))
             }
         }
-        .frame(width: Self.width, height: 20)
-    }
-
-    private func tone(index: Int, active: Int?) -> Color {
-        guard let active else { return Ramp.blue[3] }
-        return index == active ? Ramp.blue[4] : Tok.controlPressed
+        .frame(width: 18, height: 18)
+        .accessibilityHidden(true)
     }
 }
