@@ -61,6 +61,7 @@ flowchart TB
   subgraph L5_Tools["L5 Tools"]
     tools_Superflowctl["Superflowctl"]
   end
+  App_InferenceHelper --> Packages_L0_Core_Kernel
   App_InferenceHelper --> Packages_L1_Adapters_LLMLlamaCpp
   App_SuperflowApp --> App_InferenceHelper
   App_SuperflowApp --> Packages_L0_Core_Kernel

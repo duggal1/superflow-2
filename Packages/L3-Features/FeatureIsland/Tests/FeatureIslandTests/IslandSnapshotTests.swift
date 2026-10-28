@@ -39,8 +39,22 @@ final class IslandSnapshotTests: XCTestCase {
         let renderer = ImageRenderer(content: IslandRoot(model: model))
         renderer.scale = 2
         renderer.proposedSize = .init(IslandLayout.canvas)
-        let image = try XCTUnwrap(renderer.nsImage)
-        return image
+        renderer.isOpaque = false
+        var result: NSImage?
+        renderer.render(rasterizationScale: 2) { size, draw in
+            let w = Int(size.width * 2)
+            let h = Int(size.height * 2)
+            guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8,
+                                     bytesPerRow: w * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                     bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+            ctx.clear(CGRect(x: 0, y: 0, width: w, height: h))
+            ctx.scaleBy(x: 2, y: 2)
+            draw(ctx)
+            if let cgImage = ctx.makeImage() {
+                result = NSImage(cgImage: cgImage, size: size)
+            }
+        }
+        return try XCTUnwrap(result)
     }
 
     func testIdleOnANotchRendersTheNotch() throws {
