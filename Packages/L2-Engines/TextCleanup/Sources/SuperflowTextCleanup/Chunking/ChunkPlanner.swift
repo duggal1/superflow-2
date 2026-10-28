@@ -17,7 +17,7 @@ public struct CleanupConfig: Sendable, Equatable {
     /// starts blind at a seam, and the stitcher dedupes the repeated opening
     /// from the finished assembly. With the product sizes (soft 600, hard 850)
     /// the 12% default adds about 72 tokens per seam, which keeps overlap+body
-    /// inside S1-mini's measured input budget.
+    /// inside the provisional input budget pending calibration.
     public var overlapPercent: Double
 
     public init(softTokenTarget: Int = 600, hardTokenCap: Int = 850, interactiveDeadlineMs: Int = 1_500,
@@ -41,28 +41,18 @@ public struct ChunkPlan: Sendable, Equatable {
     public var index: Int
     public var text: String
     public var tokens: Int
-    /// The raw text this chunk re-shares with the previous chunk as its leading
-    /// sentences ("" for the first chunk, or when the seam did not fit). The
-    /// stitcher matches this against the previous chunk's output tail and
-    /// removes the duplicate from this chunk's output.
     public var overlap: String
-    public init(index: Int, text: String, tokens: Int, overlap: String = "") {
+    public var ownedText: String
+
+    public init(index: Int, text: String, tokens: Int, overlap: String = "", ownedText: String? = nil) {
         self.index = index
         self.text = text
         self.tokens = tokens
         self.overlap = overlap
+        self.ownedText = ownedText ?? text
     }
 }
 
-/// Splits text at ASR sentence boundaries, then clauses, then words. Never mid-word.
-/// Token counts come from the model's own tokenizer through `count`.
-///
-/// After the body buckets are built, a second pass composes the seam overlap:
-/// chunk i prepends the trailing sentence pieces of chunk i-1 (up to
-/// `overlapPercent` of the soft target, and only as far as the hard cap
-/// allows), so the model sees a few sentences of context it has already
-/// cleaned. The pieces are whole sentences or whole word slices — never
-/// mid-word, never inside a protected span.
 public struct ChunkPlanner: Sendable {
     public let config: CleanupConfig
     public let protected: Protected
@@ -73,163 +63,108 @@ public struct ChunkPlanner: Sendable {
     }
 
     public func plan(_ text: String, count: @Sendable (String) async -> Int) async -> [ChunkPlan] {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return [] }
-        let total = await count(trimmed)
-        if total <= config.hardTokenCap {
-            return [ChunkPlan(index: 0, text: trimmed, tokens: total)]
-        }
+        await plan(Tokenizer.words(text, protected: protected), count: count)
+    }
 
-        var pieces: [String] = []
-        for paragraph in trimmed.components(separatedBy: "\n") {
-            let (sentences, remainder) = SentenceSplitter.split(paragraph)
-            var all = sentences
-            if !remainder.isEmpty { all.append(remainder) }
-            for sentence in all where !sentence.isEmpty {
-                let tokens = await count(sentence)
-                if tokens > config.hardTokenCap {
-                    pieces.append(contentsOf: splitLong(sentence))
-                } else {
-                    pieces.append(sentence)
+    public func plan(_ words: [Word], count: @Sendable (String) async -> Int) async -> [ChunkPlan] {
+        guard !words.isEmpty else { return [] }
+        let hard = max(1, config.hardTokenCap)
+        let target = min(hard, max(1, config.softTokenTarget))
+        let fullText = Tokenizer.join(words)
+        let total = await count(fullText)
+        if total <= hard { return [ChunkPlan(index: 0, text: fullText, tokens: total)] }
+        var prefix = [0]
+        prefix.reserveCapacity(words.count + 1)
+        for word in words { prefix.append(prefix[prefix.count - 1] + Self.weight(word)) }
+        var bodies: [(start: Int, end: Int, tokens: Int)] = []
+        var start = 0
+        while start < words.count {
+            var limit = start + 1
+            while limit < words.count, prefix[limit + 1] - prefix[start] <= target { limit += 1 }
+            while limit < words.count, words[limit - 1].glue { limit += 1 }
+            let lower = max(start + 1, start + (limit - start) * 3 / 4)
+            var end = Self.bestCut(words, lo: lower, hi: limit) ?? limit
+            let candidate = Tokenizer.join(words[start..<end])
+            var measured = await count(candidate)
+            while measured > hard, let shorter = Self.previousCut(words, before: end, after: start) {
+                end = shorter
+                measured = await count(Tokenizer.join(words[start..<end]))
+            }
+            if measured <= target {
+                var cursor = end
+                while cursor < words.count, prefix[cursor + 1] - prefix[start] <= hard * 2 {
+                    cursor += 1
+                    guard !words[cursor - 1].glue,
+                          cursor == words.count || words[cursor - 1].sentenceEnd || words[cursor - 1].pause else { continue }
+                    let extended = await count(Tokenizer.join(words[start..<cursor]))
+                    guard extended <= target else { break }
+                    end = cursor
+                    measured = extended
                 }
             }
+            // A protected term can itself exceed the model budget. Keep it whole;
+            // the caller rejects oversized input and returns its deterministic text.
+            bodies.append((start, end, measured))
+            start = end
         }
-
-        // A body bucket keeps its pieces and their counts so the overlap pass
-        // can pick a trailing slice without re-tokenizing.
-        struct Body {
-            var plan: ChunkPlan
-            var pieces: [(text: String, tokens: Int)]
-        }
-        var bodies: [Body] = []
-        var bucket: [(text: String, tokens: Int)] = []
-        var bucketTokens = 0
-        func flush() {
-            guard !bucket.isEmpty else { return }
-            let text = bucket.map(\.text).joined(separator: " ")
-            bodies.append(Body(plan: ChunkPlan(index: bodies.count, text: text, tokens: bucketTokens),
-                               pieces: bucket))
-            bucket.removeAll(keepingCapacity: true)
-            bucketTokens = 0
-        }
-        for piece in pieces {
-            let t = await count(piece)
-            if bucketTokens > 0, bucketTokens + t > config.softTokenTarget { flush() }
-            if t > config.hardTokenCap {
-                // splitLong should have prevented this; hard fallback by words.
-                let words = Tokenizer.words(in: piece)
-                var start = 0
-                let approxPerChunk = max(1, config.softTokenTarget * 3 / 4)
-                while start < words.count {
-                    let end = min(words.count, start + approxPerChunk)
-                    let slice = words[start..<end].joined(separator: " ")
-                    flush()
-                    let sliceTokens = await count(slice)
-                    bodies.append(Body(plan: ChunkPlan(index: bodies.count, text: slice, tokens: sliceTokens),
-                                       pieces: [(text: slice, tokens: sliceTokens)]))
-                    start = end
-                }
-                continue
-            }
-            if bucketTokens + t > config.hardTokenCap, !bucket.isEmpty { flush() }
-            bucket.append((text: piece, tokens: t))
-            bucketTokens += t
-        }
-        flush()
-
-        // Seam overlap pass. One guarded exception keeps a seam alive: the
-        // single most recent sentence joins the overlap even when it alone is
-        // larger than the percent budget, because losing the seam sentence is
-        // worse than a slightly larger input; the hard cap still wins.
-        let percent = min(0.20, max(0.0, config.overlapPercent))
-        let budget = percent <= 0 ? 0 : max(1, Int(Double(config.softTokenTarget) * percent))
-        let maxOverlapPieces = 8
         var plans: [ChunkPlan] = []
         plans.reserveCapacity(bodies.count)
-        for index in bodies.indices {
-            let body = bodies[index]
-            var plan: ChunkPlan
-            if index > 0, budget > 0, config.hardTokenCap > body.plan.tokens {
-                let allowance = config.hardTokenCap - body.plan.tokens
+        let overlapBudget = Int(Double(target) * min(0.20, max(0, config.overlapPercent)))
+        for (index, body) in bodies.enumerated() {
+            let owned = Tokenizer.join(words[body.start..<body.end])
+            var overlapStart = body.start
+            if index > 0, overlapBudget > 0, body.tokens < hard {
                 let previous = bodies[index - 1]
-                var chosen: [(text: String, tokens: Int)] = []
-                var sum = 0
-                for piece in previous.pieces.reversed() {
-                    guard !piece.text.isEmpty, chosen.count < maxOverlapPieces else { break }
-                    if chosen.isEmpty {
-                        if piece.tokens > allowance { break }
-                        chosen.insert(piece, at: 0)
-                        sum += piece.tokens
-                        continue
-                    }
-                    guard sum + piece.tokens <= min(budget, allowance) else { break }
-                    chosen.insert(piece, at: 0)
-                    sum += piece.tokens
+                var cursor = body.start
+                while cursor > previous.start,
+                      prefix[body.start] - prefix[cursor - 1] <= overlapBudget {
+                    cursor -= 1
                 }
-                // Inserted at 0 keeps oldest-first order.
-                let overlap = chosen.map(\.text).joined(separator: " ")
-                if !overlap.isEmpty {
-                    let composed = overlap + " " + body.plan.text
-                    let tokens = await count(composed)
-                    if tokens <= config.hardTokenCap {
-                        plan = ChunkPlan(index: index, text: composed, tokens: tokens, overlap: overlap)
-                    } else {
-                        // Token counting is per-piece; a composed count can drift
-                        // past the hard cap. Drop the oldest overlap pieces until
-                        // the seam fits, and give the overlap up if it never does.
-                        var kept = chosen
-                        while true {
-                            kept.removeFirst()
-                            if kept.isEmpty {
-                                plan = body.plan
-                                break
-                            }
-                            let composedKept = kept.map(\.text).joined(separator: " ")
-                                + " " + body.plan.text
-                            let keptTokens = await count(composedKept)
-                            if keptTokens <= config.hardTokenCap {
-                                plan = ChunkPlan(index: index, text: composedKept, tokens: keptTokens,
-                                                 overlap: kept.map(\.text).joined(separator: " "))
-                                break
-                            }
-                        }
-                    }
-                } else {
-                    plan = body.plan
+                // Prefer the last complete sentence when it fits the hard budget.
+                if let sentence = (previous.start..<body.start).reversed().first(where: {
+                    $0 == previous.start || words[$0 - 1].sentenceEnd || words[$0 - 1].pause
+                }) {
+                    cursor = min(cursor, sentence)
                 }
-            } else {
-                plan = body.plan
+                while cursor > previous.start, words[cursor - 1].glue { cursor -= 1 }
+                overlapStart = cursor
             }
-            plan.index = plans.count
-            plans.append(plan)
+            var composed = Tokenizer.join(words[overlapStart..<body.end])
+            var measured = overlapStart == body.start ? body.tokens : await count(composed)
+            while measured > hard, overlapStart < body.start {
+                repeat { overlapStart += 1 }
+                while overlapStart < body.start && words[overlapStart - 1].glue
+                composed = Tokenizer.join(words[overlapStart..<body.end])
+                measured = overlapStart == body.start ? body.tokens : await count(composed)
+            }
+            plans.append(ChunkPlan(index: index, text: composed, tokens: measured,
+                                   overlap: Tokenizer.join(words[overlapStart..<body.start]), ownedText: owned))
         }
         return plans
     }
 
-    private func splitLong(_ sentence: String) -> [String] {
-        var remaining = sentence
-        var pieces: [String] = []
-        var guardCount = 0
-        while wordCount(remaining) > config.hardTokenCap * 3 / 4 && guardCount < 128 {
-            guardCount += 1
-            let tokens = Tokenizer.tokens(in: remaining)
-            guard tokens.count > 12 else { break }
-            let target = min(tokens.count - 1, max(8, config.softTokenTarget * 3 / 4))
-            var chosen: Int?
-            for i in stride(from: target, through: max(4, target / 2), by: -1) {
-                if tokens[i].trail.contains(";") { chosen = i; break }
-            }
-            if chosen == nil {
-                for i in stride(from: target, through: max(4, target / 2), by: -1) {
-                    if tokens[i].trail.contains(",") { chosen = i; break }
-                }
-            }
-            let index = chosen ?? min(target, tokens.count - 1)
-            let piece = tokens[0...index].map(\.full).joined(separator: " ")
-            if !piece.isEmpty { pieces.append(piece) }
-            remaining = tokens[(index + 1)...].map(\.full).joined(separator: " ")
+    public static func weight(_ word: Word) -> Int {
+        let length = word.core.count
+        if word.core.contains(where: { "/._-@".contains($0) }) { return max(2, length / 2) }
+        return 1 + length / 7
+    }
+
+    public static func bestCut(_ words: [Word], lo: Int, hi: Int) -> Int? {
+        let low = max(1, lo)
+        let high = min(hi, words.count)
+        guard low <= high else { return nil }
+        var best: Int?
+        var score = -1
+        for cut in stride(from: high, through: low, by: -1) where !words[cut - 1].glue {
+            let previous = words[cut - 1]
+            let value = previous.sentenceEnd || previous.pause ? 4 : (previous.hardBreak ? 2 : 0)
+            if value > score { best = cut; score = value }
         }
-        if !remaining.isEmpty { pieces.append(remaining) }
-        return pieces
+        return best
+    }
+
+    private static func previousCut(_ words: [Word], before end: Int, after start: Int) -> Int? {
+        guard end > start + 1 else { return nil }
+        return stride(from: end - 1, through: start + 1, by: -1).first { !words[$0 - 1].glue }
     }
 }
