@@ -51,18 +51,40 @@ struct UndoTimer: View {
                 .contentTransition(.numericText(value: Double(max(0, remaining))))
                 .animation(.snappy(duration: 0.15), value: remaining)
 
-            HStack(spacing: 2) {
-                ForEach(0..<total, id: \.self) { index in
-                    Rectangle()
-                        .fill(index < remaining ? Ramp.blue[4] : Tok.control)
-                        .frame(width: 4, height: 12)
-                }
-            }
-            .frame(width: CGFloat(total) * 6 - 2, height: 12)
-            .accessibilityHidden(true)
+            BarCountdown(remaining: remaining, total: total)
         }
         .frame(width: 64, alignment: .trailing)
         .accessibilityLabel("\(remaining) seconds left to undo")
+    }
+}
+
+/// The same cells, without the digit: a notice lives for five seconds, and the
+/// rail counts them down so the card never disappears unannounced.
+struct NoticeTimer: View {
+    let remaining: Int
+    let total: Int
+
+    var body: some View {
+        BarCountdown(remaining: remaining, total: total)
+            .accessibilityLabel("Closes in \(remaining) seconds")
+    }
+}
+
+/// One 4 x 12 cell per second. Lit while the second is still on the table.
+struct BarCountdown: View {
+    let remaining: Int
+    let total: Int
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<total, id: \.self) { index in
+                Rectangle()
+                    .fill(index < remaining ? Ramp.blue[4] : Tok.control)
+                    .frame(width: 4, height: 12)
+            }
+        }
+        .frame(width: CGFloat(total) * 6 - 2, height: 12)
+        .accessibilityHidden(true)
     }
 }
 

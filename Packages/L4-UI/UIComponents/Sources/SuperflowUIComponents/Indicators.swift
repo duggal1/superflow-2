@@ -107,13 +107,13 @@ public struct Metric: View {
     private let glyph: Glyph?
     private let label: String
     private let value: String
-    private let note: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(_ label: String, value: String, note: String, glyph: Glyph? = nil) {
+    /// Label and value only. A third line under the number was a caption for a
+    /// number that already says what it is; the ledger reads faster without it.
+    public init(_ label: String, value: String, glyph: Glyph? = nil) {
         self.label = label
         self.value = value
-        self.note = note
         self.glyph = glyph
     }
 
@@ -133,10 +133,6 @@ public struct Metric: View {
                 .monospacedDigit()
                 .foregroundStyle(Tok.text)
                 .contentTransition(reduceMotion ? .identity : .numericText())
-            Text(note)
-                .font(.system(size: 12))
-                .foregroundStyle(Tok.text2)
-                .lineLimit(1)
         }
         .accessibilityElement(children: .combine)
     }

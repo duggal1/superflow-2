@@ -44,15 +44,6 @@ public extension IslandPhase {
         case .idle, .hover, .listening, .handsFree, .meeting, .processing: false
         }
     }
-
-    /// Hands-free and meetings carry a word, so their wings are wide enough for
-    /// one. The three plain states keep the narrow wings.
-    var isWide: Bool {
-        switch self {
-        case .handsFree, .meeting: true
-        case .idle, .hover, .listening, .processing, .landed, .undo, .failed, .recent, .notice: false
-        }
-    }
 }
 
 public struct IslandBox: Equatable, Sendable {
@@ -80,9 +71,11 @@ public enum IslandLayout {
     /// The window never changes size. Every state is drawn inside this canvas, top-centred.
     public static let canvas = CGSize(width: 520, height: 128)
 
+    /// Hands-free spends 48 more points on the name of the mode. A meeting spends
+    /// another 32 on top: it also has to say how long it has been running.
     public static let wing: CGFloat = 56
-    /// Hands-free and meeting spend 24 more points on the name of the mode.
     public static let wingWide: CGFloat = 104
+    public static let wingMeeting: CGFloat = 136
     public static let wingInset: CGFloat = 14
     public static let nonNotchGap: CGFloat = 16
 
@@ -94,8 +87,17 @@ public enum IslandLayout {
     public static let cardMeta: CGFloat = 16
     public static let restBottom: CGFloat = 12
 
-    public static func wingWidth(_ phase: IslandPhase) -> CGFloat {
-        phase.isWide ? wingWide : wing
+    /// One wing's width. The flares sit outside the body, so a wide notch on a
+    /// narrow canvas could push the silhouette past the window: the wanted width
+    /// is clamped to what the canvas has left after the notch and both flares.
+    public static func wingWidth(_ phase: IslandPhase, gap: CGFloat) -> CGFloat {
+        let wanted: CGFloat = switch phase {
+        case .meeting: wingMeeting
+        case .handsFree: wingWide
+        default: wing
+        }
+        let flare: CGFloat = 6
+        return min(wanted, (canvas.width - gap - 2 * flare) / 2)
     }
 
     /// band + gap + transcript + gap + meta + bottom padding, on the 4 pt grid.
@@ -115,11 +117,9 @@ public enum IslandLayout {
             return IslandBox(body: .init(width: geometry.notch.width + 8,
                                          height: geometry.notch.height + 4),
                              top: 6, bottom: restBottom, opacity: 1)
-        case .listening, .processing, .landed:
-            return IslandBox(body: .init(width: gap + 2 * wing, height: geometry.band),
-                             top: 6, bottom: 14, opacity: 1)
-        case .handsFree, .meeting:
-            return IslandBox(body: .init(width: gap + 2 * wingWide, height: geometry.band),
+        case .listening, .handsFree, .meeting, .processing, .landed:
+            return IslandBox(body: .init(width: gap + 2 * wingWidth(phase, gap: gap),
+                                         height: geometry.band),
                              top: 6, bottom: 14, opacity: 1)
         case .failed, .recent, .undo, .notice:
             return IslandBox(body: .init(width: cardWidth,

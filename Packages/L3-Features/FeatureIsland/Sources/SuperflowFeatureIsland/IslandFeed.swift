@@ -34,11 +34,15 @@ public struct IslandUndo: Equatable, Sendable {
     public let text: String
     public let bundleID: String?
     public let appName: String?
+    /// How long the recording had run when Escape landed. The card says it, so
+    /// "keep the words" has a size: four minutes of speech is worth a second look.
+    public let seconds: TimeInterval
 
-    public init(text: String, bundleID: String?, appName: String?) {
+    public init(text: String, bundleID: String?, appName: String?, seconds: TimeInterval = 0) {
         self.text = text
         self.bundleID = bundleID
         self.appName = appName
+        self.seconds = seconds
     }
 
     public var isEmpty: Bool {

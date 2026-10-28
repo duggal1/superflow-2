@@ -4,7 +4,7 @@ import SuperflowIcons
 import SuperflowUIComponents
 import SwiftUI
 
-/// "Was that accidental?" — the six-second hold after a long Escape.
+/// "Was that a mistake?" — the six-second hold after a long Escape.
 ///
 /// The microphone is already closed by the time this card appears, so the card
 /// does not pretend to resume. It keeps the words: Undo copies them to the
@@ -15,6 +15,14 @@ struct UndoContent: View {
     let undo: IslandUndo
 
     private var pad: CGFloat { IslandLayout.cardPad }
+
+    /// How much was nearly lost, in the card's own words.
+    private var held: String? {
+        let total = Int(undo.seconds.rounded())
+        guard total >= Int(IslandModel.undoMinimumSeconds) else { return nil }
+        let minutes = total / 60, seconds = total % 60
+        return minutes > 0 ? "\(minutes) min \(seconds) s" : "\(seconds) s"
+    }
 
     var body: some View {
         let geometry = model.geometry
@@ -28,7 +36,7 @@ struct UndoContent: View {
                         Icon(.undo, size: 14, weight: .medium, tint: Ramp.blue[4])
                             .frame(width: 20, height: 20)
                     }
-                    Text("Was that accidental?")
+                    Text("Was that a mistake?")
                         .appType(.label)
                         .foregroundStyle(Tok.text)
                         .lineLimit(1)
@@ -83,7 +91,8 @@ struct UndoContent: View {
             HStack(spacing: 12) {
                 Text(undo.isEmpty
                      ? "Nothing to keep. Press fn and try again."
-                     : "Escape stopped it. Undo copies the words back.")
+                     : held.map { "You were \($0) in. Undo copies the words back." }
+                        ?? "Escape stopped it. Undo copies the words back.")
                 Spacer(minLength: 0)
                 if !undo.isEmpty {
                     Text("⌘V")
@@ -103,6 +112,9 @@ struct UndoContent: View {
 }
 
 /// An OS-style notice that lands in the notch instead of Notification Centre.
+///
+/// It carries the same anatomy as the undo card: the brand and its mark in the
+/// band, a title, a detail, and a rail that counts the seconds it has left.
 struct NoticeContent: View {
     let model: IslandModel
     let notice: IslandNotice
@@ -111,6 +123,7 @@ struct NoticeContent: View {
 
     var body: some View {
         let geometry = model.geometry
+        let total = Int(IslandModel.noticeSeconds)
 
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -129,9 +142,12 @@ struct NoticeContent: View {
                     Color.clear.frame(width: geometry.notch.width)
                 }
 
-                BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
-                    .padding(.trailing, pad - 8)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                HStack(spacing: 12) {
+                    NoticeTimer(remaining: model.noticeRemaining, total: total)
+                    BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
+                }
+                .padding(.trailing, pad - 8)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .frame(height: geometry.band)
 

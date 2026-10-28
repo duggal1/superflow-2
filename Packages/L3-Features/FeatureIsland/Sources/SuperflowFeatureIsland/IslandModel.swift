@@ -9,8 +9,14 @@ public enum IslandPlacement: Sendable { case home, active }
 public final class IslandModel {
     public private(set) var phase: IslandPhase = .idle
     public private(set) var copied = false
-    /// Seconds left on the "was that accidental?" card.
+    /// Seconds left on the "was that a mistake?" card.
     public private(set) var undoRemaining = 0
+    /// Seconds left before an OS-style notice leaves on its own. Drawn as a
+    /// one-cell-per-second rail, so the card never disappears unannounced.
+    public private(set) var noticeRemaining = 0
+    /// Seconds the current capture has run. The meeting wing reads it: a meeting
+    /// is a duration, not a mode.
+    public private(set) var elapsed = 0
     public var geometry: NotchGeometry
     public private(set) var target: IslandTarget?
     public let waveform = WaveformModel()
@@ -83,6 +89,7 @@ public final class IslandModel {
     private func begin(_ target: IslandTarget?) {
         self.target = target
         recordedAt = Date()
+        elapsed = 0
         hoverTask?.cancel()
     }
 
@@ -96,7 +103,8 @@ public final class IslandModel {
         }
         go(.undo(IslandUndo(text: text.trimmingCharacters(in: .whitespacesAndNewlines),
                             bundleID: target?.bundleID,
-                            appName: target?.name)))
+                            appName: target?.name,
+                            seconds: elapsed)))
     }
 
     /// Pointer over the notch. 120 ms dwell, so sweeping across to a menu item does not flicker.
@@ -184,6 +192,7 @@ public final class IslandModel {
             // The notice owns its own timeout.
         } else {
             noticeTask?.cancel()
+            noticeRemaining = 0
         }
 
         // Move the window only while it is invisible, never animated.
@@ -205,6 +214,7 @@ public final class IslandModel {
         case .idle, .hover, .landed, .undo, .failed, .recent, .notice:
             waveform.setLive(false)
             stopTicker()
+            elapsed = 0
         }
 
         if case .landed(let words) = next { accumulate(words) }
@@ -232,6 +242,7 @@ public final class IslandModel {
             undoRemaining = Self.undoWindow
             startUndoCountdown(undo)
         case .notice:
+            noticeRemaining = Int(Self.noticeSeconds)
             scheduleNoticeTimeout()
         case .failed:
             if feed.storesTranscripts { scheduleFailureTimeout(ms: 12_000) }
@@ -265,11 +276,20 @@ public final class IslandModel {
 
     private func scheduleNoticeTimeout() {
         noticeTask?.cancel()
+        guard noticeRemaining > 0 else {
+            go(.idle)
+            return
+        }
         noticeTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(IslandModel.noticeSeconds))
-            guard !Task.isCancelled, let self else { return }
-            guard case .notice = self.phase else { return }
-            self.go(.idle)
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled, let self, case .notice = self.phase else { return }
+                self.noticeRemaining = max(0, self.noticeRemaining - 1)
+                if self.noticeRemaining == 0 {
+                    self.go(.idle)
+                    return
+                }
+            }
         }
     }
 
@@ -303,6 +323,10 @@ public final class IslandModel {
             while !Task.isCancelled {
                 guard let self else { return }
                 self.waveform.tick(level: self.latestLevel)
+                if let started = self.recordedAt {
+                    let seconds = Int(Date().timeIntervalSince(started))
+                    if seconds != self.elapsed { self.elapsed = seconds }
+                }
                 try? await Task.sleep(for: .milliseconds(33))
             }
         }
@@ -333,7 +357,7 @@ public final class IslandModel {
         case .meeting: "Meeting recording. Return to stop, Escape to cancel."
         case .landed: "Pasted"
         case .failed: "Couldn't paste. Transcript ready to copy."
-        case .undo: "Escape pressed. Was that accidental? Undo is available for six seconds."
+        case .undo: "Escape pressed. Was that a mistake? Undo is available for six seconds."
         case .notice(let notice): notice.title
         case .idle, .hover, .processing, .recent: nil
         }

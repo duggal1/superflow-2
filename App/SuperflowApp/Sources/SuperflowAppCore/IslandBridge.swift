@@ -176,6 +176,16 @@ final class IslandBridge {
         reset()
     }
 
+    /// Escape during a latched meeting. The meeting engine discards the take, so
+    /// there is nothing to undo; the card says that instead of the notch blinking
+    /// out as if the key had failed.
+    func meetingEscaped() {
+        reset()
+        box.send(.notice(IslandNotice(kind: .info,
+                                      title: "Meeting stopped.",
+                                      detail: "Nothing was saved. Start again with a right-⌘ hold.")))
+    }
+
     /// An OS-style notice in the notch.
     func notice(_ notice: IslandNotice) {
         box.send(.notice(notice))

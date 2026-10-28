@@ -38,17 +38,19 @@ public struct DashboardView: View {
         .onDisappear { model.markAppeared() }
     }
 
-    /// Four equal columns that fill the card, so no third of it sits empty.
+    /// Four equal columns that fill the card. Label and number only: the note
+    /// under each number repeated what the number already said, and the ledger
+    /// now reads in one pass.
     private var ledger: some View {
         Card {
             HStack(alignment: .top, spacing: Space.lg) {
-                Metric("Words", value: model.words, note: model.sessionsNote, glyph: .words)
+                Metric("Words", value: model.words, glyph: .words)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Metric("Time saved", value: model.timeSaved, note: "estimate", glyph: .timeSaved)
+                Metric("Time saved", value: model.timeSaved, glyph: .timeSaved)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Metric("Average speed", value: model.speed, note: "speaking time only", glyph: .speed)
+                Metric("Average speed", value: model.speed, glyph: .speed)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Metric("Day streak", value: model.streak, note: model.todayNote, glyph: .streak)
+                Metric("Day streak", value: model.streak, glyph: .streak)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }

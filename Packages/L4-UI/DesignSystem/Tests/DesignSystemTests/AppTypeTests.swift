@@ -19,15 +19,23 @@ final class AppTypeTests: XCTestCase {
         XCTAssertEqual(AppType.title.tracking, -0.2)
         XCTAssertEqual(AppType.metric.tracking, -0.6)
 
-        for role in AppType.allCases where !role.isMedium {
+        for role in AppType.allCases where !role.usesSystemFont {
             XCTAssertEqual(role.font, role.font, "\(role) font must be stable")
         }
-        XCTAssertTrue(AppType.label.isMedium)
-        XCTAssertTrue(AppType.title.isMedium)
-        XCTAssertTrue(AppType.metric.isMedium)
-        XCTAssertFalse(AppType.caption.isMedium)
-        XCTAssertFalse(AppType.body.isMedium)
-        XCTAssertFalse(AppType.reading.isMedium)
+        XCTAssertTrue(AppType.label.usesSystemFont)
+        XCTAssertTrue(AppType.title.usesSystemFont)
+        XCTAssertTrue(AppType.metric.usesSystemFont)
+        XCTAssertFalse(AppType.caption.usesSystemFont)
+        XCTAssertFalse(AppType.body.usesSystemFont)
+        XCTAssertFalse(AppType.reading.usesSystemFont)
+    }
+
+    /// The ledger reads at 400: the metric is a number, not a headline. The
+    /// system-font path still carries tabular digits at that weight.
+    func testMetricDigitsStayTabularAtRegularWeight() throws {
+        let narrow = try digitWidth("1111111111", role: .metric)
+        let wide = try digitWidth("8888888888", role: .metric)
+        XCTAssertEqual(narrow, wide, accuracy: 0.5)
     }
 
     /// The one number that makes weight 350 revertible.

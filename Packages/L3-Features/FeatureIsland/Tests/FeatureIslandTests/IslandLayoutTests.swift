@@ -75,8 +75,12 @@ final class IslandLayoutTests: XCTestCase {
     func testWideWingsNameTheModeAndTheOthersDoNot() {
         XCTAssertEqual(IslandLayout.box(.handsFree, notch).body.width,
                        notch.notch.width + 2 * IslandLayout.wingWide)
+        // A meeting also carries its elapsed time, so its wings are wider still —
+        // clamped so they can never leave the canvas on a wide notch.
         XCTAssertEqual(IslandLayout.box(.meeting, notch).body.width,
-                       notch.notch.width + 2 * IslandLayout.wingWide)
+                       notch.notch.width + 2 * IslandLayout.wingWidth(.meeting, gap: notch.notch.width))
+        XCTAssertEqual(IslandLayout.wingWidth(.meeting, gap: notch.notch.width),
+                         (IslandLayout.canvas.width - notch.notch.width - 12) / 2)
         XCTAssertEqual(IslandLayout.box(.handsFree, notch).body.height, notch.band)
     }
 

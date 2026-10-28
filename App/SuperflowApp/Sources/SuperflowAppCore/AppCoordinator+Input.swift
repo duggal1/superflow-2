@@ -138,9 +138,12 @@ extension AppCoordinator {
                 // notch here once the latched meeting has actually stopped.
                 if kind == .meeting { islandBridge?.cancelled() }
             case .cancel(let kind, let reason):
-                if kind == .dictation, reason == .escape {
+                switch (kind, reason) {
+                case (.dictation, .escape):
                     islandBridge?.escaped()
-                } else {
+                case (.meeting, .escape):
+                    islandBridge?.meetingEscaped()
+                default:
                     islandBridge?.cancelled()
                 }
                 await menuBarController.cancel(kind, cue: reason == .escape)

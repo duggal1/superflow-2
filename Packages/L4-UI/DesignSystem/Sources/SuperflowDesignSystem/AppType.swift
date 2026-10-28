@@ -5,9 +5,13 @@ import SwiftUI
 ///
 /// Light text on a dark background reads heavier than it measures, so the reading
 /// roles sit between Light (-0.4) and Regular (0) on `NSFont`'s weight scale
-/// instead of at Regular. Medium roles stay on SwiftUI's own font so
+/// instead of at Regular. Numeric roles stay on SwiftUI's own font so
 /// `.monospacedDigit()` is guaranteed to tabularise; the 350 roles are measured
 /// for it in `DesignSystemTests`.
+///
+/// `metric` is the one big number on a card, drawn at **400**: at 28 pt, Medium
+/// made the value read as a headline competing with the page title, and the
+/// ledger's four numbers are a reading, not a shout.
 ///
 /// Tracking is per role, never per view.
 public enum AppType: Sendable, CaseIterable {
@@ -21,7 +25,7 @@ public enum AppType: Sendable, CaseIterable {
     case reading
     /// 15 / 500 — section and page titles.
     case title
-    /// 28 / 500, tabular — the one big number on a card.
+    /// 28 / 400, tabular — the one big number on a card.
     case metric
 
     public var size: CGFloat {
@@ -42,7 +46,9 @@ public enum AppType: Sendable, CaseIterable {
         }
     }
 
-    public var isMedium: Bool {
+    /// Roles that take SwiftUI's own font, where `.monospacedDigit()` is
+    /// guaranteed to tabularise. Labels and titles scan; the metric reads.
+    public var usesSystemFont: Bool {
         switch self {
         case .label, .title, .metric: true
         case .caption, .body, .reading: false
@@ -52,9 +58,15 @@ public enum AppType: Sendable, CaseIterable {
     /// Halfway between Light and Regular. One constant to revert on.
     public static let readingWeight = NSFont.Weight(rawValue: -0.2)
 
+    private var systemWeight: Font.Weight {
+        self == .metric ? .regular : .medium
+    }
+
     public var font: Font {
-        guard !isMedium else { return .system(size: size, weight: .medium) }
-        return Font(NSFont.systemFont(ofSize: size, weight: Self.readingWeight) as CTFont)
+        guard usesSystemFont else {
+            return Font(NSFont.systemFont(ofSize: size, weight: Self.readingWeight) as CTFont)
+        }
+        return .system(size: size, weight: systemWeight)
     }
 }
 

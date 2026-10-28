@@ -202,7 +202,9 @@ public final class MenuBarController: ObservableObject {
     /// Cancelling a dictation is silent unless the user did it deliberately, so
     /// only the Escape gesture asks for the cue.
     public func cancel(_ kind: SessionKind, cue: Bool = false) async {
-        if cue, kind == .dictation { Sounds.play(.transcriptionCancel) }
+        // Escape is one gesture whether it stops a dictation or a meeting, so it
+        // makes the same sound in both cases.
+        if cue { Sounds.play(.transcriptionCancel) }
         if kind == .dictation {
             await session?.cancel()
         } else {
