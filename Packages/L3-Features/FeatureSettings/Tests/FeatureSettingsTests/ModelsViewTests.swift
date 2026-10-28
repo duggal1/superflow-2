@@ -1,8 +1,20 @@
 import SuperflowFeatureSettings
 import SuperflowKernel
+import SuperflowPorts
 import SuperflowTestKit
 import SuperflowUIComponents
 import XCTest
+
+/// Stands in for the recognizer: the port onboarding and Settings install the
+/// speech model through. Its artifacts are not `ModelStore`'s.
+private actor InstalledASRProvider: ASRModelProvider {
+    private let installed: Bool
+    init(installed: Bool) { self.installed = installed }
+    func isAvailable(profileID: String) async -> Bool { installed }
+    func prepare(profileID: String, progress: @escaping @Sendable (Double) -> Void) async throws {
+        progress(1)
+    }
+}
 
 /// S1-mini is part of every transcript by default, so the Models page has to show
 /// it as installed and running, not as an optional extra.
@@ -55,6 +67,33 @@ final class ModelsViewTests: XCTestCase {
         let cleanup = try XCTUnwrap(vm.items.first { $0.kind == .cleanup })
         XCTAssertEqual(cleanup.state, .downloading(0))
         for item in vm.items { vm.cancel(item.id) }
+    }
+
+    /// The reported bug: a speech model downloaded during onboarding showed a
+    /// Download button here, and tapping it fetched a second copy. The row must
+    /// read the port onboarding used. `ModelProvider`'s ASR manifest is empty, so
+    /// asking it reports "not installed" for a model that is on disk.
+    func testSpeechRowReadsTheRecognizerNotTheModelStore() async throws {
+        let store = FakeModelProvider(asrURL: nil, llmURL: URL(fileURLWithPath: "/tmp/s1-mini.gguf"))
+        let vm = ModelsViewModel(models: store,
+                                 asrModels: InstalledASRProvider(installed: true),
+                                 diarizer: FakeSpeakerDiarizer(ready: true))
+        await vm.refresh()
+        let speech = try XCTUnwrap(vm.items.first { $0.kind == .speech })
+        XCTAssertEqual(speech.state, .installed)
+        XCTAssertTrue(speech.isActive)
+        XCTAssertEqual(vm.missingCount, 0)
+        XCTAssertFalse(vm.isChecking)
+    }
+
+    /// A row offers Download only after the disk has answered, so a page visit
+    /// never looks like it is asking for the model again.
+    func testDownloadIsNotOfferedBeforeTheFirstCheck() async throws {
+        let vm = ModelsViewModel(models: FakeModelProvider(asrURL: nil, llmURL: nil),
+                                 asrModels: InstalledASRProvider(installed: false))
+        XCTAssertTrue(vm.isChecking)
+        await vm.refresh()
+        XCTAssertFalse(vm.isChecking)
     }
 
     /// A cancelled row cannot be repainted by a late progress callback.

@@ -100,6 +100,7 @@ public final class AppCoordinator: ObservableObject {
     public lazy var modelsModel: ModelsViewModel? = {
         guard let environment else { return nil }
         return ModelsViewModel(models: environment.modelProvider,
+                               asrModels: environment.recognizer,
                                diarizer: environment.diarizer,
                                asrProfile: settings.asrProfile,
                                cleanupEnabled: { [weak self] in self?.settings.cleanupEnabled ?? true })

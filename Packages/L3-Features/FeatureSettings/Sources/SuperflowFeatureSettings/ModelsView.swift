@@ -58,8 +58,17 @@ public final class ModelsViewModel {
     public private(set) var items: [ModelItem]
 
     private let models: (any ModelProvider)?
+    /// The speech model is installed and read through the same port onboarding and
+    /// Settings use (`ASRModelProvider`, the recognizer). `ModelProvider`'s ASR
+    /// manifest is empty and its artifacts live in a different directory, so asking
+    /// it about the speech profile reported "not installed" for a model the owner
+    /// had just downloaded during onboarding, and its Download could never succeed.
+    private let asrModels: (any ASRModelProvider)?
     private let diarizer: (any SpeakerDiarizer)?
     private let asrProfile: String
+    /// True until the first disk read finishes. A row must not offer Download
+    /// before it knows the model is absent, or every visit looks like a re-download.
+    public private(set) var isChecking = true
     /// Cleanup is on for every dictation by default, so the S1-mini row reports
     /// `Active` unless the owner turned the setting off. Read through a closure so
     /// the page picks up a Settings change the next time it appears.
@@ -69,10 +78,12 @@ public final class ModelsViewModel {
     @ObservationIgnored private var tokens: [String: UUID] = [:]
 
     public init(models: (any ModelProvider)? = nil,
+                asrModels: (any ASRModelProvider)? = nil,
                 diarizer: (any SpeakerDiarizer)? = nil,
                 asrProfile: String = ModelProfile.nemotron35Streaming.id,
                 cleanupEnabled: @escaping @MainActor () -> Bool = { true }) {
         self.models = models
+        self.asrModels = asrModels ?? models
         self.diarizer = diarizer
         self.asrProfile = asrProfile
         self.cleanupEnabled = cleanupEnabled
@@ -106,9 +117,12 @@ public final class ModelsViewModel {
     }
 
     public func refresh() async {
-        defer { syncActive() }
+        defer {
+            syncActive()
+            isChecking = false
+        }
         guard let models else { return }
-        let speech = await models.isAvailable(profileID: asrProfile)
+        let speech = await asrModels?.isAvailable(profileID: asrProfile) ?? false
         let cleanup = await models.llmModelURL() != nil
         let meetings = (await diarizer?.isReady()) ?? false
         set(.installed, for: asrProfile, whenIdle: speech)
@@ -151,8 +165,8 @@ public final class ModelsViewModel {
             do {
                 switch item.kind {
                 case .speech:
-                    guard let models else { setState(.failed("Model support is unavailable."), for: id); return }
-                    try await models.prepare(profileID: asrProfile, progress: report)
+                    guard let asrModels else { setState(.failed("Model support is unavailable."), for: id); return }
+                    try await asrModels.prepare(profileID: asrProfile, progress: report)
                 case .cleanup:
                     guard let models else { setState(.failed("Model support is unavailable."), for: id); return }
                     _ = try await models.ensureLLM(progress: report)
@@ -164,7 +178,7 @@ public final class ModelsViewModel {
                 setState(.verifying, for: id)
                 let installed: Bool
                 switch item.kind {
-                case .speech: installed = await models?.isAvailable(profileID: asrProfile) ?? false
+                case .speech: installed = await asrModels?.isAvailable(profileID: asrProfile) ?? false
                 case .cleanup: installed = await models?.llmModelURL() != nil
                 case .meetings: installed = (await diarizer?.isReady()) ?? false
                 }
@@ -264,6 +278,11 @@ struct ModelCard: View {
         } trailing: {
             HStack(spacing: 12) {
                 switch item.state {
+                case .idle where vm.isChecking:
+                    // The disk has not answered yet. Offering Download here made a
+                    // freshly installed model look like it needed downloading again.
+                    Text(item.bytes, format: .byteCount(style: .file))
+                        .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
                 case .idle:
                     Text(item.bytes, format: .byteCount(style: .file))
                         .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
