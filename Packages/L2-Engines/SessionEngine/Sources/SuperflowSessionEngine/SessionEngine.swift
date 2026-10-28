@@ -11,11 +11,12 @@ public actor SessionEngine {
     private var pipeline: TextPipeline
     private let repository: any TranscriptRepository
     private let journals: any JournalStore
-    private let archive: (any AudioArchiveStore)?
+    /// Internal so `SessionEngine+AudioPath` can open the archive lane.
+    let archive: (any AudioArchiveStore)?
     private let inserter: any TextInserter
     private let metrics: MetricsSink
     private let clock: TimeSource
-    private var settings: AppSettings
+    var settings: AppSettings
     /// Session-scoped project passed to the pipeline context. Never discovered by
     /// the text stages; nil means no filesystem scope is exposed.
     private var project: ProjectContext?
@@ -135,15 +136,15 @@ public actor SessionEngine {
         sampleTask = nil
         eventTask = nil
         recognitionTask = nil
-        transition(.warming)
+
+        // `isReady` says only that *some* profile is resident, so a session could pass
+        // the check and then throw from `makeStream`. A resident profile also must not
+        // flash "Warming up": only a real model load gets that state.
+        let recognizer = self.recognizer
+        let profile = newRecord.modelProfile
+        if !(await recognizer.isPrepared(profile: profile)) { transition(.warming) }
 
         do {
-            // Warm the exact profile this session will use. `isReady` only reports that *some*
-            // profile is resident, so gating on it let a session pass the check and then throw
-            // `invalidState` from `makeStream` for a profile that was never prepared. `warmUp`
-            // is idempotent and returns immediately once the profile is loaded.
-            let recognizer = self.recognizer
-            let profile = newRecord.modelProfile
             try await withDeadline(modelDeadline, label: "model warm-up") {
                 try await recognizer.warmUp(profile: profile)
             }
@@ -155,11 +156,8 @@ public actor SessionEngine {
             await reportJournalIfDegraded(journalWriter)
             // The clip is exactly what the recognizer heard, written from the same
             // buffers. "Don't store transcripts" means nothing is ever written.
-            var clip: (any AudioArchiveWriter)?
-            if settings.keepAudio, !settings.noTranscriptStorage {
-                clip = try? await archive?.makeWriter(session: newRecord.id)
-                archiveWriter = clip
-            }
+            let clip = await openArchive(for: newRecord.id)
+            archiveWriter = clip
             let streams = try await audio.start()
             let recognition = try await withDeadline(modelDeadline, label: "recognition stream") {
                 try await recognizer.makeStream(profile: profile, source: .mic)

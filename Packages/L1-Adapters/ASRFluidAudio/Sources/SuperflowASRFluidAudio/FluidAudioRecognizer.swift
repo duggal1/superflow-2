@@ -39,6 +39,12 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
 
     public var isReady: Bool { !preparedProfiles.isEmpty }
 
+    /// Residency, not availability: a warm profile streams with no disk read at all,
+    /// so a session can start without passing through a "warming up" state.
+    public func isPrepared(profile: String) async -> Bool {
+        preparedProfiles.contains(profile)
+    }
+
     public func isAvailable(profileID: String) async -> Bool {
         FluidAudioCatalog.isInstalled(profileID, cacheRoot: modelCacheRoot, fileManager: fileManager)
     }
@@ -135,6 +141,10 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
             preparedProfiles.insert(profile.id)
             await Self.warmPredictions(manager)
             await pool.release(manager, profileID: profile.id)
+            // The VAD model is loaded lazily on the first `makeStream`, which put a Core ML
+            // load (and its one-time specialization) on the key-press path. Load it here,
+            // while the app is idle, so starting a session only has to stream.
+            _ = await makeVoiceActivity()
         } catch {
             preparing[profile.id] = nil
             throw error

@@ -293,10 +293,89 @@ final class SessionTests: XCTestCase {
         let events = await inserter.events
         XCTAssertTrue(events.contains("insert:clipboardOnly"), "events: \(events)")
     }
+
+    /// "Warming up" has to mean a model load, not every key press. The first session
+    /// is cold and announces it; the second finds the profile resident and starts
+    /// silently, which is what made the app feel slow.
+    func testOnlyAColdSessionAnnouncesWarming() async throws {
+        let recognizer = FakeSpeechRecognizer(script: ["hello world"], samplesPerSegment: 80_000)
+        let engine = engine(recognizer: recognizer)
+
+        let cold = Task { () -> [SessionEvent] in
+            var out: [SessionEvent] = []
+            for await event in engine.events {
+                out.append(event)
+                if case .finished = event { break }
+            }
+            return out
+        }
+        try await Task.sleep(for: .milliseconds(30))
+        _ = try await engine.start()
+        _ = await engine.stop()
+        let coldEvents = await cold.value
+        XCTAssertTrue(coldEvents.contains { if case .state(.warming) = $0 { true } else { false } },
+                      "a cold start must announce the model load")
+
+        let profile = AppSettings.default.asrProfile
+        let prepared = await recognizer.isPrepared(profile: profile)
+        XCTAssertTrue(prepared, "the first session must leave the profile resident")
+
+        let warm = Task { () -> [SessionEvent] in
+            var out: [SessionEvent] = []
+            for await event in engine.events {
+                out.append(event)
+                if case .finished = event { break }
+            }
+            return out
+        }
+        try await Task.sleep(for: .milliseconds(30))
+        _ = try await engine.start()
+        _ = await engine.stop()
+        let warmEvents = await warm.value
+        XCTAssertFalse(warmEvents.contains { if case .state(.warming) = $0 { true } else { false } },
+                       "a resident profile must not announce warming")
+        XCTAssertTrue(warmEvents.contains { if case .state(.recording) = $0 { true } else { false } })
+    }
+
+    /// Losing a clip is a bug the owner must hear about. `try?` around the archive
+    /// writer turned that failure into silence, so a session could record with no
+    /// audio anywhere and nothing said. The notice is the contract now.
+    func testArchiveFailureIsReportedInsteadOfDropped() async throws {
+        let engine = SessionEngine(audio: ScriptedAudioSource(samples: Array(repeating: 0.2, count: 16_000)),
+                                   recognizer: FakeSpeechRecognizer(script: ["hello world"],
+                                                                    samplesPerSegment: 8_000),
+                                   pipeline: pipeline(), repository: InMemoryRepository(),
+                                   journals: FakeJournalStore(), inserter: RecordingInserter(),
+                                   archive: FailingArchiveStore())
+        let notices = NoticeLog()
+        let consumer = Task { for await event in engine.events { await notices.add(event) } }
+        _ = try await engine.start()
+        try await Task.sleep(for: .milliseconds(50))
+        let messages = await notices.text
+        consumer.cancel()
+        XCTAssertTrue(messages.contains("Audio could not be archived"), messages)
+    }
+}
+
+actor NoticeLog {
+    private(set) var text = ""
+    func add(_ event: SessionEvent) {
+        if case .notice(let message) = event { text += message + "\n" }
+    }
 }
 
 /// Shared ordered log for assertions that span two test doubles.
 actor OrderLog {
     private(set) var events: [String] = []
     func append(_ event: String) { events.append(event) }
+}
+
+/// An archive that cannot open a file, standing in for a read-only or full disk.
+struct FailingArchiveStore: AudioArchiveStore {
+    struct Failure: LocalizedError {
+        var errorDescription: String? { "the archive directory is unavailable" }
+    }
+    func makeWriter(session: SessionID) async throws -> any AudioArchiveWriter { throw Failure() }
+    func delete(session: SessionID) async {}
+    func sweep(olderThanDays days: Int?) async {}
 }

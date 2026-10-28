@@ -291,7 +291,9 @@ private enum EngineStatus {
     var label: String {
         switch self {
         case .ready: "Ready"
-        case .warming: "Warming up"
+        // `.warming` is now only a real model load, so name the work instead of
+        // claiming a warm-up the owner cannot see.
+        case .warming: "Loading model"
         case .listening: "Listening"
         case .noMicrophone: "No microphone access"
         case .noKeyboardAccess: "Fn needs Input Monitoring"

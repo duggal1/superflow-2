@@ -220,12 +220,18 @@ public final class AppCoordinator: ObservableObject {
         observePermissionChanges(environment.permissionGate)
         menuBarController.setRecoveryReady(false)
         let shouldWarmModels = settings.onboardingComplete
+        // Fn has to be live before the model loads. Installing the tap needs no model,
+        // and doing it after the warm-up meant the key did nothing for the whole load
+        // while the status read "Warming up".
         Task { [weak self] in
-            if shouldWarmModels { _ = await environment.sessionEngine.warmUp() }
             guard let self else { return }
+            await self.tryStartHotkeys()
+            // Order matters: `RecoveryEngine` calls `makeStream`, which requires a
+            // prepared profile, so the model load has to finish first. The hotkeys are
+            // already installed, so a press in this window is answered instead of lost.
+            if shouldWarmModels { _ = await environment.sessionEngine.warmUp() }
             await self.recoverInterruptedSessions(environment: environment)
             self.menuBarController.setRecoveryReady(true)
-            await self.tryStartHotkeys()
         }
         Task { _ = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute) }
         isLoaded = true

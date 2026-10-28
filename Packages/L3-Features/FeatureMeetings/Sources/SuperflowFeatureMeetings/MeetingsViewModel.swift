@@ -73,7 +73,7 @@ public final class MeetingsViewModel: ObservableObject {
     public var statusLabel: String {
         switch state {
         case .idle: "Ready"
-        case .warming: "Warming up"
+        case .warming: "Loading model"
         case .recording: "Recording"
         case .finalizing: "Finishing"
         case .complete: "Saved"

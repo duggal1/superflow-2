@@ -102,6 +102,8 @@ public final class FakeHotkeySource: HotkeySource, @unchecked Sendable {
 
 public actor FakeSpeechRecognizer: SpeechRecognizer {
     public private(set) var isReady: Bool
+    /// Profiles that have been warmed, so a second session is the fast path.
+    public private(set) var preparedProfiles: Set<String> = []
     public var script: [String]
     public var scriptsBySource: [AudioSourceKind: [String]]
     public var samplesPerSegment: Int
@@ -122,10 +124,15 @@ public actor FakeSpeechRecognizer: SpeechRecognizer {
         self.failMakeStream = failMakeStream
     }
 
+    public func isPrepared(profile: String) async -> Bool {
+        preparedProfiles.contains(profile)
+    }
+
     public func warmUp(profile: String) async throws {
         if let onWarmUp { await onWarmUp() }
         if failWarmUp { throw SuperflowError.modelUnavailable(profile) }
         isReady = true
+        preparedProfiles.insert(profile)
     }
 
     public func setOnWarmUp(_ hook: (@Sendable () async -> Void)?) { onWarmUp = hook }

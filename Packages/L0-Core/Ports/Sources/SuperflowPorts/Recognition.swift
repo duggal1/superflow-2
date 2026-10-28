@@ -15,6 +15,10 @@ public protocol ASRModelProvider: Sendable {
 
 public protocol SpeechRecognizer: ASRModelProvider, Sendable {
     var isReady: Bool { get async }
+    /// True when this exact profile is resident and can stream immediately.
+    /// `isReady` only says that *some* profile is loaded, which was not enough to
+    /// tell a warm session from one that is about to wait on a model load.
+    func isPrepared(profile: String) async -> Bool
     func warmUp(profile: String) async throws
     func makeStream(profile: String, source: AudioSourceKind) async throws -> any RecognitionStream
 }
@@ -29,6 +33,10 @@ public extension SpeechRecognizer {
         try await warmUp(profile: profileID)
         progress(1)
     }
+
+    /// Conservative default for conformers that only track "something is loaded":
+    /// claim nothing, so the session still warms rather than failing at `makeStream`.
+    func isPrepared(profile: String) async -> Bool { false }
 }
 
 public protocol SpeakerDiarizer: Sendable {

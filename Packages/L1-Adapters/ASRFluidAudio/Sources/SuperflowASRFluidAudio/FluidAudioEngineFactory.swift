@@ -32,16 +32,16 @@ public enum FluidAudioEngineLoader {
         }
     }
 
+    /// GPU is the product path. Core ML has no GPU-only setting, so `.cpuAndGPU` is the
+    /// GPU runtime: it keeps the encoders on the GPU and still lets cheap shape work fall
+    /// back to the CPU instead of stalling. `.all` is deliberately not the default (it can
+    /// hand work to the ANE and serialize with the recognizer), and `.cpuOnly` is far too
+    /// slow to ship. `SUPERFLOW_COMPUTE_UNITS` exists only to diagnose a machine.
     private static func computeUnits() -> MLComputeUnits {
         switch ProcessInfo.processInfo.environment["SUPERFLOW_COMPUTE_UNITS"]?.lowercased() {
         case "cpu": return .cpuOnly
-        case "gpu": return .cpuAndGPU
-        case "all": return .all
         case "ane": return .cpuAndNeuralEngine
-        // Owner decision: GPU is the default for long runs. Measured on this M1 at the
-        // 1120 ms tier: CPU 12.7x vs GPU 10.9x (CPU slightly ahead at short chunks);
-        // the 2240 ms GPU comparison is still outstanding. Override with
-        // SUPERFLOW_COMPUTE_UNITS=cpu|ane|all.
+        case "all": return .all
         default: return .cpuAndGPU
         }
     }

@@ -45,8 +45,10 @@ actor NemotronMultilingualStreamingEngine: StreamingAsrManager {
     func processBufferedAudio() async throws {
         await installPartialCallback()
         guard !pendingSamples.isEmpty else { return }
+        // Hand the buffer to FluidAudio instead of copying it: `removeAll(keepingCapacity:)`
+        // forced a full copy of every chunk on the live path.
         let samples = pendingSamples
-        pendingSamples.removeAll(keepingCapacity: true)
+        pendingSamples = []
         _ = try await manager.process(samples: samples)
     }
 

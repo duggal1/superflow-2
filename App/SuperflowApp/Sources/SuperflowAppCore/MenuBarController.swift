@@ -103,7 +103,12 @@ public final class MenuBarController: ObservableObject {
 
     public func startDictation(mode: SessionMode = .dictation) async {
         guard let session else { return }
-        guard recoveryReady else { return }
+        // A silent return here is why fn looked dead for the first seconds after
+        // launch. Say what is happening instead.
+        guard recoveryReady else {
+            error = "Superflow is still loading the speech model. Hold fn again in a moment."
+            return
+        }
         let activeMeeting = await meeting?.currentState.isActive ?? false
         guard !activeMeeting else {
             error = "Stop the meeting before starting dictation."
@@ -140,7 +145,10 @@ public final class MenuBarController: ObservableObject {
 
     public func startMeeting() async {
         guard let meeting else { return }
-        guard recoveryReady else { return }
+        guard recoveryReady else {
+            error = "Superflow is still loading the speech model. Start the meeting in a moment."
+            return
+        }
         let activeSession = await session?.currentState.isActive ?? false
         guard !activeSession else {
             error = "Stop dictation before starting a meeting."
