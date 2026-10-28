@@ -8,3 +8,19 @@
 >
 > **Git skills — file: `./GIT-SKILLS.md` (summary: commit directly to `main`, never branch unless asked; every task `git add .` → `commit -m "message"` → `push`; messages 6–12 words, human, direct, specific; forbidden without explicit permission: `git restore`, `git reset`, `git push --force`; never commit secrets; no repo/no remote → stop and ask; pull before starting and before pushing). Full rules in `./RULES.md §15` mirror this file.**
 <!-- INIT-RULES:END -->
+
+## Git scale aggressively
+
+`git scale aggressively` is the standing policy for this repo — treat it as an
+import of `getScales`.
+
+- **Every coherent change is committed and pushed immediately.** One edit, one
+  commit, one push. No "later", no batching unrelated files, no leaving work only
+  on disk.
+- Stage by **explicit path** (`git add path/to/file`), never `git add .`.
+- Commit message: 6–12 words, human, direct, specific.
+- After pushing, `git status` must be clean and in sync with `origin/main`.
+- If a push is rejected, stop and report. Never force or rewrite history.
+- Read `./GIT-SKILLS.md` for the full loop and the forbidden-command list; this
+  section only makes the cadence stricter, it never relaxes those rules.
+

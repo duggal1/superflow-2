@@ -50,6 +50,26 @@ Package.resolved
 *.mlmodelc
 *.mlpackage
 
+# local agent/editor workspaces
+.kilo/
+.kiloPlan
+.kiloPlan.vscode
+.vscode/
+
+# local plans, notes and backend briefs (not shipped)
+/PLAN.md
+/RULES.md
+/FIX-BACKEND.MD
+
+# local reference screenshots and vendor artwork
+/fix-download-card.jpg
+/fix-download-card-1.jpg
+/s1-mini.webp
+
+# loose audio at the repo root. The cues the app ships live in
+# Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Resources/Sounds/
+/*.mp3
+
 # local design notes, plans and cookbook (not shipped)
 /cookbook/
 /DESIGN.md
