@@ -363,7 +363,7 @@ public actor SessionEngine {
         let interactive = raw.endMs <= 30_000 && withinInteractiveBudget
         await cleanupCoordinator?.submit(index: index, interactive: interactive,
                                           pipeline: pipeline, settings: settings,
-                                          project: project)
+                                          project: project, wordTimings: raw.words)
     }
 
     // MARK: assembly

@@ -8,6 +8,7 @@ private struct CleanupRequest: Sendable {
     let interactive: Bool
     let pipeline: TextPipeline
     let settings: AppSettings
+    let wordTimings: [WordTiming]
     /// Explicitly injected project scope for this session, if the user selected
     /// one. Nil keeps filename-only cleanup with no path resolution.
     let project: ProjectContext?
@@ -50,7 +51,8 @@ public actor SessionCleanupCoordinator {
     /// Interactive (push-to-talk) rows jump ahead of background meeting/dictation
     /// rows so the text the user is waiting on is not stuck behind a long backlog.
     public func submit(index: Int, interactive: Bool, pipeline: TextPipeline,
-                       settings: AppSettings, project: ProjectContext? = nil) async {
+                       settings: AppSettings, project: ProjectContext? = nil,
+                       wordTimings: [WordTiming] = []) async {
         submittedCount = max(submittedCount, index + 1)
         while requests.count >= queueCapacity, !isFinished {
             await withCheckedContinuation { continuation in
@@ -59,7 +61,8 @@ public actor SessionCleanupCoordinator {
         }
         guard !isFinished else { return }
         let request = CleanupRequest(index: index, interactive: interactive,
-                                     pipeline: pipeline, settings: settings, project: project)
+                                     pipeline: pipeline, settings: settings, wordTimings: wordTimings,
+                                     project: project)
         if let waiter = workerWaiters.popLast() {
             waiter.resume(returning: request)
         } else {
@@ -126,7 +129,8 @@ public actor SessionCleanupCoordinator {
                 return
             }
             let context = TextContext(source: segment.source, interactive: request.interactive,
-                                     settings: request.settings, project: request.project)
+                                     settings: request.settings, project: request.project,
+                                     wordTimings: request.wordTimings)
             let result = await request.pipeline.run(segment.rawText, context: context)
             let cleaned = result.draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
             // A filler-only dictation cleans to a valid empty string. Preserve
