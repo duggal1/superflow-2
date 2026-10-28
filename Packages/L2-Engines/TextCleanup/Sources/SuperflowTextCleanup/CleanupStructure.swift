@@ -22,6 +22,28 @@ enum CleanupStructureDetector {
         return isList(text) ? "list" : configured
     }
 
+    /// True when the text opens with a list continuation cue: a bullet or
+    /// numbered first line, or a first clause led by an ordering word. Used at
+    /// overlap seams: an open list carries into the next chunk only when the
+    /// next chunk's own body actually continues it, so unrelated prose after a
+    /// finished list stays prose.
+    static func continuesList(_ text: String) -> Bool {
+        guard !text.isEmpty else { return false }
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        if let first = trimmed.first, "-*•".contains(first) { return true }
+        guard let word = trimmed.lowercased()
+            .split(whereSeparator: { $0.isWhitespace }).first else { return false }
+        let lead = word.trimmingCharacters(in: CharacterSet(charactersIn: "-*•(,)[]"))
+        if ordinals[lead] != nil { return true }
+        var digits = 0
+        for character in lead {
+            if character.isNumber { digits += 1; continue }
+            if digits > 0, character == "." || character == ")" { return true }
+            break
+        }
+        return false
+    }
+
     static func isList(_ text: String) -> Bool {
         guard !text.isEmpty else { return false }
         if hasBulletLines(text) { return true }

@@ -311,6 +311,7 @@ struct CleanupConfigFixture: Decodable {
     var retryDepth: Int?
     var maxNewTokens: Int?
     var hallucinationFloor: Int?
+    var overlapPercent: Double?
 
     func config() -> CleanupConfig {
         let base = CleanupConfig()
@@ -323,7 +324,8 @@ struct CleanupConfigFixture: Decodable {
             ratioFloor: ratioFloor ?? base.ratioFloor,
             retryDepth: retryDepth ?? base.retryDepth,
             hallucinationFloor: hallucinationFloor ?? base.hallucinationFloor,
-            maxNewTokens: maxNewTokens ?? base.maxNewTokens
+            maxNewTokens: maxNewTokens ?? base.maxNewTokens,
+            overlapPercent: overlapPercent ?? base.overlapPercent
         )
     }
 }

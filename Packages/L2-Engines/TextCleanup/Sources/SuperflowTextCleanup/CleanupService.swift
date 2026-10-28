@@ -81,16 +81,42 @@ public actor CleanupService {
             return CleanupOutcome(text: tier0, state: .fallback, chunks: [], diagnostics: [])
         }
 
+        // Control-line carry-over, resolved in chunk order before the workers
+        // fan out (cheap string scans; the addition keeps fan-out parallel-safe).
+        // An open list at chunk i-1 keeps chunk i asking for lists even when its
+        // own body has no cues, so a spoken enumeration that spans a seam stays
+        // one list instead of restarting. The overlap prefix already re-shares
+        // the previous chunk's trailing sentences, which carries the last
+        // sentence and the register context through the model's local window.
+        let configuredStructure = context.settings.cleanupStructure
+        var structures = plans.map {
+            CleanupStructureDetector.structure(for: $0.text, configured: configuredStructure)
+        }
+        for index in plans.indices.dropFirst() where !plans[index].overlap.isEmpty {
+            guard structures[index - 1] == "list", structures[index] != "list" else { continue }
+            // The next chunk's own body opens with a list cue: the spoken
+            // enumeration really does continue. The overlap alone must not
+            // trigger this, or an unrelated prose chunk trailing the list
+            // would inherit it seam after seam.
+            let body = String(plans[index].text.dropFirst(plans[index].overlap.count))
+                .trimmingCharacters(in: .whitespaces)
+            if CleanupStructureDetector.continuesList(body) {
+                structures[index] = "list"
+            }
+        }
+
         var outcomes: [ChunkOutcome] = Array(repeating: ChunkOutcome(index: 0, text: "", state: .pending),
                                              count: plans.count)
         await withTaskGroup(of: ChunkOutcome.self) { group in
-            for plan in plans {
+            for (position, plan) in plans.enumerated() {
+                let structure = structures[position]
                 group.addTask { [weak self] in
                     guard let self else {
                         return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback)
                     }
                     await self.semaphore.acquire()
                     let result = await self.cleanChunk(plan, deadlineMs: deadline, depth: 0,
+                                                       structure: structure,
                                                        protected: protected, context: context)
                     await self.semaphore.release()
                     return result
@@ -99,7 +125,7 @@ public actor CleanupService {
             for await result in group { outcomes[result.index] = result }
         }
 
-        let stitched = SeamRepair.stitch(outcomes.map(\.text))
+        let stitched = OrderedStitcher.stitch(outcomes.map(\.text), overlaps: plans.map(\.overlap))
         let anyFallback = outcomes.contains { $0.state == .fallback }
         let anyCleaned = outcomes.contains { $0.state == .cleaned }
         let state: CleanupState = anyFallback ? .fallback : (anyCleaned ? .cleaned : .skipped)
@@ -112,15 +138,14 @@ public actor CleanupService {
         return CleanupOutcome(text: text, state: state, chunks: outcomes, diagnostics: diagnostics)
     }
 
-    private func cleanChunk(_ plan: ChunkPlan, deadlineMs: Int, depth: Int,
+    private func cleanChunk(_ plan: ChunkPlan, deadlineMs: Int, depth: Int, structure: String,
                             protected: Protected, context: TextContext) async -> ChunkOutcome {
         let start = DispatchTime.now().uptimeNanoseconds
         do {
             let result = try await withDeadline(ms: deadlineMs) {
                 try await self.cleaner.clean(plan.text, options: CleanOptions(
                     styling: context.settings.cleanupStyling,
-                    structure: CleanupStructureDetector.structure(
-                        for: plan.text, configured: context.settings.cleanupStructure),
+                    structure: structure,
                     context: context.cleanupContext,
                     deadlineMs: deadlineMs,
                     maxNewTokens: self.config.maxNewTokens))
@@ -140,11 +165,13 @@ public actor CleanupService {
                 if halves.count == 2 {
                     let a = await cleanChunk(ChunkPlan(index: plan.index, text: halves[0], tokens: 0),
                                              deadlineMs: deadlineMs, depth: depth + 1,
+                                             structure: structure,
                                              protected: protected, context: context)
                     let b = await cleanChunk(ChunkPlan(index: plan.index, text: halves[1], tokens: 0),
                                              deadlineMs: deadlineMs, depth: depth + 1,
+                                             structure: structure,
                                              protected: protected, context: context)
-                    let text = SeamRepair.stitch([a.text, b.text])
+                    let text = OrderedStitcher.stitch([a.text, b.text])
                     let state: CleanupState = (a.state == .cleaned && b.state == .cleaned) ? .cleaned : .fallback
                     return ChunkOutcome(index: plan.index, text: text, state: state,
                                         tokensIn: result.tokensIn, tokensOut: result.tokensOut,
@@ -168,12 +195,15 @@ public actor CleanupService {
                 if halves.count == 2 {
                     let a = await cleanChunk(ChunkPlan(index: plan.index, text: halves[0], tokens: 0),
                                              deadlineMs: deadlineMs, depth: depth + 1,
+                                             structure: structure,
                                              protected: protected, context: context)
                     let b = await cleanChunk(ChunkPlan(index: plan.index, text: halves[1], tokens: 0),
                                              deadlineMs: deadlineMs, depth: depth + 1,
+                                             structure: structure,
                                              protected: protected, context: context)
                     let state: CleanupState = (a.state == .cleaned && b.state == .cleaned) ? .cleaned : .fallback
-                    return ChunkOutcome(index: plan.index, text: SeamRepair.stitch([a.text, b.text]), state: state,
+                    return ChunkOutcome(index: plan.index, text: OrderedStitcher.stitch([a.text, b.text]),
+                                        state: state,
                                         latencyMs: elapsed, attempts: a.attempts + b.attempts + 1,
                                         reason: String(describing: error))
                 }

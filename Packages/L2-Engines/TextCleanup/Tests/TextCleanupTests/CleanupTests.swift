@@ -158,4 +158,105 @@ final class CleanupTests: XCTestCase {
         XCTAssertTrue(outcome.chunks.allSatisfy { $0.state == .fallback })
         XCTAssertEqual(wordCount(outcome.text), 9)
     }
+
+    // MARK: Seam overlap
+
+    func testPlannerComposesSeamOverlapFromPreviousTail() async {
+        let config = CleanupConfig(softTokenTarget: 20, hardTokenCap: 40)
+        let sentences = (1...9).map { "sentence number \($0) has several words." }
+        let text = sentences.joined(separator: " ")
+        let plans = await ChunkPlanner(config: config).plan(text) { $0.split(separator: " ").count }
+        XCTAssertEqual(plans.count, 3)
+        // The overlap is the previous chunk's trailing sentence, re-shared as
+        // the next chunk's opening, and counts into the hard cap.
+        XCTAssertEqual(plans[1].overlap, sentences[2])
+        XCTAssertEqual(plans[2].overlap, sentences[5])
+        XCTAssertTrue(plans[1].text.hasPrefix(plans[1].overlap + " "))
+        XCTAssertTrue(plans[1].text.hasSuffix(sentences[5]))
+        XCTAssertLessThanOrEqual(plans[1].tokens, config.hardTokenCap)
+        XCTAssertLessThanOrEqual(plans[2].tokens, config.hardTokenCap)
+    }
+
+    func testPlannerOverlapCanBeDisabled() async {
+        let config = CleanupConfig(softTokenTarget: 20, hardTokenCap: 40, overlapPercent: 0)
+        let sentences = (1...9).map { "sentence number \($0) has several words." }
+        let plans = await ChunkPlanner(config: config)
+            .plan(sentences.joined(separator: " ")) { $0.split(separator: " ").count }
+        XCTAssertTrue(plans.allSatisfy { $0.overlap.isEmpty })
+    }
+
+    /// The end-to-end invariant: with a cleaner that returns its input
+    /// unchanged, overlap + dedupe must reproduce the original text exactly —
+    /// the overlap adds context for the model, the assembly removes it again.
+    func testIdentityCleanerReproducesInputAcrossOverlappedChunks() async {
+        let config = CleanupConfig(softTokenTarget: 24, hardTokenCap: 60)
+        let sentences = (1...8).map { "the quick brown fox jumps over fence number \($0)." }
+        let input = sentences.joined(separator: " ")
+        let outcome = await service(FakeTextCleaner(.identity), config: config)
+            .clean(input, context: TextContext())
+        XCTAssertEqual(outcome.state, .cleaned)
+        XCTAssertGreaterThan(outcome.chunks.count, 1)
+        XCTAssertEqual(outcome.text, input)
+    }
+
+    /// An identity cleaner only satisfies the invariant because the stitcher
+    /// removes the overlap; this pins the removal directly on a normalized
+    /// variant the model could realistically produce (different casing).
+    func testStitcherDedupesOverlapAcrossCasing() {
+        let stitched = OrderedStitcher.stitch(
+            ["I sent the report said forty two words.",
+             "The report said forty two words today"],
+            overlaps: [nil, "the report said forty two words"])
+        XCTAssertEqual(stitched, "I sent the report said forty two words. today")
+    }
+
+    func testStitcherKeepsUnmatchedSeams() {
+        let stitched = OrderedStitcher.stitch(
+            ["Alpha beta gamma.", "Delta epsilon zeta"],
+            overlaps: [nil, "alpha beta"])
+        XCTAssertEqual(stitched, "Alpha beta gamma. Delta epsilon zeta")
+    }
+
+    /// List lines never merge at a seam, with or without overlap metadata.
+    func testStitcherJoinsListSeamsWithNewline() {
+        XCTAssertEqual(OrderedStitcher.stitch(["- one\n- two", "- three"]),
+                       "- one\n- two\n- three")
+        XCTAssertEqual(OrderedStitcher.stitch(["- one\n- two", "- three"],
+                                              overlaps: [nil, nil]),
+                       "- one\n- two\n- three")
+    }
+
+    // MARK: Control-line carry-over
+
+    private actor RecordingCleaner: TextCleaner {
+        private(set) var byInput: [String: CleanOptions] = [:]
+        var isReady: Bool { true }
+
+        func countTokens(_ text: String) async -> Int {
+            max(1, Tokenizer.words(in: text).count)
+        }
+
+        func clean(_ text: String, options: CleanOptions) async throws -> CleanResult {
+            byInput[text] = options
+            return CleanResult(text: text, tokensIn: 1, tokensOut: 1, hitTokenCap: false, latencyMs: 1)
+        }
+    }
+
+    func testOverlapCarriesAnOpenListAcrossChunksButNotIntoNewProse() async {
+        let cleaner = RecordingCleaner()
+        let config = CleanupConfig(softTokenTarget: 12, hardTokenCap: 24)
+        let service = CleanupService(cleaner: cleaner, config: config)
+        let text = "first alpha beta gamma. second delta epsilon zeta. third eta theta iota. "
+            + "fourth kappa lambda mu. the overflowed garden stays open tonight regardless. "
+            + "the garden gate stays open far too late."
+        let outcome = await service.clean(text, context: TextContext())
+        XCTAssertEqual(outcome.chunks.count, 3)
+        let options = await cleaner.byInput
+        XCTAssertEqual(options[outcome.chunks[0].text]?.structure, "list")
+        // The list continues into the next chunk: its body opens with another
+        // ordering word, so the control line stays `list` across the seam.
+        XCTAssertEqual(options[outcome.chunks[1].text]?.structure, "list")
+        // The chunk after the list has no continuation cue: prose stays prose.
+        XCTAssertEqual(options[outcome.chunks[2].text]?.structure, "prose")
+    }
 }

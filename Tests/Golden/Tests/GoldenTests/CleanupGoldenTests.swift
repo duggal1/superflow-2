@@ -72,9 +72,14 @@ final class CleanupGoldenTests: XCTestCase {
         for plan in plans {
             let hasPartial = plan.text.contains("Super") && !plan.text.contains("Superflow")
             XCTAssertFalse(hasPartial, "chunk split inside the protected span: \(plan.text)")
+            XCTAssertLessThanOrEqual(plan.tokens, 20, "chunk exceeds the hard token cap: \(plan.text)")
         }
         XCTAssertEqual(plans.map(\.index), Array(0..<plans.count), "chunk indices are not contiguous")
-        XCTAssertEqual(plans.map(\.text).joined(separator: " ").split(separator: " ").count,
+        // Chunks after the first repeat their seam overlap, so the joined
+        // bodies contain those words again once. Subtracting them must return
+        // exactly the input: nothing lost, nothing invented.
+        let overlapWords = plans.dropFirst().reduce(0) { $0 + $1.overlap.split(separator: " ").count }
+        XCTAssertEqual(plans.map(\.text).joined(separator: " ").split(separator: " ").count - overlapWords,
                        text.split(separator: " ").count, "chunk planner lost words")
     }
 
