@@ -264,21 +264,118 @@ public struct Dot: View {
     }
 }
 
+/// The sidebar's engine status, redrawn as pixels. The old note was a 6 pt dot
+/// over a flat plate that read as a black hole in the glass sidebar; this one sits
+/// on the surface ladder (`Tok.surface`, never black) and carries its state in a
+/// 6 × 5 mark of 3 pt cells:
+///
+/// - **caret** — one lit centre cell with its ring dimmed. A deterministic state
+///   that is ready to act (Ready, an error message already explained by its text).
+/// - **staircase** — three cells sweeping left to right every 160 ms. Indeterminate
+///   only: a model loading, or the mic live while you speak. This is the same
+///   justification as the Island's wait mark: an indeterminate wait has no end to
+///   show, so it is the one looping thing here.
+/// - **block** — a solid 3 × 5 slab. Failure: unmistakable by shape, so no status
+///   hue is needed anywhere in the note.
 public struct StatusNote: View {
     public let text: String
     public var level: DotLevel = .warning
-    public init(text: String, level: DotLevel = .warning) {
+    /// True only while the work genuinely has no end to show. Deterministic states
+    /// must pass `false`, or the note would animate forever.
+    public var working: Bool
+
+    public init(text: String, level: DotLevel = .warning, working: Bool = false) {
         self.text = text
         self.level = level
+        self.working = working
     }
+
     public var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Dot(level: level).frame(width: 6, height: 6)
-            Text(text).font(.system(size: 13)).foregroundStyle(Tok.text2).frame(height: 16)
+        HStack(alignment: .center, spacing: 10) {
+            StatusPixelMark(level: level, working: working)
+            Text(text)
+                .appType(.label)
+                .foregroundStyle(Tok.text)
+                .lineLimit(1)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .background(Tok.surface, in: .rect(cornerRadius: Radius.nested, style: .continuous))
         .modifier(ContrastStroke(radius: Radius.nested))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// 6 × 5 cells of 3 pt with 1 pt gaps (23 × 19), whole device pixels, never antialiased.
+/// The 3/1 pair is a glyph-scale exception to the 4 pt grid and lives only here.
+private struct StatusPixelMark: View {
+    let level: DotLevel
+    let working: Bool
+
+    @Environment(\.displayScale) private var scale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    static let cols = 6
+    static let rows = 5
+    static let cell: CGFloat = 3
+    static let gap: CGFloat = 1
+    static let step: TimeInterval = 0.16
+
+    private var width: CGFloat {
+        CGFloat(Self.cols) * Self.cell + CGFloat(Self.cols - 1) * Self.gap
+    }
+    private var height: CGFloat {
+        CGFloat(Self.rows) * Self.cell + CGFloat(Self.rows - 1) * Self.gap
+    }
+
+    var body: some View {
+        let animating = working && !reduceMotion
+        TimelineView(.animation(minimumInterval: Self.step, paused: !animating)) { context in
+            let frame = animating
+                ? Int(context.date.timeIntervalSinceReferenceDate / Self.step)
+                : 0
+            Canvas { ctx, _ in draw(&ctx, frame: frame, animating: animating) }
+        }
+        .frame(width: width, height: height)
+        .accessibilityHidden(true)
+    }
+
+    private func draw(_ ctx: inout GraphicsContext, frame: Int, animating: Bool) {
+        let cell = Self.cell
+        let pitch = Self.cell + Self.gap
+        // Head sweeps one cell past the right edge and returns, so the mark reads
+        // as motion instead of a loop that visibly restarts on the last column.
+        let head = frame % (Self.cols + 3) - 1
+
+        for row in 0..<Self.rows {
+            for col in 0..<Self.cols {
+                let tone: Color
+                if level == .error {
+                    tone = col < 3 ? Tok.accent : Tok.well
+                } else if animating {
+                    let distance = head - col
+                    switch distance {
+                    case 0:  tone = Ramp.blue[4]
+                    case 1:  tone = (col + row) % 2 == 0 ? Ramp.blue[3] : Ramp.blue[2]
+                    case 2:  tone = Ramp.blue[1]
+                    default: tone = Tok.control
+                    }
+                } else {
+                    let dx = abs(col - (Self.cols - 1) / 2)
+                    let dy = abs(row - (Self.rows - 1) / 2)
+                    if dx == 0 && dy == 0 {
+                        tone = Tok.accent
+                    } else if dx + dy == 1 {
+                        tone = Ramp.blue[2]
+                    } else {
+                        tone = Tok.control
+                    }
+                }
+                let rect = CGRect(x: CGFloat(col) * pitch, y: CGFloat(row) * pitch,
+                                  width: cell, height: cell)
+                ctx.fill(Path(rect), with: .color(tone), style: FillStyle(antialiased: false))
+            }
+        }
     }
 }

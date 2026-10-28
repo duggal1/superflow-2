@@ -254,7 +254,7 @@ private struct SidebarStatus: View {
 
     var body: some View {
         Button(action: action) {
-            StatusNote(text: status.label, level: status.level)
+            StatusNote(text: status.label, level: status.level, working: status.isWorking)
         }
         .buttonStyle(PressStyle())
         .contentShape(.rect(cornerRadius: Radius.nested, style: .continuous))
@@ -321,6 +321,15 @@ private enum EngineStatus {
         case .noMicrophone: .microphone
         case .noKeyboardAccess: .keyboardAccess
         case .ready, .warming, .listening: .settings
+        }
+    }
+
+    /// Only these two have no end to show, so only they animate. A ready or
+    /// blocked status is a fact, and a fact must not loop.
+    var isWorking: Bool {
+        switch self {
+        case .warming, .listening: true
+        case .ready, .noMicrophone, .noKeyboardAccess: false
         }
     }
 }
