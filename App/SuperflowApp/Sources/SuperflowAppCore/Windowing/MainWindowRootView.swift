@@ -127,9 +127,16 @@ public struct MainWindowRootView: View {
     // MARK: engine status
 
     private var engineStatus: EngineStatus {
+        // Fn is handled by a global event tap, so without Input Monitoring the key
+        // does nothing at all. Say which permission is missing instead of mapping
+        // every error to the microphone pane.
         if let error = menuBar.error,
-           error.localizedCaseInsensitiveContains("microphone")
-            || error.localizedCaseInsensitiveContains("input monitoring") {
+           error.localizedCaseInsensitiveContains("input monitoring")
+            || error.localizedCaseInsensitiveContains("keyboard shortcut") {
+            return .noKeyboardAccess
+        }
+        if let error = menuBar.error,
+           error.localizedCaseInsensitiveContains("microphone") {
             return .noMicrophone
         }
         switch menuBar.sessionState {
@@ -148,6 +155,9 @@ public struct MainWindowRootView: View {
             windowController.show(.settings)
         case .microphone:
             let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+            if let url { NSWorkspace.shared.open(url) }
+        case .keyboardAccess:
+            let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")
             if let url { NSWorkspace.shared.open(url) }
         }
     }
@@ -205,7 +215,8 @@ private struct SidebarRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                Icon(section.icon, size: 14, tint: Tok.text)
+                // Medium at 14 reads as a sidebar glyph rather than thin line art.
+                Icon(section.icon, size: 14, weight: .medium, tint: Tok.text)
                     .frame(width: 20, height: 20)
                 Text(section.title)
                     .appType(.body)
@@ -271,11 +282,11 @@ private struct SidebarBackdrop: NSViewRepresentable {
 // MARK: - Status vocabulary
 
 private enum EngineFix {
-    case settings, microphone
+    case settings, microphone, keyboardAccess
 }
 
 private enum EngineStatus {
-    case ready, warming, listening, noMicrophone
+    case ready, warming, listening, noMicrophone, noKeyboardAccess
 
     var label: String {
         switch self {
@@ -283,6 +294,7 @@ private enum EngineStatus {
         case .warming: "Warming up"
         case .listening: "Listening"
         case .noMicrophone: "No microphone access"
+        case .noKeyboardAccess: "Fn needs Input Monitoring"
         }
     }
 
@@ -290,7 +302,7 @@ private enum EngineStatus {
         switch self {
         case .ready: .green
         case .warming, .listening: .orange
-        case .noMicrophone: .rose
+        case .noMicrophone, .noKeyboardAccess: .rose
         }
     }
 
@@ -298,13 +310,14 @@ private enum EngineStatus {
         switch self {
         case .ready: .success
         case .warming, .listening: .warning
-        case .noMicrophone: .error
+        case .noMicrophone, .noKeyboardAccess: .error
         }
     }
 
     var fix: EngineFix {
         switch self {
         case .noMicrophone: .microphone
+        case .noKeyboardAccess: .keyboardAccess
         case .ready, .warming, .listening: .settings
         }
     }

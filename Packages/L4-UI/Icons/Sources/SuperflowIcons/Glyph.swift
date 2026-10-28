@@ -6,14 +6,16 @@ import SwiftUI
 /// medium weight. Three cases (sparkles, wand, any `*.circle` / `*.square`
 /// enclosure) are deliberately absent.
 public enum Glyph: String, CaseIterable, Sendable {
-    // Sidebar
-    case dashboard = "square.grid.2x2"
-    case history = "clock.arrow.circlepath"
+    // Sidebar. Specific, unenclosed Apple symbols rather than the stock pick for
+    // each concept: a trend line for the stats page, a written record for history,
+    // people plus sound for meetings, and a chip for the models on disk.
+    case dashboard = "chart.bar.xaxis"
+    case history = "scroll"
     case dictionary = "character.book.closed"
     case shortcuts = "command"
-    case meetings = "person.2"
+    case meetings = "person.2.wave.2"
     case settings = "gearshape"
-    case models = "cpu"
+    case models = "memorychip"
 
     // Actions and state
     case search = "magnifyingglass"

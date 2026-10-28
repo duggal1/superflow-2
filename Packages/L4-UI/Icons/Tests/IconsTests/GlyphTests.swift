@@ -21,10 +21,16 @@ final class GlyphTests: XCTestCase {
         }
     }
 
+    /// The sidebar uses the specific Apple symbol for each page, not the stock
+    /// pick: a trend line, a written record, people plus sound, a chip. Pinned so
+    /// a later edit cannot quietly drift back to the generic set.
     func testSidebarGlyphsMatchTheProductStructure() {
-        XCTAssertEqual(Glyph.dashboard.rawValue, "square.grid.2x2")
-        XCTAssertEqual(Glyph.history.rawValue, "clock.arrow.circlepath")
+        XCTAssertEqual(Glyph.dashboard.rawValue, "chart.bar.xaxis")
+        XCTAssertEqual(Glyph.history.rawValue, "scroll")
+        XCTAssertEqual(Glyph.dictionary.rawValue, "character.book.closed")
         XCTAssertEqual(Glyph.shortcuts.rawValue, "command")
+        XCTAssertEqual(Glyph.meetings.rawValue, "person.2.wave.2")
+        XCTAssertEqual(Glyph.models.rawValue, "memorychip")
         XCTAssertEqual(Glyph.settings.rawValue, "gearshape")
     }
 

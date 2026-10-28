@@ -11,13 +11,20 @@ extension AppCoordinator {
     func tryStartHotkeys() async {
         guard let environment, hotkeyTask == nil else { return }
         guard settings.onboardingComplete, menuBarController.recoveryReady else { return }
-        guard await environment.permissionGate.status(.inputMonitoring) == .granted else { return }
+        // Without the tap the fn key silently does nothing, so the status footer has
+        // to say why instead of leaving the owner pressing a key that cannot arrive.
+        guard await environment.permissionGate.status(.inputMonitoring) == .granted else {
+            menuBarController.publishError("Fn is off. Input Monitoring is not granted.")
+            return
+        }
         // Fn suppression is what keeps macOS from running its Globe action (Show Emoji & Symbols)
         // over dictation. Swallowing an event needs an active tap, so apply it before `start()`
         // creates the taps, otherwise the first tap is built listen-only.
         await environment.refreshFunctionKeySuppression()
         do {
             try await environment.hotkeySource.start()
+            // The tap is live, so any earlier permission message is stale.
+            menuBarController.publishError("")
             let events = environment.hotkeySource.events
             hotkeyTask = Task { [weak self] in
                 for await event in events {
