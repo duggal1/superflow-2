@@ -19,6 +19,11 @@
       "source": "tiny filler prepass runs; tier B keeps the grammatical is is"
     },
     {
+      "name": "ordinal stutter collapses at two",
+      "input": "so first first the text disfluency stage",
+      "expected": "so first the text disfluency stage"
+    },
+    {
       "name": "three repeats become one",
       "input": "that that that is the point",
       "expected": "that is the point",

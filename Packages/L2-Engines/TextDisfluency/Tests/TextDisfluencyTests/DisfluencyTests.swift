@@ -47,6 +47,30 @@ final class DisfluencyTests: XCTestCase {
         }
     }
 
+    /// Spoken ordinals used as enumerators stutter ("first first the stage").
+    /// They collapse like Tier A — at two — without ever touching cardinal
+    /// number words like "twenty twenty-six".
+    func testOrdinalStuttersCollapseAtTwo() async {
+        let collapsed: [(String, String)] = [
+            ("are first first the text disfluency stage", "are first the text disfluency stage"),
+            ("first first first the plan", "first the plan"),
+            ("I I I second second the motion", "I second the motion"),
+        ]
+        for (input, expected) in collapsed {
+            let actual = await run(input)
+            XCTAssertEqual(actual, expected, "input: \(input)")
+        }
+        // Enumerated sequences are not stutters and stay untouched.
+        let sequences = [
+            "first the stage second the path resolution third the gate",
+            "twenty twenty-six was a good year",
+        ]
+        for input in sequences {
+            let actual = await run(input)
+            XCTAssertEqual(actual, input, "input: \(input)")
+        }
+    }
+
     func testLegitimateDoublesAndPhrasesSurvive() async {
         let cases = [
             "bye bye now",

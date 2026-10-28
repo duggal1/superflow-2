@@ -17,8 +17,9 @@ public struct DisfluencyOutput: Sendable, Equatable {
 /// 1. Drop only pure fillers. Content-bearing words ("like", "you know",
 ///    "I mean", "so") are never removed here; the cleanup model owns those.
 /// 2. Collapse a repeated single word only when the tier allows it. Tier A
-///    words collapse at two; Tier B words need three; unknown words, number
-///    words and allowlisted repetitions are left for the model.
+///    words and spoken ordinals collapse at two; Tier B words need three;
+///    unknown words, number words and allowlisted repetitions are left for the
+///    model.
 /// 3. Collapse an adjacent repeated 2-3 word phrase once. Protected spans,
 ///    code-like tokens and emails are never touched.
 public enum DisfluencyRewriter {
@@ -38,6 +39,15 @@ public enum DisfluencyRewriter {
     /// therefore collapse only at three.
     static let tierB: Set<String> = [
         "had", "that", "is", "was", "do", "can", "very", "so", "no", "really",
+    ]
+
+    /// Spoken ordinals used to enumerate ("first first the disfluency stage").
+    /// A repeated ordinal is almost always a stutter, so they collapse like
+    /// Tier A even though they are content-ish words; they are deliberately
+    /// not in `numberWords`, where "twenty twenty-six"'s year shape lives.
+    static let tierOrdinals: Set<String> = [
+        "first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+        "eighth", "ninth", "tenth", "finally", "lastly",
     ]
 
     /// Number words must never be collapsed: "twenty twenty-six" is a year,
@@ -237,6 +247,9 @@ public enum DisfluencyRewriter {
     static func threshold(for word: String, settings: DisfluencySettings) -> Int {
         if allowlistedPhrases.contains(word) || numberWords.contains(word) {
             return Int.max
+        }
+        if tierOrdinals.contains(word) {
+            return max(2, settings.tierAThreshold)
         }
         if tierA.contains(word) {
             return max(2, settings.tierAThreshold)
