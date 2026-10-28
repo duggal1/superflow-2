@@ -1,130 +1,178 @@
 import Foundation
 import llama
 import SuperflowKernel
+import SuperflowPorts
 import SuperflowLLMCore
 
-private final class LlamaResources: @unchecked Sendable {
-    let model: OpaquePointer
-    let context: OpaquePointer
+private enum LlamaBackend {
+    static let initialized: Void = llama_backend_init()
+}
+
+private final class LlamaModel: @unchecked Sendable {
+    let pointer: OpaquePointer
     let vocabulary: OpaquePointer
 
-    init(model: OpaquePointer, context: OpaquePointer, vocabulary: OpaquePointer) {
-        self.model = model
-        self.context = context
+    init(pointer: OpaquePointer, vocabulary: OpaquePointer) {
+        self.pointer = pointer
         self.vocabulary = vocabulary
     }
 
-    deinit {
-        llama_free(context)
-        llama_model_free(model)
-        llama_backend_free()
-    }
+    deinit { llama_model_free(pointer) }
 }
 
-/// Process-wide llama.cpp log control. Benchmark tools call `silence()` so the
-/// model's graph/kernel chatter does not drown the measurement output.
+private final class LlamaSession: @unchecked Sendable {
+    let model: LlamaModel
+    let context: OpaquePointer
+
+    init(model: LlamaModel, context: OpaquePointer) {
+        self.model = model
+        self.context = context
+    }
+
+    deinit { llama_free(context) }
+}
+
 public enum LlamaLogging {
     public static func silence() {
         llama_log_set({ _, _, _ in }, nil)
     }
 }
 
-/// Owns the process's llama.cpp model and one reusable context. Actor isolation
-/// serializes Metal access and keeps one model mapping resident.
 public actor LlamaCppRuntime: LlamaRuntime {
-    private var resources: LlamaResources?
+    private var model: LlamaModel?
+    private var pool: WorkerPool<LlamaSession>?
     private var loadedCompute: ModelCompute?
+    private var loadedURL: URL?
+    private let sessionCount: Int
 
-    public init() {}
+    public init(sessions: Int = 2) {
+        sessionCount = min(4, max(1, sessions))
+    }
 
     public func load(modelURL: URL, compute: ModelCompute) async throws {
-        if resources != nil, loadedCompute == compute { return }
-        // The same file requested with a different placement: drop the old
-        // weights first so the setting actually takes effect without a restart.
-        resources = nil
-        loadedCompute = nil
-        llama_backend_init()
-
+        if model != nil, loadedCompute == compute, loadedURL == modelURL { return }
+        _ = LlamaBackend.initialized
         var modelParams = llama_model_default_params()
-        // llama.cpp's split knob: -1 offloads every layer to Metal, 0 keeps the
-        // whole model on the CPU.
         modelParams.n_gpu_layers = compute == .gpu ? -1 : 0
-        guard let loadedModel = llama_model_load_from_file(modelURL.path, modelParams) else {
+        guard let pointer = llama_model_load_from_file(modelURL.path, modelParams) else {
             throw SuperflowError.modelUnavailable("llama.cpp could not load \(modelURL.lastPathComponent)")
         }
-
-        var contextParams = llama_context_default_params()
-        contextParams.n_ctx = 4_096
-        contextParams.n_batch = 512
-        guard let loadedContext = llama_init_from_model(loadedModel, contextParams) else {
-            llama_model_free(loadedModel)
-            throw SuperflowError.modelUnavailable("llama.cpp could not create a context")
-        }
-
-        guard let vocabulary = llama_model_get_vocab(loadedModel) else {
-            llama_free(loadedContext)
-            llama_model_free(loadedModel)
-            llama_backend_free()
+        guard let vocabulary = llama_model_get_vocab(pointer) else {
+            llama_model_free(pointer)
             throw SuperflowError.modelUnavailable("llama.cpp could not access the model vocabulary")
         }
-        resources = LlamaResources(model: loadedModel, context: loadedContext, vocabulary: vocabulary)
+        let loadedModel = LlamaModel(pointer: pointer, vocabulary: vocabulary)
+        var sessions: [LlamaSession] = []
+        for _ in 0..<sessionCount {
+            var params = llama_context_default_params()
+            params.n_ctx = 4_096
+            params.n_batch = 512
+            guard let context = llama_init_from_model(pointer, params) else {
+                throw SuperflowError.modelUnavailable("llama.cpp could not create a context")
+            }
+            sessions.append(LlamaSession(model: loadedModel, context: context))
+        }
+        let warmupPrompt = LlamaPrompt.render(text: "hello there", options: CleanOptions())
+        for session in sessions {
+            _ = try Self.decode(prompt: warmupPrompt, maxTokens: 32, session: session,
+                                deadline: .now.advanced(by: .seconds(30)))
+        }
+        model = loadedModel
+        pool = WorkerPool(sessions)
         loadedCompute = compute
+        loadedURL = modelURL
     }
 
     public func countTokens(_ text: String) async -> Int? {
-        guard let resources else { return nil }
-        return try? tokenize(text, vocabulary: resources.vocabulary).count
+        guard let model else { return nil }
+        return try? Self.tokenize(text, vocabulary: model.vocabulary).count
     }
 
     public func complete(prompt: String, maxTokens: Int) async throws -> String {
-        guard let resources else {
+        try await completion(prompt: prompt, maxTokens: maxTokens, deadlineMs: 30_000).text
+    }
+
+    public func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion {
+        guard let pool else {
             throw SuperflowError.invalidState("llama.cpp model is not loaded")
         }
-        let context = resources.context
-        let vocabulary = resources.vocabulary
+        return try await pool.use(CleanPriority.current) { session in
+            let deadline = ContinuousClock.now.advanced(by: .milliseconds(max(1, deadlineMs)))
+            let task = Task.detached {
+                try Self.decode(prompt: prompt, maxTokens: maxTokens, session: session, deadline: deadline)
+            }
+            return try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: {
+                task.cancel()
+            }
+        }
+    }
+
+    private static func decode(prompt: String, maxTokens: Int, session: LlamaSession,
+                               deadline: ContinuousClock.Instant) throws -> LlamaCompletion {
+        func check() throws {
+            try Task.checkCancellation()
+            if ContinuousClock.now >= deadline { throw SuperflowError.timeout("cleanup") }
+        }
+        try check()
+        let context = session.context
+        let vocabulary = session.model.vocabulary
         let tokens = try tokenize(prompt, vocabulary: vocabulary)
-        guard !tokens.isEmpty else { return "" }
+        guard !tokens.isEmpty else { return LlamaCompletion(text: "", generatedTokens: 0) }
         guard tokens.count < Int(llama_n_ctx(context)) else {
             throw SuperflowError.invalidState("The S1-mini prompt exceeds the loaded context window")
         }
-
         llama_memory_clear(llama_get_memory(context), true)
-        let promptStatus = tokens.withUnsafeBufferPointer { buffer -> Int32 in
-            guard let baseAddress = buffer.baseAddress else { return -1 }
-            var batch = llama_batch_get_one(UnsafeMutablePointer(mutating: baseAddress), Int32(buffer.count))
-            return llama_decode(context, batch)
+        // Prefill uses bounded batches so cancellation is checked between graph evaluations.
+        for start in stride(from: 0, to: tokens.count, by: 512) {
+            try check()
+            let batchTokens = Array(tokens[start..<min(tokens.count, start + 512)])
+            let status = batchTokens.withUnsafeBufferPointer { buffer -> Int32 in
+                guard let base = buffer.baseAddress else { return -1 }
+                let batch = llama_batch_get_one(UnsafeMutablePointer(mutating: base), Int32(buffer.count))
+                return llama_decode(context, batch)
+            }
+            guard status == 0 else {
+                throw SuperflowError.modelUnavailable("llama.cpp could not evaluate the prompt")
+            }
         }
-        guard promptStatus == 0 else {
-            throw SuperflowError.modelUnavailable("llama.cpp could not evaluate the prompt")
-        }
-
-        guard let sampler = llama_sampler_chain_init(llama_sampler_chain_default_params()),
-              let greedySampler = llama_sampler_init_greedy() else {
+        guard let sampler = llama_sampler_chain_init(llama_sampler_chain_default_params()) else {
             throw SuperflowError.modelUnavailable("llama.cpp could not create a sampler")
         }
         defer { llama_sampler_free(sampler) }
-        llama_sampler_chain_add(sampler, greedySampler)
-
+        guard let greedy = llama_sampler_init_greedy() else {
+            throw SuperflowError.modelUnavailable("llama.cpp could not create a greedy sampler")
+        }
+        llama_sampler_chain_add(sampler, greedy)
         var output: [UInt8] = []
-        let outputLimit = min(max(1, maxTokens), max(1, Int(llama_n_ctx(context)) - tokens.count))
-        for _ in 0..<outputLimit {
+        var generated = 0
+        let limit = min(max(1, maxTokens), Int(llama_n_ctx(context)) - tokens.count)
+        for index in 0..<limit {
+            try check()
             let token = llama_sampler_sample(sampler, context, -1)
-            if llama_vocab_is_eog(vocabulary, token) { break }
+            if llama_vocab_is_eog(vocabulary, token) {
+                return LlamaCompletion(text: String(decoding: output, as: UTF8.self),
+                                       generatedTokens: generated)
+            }
             output.append(contentsOf: try tokenBytes(token, vocabulary: vocabulary))
-
-            var nextToken = token
-            let status = withUnsafeMutablePointer(to: &nextToken) { tokenPointer -> Int32 in
-                var batch = llama_batch_get_one(tokenPointer, 1)
+            generated += 1
+            if index + 1 == limit { break }
+            var next = token
+            let status = withUnsafeMutablePointer(to: &next) { pointer -> Int32 in
+                let batch = llama_batch_get_one(pointer, 1)
                 return llama_decode(context, batch)
             }
             guard status == 0 else {
                 throw SuperflowError.modelUnavailable("llama.cpp failed while generating cleanup text")
             }
         }
-        return String(decoding: output, as: UTF8.self)
+        try check()
+        return LlamaCompletion(text: String(decoding: output, as: UTF8.self),
+                               generatedTokens: generated, hitTokenCap: true)
     }
 
-    private func tokenize(_ text: String, vocabulary: OpaquePointer) throws -> [llama_token] {
+    private static func tokenize(_ text: String, vocabulary: OpaquePointer) throws -> [llama_token] {
         let bytes = Array(text.utf8)
         guard bytes.count < Int(Int32.max) else {
             throw SuperflowError.invalidState("The S1-mini prompt is too large to tokenize")
@@ -139,7 +187,7 @@ public actor LlamaCppRuntime: LlamaRuntime {
         return Array(tokens.prefix(Int(count)))
     }
 
-    private func tokenBytes(_ token: llama_token, vocabulary: OpaquePointer) throws -> [UInt8] {
+    private static func tokenBytes(_ token: llama_token, vocabulary: OpaquePointer) throws -> [UInt8] {
         var bytes = [CChar](repeating: 0, count: 256)
         let count = llama_token_to_piece(vocabulary, token, &bytes, Int32(bytes.count), 0, true)
         if count >= 0 {

@@ -114,6 +114,18 @@ public struct LlamaPrompt: Sendable {
     }
 }
 
+public struct LlamaCompletion: Sendable {
+    public var text: String
+    public var generatedTokens: Int?
+    public var hitTokenCap: Bool
+
+    public init(text: String, generatedTokens: Int? = nil, hitTokenCap: Bool = false) {
+        self.text = text
+        self.generatedTokens = generatedTokens
+        self.hitTokenCap = hitTokenCap
+    }
+}
+
 public protocol LlamaRuntime: Sendable {
     /// Loads the model and is the only place compute is chosen. Re-loading the
     /// same URL with a different `compute` must re-place the weights, because
@@ -121,10 +133,25 @@ public protocol LlamaRuntime: Sendable {
     func load(modelURL: URL, compute: ModelCompute) async throws
     func countTokens(_ text: String) async -> Int?
     func complete(prompt: String, maxTokens: Int) async throws -> String
+    func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion
 }
 
 public extension LlamaRuntime {
     func countTokens(_ text: String) async -> Int? { nil }
+    func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion {
+        try await withThrowingTaskGroup(of: LlamaCompletion.self) { group in
+            group.addTask {
+                LlamaCompletion(text: try await complete(prompt: prompt, maxTokens: maxTokens))
+            }
+            group.addTask {
+                try await Task.sleep(for: .milliseconds(max(1, deadlineMs)))
+                throw SuperflowError.timeout("cleanup")
+            }
+            defer { group.cancelAll() }
+            guard let first = try await group.next() else { throw CancellationError() }
+            return first
+        }
+    }
 }
 
 public struct UnavailableLlamaRuntime: LlamaRuntime {
@@ -139,13 +166,14 @@ public struct UnavailableLlamaRuntime: LlamaRuntime {
 
 /// Tier 1 cleaner. Model load is lazy so app launch never blocks on a
 /// multi-gigabyte file; the composition root calls `prepare()` during warm-up.
-public actor LlamaCleaner: TextCleaner {
+public actor LlamaCleaner: DeadlineManagedTextCleaner {
     private let modelProvider: any ModelProvider
     private let runtime: any LlamaRuntime
     private var ready = false
     /// Compute the model is currently loaded with, so a settings change reloads
     /// it instead of silently keeping the old placement.
     private var loadedCompute: ModelCompute?
+    private var preparation: (id: UUID, task: Task<Void, any Error>)?
 
     public init(modelProvider: any ModelProvider, runtime: any LlamaRuntime) {
         self.modelProvider = modelProvider
@@ -155,15 +183,31 @@ public actor LlamaCleaner: TextCleaner {
     public var isReady: Bool { ready }
 
     public func prepare(compute: ModelCompute = .gpu) async throws {
+        if let preparation { try await preparation.task.value }
         if ready, loadedCompute == compute { return }
-        let url = try await modelProvider.ensureLLM { _ in }
-        try await runtime.load(modelURL: url, compute: compute)
-        loadedCompute = compute
-        ready = true
+        let id = UUID()
+        let task = Task {
+            let url = try await modelProvider.ensureLLM { _ in }
+            try await runtime.load(modelURL: url, compute: compute)
+            loadedCompute = compute
+            ready = true
+        }
+        preparation = (id, task)
+        do {
+            try await task.value
+            if preparation?.id == id { preparation = nil }
+        } catch {
+            if preparation?.id == id { preparation = nil }
+            throw error
+        }
     }
 
     public func countTokens(_ text: String) async -> Int {
         await runtime.countTokens(text) ?? 0
+    }
+
+    public func prewarm() async {
+        _ = try? await clean("hello there", options: CleanOptions())
     }
 
     public func clean(_ text: String, options: CleanOptions) async throws -> CleanResult {
@@ -175,16 +219,18 @@ public actor LlamaCleaner: TextCleaner {
         // own tokenizer; the estimate is only a fallback for test runtimes.
         let inputTokens = await runtime.countTokens(text) ?? LlamaPrompt.estimateTokens(text)
         let outputCap = Self.outputTokenCap(inputTokens: inputTokens, configured: options.maxNewTokens)
-        let output = try await runtime.complete(prompt: prompt, maxTokens: outputCap)
-        let cleaned = LlamaPrompt.sanitize(output)
+        let output = try await runtime.completion(prompt: prompt, maxTokens: outputCap,
+                                                  deadlineMs: options.deadlineMs)
+        let cleaned = LlamaPrompt.sanitize(output.text)
         let elapsed = Int((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000)
-        let tokensOut = await runtime.countTokens(cleaned) ?? 0
+        let retokenized = await runtime.countTokens(cleaned) ?? 0
+        let tokensOut = output.generatedTokens ?? retokenized
         let tokensIn = await runtime.countTokens(prompt) ?? 0
         // Filler-only input legitimately normalizes to an empty string.
         return CleanResult(text: cleaned,
                            tokensIn: tokensIn,
                            tokensOut: tokensOut,
-                           hitTokenCap: !cleaned.isEmpty && tokensOut >= outputCap,
+                           hitTokenCap: output.hitTokenCap || (!cleaned.isEmpty && tokensOut >= outputCap),
                            latencyMs: elapsed)
     }
 

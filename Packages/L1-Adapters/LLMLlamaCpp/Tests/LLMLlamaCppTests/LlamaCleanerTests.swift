@@ -43,6 +43,24 @@ private actor FakeRuntime: LlamaRuntime {
 }
 
 final class LlamaCleanerTests: XCTestCase {
+    func testSystemPromptMatchesPinnedHash() {
+        let data = Data(LlamaPrompt.system(options: CleanOptions()).utf8)
+        let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        XCTAssertEqual(digest, "6ecb6800f96b00cf612631552eff606a829feb2be8449fa95f9f150713b89327")
+    }
+
+    func testConcurrentPreparationLoadsOnce() async throws {
+        let runtime = FakeRuntime(response: "Clean.")
+        let cleaner = LlamaCleaner(modelProvider: StubProvider(url: URL(fileURLWithPath: "/tmp/s1.gguf")),
+                                   runtime: runtime)
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<10 { group.addTask { try await cleaner.prepare() } }
+            try await group.waitForAll()
+        }
+        let loads = await runtime.loads
+        XCTAssertEqual(loads, [.gpu])
+    }
+
     func testPromptCarriesOptionsAndText() {
         let options = CleanOptions(styling: "casual", structure: "lists", context: "email")
         let prompt = LlamaPrompt.render(text: "hello there", options: options)
