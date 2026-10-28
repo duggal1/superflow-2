@@ -35,10 +35,8 @@ public struct TextPipelineDependencies: Sendable {
     }
 }
 
-/// Canonical stage order (PLAN section 9):
-/// commands, shortcuts, disfluency, numbers, opt-in code speak, lexicon,
-/// code-aware filenames/paths, cleanup, numbers+lexicon assertion pass,
-/// grammar gate, line format.
+/// Commands and shortcuts precede mechanical cleanup, then language cleanup,
+/// protected-aware polish, the grammar gate, and line formatting.
 public enum TextPipelineBuilder {
     public static func make(settings: AppSettings,
                             dependencies: TextPipelineDependencies = TextPipelineDependencies()) -> TextPipeline {
@@ -52,7 +50,8 @@ public enum TextPipelineBuilder {
         if settings.disfluency.enabled {
             stages.append(DisfluencyStage(settings: settings.disfluency))
         }
-        stages.append(NumbersStage(id: "numbers"))
+        stages.append(SpokenCodeStage())
+        stages.append(NumberCleanupStage())
         if settings.codeSpeakEnabled {
             stages.append(CodeSpeakStage())
         }
@@ -64,8 +63,7 @@ public enum TextPipelineBuilder {
         if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
             stages.append(CleanupStage(service: cleaner))
         }
-        stages.append(NumbersStage(id: "numbers.assert"))
-        stages.append(LexiconStage(entries: dependencies.lexiconEntries, id: "lexicon.assert"))
+        stages.append(FinalPolishStage())
         if settings.harperEnabled, let grammar = dependencies.grammarChecker {
             stages.append(GrammarGateStage(checker: grammar, policy: dependencies.grammarPolicy))
         }

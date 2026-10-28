@@ -57,7 +57,8 @@ public struct LineFormatter: Sendable {
     /// Fenced code passes through untouched and inline code, paths and
     /// filenames are masked before formatting, so capitalization, punctuation
     /// spacing and sentence splitting cannot rewrite code.
-    public static func format(_ text: String, settings: LineFormatSettings = LineFormatSettings()) -> String {
+    public static func format(_ text: String, settings: LineFormatSettings = LineFormatSettings(),
+                              preserveLists: Bool = false) -> String {
         let separator = settings.breakStyle == .paragraph ? "\n\n" : "\n"
         var output: [String] = []
         for segment in FencedBlocks.split(text) {
@@ -70,11 +71,27 @@ public struct LineFormatter: Sendable {
                 var formatter = LineFormatter(settings: settings)
                 var blocks = formatter.feed(masked)
                 blocks.append(contentsOf: formatter.finish())
-                let formatted = preserver.restore(blocks.joined(separator: formatter.separator))
+                let formatted = preserver.restore(preserveLists ? joinBlocks(blocks, separator: formatter.separator)
+                    : blocks.joined(separator: formatter.separator))
                 if !formatted.isEmpty { output.append(formatted) }
             }
         }
         return output.joined(separator: separator)
+    }
+
+    private static func joinBlocks(_ blocks: [String], separator: String) -> String {
+        var output = ""
+        var previous = ""
+        for block in blocks {
+            if !output.isEmpty {
+                let nextIsItem = ListFormatter.isListLine(block)
+                let followsList = ListFormatter.isListLine(previous)
+                output += nextIsItem && (followsList || previous.hasSuffix(":")) ? "\n" : separator
+            }
+            output += block
+            previous = block.components(separatedBy: "\n").last ?? block
+        }
+        return output
     }
 
     // MARK: feeding
@@ -304,7 +321,7 @@ public struct LineFormatStage: TextStage {
 
     public func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
         var output = draft
-        var text = LineFormatter.format(draft.text, settings: settings)
+        var text = LineFormatter.format(draft.text, settings: settings, preserveLists: true)
         if settings.trailingSpace && !text.isEmpty && !text.hasSuffix(" ") { text += " " }
         output.text = text
         return output

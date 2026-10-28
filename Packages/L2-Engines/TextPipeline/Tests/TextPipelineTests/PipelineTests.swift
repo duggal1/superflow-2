@@ -43,8 +43,8 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
-            "commands", "shortcuts", "disfluency", "numbers", "lexicon", "codeAware",
-            "cleanup", "numbers.assert", "lexicon.assert", "grammar", "lineformat",
+            "commands", "shortcuts", "disfluency", "spokenCode", "numbers", "lexicon", "codeAware",
+            "cleanup", "polish", "grammar", "lineformat",
         ])
     }
 
@@ -55,8 +55,8 @@ final class PipelineTests: XCTestCase {
         settings.harperEnabled = false
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs,
-                       ["shortcuts", "disfluency", "numbers", "lexicon", "codeAware",
-                        "numbers.assert", "lexicon.assert", "lineformat"])
+                       ["shortcuts", "disfluency", "spokenCode", "numbers", "lexicon", "codeAware",
+                        "polish", "lineformat"])
     }
 
     func testCodeSpeakIsOptInAndRunsAfterNumbers() async {
@@ -69,8 +69,8 @@ final class PipelineTests: XCTestCase {
 
         settings.codeSpeakEnabled = true
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
-        XCTAssertEqual(Array(pipeline.stageIDs.prefix(5)),
-                       ["commands", "shortcuts", "disfluency", "numbers", "codeSpeak"])
+        XCTAssertEqual(Array(pipeline.stageIDs.prefix(6)),
+                       ["commands", "shortcuts", "disfluency", "spokenCode", "numbers", "codeSpeak"])
         let index = pipeline.stageIDs.firstIndex(of: "codeSpeak")
         XCTAssertEqual(index.map { pipeline.stageIDs[$0 + 1] }, "lexicon")
 
@@ -94,7 +94,7 @@ final class PipelineTests: XCTestCase {
         XCTAssertLessThan(try XCTUnwrap(ids.firstIndex(of: "lexicon")),
                           try XCTUnwrap(ids.firstIndex(of: "codeAware")))
         XCTAssertLessThan(try XCTUnwrap(ids.firstIndex(of: "codeAware")),
-                          try XCTUnwrap(ids.firstIndex(of: "numbers.assert")))
+                          try XCTUnwrap(ids.firstIndex(of: "polish")))
         let result = await pipeline.run("I I I want to open src slash main",
                                         context: TextContext(settings: settings, project: project))
         XCTAssertEqual(result.text, "I want to open src/main.ts")
@@ -109,7 +109,7 @@ final class PipelineTests: XCTestCase {
         XCTAssertEqual(result.timings.last?.id, "shortcuts")
     }
 
-    func testNumbersAndLexiconRunAroundCleanup() async {
+    func testNumbersAndLexiconPrecedeCleanupAndPolishFollows() async {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         let result = await pipeline.run("i need two hundred dollars for next js", context: TextContext())
@@ -118,7 +118,7 @@ final class PipelineTests: XCTestCase {
         let ids = result.timings.map(\.id)
         let cleanup = try? XCTUnwrap(ids.firstIndex(of: "cleanup"))
         let lexicon = try? XCTUnwrap(ids.firstIndex(of: "lexicon"))
-        let assertion = try? XCTUnwrap(ids.firstIndex(of: "lexicon.assert"))
+        let assertion = try? XCTUnwrap(ids.firstIndex(of: "polish"))
         XCTAssertNotNil(cleanup)
         XCTAssertNotNil(lexicon)
         XCTAssertNotNil(assertion)

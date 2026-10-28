@@ -37,215 +37,169 @@ public struct CleanupOutcome: Sendable, Equatable {
     }
 }
 
-/// Bounded, cancellable cleanup over ordered chunks. Every failure path returns the Tier 0 text.
+/// Decorates the unchanged TextCleaner port with deterministic planning and fallback.
 public actor CleanupService {
     private let cleaner: any TextCleaner
     public let config: CleanupConfig
     private let semaphore: AsyncSemaphore
-    private let truncation: TruncationDetector
-    private let guardrail: HallucinationGuard
 
     public init(cleaner: any TextCleaner, config: CleanupConfig = CleanupConfig()) {
         self.cleaner = cleaner
         self.config = config
         self.semaphore = AsyncSemaphore(config.workers)
-        self.truncation = TruncationDetector(ratioFloor: config.ratioFloor)
-        self.guardrail = HallucinationGuard()
     }
 
-    public func countTokens(_ text: String) async -> Int {
-        await cleaner.countTokens(text)
-    }
+    public func countTokens(_ text: String) async -> Int { await cleaner.countTokens(text) }
 
-    public func clean(_ input: String, protected: Protected = Protected(),
-                      context: TextContext) async -> CleanupOutcome {
+    public func clean(_ input: String, protected: Protected = Protected(), context: TextContext) async -> CleanupOutcome {
         let tier0 = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !tier0.isEmpty else {
-            return CleanupOutcome(text: "", state: .skipped, chunks: [], diagnostics: [])
-        }
+        guard !tier0.isEmpty else { return CleanupOutcome(text: "", state: .skipped, chunks: [], diagnostics: []) }
         guard context.settings.cleanupEnabled else {
-            return CleanupOutcome(text: tier0, state: .skipped, chunks: [],
-                                  diagnostics: [Diagnostic(stage: "cleanup", message: "disabled")])
+            return CleanupOutcome(text: tier0, state: .skipped, chunks: [], diagnostics: [])
         }
         guard await cleaner.isReady else {
             return CleanupOutcome(text: tier0, state: .fallback, chunks: [],
                                   diagnostics: [Diagnostic(stage: "cleanup", message: "model not ready")])
         }
+        return await CleanPriority.$current.withValue(context.interactive ? .interactive : .background) {
+            var parts: [String] = []
+            var chunks: [ChunkOutcome] = []
+            for segment in ListPlanner.plan(tier0, protected: protected, timings: context.wordTimings) {
+                switch segment {
+                case .prose(let text):
+                    let output = await self.prose(text, protected: protected, context: context,
+                                                  styling: context.settings.cleanupStyling,
+                                                  structure: context.settings.cleanupStructure)
+                    parts.append(output.text); chunks.append(contentsOf: output.chunks)
+                case .list(let lead, let items):
+                    let heading = await self.prose(lead, protected: protected, context: context,
+                                                   styling: context.settings.cleanupStyling, structure: "prose")
+                    chunks.append(contentsOf: heading.chunks)
+                    var cleaned: [String] = []
+                    for item in items {
+                        let output = await self.prose(item, protected: protected, context: context,
+                                                      styling: "semi-casual", structure: "prose")
+                        cleaned.append(output.text); chunks.append(contentsOf: output.chunks)
+                    }
+                    parts.append(ListRenderer.render(lead: heading.text, items: cleaned))
+                }
+            }
+            for index in chunks.indices { chunks[index].index = index }
+            let fallback = chunks.contains { $0.state == .fallback }
+            return CleanupOutcome(text: parts.filter { !$0.isEmpty }.joined(separator: "\n\n"),
+                                  state: fallback ? .fallback : .cleaned, chunks: chunks,
+                                  diagnostics: chunks.compactMap { chunk in
+                chunk.reason.map { Diagnostic(stage: "cleanup[\(chunk.index)]", message: $0) }
+            })
+        }
+    }
 
+    private func prose(_ text: String, protected: Protected, context: TextContext,
+                       styling: String, structure: String) async -> (text: String, chunks: [ChunkOutcome]) {
+        let words = WordTimingProjection.apply(to: Tokenizer.words(text, protected: protected), timings: context.wordTimings)
+        let plans = await ChunkPlanner(config: config, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
+        guard !plans.isEmpty else { return ("", []) }
+        var results = [ChunkOutcome](repeating: ChunkOutcome(index: 0, text: "", state: .pending), count: plans.count)
+        await withTaskGroup(of: ChunkOutcome.self) { group in
+            var next = 0
+            for _ in 0..<min(config.workers, plans.count) {
+                let plan = plans[next]; next += 1
+                group.addTask { await self.cleanChunk(plan, depth: 0, styling: styling, structure: structure, protected: protected, context: context) }
+            }
+            for await result in group {
+                results[result.index] = result
+                if next < plans.count {
+                    let plan = plans[next]; next += 1
+                    group.addTask { await self.cleanChunk(plan, depth: 0, styling: styling, structure: structure, protected: protected, context: context) }
+                }
+            }
+        }
+        var pieces: [String] = []
+        var tail = results[0].text
+        for index in plans.indices.dropFirst() {
+            if !plans[index].overlap.isEmpty {
+                let splice = SeamSplicer.splice(tail, results[index].text, overlapWords: wordCount(plans[index].overlap))
+                if splice.aligned { pieces.append(splice.kept); tail = splice.rest; continue }
+                pieces.append(tail)
+                let owned = ChunkPlan(index: index, text: plans[index].ownedText, tokens: 0)
+                let replacement = await cleanChunk(owned, depth: 0, styling: styling, structure: structure, protected: protected, context: context)
+                results[index] = replacement; tail = replacement.text
+            } else { pieces.append(tail); tail = results[index].text }
+        }
+        pieces.append(tail)
+        let assembled = SeamSplicer.join(pieces)
+        let check = CleanResult(text: assembled, tokensIn: 0, tokensOut: 0, hitTokenCap: false, latencyMs: 0)
+        if CleanGuard.verify(input: text, protected: protected, result: check, cap: Int.max) != nil {
+            return (text, [ChunkOutcome(index: 0, text: text, state: .fallback, reason: "assembly content guard")])
+        }
+        return (assembled, results)
+    }
+
+    private func cleanChunk(_ plan: ChunkPlan, depth: Int, styling: String, structure: String,
+                            protected: Protected, context: TextContext) async -> ChunkOutcome {
+        if plan.tokens > config.hardTokenCap {
+            return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
+                                reason: "protected span exceeds input cap")
+        }
+        let start = ContinuousClock.now
         let configured = context.interactive ? context.settings.interactiveDeadlineMs : context.settings.backgroundDeadlineMs
         let ceiling = context.interactive ? config.interactiveDeadlineMs : config.backgroundDeadlineMs
         let deadline = min(max(1, configured), max(1, ceiling))
-        let planner = ChunkPlanner(config: config, protected: protected)
-        let plans = await planner.plan(tier0) { await self.cleaner.countTokens($0) }
-        guard !plans.isEmpty else {
-            return CleanupOutcome(text: tier0, state: .fallback, chunks: [], diagnostics: [])
-        }
-
-        // Control-line carry-over, resolved in chunk order before the workers
-        // fan out (cheap string scans; the addition keeps fan-out parallel-safe).
-        // An open list at chunk i-1 keeps chunk i asking for lists even when its
-        // own body has no cues, so a spoken enumeration that spans a seam stays
-        // one list instead of restarting. The overlap prefix already re-shares
-        // the previous chunk's trailing sentences, which carries the last
-        // sentence and the register context through the model's local window.
-        let configuredStructure = context.settings.cleanupStructure
-        var structures = plans.map {
-            CleanupStructureDetector.structure(for: $0.text, configured: configuredStructure)
-        }
-        for index in plans.indices.dropFirst() where !plans[index].overlap.isEmpty {
-            guard structures[index - 1] == "list", structures[index] != "list" else { continue }
-            // The next chunk's own body opens with a list cue: the spoken
-            // enumeration really does continue. The overlap alone must not
-            // trigger this, or an unrelated prose chunk trailing the list
-            // would inherit it seam after seam.
-            let body = String(plans[index].text.dropFirst(plans[index].overlap.count))
-                .trimmingCharacters(in: .whitespaces)
-            if CleanupStructureDetector.continuesList(body) {
-                structures[index] = "list"
-            }
-        }
-
-        var outcomes: [ChunkOutcome] = Array(repeating: ChunkOutcome(index: 0, text: "", state: .pending),
-                                             count: plans.count)
-        await withTaskGroup(of: ChunkOutcome.self) { group in
-            for (position, plan) in plans.enumerated() {
-                let structure = structures[position]
-                group.addTask { [weak self] in
-                    guard let self else {
-                        return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback)
-                    }
-                    await self.semaphore.acquire()
-                    let result = await self.cleanChunk(plan, deadlineMs: deadline, depth: 0,
-                                                       structure: structure,
-                                                       protected: protected, context: context)
-                    await self.semaphore.release()
-                    return result
-                }
-            }
-            for await result in group { outcomes[result.index] = result }
-        }
-
-        let stitched = OrderedStitcher.stitch(outcomes.map(\.text), overlaps: plans.map(\.overlap))
-        let anyFallback = outcomes.contains { $0.state == .fallback }
-        let anyCleaned = outcomes.contains { $0.state == .cleaned }
-        let state: CleanupState = anyFallback ? .fallback : (anyCleaned ? .cleaned : .skipped)
-        let diagnostics = outcomes.compactMap { outcome in
-            outcome.reason.map { Diagnostic(stage: "cleanup[\(outcome.index)]", message: $0) }
-        }
-        // A successful cleanup may legitimately be empty (filler-only input).
-        // Only an empty fallback needs the Tier 0 text restored.
-        let text = stitched.isEmpty && state != .cleaned ? tier0 : stitched
-        return CleanupOutcome(text: text, state: state, chunks: outcomes, diagnostics: diagnostics)
-    }
-
-    private func cleanChunk(_ plan: ChunkPlan, deadlineMs: Int, depth: Int, structure: String,
-                            protected: Protected, context: TextContext) async -> ChunkOutcome {
-        let start = DispatchTime.now().uptimeNanoseconds
+        let cap = min(config.maxNewTokens, Int(1.3 * Double(await cleaner.countTokens(plan.text))) + 32)
         do {
-            let result = try await withDeadline(ms: deadlineMs) {
-                try await self.cleaner.clean(plan.text, options: CleanOptions(
-                    styling: context.settings.cleanupStyling,
-                    structure: structure,
-                    context: context.cleanupContext,
-                    deadlineMs: deadlineMs,
-                    maxNewTokens: self.config.maxNewTokens))
-            }
-            let elapsed = Int((DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
-
-            let emptyOutput = result.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            if emptyOutput, FillerOnlyText.isFillerOnly(plan.text) {
-                return ChunkOutcome(index: plan.index, text: "", state: .cleaned,
-                                    tokensIn: result.tokensIn, tokensOut: result.tokensOut,
-                                    latencyMs: elapsed, attempts: depth + 1)
-            }
-
-            if let reason = truncation.detect(input: plan.text, output: result.text, hitTokenCap: result.hitTokenCap),
-               depth < config.retryDepth {
-                let halves = splitForRetry(plan.text, protected: protected)
-                if halves.count == 2 {
-                    let a = await cleanChunk(ChunkPlan(index: plan.index, text: halves[0], tokens: 0),
-                                             deadlineMs: deadlineMs, depth: depth + 1,
-                                             structure: structure,
-                                             protected: protected, context: context)
-                    let b = await cleanChunk(ChunkPlan(index: plan.index, text: halves[1], tokens: 0),
-                                             deadlineMs: deadlineMs, depth: depth + 1,
-                                             structure: structure,
-                                             protected: protected, context: context)
-                    let text = OrderedStitcher.stitch([a.text, b.text])
-                    let state: CleanupState = (a.state == .cleaned && b.state == .cleaned) ? .cleaned : .fallback
-                    return ChunkOutcome(index: plan.index, text: text, state: state,
-                                        tokensIn: result.tokensIn, tokensOut: result.tokensOut,
-                                        latencyMs: elapsed, attempts: a.attempts + b.attempts + 1, reason: reason.rawValue)
+            try Task.checkCancellation()
+            try await semaphore.acquire(priority: CleanPriority.current)
+            let result: CleanResult
+            do {
+                let options = CleanOptions(styling: styling, structure: structure, context: context.cleanupContext,
+                                           deadlineMs: deadline, maxNewTokens: cap)
+                if cleaner is any DeadlineManagedTextCleaner {
+                    result = try await cleaner.clean(plan.text, options: options)
+                } else {
+                    result = try await withDeadline(ms: deadline) { try await self.cleaner.clean(plan.text, options: options) }
                 }
-            }
-
-            if let reason = truncation.detect(input: plan.text, output: result.text, hitTokenCap: result.hitTokenCap) {
-                return fallback(plan, reason: reason.rawValue, elapsed: elapsed)
-            }
-            if !guardrail.allows(input: plan.text, output: result.text) {
-                return fallback(plan, reason: "hallucination guard", elapsed: elapsed)
-            }
-            return ChunkOutcome(index: plan.index, text: result.text, state: .cleaned,
-                                tokensIn: result.tokensIn, tokensOut: result.tokensOut,
-                                latencyMs: elapsed, attempts: depth + 1)
+                await semaphore.release()
+            } catch { await semaphore.release(); throw error }
+            if let failure = CleanGuard.verify(input: plan.text, protected: protected, result: result, cap: cap) { throw failure }
+            let elapsed = start.duration(to: .now)
+            return ChunkOutcome(index: plan.index, text: result.text, state: .cleaned, tokensIn: result.tokensIn,
+                                tokensOut: result.tokensOut, latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000), attempts: depth + 1)
         } catch {
-            let elapsed = Int((DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
-            if depth < config.retryDepth, !(error is CancellationError) {
-                let halves = splitForRetry(plan.text, protected: protected)
-                if halves.count == 2 {
-                    let a = await cleanChunk(ChunkPlan(index: plan.index, text: halves[0], tokens: 0),
-                                             deadlineMs: deadlineMs, depth: depth + 1,
-                                             structure: structure,
-                                             protected: protected, context: context)
-                    let b = await cleanChunk(ChunkPlan(index: plan.index, text: halves[1], tokens: 0),
-                                             deadlineMs: deadlineMs, depth: depth + 1,
-                                             structure: structure,
-                                             protected: protected, context: context)
-                    let state: CleanupState = (a.state == .cleaned && b.state == .cleaned) ? .cleaned : .fallback
-                    return ChunkOutcome(index: plan.index, text: OrderedStitcher.stitch([a.text, b.text]),
-                                        state: state,
-                                        latencyMs: elapsed, attempts: a.attempts + b.attempts + 1,
-                                        reason: String(describing: error))
+            if depth < config.retryDepth, !(error is CancellationError), !Task.isCancelled {
+                let words = Tokenizer.tokens(in: plan.text)
+                if words.count >= 48 {
+                    let spans = protected.ranges(in: plan.text)
+                    let middle = words.count / 2
+                    if let cut = (1..<words.count).sorted(by: { abs($0 - middle) < abs($1 - middle) }).first(where: { index in
+                        !spans.contains { $0.lowerBound < words[index].range.lowerBound && words[index].range.lowerBound < $0.upperBound }
+                    }) {
+                        let lhs = words[..<cut].map(\.full).joined(separator: " ")
+                        let rhs = words[cut...].map(\.full).joined(separator: " ")
+                        let a = await cleanChunk(ChunkPlan(index: plan.index, text: lhs, tokens: 0), depth: depth + 1,
+                                                 styling: styling, structure: structure, protected: protected, context: context)
+                        let b = await cleanChunk(ChunkPlan(index: plan.index, text: rhs, tokens: 0), depth: depth + 1,
+                                                 styling: styling, structure: structure, protected: protected, context: context)
+                        return ChunkOutcome(index: plan.index, text: SeamSplicer.join([a.text, b.text]),
+                                            state: a.state == .cleaned && b.state == .cleaned ? .cleaned : .fallback,
+                                            tokensIn: a.tokensIn + b.tokensIn, tokensOut: a.tokensOut + b.tokensOut,
+                                            latencyMs: a.latencyMs + b.latencyMs, attempts: a.attempts + b.attempts,
+                                            reason: String(describing: error))
+                    }
                 }
             }
-            return fallback(plan, reason: String(describing: error), elapsed: elapsed)
+            return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback, attempts: depth + 1, reason: String(describing: error))
         }
-    }
-
-    private func fallback(_ plan: ChunkPlan, reason: String, elapsed: Int) -> ChunkOutcome {
-        ChunkOutcome(index: plan.index, text: plan.text, state: .fallback, latencyMs: elapsed, reason: reason)
-    }
-
-    private func splitForRetry(_ text: String, protected: Protected) -> [String] {
-        let (sentences, remainder) = SentenceSplitter.split(text)
-        if sentences.count >= 2 {
-            let mid = sentences.count / 2
-            let a = sentences[0..<mid].joined(separator: " ")
-            let b = sentences[mid...].joined(separator: " ") + (remainder.isEmpty ? "" : " " + remainder)
-            if !a.isEmpty && !b.isEmpty { return [a, b] }
-        }
-        let tokens = Tokenizer.tokens(in: text)
-        guard tokens.count > 4 else { return [] }
-        let mid = tokens.count / 2
-        var index = mid
-        if index > 0, index < tokens.count,
-           protected.overlaps(tokens[index].range, in: text, detect: false) {
-            index = min(tokens.count - 1, index + 1)
-        }
-        let a = tokens[0..<index].map(\.full).joined(separator: " ")
-        let b = tokens[index...].map(\.full).joined(separator: " ")
-        return a.isEmpty || b.isEmpty ? [] : [a, b]
     }
 
     private func withDeadline<T: Sendable>(ms: Int, operation: @escaping @Sendable () async throws -> T) async throws -> T {
         try await withThrowingTaskGroup(of: T.self) { group in
             group.addTask { try await operation() }
             group.addTask {
-                try await Task.sleep(for: .milliseconds(max(1, ms)))
+                try await Task.sleep(for: .milliseconds(ms))
                 throw SuperflowError.timeout("cleanup")
             }
+            defer { group.cancelAll() }
             guard let first = try await group.next() else { throw SuperflowError.timeout("cleanup") }
-            group.cancelAll()
             return first
         }
     }

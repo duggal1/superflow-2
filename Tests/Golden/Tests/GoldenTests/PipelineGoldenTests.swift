@@ -69,8 +69,8 @@ final class PipelineGoldenTests: XCTestCase {
             grammarPolicy: .default
         )
         XCTAssertEqual(pipeline.stageIDs,
-                       ["commands", "shortcuts", "disfluency", "numbers", "lexicon",
-                        "codeAware", "cleanup", "numbers.assert", "lexicon.assert",
+                       ["commands", "shortcuts", "disfluency", "spokenCode", "numbers", "lexicon",
+                        "codeAware", "cleanup", "polish",
                         "grammar", "lineformat"])
     }
 

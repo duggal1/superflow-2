@@ -100,12 +100,14 @@ final class CleanupTests: XCTestCase {
         XCTAssertEqual(plans.map(\.text).joined(separator: " "), text)
     }
 
-    func testStrongListCuesUpgradeStructure() async {
+    func testListCuesNeverChangeProseControlLine() async {
         let cleaner = FakeTextCleaner(.identity)
-        _ = await service(cleaner).clean(
-            "Here are the steps: first install it, second run it.", context: TextContext())
+        let outcome = await service(cleaner).clean(
+            "Here are the steps first install it second run it third ship it", context: TextContext())
         let options = await cleaner.lastOptions
-        XCTAssertEqual(options?.structure, "list")
+        XCTAssertEqual(options?.structure, "prose")
+        XCTAssertEqual(options?.styling, "semi-casual")
+        XCTAssertEqual(outcome.text, "Here are the steps:\n- install it\n- run it\n- ship it")
     }
 
     func testOrdinaryProseStaysProse() async {
@@ -242,7 +244,7 @@ final class CleanupTests: XCTestCase {
         }
     }
 
-    func testOverlapCarriesAnOpenListAcrossChunksButNotIntoNewProse() async {
+    func testListsArePlannedBeforeChunksAndControlsStayConstant() async {
         let cleaner = RecordingCleaner()
         let config = CleanupConfig(softTokenTarget: 12, hardTokenCap: 24)
         let service = CleanupService(cleaner: cleaner, config: config)
@@ -250,13 +252,13 @@ final class CleanupTests: XCTestCase {
             + "fourth kappa lambda mu. the overflowed garden stays open tonight regardless. "
             + "the garden gate stays open far too late."
         let outcome = await service.clean(text, context: TextContext())
-        XCTAssertEqual(outcome.chunks.count, 3)
         let options = await cleaner.byInput
-        XCTAssertEqual(options[outcome.chunks[0].text]?.structure, "list")
-        // The list continues into the next chunk: its body opens with another
-        // ordering word, so the control line stays `list` across the seam.
-        XCTAssertEqual(options[outcome.chunks[1].text]?.structure, "list")
-        // The chunk after the list has no continuation cue: prose stays prose.
-        XCTAssertEqual(options[outcome.chunks[2].text]?.structure, "prose")
+        XCTAssertTrue(options.values.allSatisfy { $0.structure == "prose" })
+        XCTAssertEqual(options["alpha beta gamma."]?.styling, "semi-casual")
+        XCTAssertEqual(options["delta epsilon zeta."]?.styling, "semi-casual")
+        XCTAssertEqual(options["eta theta iota."]?.styling, "semi-casual")
+        XCTAssertEqual(options["kappa lambda mu."]?.styling, "semi-casual")
+        XCTAssertTrue(outcome.text.hasPrefix("- alpha beta gamma\n- delta epsilon zeta\n- eta theta iota\n- kappa lambda mu"))
+        XCTAssertTrue(outcome.text.contains("the garden gate stays open far too late."))
     }
 }
