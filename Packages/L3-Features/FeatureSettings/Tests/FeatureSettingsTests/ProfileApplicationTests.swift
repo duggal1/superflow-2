@@ -6,8 +6,11 @@ import SuperflowTestKit
 import XCTest
 @testable import SuperflowFeatureSettings
 
+/// The Context profile picker is cut from Settings (pass 3 §9.1), but the
+/// view-model application path stays: a profile is still a draft until Save and
+/// still offers Undo. These tests cover that path, not the deleted picker.
 @MainActor
-final class ContextProfileChoiceTests: XCTestCase {
+final class ProfileApplicationTests: XCTestCase {
     private var store: InMemorySettings!
     private var login: FakeLaunchAtLogin!
     private var models: FakeModelProvider!
@@ -21,28 +24,6 @@ final class ContextProfileChoiceTests: XCTestCase {
 
     private func makeModel() -> SettingsViewModel {
         SettingsViewModel(store: store, models: models, launchAtLogin: login)
-    }
-
-    func testEveryBuiltInProfileMatchesItsOwnSettings() {
-        for choice in ContextProfileChoice.builtIn {
-            guard let profile = choice.profile else {
-                XCTFail("\(choice.title) has no profile")
-                continue
-            }
-            let settings = profile.applying(to: AppSettings.default)
-            XCTAssertEqual(ContextProfileChoice.matching(settings), choice)
-        }
-    }
-
-    func testHandEditFallsBackToCustom() {
-        var settings = ContextProfile.code.applying(to: AppSettings.default)
-        settings.cleanupStyling = "casual"
-        XCTAssertEqual(ContextProfileChoice.matching(settings), .custom)
-    }
-
-    func testCustomHasNoProfileAndSaysSo() {
-        XCTAssertNil(ContextProfileChoice.custom.profile)
-        XCTAssertEqual(ContextProfileChoice.custom.summary, "Changed by hand")
     }
 
     func testApplyingAProfileTouchesOnlyProfileFields() async {
