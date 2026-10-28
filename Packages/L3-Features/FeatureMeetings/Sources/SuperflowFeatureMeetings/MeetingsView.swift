@@ -86,11 +86,11 @@ public struct MeetingsView: View {
                     .foregroundStyle(Tok.text)
                 HStack(spacing: Space.xs) {
                     Text("Hold")
-                        .font(Typography.body)
+                        .appType(.body)
                         .foregroundStyle(Tok.text2)
                     KeyCap("⌘")
                     Text("right")
-                        .font(Typography.body)
+                        .appType(.body)
                         .foregroundStyle(Tok.text2)
                 }
             }
@@ -108,10 +108,10 @@ public struct MeetingsView: View {
                     HStack(spacing: Space.xs) {
                         DotView(model.statusTone)
                         Text(model.statusLabel)
-                            .font(Typography.headline)
+                            .appType(.title)
                             .foregroundStyle(Tok.text)
                         Text(model.elapsedLabel)
-                            .font(Typography.secondary)
+                            .appType(.caption)
                             .monospacedDigit()
                             .foregroundStyle(Tok.text2)
                         Spacer(minLength: Space.md)
@@ -138,18 +138,18 @@ public struct MeetingsView: View {
         VStack(alignment: .leading, spacing: Space.xs) {
             HStack(spacing: Space.xs) {
                 Text(title)
-                    .font(Typography.secondaryMedium)
+                    .appType(.label)
                     .foregroundStyle(Tok.text2)
                 Spacer(minLength: Space.sm)
                 Text("\(words.formatted()) words")
-                    .font(Typography.secondary)
+                    .appType(.caption)
                     .monospacedDigit()
                     .foregroundStyle(Tok.text2)
             }
             LevelsWaveform(levels: levels, barWidth: 2, spacing: 2)
                 .frame(height: 24)
             Text(text.isEmpty ? "Listening…" : text)
-                .font(Typography.large)
+                .appType(.reading)
                 .foregroundStyle(text.isEmpty ? Tok.text2 : Tok.text)
                 .lineLimit(3)
                 .frame(maxWidth: Space.proseMaxWidth, alignment: .leading)

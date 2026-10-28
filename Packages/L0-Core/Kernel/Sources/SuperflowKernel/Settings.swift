@@ -41,15 +41,29 @@ public struct LineFormatSettings: Codable, Sendable, Equatable {
 }
 
 /// Deterministic disfluency cleanup that runs before any model sees the text.
+///
+/// Duplicate collapse is tiered on purpose. "the the" is almost always a false
+/// start, but "had had", "that that", "what it is is" and "bye bye" are real
+/// grammar. Tier A words collapse at two; Tier B words need three; everything
+/// else is left for the cleanup model, which can read the sentence.
 public struct DisfluencySettings: Codable, Sendable, Equatable {
     public var enabled: Bool = true
-    /// Collapse runs of identical consecutive tokens once the run reaches the
-    /// threshold. Default 2 turns "the the the" into "the".
     public var collapseDuplicates: Bool = true
-    public var duplicateThreshold: Int = 2
-    /// Optional, measured-on-real-dictations pre-pass. Off by default because
-    /// the cleanup model owns contextual filler removal.
-    public var fillerPrepass: Bool = false
+    /// Tier A words (articles, pronouns, short prepositions) collapse at two.
+    public var tierAThreshold: Int = 2
+    /// Tier B words (had, that, is, very, ...) collapse only at three.
+    public var tierBThreshold: Int = 3
+    /// Backwards-compatible name for `tierBThreshold`. The old single threshold
+    /// could not express the tier rules, so values below three are raised.
+    public var duplicateThreshold: Int {
+        get { tierBThreshold }
+        set { tierBThreshold = max(3, newValue) }
+    }
+    /// Collapse adjacent repeated 2-3 word phrases ("we need to we need to go").
+    public var collapseRepeatedPhrases: Bool = true
+    /// Removes only the pure fillers. "like", "you know", "I mean" and "so"
+    /// stay for the model, which can tell content from hesitation.
+    public var fillerPrepass: Bool = true
     public init() {}
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -57,9 +71,31 @@ public struct DisfluencySettings: Codable, Sendable, Equatable {
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? d.enabled
         collapseDuplicates = try c.decodeIfPresent(Bool.self, forKey: .collapseDuplicates)
             ?? d.collapseDuplicates
-        duplicateThreshold = max(2, try c.decodeIfPresent(Int.self, forKey: .duplicateThreshold)
-            ?? d.duplicateThreshold)
+        tierAThreshold = max(2, try c.decodeIfPresent(Int.self, forKey: .tierAThreshold)
+            ?? d.tierAThreshold)
+        let legacy = try c.decodeIfPresent(Int.self, forKey: .duplicateThreshold)
+        tierBThreshold = max(3, try c.decodeIfPresent(Int.self, forKey: .tierBThreshold)
+            ?? legacy ?? d.tierBThreshold)
+        collapseRepeatedPhrases = try c.decodeIfPresent(Bool.self, forKey: .collapseRepeatedPhrases)
+            ?? d.collapseRepeatedPhrases
         fillerPrepass = try c.decodeIfPresent(Bool.self, forKey: .fillerPrepass) ?? d.fillerPrepass
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(enabled, forKey: .enabled)
+        try c.encode(collapseDuplicates, forKey: .collapseDuplicates)
+        try c.encode(tierAThreshold, forKey: .tierAThreshold)
+        try c.encode(tierBThreshold, forKey: .tierBThreshold)
+        try c.encode(collapseRepeatedPhrases, forKey: .collapseRepeatedPhrases)
+        try c.encode(fillerPrepass, forKey: .fillerPrepass)
+        // Old readers only understand this key.
+        try c.encode(tierBThreshold, forKey: .duplicateThreshold)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case enabled, collapseDuplicates, duplicateThreshold
+        case tierAThreshold, tierBThreshold, collapseRepeatedPhrases, fillerPrepass
     }
 }
 

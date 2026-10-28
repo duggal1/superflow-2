@@ -44,12 +44,12 @@ private struct AppShareRow: View {
         HStack(spacing: Space.sm) {
             AppIcon(bundleID: app.bundleID, size: 20)
             Text(app.name)
-                .font(Typography.bodyMedium)
+                .appType(.label)
                 .foregroundStyle(Tok.text)
                 .lineLimit(1)
             Spacer(minLength: Space.md)
             Text(app.words, format: .number)
-                .font(Typography.body)
+                .appType(.body)
                 .monospacedDigit()
                 .foregroundStyle(Tok.text2)
         }
@@ -214,7 +214,7 @@ private struct HourAxis: View {
         HStack(spacing: 0) {
             ForEach([0, 6, 12, 18], id: \.self) { hour in
                 Text(hour.hourLabel)
-                    .font(Typography.secondary)
+                    .appType(.caption)
                     .foregroundStyle(Tok.text2)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

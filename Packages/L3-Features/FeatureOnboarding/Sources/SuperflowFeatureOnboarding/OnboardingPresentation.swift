@@ -24,11 +24,10 @@ enum OnboardingPresentation {
             HStack(spacing: Space.md) {
                 VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(permission.label)
-                        .font(Typography.bodyMedium)
+                        .appType(.label)
                         .foregroundStyle(Tok.text)
                     Text(permission.rationale)
-                        .font(Typography.readingSmall)
-                        .tracking(Typography.readingTracking)
+                        .appType(.body)
                         .foregroundStyle(Tok.text2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -69,11 +68,10 @@ enum OnboardingPresentation {
             HStack(spacing: Space.md) {
                 VStack(alignment: .leading, spacing: Space.xxs) {
                     Text("Globe key")
-                        .font(Typography.bodyMedium)
+                        .appType(.label)
                         .foregroundStyle(Tok.text)
                     Text(reason)
-                        .font(Typography.readingSmall)
-                        .tracking(Typography.readingTracking)
+                        .appType(.body)
                         .foregroundStyle(Tok.text2)
                         .fixedSize(horizontal: false, vertical: true)
                 }

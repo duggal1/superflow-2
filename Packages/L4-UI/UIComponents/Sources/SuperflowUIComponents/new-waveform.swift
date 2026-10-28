@@ -335,7 +335,7 @@ private struct WaveformPreview: View {
             WaveformView(engine: engine, phase: phase)
                 .frame(width: 180)
             Text("Click to cycle: listening, processing, idle")
-                .font(Typography.secondary)
+                .appType(.caption)
                 .foregroundStyle(.secondary)
         }
         .padding(40)

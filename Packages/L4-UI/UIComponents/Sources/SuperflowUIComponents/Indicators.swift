@@ -41,7 +41,7 @@ public struct Badge: View {
 
     public var body: some View {
         Text(text)
-            .font(Typography.ui(size.font))
+            .font(.system(size: size.font))
             .foregroundStyle(variant.textColor(dark: scheme == .dark))
             .lineLimit(1)
             .fixedSize()
@@ -83,7 +83,7 @@ public struct KeyCap: View {
 
     public var body: some View {
         Text(label)
-            .font(Typography.bodyMedium)
+            .appType(.label)
             .foregroundStyle(Tok.keycapText)
             .frame(minWidth: 28, minHeight: 28)
             .padding(.horizontal, Space.sm)
@@ -196,7 +196,7 @@ public struct NoticeBanner: View {
             DotView(tone)
                 .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 4 }
             Text(text)
-                .font(Typography.secondary)
+                .appType(.caption)
                 .foregroundStyle(Tok.text2)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: Space.xs)

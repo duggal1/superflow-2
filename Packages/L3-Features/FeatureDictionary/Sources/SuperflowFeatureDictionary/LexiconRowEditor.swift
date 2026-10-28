@@ -32,19 +32,19 @@ struct LexiconRowEditor: View {
             VStack(alignment: .leading, spacing: Space.sm) {
                 HStack(spacing: Space.sm) {
                     Text("You say")
-                        .font(Typography.body)
+                        .appType(.body)
                         .foregroundStyle(Tok.text2)
                     AppField("Trigger", prompt: "next js, next.js", text: triggers)
                         .frame(maxWidth: 260)
                     Text("You get")
-                        .font(Typography.body)
+                        .appType(.body)
                         .foregroundStyle(Tok.text2)
                     AppField("Replacement", prompt: "Next.js", text: $draft.canonical)
                         .frame(maxWidth: 260)
                     Spacer(minLength: 0)
                 }
                 HStack(spacing: Space.sm) {
-                    Text("On").font(Typography.body).foregroundStyle(Tok.text)
+                    Text("On").appType(.body).foregroundStyle(Tok.text)
                     SettingToggle("Entry enabled", isOn: $draft.enabled)
                     Spacer(minLength: Space.md)
                     AppButton("Cancel", kind: .quiet, height: ControlHeight.small, action: onDone)

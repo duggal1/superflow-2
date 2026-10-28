@@ -56,9 +56,16 @@ codeAware, cleanup, numbers.assert, lexicon.assert, grammar, lineformat
 - `CleanupService` receives the draft's protected spans and uses them when a
   retry split must avoid a protected token.
 - The model control line uses `TextContext.cleanupContext` and a deterministic
-  list detector. Only strong cues (two or more bullet/numbered lines, an explicit
-  intro cue, or three ordered ordinals) upgrade `prose` to `list`; an explicit
-  user structure is never overridden.
+  list detector at the app layer. The S1-mini adapter clamps those values to the
+  model's trained control-line set before rendering: `"coding"`, `"code"`,
+  `"prompt"` and `"chat"` become `general`; `"direct"` becomes `semi-formal`;
+  `"list"` and `"bullets"` become `lists`. Only strong cues (two or more
+  bullet/numbered lines, an explicit intro cue, or three ordered ordinals)
+  upgrade `prose` to `lists`; an explicit user structure is never overridden.
+- Filler-only or noise-only input may normalize to an empty string. That empty
+  result is a successful `.cleaned` outcome, not a truncation; the raw filler is
+  not restored. An empty result for content-bearing input still falls back to
+  Tier 0.
 - `TextLineFormat` splits fenced code out before formatting and masks inline
   code, paths and filenames while formatting. Code is restored byte-for-byte.
   An unclosed fence stays code. List marker spacing is normalized without

@@ -30,6 +30,8 @@ enum Superflowctl {
             guard arguments.count == 2 else { throw UsageError() }
             try await transcribe(fileURL: URL(fileURLWithPath: arguments[1]).standardizedFileURL,
                                  profileID: ModelProfile.parakeetEOU120M.id)
+        case "campaign":
+            try await Campaign(arguments: arguments.dropFirst()).run()
         case "live":
             guard arguments.count <= 2 else { throw UsageError() }
             try await live(profileID: arguments.dropFirst().first ?? ModelProfile.parakeetEOU120M.id)

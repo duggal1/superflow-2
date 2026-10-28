@@ -79,7 +79,12 @@ public struct TextPipeline: Sendable {
             let elapsed = Int((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000)
             timings.append(StageTiming(id: stage.id, ms: elapsed))
 
-            if draft.text.isEmpty, !before.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            // A successful cleanup of filler-only input is allowed to be empty.
+            // Every other stage that erases non-empty text is treated as faulty
+            // and reverted, so a bug cannot silently drop the transcript.
+            let validEmptyCleanup = stage.id == "cleanup" && draft.cleanupState == .cleaned
+            if draft.text.isEmpty, !validEmptyCleanup,
+               !before.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 draft = before
                 draft.diagnostics.append(Diagnostic(stage: stage.id,
                     message: "stage returned empty text; reverted to input"))
@@ -111,7 +116,9 @@ public struct TextPipeline: Sendable {
             let elapsed = Int((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000)
             timings.append(StageTiming(id: stage.id, ms: elapsed))
 
-            if draft.text.isEmpty, !before.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let validEmptyCleanup = stage.id == "cleanup" && draft.cleanupState == .cleaned
+            if draft.text.isEmpty, !validEmptyCleanup,
+               !before.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 draft = before
                 draft.diagnostics.append(Diagnostic(stage: stage.id,
                     message: "stage returned empty text; reverted to input"))

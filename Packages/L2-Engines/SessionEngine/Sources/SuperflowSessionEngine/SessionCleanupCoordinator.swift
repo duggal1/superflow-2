@@ -129,8 +129,12 @@ public actor SessionCleanupCoordinator {
                                      settings: request.settings, project: request.project)
             let result = await request.pipeline.run(segment.rawText, context: context)
             let cleaned = result.draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            let resolved = cleaned.isEmpty ? segment.rawText : cleaned
-            resultState = cleaned.isEmpty ? .fallback : result.draft.cleanupState
+            // A filler-only dictation cleans to a valid empty string. Preserve
+            // that result; only an empty non-cleaned result is a failure that
+            // needs the raw text restored.
+            let failedEmpty = cleaned.isEmpty && result.draft.cleanupState != .cleaned
+            let resolved = failedEmpty ? segment.rawText : cleaned
+            resultState = failedEmpty ? .fallback : result.draft.cleanupState
             do {
                 try await repository.updateCleaned(session: segment.sessionID, index: segment.index,
                                                    cleaned: resolved, state: resultState)

@@ -43,7 +43,7 @@ public struct PageTitle: View {
             .accessibilityAddTraits(.isHeader)
             if let subtitle {
                 Text(subtitle)
-                    .font(Typography.body)
+                    .appType(.body)
                     .foregroundStyle(Tok.text2)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -215,11 +215,11 @@ public struct SectionHeader: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(Typography.headline)
+                .appType(.title)
                 .foregroundStyle(Tok.text)
             if let note {
                 Text(note)
-                    .font(Typography.secondary)
+                    .appType(.caption)
                     .foregroundStyle(Tok.text2)
             }
         }
@@ -240,11 +240,11 @@ public struct KeyValueRow: View {
     public var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.md) {
             Text(label)
-                .font(Typography.body)
+                .appType(.body)
                 .foregroundStyle(Tok.text2)
             Spacer(minLength: Space.md)
             Text(value)
-                .font(Typography.bodyMedium)
+                .appType(.label)
                 .monospacedDigit()
                 .foregroundStyle(Tok.text)
                 .textSelection(.enabled)

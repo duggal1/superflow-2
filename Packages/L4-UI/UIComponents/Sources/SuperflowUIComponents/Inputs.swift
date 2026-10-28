@@ -30,7 +30,7 @@ public struct AppField: View {
     public var body: some View {
         TextField(prompt, text: $text)
             .textFieldStyle(.plain)
-            .font(Typography.body)
+            .appType(.body)
             .foregroundStyle(Tok.text)
             .focused($focused)
             .onSubmit { onSubmit?() }
@@ -112,7 +112,7 @@ public struct PracticeField: View {
     public var body: some View {
         TextField(prompt, text: $text, axis: .vertical)
             .textFieldStyle(.plain)
-            .font(Typography.large)
+            .appType(.reading)
             .foregroundStyle(Tok.text)
             .lineLimit(2...4)
             .padding(Space.sm)
@@ -139,7 +139,7 @@ public struct AppTextEditor: View {
 
     public var body: some View {
         TextEditor(text: $text)
-            .font(Typography.body)
+            .appType(.body)
             .foregroundStyle(Tok.text)
             .scrollContentBackground(.hidden)
             .focused($focused)

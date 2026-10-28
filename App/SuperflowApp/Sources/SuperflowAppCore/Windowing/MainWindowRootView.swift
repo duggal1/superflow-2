@@ -208,7 +208,7 @@ private struct SidebarRow: View {
                 Icon(section.icon, size: 14, tint: Tok.text)
                     .frame(width: 20, height: 20)
                 Text(section.title)
-                    .font(Typography.body)
+                    .appType(.body)
                 Spacer(minLength: 0)
             }
             .foregroundStyle(Tok.text)
@@ -316,10 +316,10 @@ private struct StartupStatusView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
             Text("Superflow")
-                .font(Typography.title)
+                .appType(.title)
                 .foregroundStyle(Tok.text)
             Text(message)
-                .font(Typography.body)
+                .appType(.body)
                 .foregroundStyle(Tok.text2)
                 .textSelection(.enabled)
                 .frame(maxWidth: Space.proseMaxWidth, alignment: .leading)

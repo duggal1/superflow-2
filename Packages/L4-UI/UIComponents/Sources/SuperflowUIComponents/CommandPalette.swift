@@ -149,7 +149,7 @@ public struct CommandPalette: View {
             Icon(.search, size: 14)
             TextField(placeholder, text: $model.query)
                 .textFieldStyle(.plain)
-                .font(Typography.large)
+                .appType(.reading)
                 .foregroundStyle(Tok.text)
                 .focused($searchFocused)
                 .accessibilityLabel(placeholder)
@@ -163,7 +163,7 @@ public struct CommandPalette: View {
     private var results: some View {
         if model.isEmpty {
             Text("No matching commands.")
-                .font(Typography.body)
+                .appType(.body)
                 .foregroundStyle(Tok.text2)
                 .padding(Space.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -188,18 +188,18 @@ public struct CommandPalette: View {
                 Icon(item.icon, size: 14)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(item.title)
-                        .font(Typography.body)
+                        .appType(.body)
                         .foregroundStyle(Tok.text)
                     if let subtitle = item.subtitle {
                         Text(subtitle)
-                            .font(Typography.secondary)
+                            .appType(.caption)
                             .foregroundStyle(Tok.text2)
                     }
                 }
                 Spacer(minLength: Space.md)
                 if let shortcut = item.shortcut {
                     Text(shortcut)
-                        .font(Typography.secondary)
+                        .appType(.caption)
                         .foregroundStyle(Tok.text2)
                 }
             }
@@ -221,7 +221,7 @@ public struct CommandPalette: View {
     private var footer: some View {
         HStack(spacing: Space.sm) {
             Text("↑↓ to move, ↩ to run, esc to close")
-                .font(Typography.secondary)
+                .appType(.caption)
                 .foregroundStyle(Tok.text2)
             Spacer(minLength: Space.sm)
         }

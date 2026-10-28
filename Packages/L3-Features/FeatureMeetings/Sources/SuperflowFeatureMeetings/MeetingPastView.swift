@@ -46,16 +46,16 @@ struct MeetingPastView: View {
                 HStack(alignment: .top, spacing: Space.sm) {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(session.displayTitle)
-                            .font(Typography.body)
+                            .appType(.body)
                             .foregroundStyle(Tok.text)
                             .lineLimit(1)
                         Text(session.startedAt.formatted(date: .abbreviated, time: .shortened))
-                            .font(Typography.secondary)
+                            .appType(.caption)
                             .foregroundStyle(Tok.text2)
                     }
                     Spacer(minLength: Space.sm)
                     Text(session.durationLabel)
-                        .font(Typography.secondary)
+                        .appType(.caption)
                         .monospacedDigit()
                         .foregroundStyle(Tok.text2)
                 }
@@ -86,7 +86,7 @@ struct MeetingPastView: View {
             VStack(spacing: Space.sm) {
                 PixelStop(cells: 11, cell: 3)
                 Text("Select a meeting.")
-                    .font(Typography.headline)
+                    .appType(.title)
                     .foregroundStyle(Tok.text)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -96,7 +96,7 @@ struct MeetingPastView: View {
     private func header(_ document: MeetingDocument) -> some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(document.title)
-                .font(Typography.headline)
+                .appType(.title)
                 .foregroundStyle(Tok.text)
             HStack(spacing: Space.sm) {
                 Text(document.durationLabel)
@@ -104,7 +104,7 @@ struct MeetingPastView: View {
                 Text(document.participantLabel)
                 Spacer(minLength: Space.md)
             }
-            .font(Typography.secondary)
+            .appType(.caption)
             .foregroundStyle(Tok.text2)
             SpeakerBarcode(turns: document.turns, durationMs: document.durationMs)
         }
@@ -128,14 +128,14 @@ struct MeetingPastView: View {
             VStack(alignment: .leading, spacing: 2) {
                 speakerLabel(turn)
                 Text(turn.timestampLabel)
-                    .font(Typography.secondary)
+                    .appType(.caption)
                     .monospacedDigit()
                     .foregroundStyle(Tok.text2)
             }
             .frame(width: 120, alignment: .leading)
 
             Text(turn.text)
-                .font(Typography.large)
+                .appType(.reading)
                 .foregroundStyle(turn.isGap ? Tok.text2 : Tok.text)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
@@ -150,7 +150,7 @@ struct MeetingPastView: View {
     private func speakerLabel(_ turn: MeetingTurn) -> some View {
         if turn.isGap {
             Text("System audio")
-                .font(Typography.secondaryMedium)
+                .appType(.label)
                 .foregroundStyle(Tok.text2)
         } else if renamingID == turn.speakerID {
             AppField("Speaker name", prompt: turn.speakerName, text: renameBinding(turn),

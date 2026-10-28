@@ -176,8 +176,7 @@ public struct OnboardingView: View {
                     MicTestView()
                 } else {
                     Text("Grant the microphone and finish the download to try it here.")
-                        .font(Typography.readingSmall)
-                        .tracking(Typography.readingTracking)
+                        .appType(.body)
                         .foregroundStyle(Tok.text2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -212,8 +211,7 @@ public struct OnboardingView: View {
             .accessibilityAddTraits(.isHeader)
             if let subtitle = model.step.subtitle {
                 Text(subtitle)
-                    .font(Typography.reading)
-                    .tracking(Typography.readingTracking)
+                    .appType(.reading)
                     .foregroundStyle(Tok.text2)
                     .fixedSize(horizontal: false, vertical: true)
             }

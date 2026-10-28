@@ -24,6 +24,33 @@ final class CleanupTests: XCTestCase {
         XCTAssertEqual(outcome.state, .fallback)
     }
 
+    /// S1-mini intentionally returns nothing for input that is only filler or
+    /// noise. The pipeline must keep that empty result instead of restoring the
+    /// raw filler text.
+    func testFillerOnlyEmptyOutputIsCleaned() async {
+        let outcome = await service(FakeTextCleaner(.empty)).clean("um uh", context: TextContext())
+        XCTAssertEqual(outcome.text, "")
+        XCTAssertEqual(outcome.state, .cleaned)
+        XCTAssertEqual(outcome.chunks.map(\.state), [.cleaned])
+    }
+
+    /// An empty completion for content-bearing input is still a failure.
+    func testEmptyOutputForContentFallsBackToTier0() async {
+        let outcome = await service(FakeTextCleaner(.empty)).clean("hello there", context: TextContext())
+        XCTAssertEqual(outcome.text, "hello there")
+        XCTAssertEqual(outcome.state, .fallback)
+    }
+
+    func testFillerOnlyDetection() {
+        XCTAssertTrue(FillerOnlyText.isFillerOnly(""))
+        XCTAssertTrue(FillerOnlyText.isFillerOnly("um uh"))
+        XCTAssertTrue(FillerOnlyText.isFillerOnly("umm hmmm err"))
+        XCTAssertTrue(FillerOnlyText.isFillerOnly("[noise] (inaudible) ♪"))
+        XCTAssertFalse(FillerOnlyText.isFillerOnly("um hello"))
+        XCTAssertFalse(FillerOnlyText.isFillerOnly("error"))
+        XCTAssertFalse(FillerOnlyText.isFillerOnly("you know"))
+    }
+
     func testTruncationFallsBack() async {
         let input = "one two three four five six seven eight nine ten eleven twelve"
         let outcome = await service(FakeTextCleaner(.truncate)).clean(input, context: TextContext())

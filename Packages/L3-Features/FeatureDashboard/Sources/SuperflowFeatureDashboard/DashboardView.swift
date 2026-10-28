@@ -18,7 +18,7 @@ public struct DashboardView: View {
 
             if model.isLoading && model.activity.isEmpty {
                 Text("Reading your library…")
-                    .font(Typography.body)
+                    .appType(.body)
                     .foregroundStyle(Tok.text2)
                     .revealOnce(0, seen: model.hasAppeared)
             } else {

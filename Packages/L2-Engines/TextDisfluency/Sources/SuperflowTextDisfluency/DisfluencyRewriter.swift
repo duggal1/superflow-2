@@ -13,13 +13,43 @@ public struct DisfluencyOutput: Sendable, Equatable {
 
 /// Deterministic, sub-millisecond disfluency pass.
 ///
-/// Two rules only:
-/// 1. Collapse runs of identical consecutive tokens (case-insensitive) once
-///    the run reaches `duplicateThreshold`. Protected spans are never touched.
-/// 2. Optionally drop standalone high-frequency fillers. Content-bearing words
-///    ("like", "you know", "I mean", "well", "so") are never removed here; the
-///    specialized cleanup model owns contextual filler removal.
+/// Rules, in order:
+/// 1. Drop only pure fillers. Content-bearing words ("like", "you know",
+///    "I mean", "so") are never removed here; the cleanup model owns those.
+/// 2. Collapse a repeated single word only when the tier allows it. Tier A
+///    words collapse at two; Tier B words need three; unknown words, number
+///    words and allowlisted repetitions are left for the model.
+/// 3. Collapse an adjacent repeated 2-3 word phrase once. Protected spans,
+///    code-like tokens and emails are never touched.
 public enum DisfluencyRewriter {
+    /// Legitimate repetitions that must survive every rule.
+    static let allowlistedPhrases: Set<String> = [
+        "bye bye", "ha ha", "blah blah",
+    ]
+
+    /// Words that are safe to collapse at two. Short function words only; a
+    /// content word repeated twice is usually deliberate or needs context.
+    static let tierA: Set<String> = [
+        "the", "a", "an", "i", "to", "of", "in", "on", "and", "but", "it",
+        "we", "you", "they", "he", "she", "my", "for", "with", "at",
+    ]
+
+    /// Words that can be a real double ("had had", "that that", "is is") and
+    /// therefore collapse only at three.
+    static let tierB: Set<String> = [
+        "had", "that", "is", "was", "do", "can", "very", "so", "no", "really",
+    ]
+
+    /// Number words must never be collapsed: "twenty twenty-six" is a year,
+    /// not a stutter.
+    static let numberWords: Set<String> = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+        "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+        "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty",
+        "forty", "fifty", "sixty", "seventy", "eighty", "ninety", "hundred",
+        "thousand", "million", "billion", "trillion", "dozen",
+    ]
+
     /// Pure fillers. Elongations are recognized by `fillerBase` below.
     static let fillers: Set<String> = ["um", "uh", "uhm", "erm", "er", "hmm", "mmm", "ah"]
 
@@ -70,20 +100,23 @@ public enum DisfluencyRewriter {
             var runWord: String?
             var run: [Int] = []
             func flushRun() {
-                if run.count >= max(2, settings.duplicateThreshold) {
-                    for index in run.dropFirst() { keep[index] = false }
+                defer {
+                    run.removeAll(keepingCapacity: true)
+                    runWord = nil
                 }
-                run.removeAll(keepingCapacity: true)
-                runWord = nil
+                guard let word = runWord, run.count >= threshold(for: word, settings: settings) else {
+                    return
+                }
+                for index in run.dropFirst() { keep[index] = false }
             }
             for index in tokens.indices {
                 // A filler that is already deleted does not break the run: the
                 // text the user hears is contiguous once the filler is gone.
                 guard keep[index] else { continue }
-                // Punctuation, protected spans and other non-words are real
+                // Punctuation, protected spans, code and number words are real
                 // boundaries. Without this, "the . the" would collapse even
                 // though the two words are not adjacent.
-                guard !isProtected(index), let word = normalizedCore(tokens[index].core) else {
+                guard !isProtected(index), let word = eligibleWord(tokens[index]) else {
                     flushRun()
                     continue
                 }
@@ -96,6 +129,11 @@ public enum DisfluencyRewriter {
                 }
             }
             flushRun()
+
+            if settings.collapseRepeatedPhrases {
+                collapseRepeatedPhrases(tokens, keep: &keep, isProtected: isProtected,
+                                        maxWords: 3, settings: settings)
+            }
         }
 
         // No deletion means this pass has nothing to improve. Return the input
@@ -145,8 +183,79 @@ public enum DisfluencyRewriter {
             output: TextSpan(location: outputUTF16, length: 0)))
     }
 
-    /// Case-insensitive core used for duplicate comparison. Punctuation-only
-    /// tokens never participate, so a comma between repeated words is kept.
+    /// Collapses an immediately repeated phrase of two or three words. The
+    /// first occurrence stays, so "we need to we need to go" becomes "we need
+    /// to go". Runs of one word are handled by the tiered rule above.
+    private static func collapseRepeatedPhrases(_ tokens: [Token], keep: inout [Bool],
+                                                isProtected: (Int) -> Bool,
+                                                maxWords: Int, settings: DisfluencySettings) {
+        var index = 0
+        while index < tokens.count {
+            guard keep[index], !isProtected(index), eligibleWord(tokens[index]) != nil else {
+                index += 1
+                continue
+            }
+            var collapsed = false
+            for length in stride(from: max(2, maxWords), through: 2, by: -1) {
+                let second = index + length
+                guard second + length <= tokens.count else { continue }
+                guard phraseMatches(tokens, first: index, second: second, length: length,
+                                    keep: keep, isProtected: isProtected,
+                                    settings: settings) else { continue }
+                let words = (0..<length).compactMap { eligibleWord(tokens[index + $0]) }
+                guard words.count == length,
+                      !allowlistedPhrases.contains(words.joined(separator: " ")) else { continue }
+                for offset in 0..<length { keep[second + offset] = false }
+                index += length
+                collapsed = true
+                break
+            }
+            if !collapsed { index += 1 }
+        }
+    }
+
+    private static func phraseMatches(_ tokens: [Token], first: Int, second: Int, length: Int,
+                                      keep: [Bool], isProtected: (Int) -> Bool,
+                                      settings: DisfluencySettings) -> Bool {
+        for offset in 0..<length {
+            let a = first + offset
+            let b = second + offset
+            guard keep[a], keep[b], !isProtected(a), !isProtected(b),
+                  let left = eligibleWord(tokens[a]), let right = eligibleWord(tokens[b]),
+                  left == right, !numberWords.contains(left) else {
+                return false
+            }
+        }
+        return true
+    }
+
+    /// How many repeats are needed before this word loses all but the first.
+    /// `Int.max` means never: the model owns that judgement.
+    static func threshold(for word: String, settings: DisfluencySettings) -> Int {
+        if allowlistedPhrases.contains(word) || numberWords.contains(word) {
+            return Int.max
+        }
+        if tierA.contains(word) {
+            return max(2, settings.tierAThreshold)
+        }
+        if tierB.contains(word) {
+            return max(3, settings.tierBThreshold)
+        }
+        return Int.max
+    }
+
+    /// A word the duplicate rules may touch. Punctuation-only tokens, emails,
+    /// paths, filenames and numeric tokens are boundaries instead of words.
+    static func eligibleWord(_ token: Token) -> String? {
+        let value = token.core.lowercased()
+        guard !value.isEmpty else { return nil }
+        guard value.allSatisfy({ $0.isLetter || $0 == "'" || $0 == "’" }) else { return nil }
+        let trimmed = value.trimmingCharacters(in: CharacterSet(charactersIn: "'’"))
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// Case-insensitive core used for diagnostics. Kept for callers that only
+    /// need a normalized token, not the eligibility rules.
     static func normalizedCore(_ core: String) -> String? {
         let value = core.lowercased().trimmingCharacters(in: CharacterSet.punctuationCharacters)
         return value.isEmpty ? nil : value

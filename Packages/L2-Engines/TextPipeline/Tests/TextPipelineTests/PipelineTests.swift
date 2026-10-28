@@ -138,6 +138,19 @@ final class PipelineTests: XCTestCase {
         XCTAssertTrue(result.draft.diagnostics.contains { $0.stage.hasPrefix("cleanup") })
     }
 
+    /// S1-mini's empty result for filler-only input is a valid cleanup, not a
+    /// stage failure. The pipeline must not revert it to the raw filler text.
+    func testCleanupCanProduceAValidEmptyResultForFillerOnlyInput() async {
+        let pipeline = TextPipelineBuilder.make(
+            settings: allSettings(),
+            dependencies: dependencies(cleaner: FakeTextCleaner(.empty),
+                                       grammar: FakeGrammarChecker()))
+        let result = await pipeline.run("um uh", context: TextContext())
+        XCTAssertEqual(result.text, "")
+        XCTAssertEqual(result.draft.cleanupState, .cleaned)
+        XCTAssertFalse(result.draft.diagnostics.contains { $0.message.contains("reverted") })
+    }
+
     func testGrammarStageOnlyWhenEnabled() async {
         var settings = allSettings()
         settings.harperEnabled = false

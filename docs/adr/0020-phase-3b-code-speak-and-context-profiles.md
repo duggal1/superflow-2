@@ -106,8 +106,10 @@ changes only the four profile-controlled fields.
   question in `docs/open-questions.md`.
 - Bundle and host mappings are a maintained list, not detection. Adding an app
   means adding a `BundleRule`/`HostRule`; unknown apps resolve to Writing.
-- `cleanupContext` changes the cleaner prompt for all callers once a profile is
-  applied. The default keeps existing behaviour byte-identical.
+- `cleanupContext` changes the app-level cleanup request for all callers once a
+  profile is applied. The S1-mini adapter clamps untrained profile values to the
+  model's `general`/`email` context set before rendering; the default keeps
+  existing behaviour byte-identical.
 - Symbols require typing the closing command. A user who dictates only
   "open brace" gets prose, by design.
 

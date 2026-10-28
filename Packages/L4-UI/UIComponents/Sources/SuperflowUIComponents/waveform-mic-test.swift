@@ -329,7 +329,7 @@ public struct MicTestView: View {
                           enabled: model.state != .requesting, action: model.primaryAction)
             }
             Text(model.message)
-                .font(Typography.secondary)
+                .appType(.caption)
                 .foregroundStyle(Tok.text2)
                 .contentTransition(.opacity)
                 .animation(.easeOut(duration: 0.18), value: model.message)

@@ -143,7 +143,7 @@ public struct ToastView: View {
             GlassCapsule {
                 HStack(spacing: Space.sm) {
                     Text(message.text)
-                        .font(Typography.body)
+                        .appType(.body)
                         .foregroundStyle(Tok.text)
                         .fixedSize(horizontal: false, vertical: true)
                     if let title = message.actionTitle {

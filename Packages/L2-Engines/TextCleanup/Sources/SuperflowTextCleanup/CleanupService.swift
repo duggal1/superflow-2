@@ -106,8 +106,10 @@ public actor CleanupService {
         let diagnostics = outcomes.compactMap { outcome in
             outcome.reason.map { Diagnostic(stage: "cleanup[\(outcome.index)]", message: $0) }
         }
-        return CleanupOutcome(text: stitched.isEmpty ? tier0 : stitched, state: state,
-                              chunks: outcomes, diagnostics: diagnostics)
+        // A successful cleanup may legitimately be empty (filler-only input).
+        // Only an empty fallback needs the Tier 0 text restored.
+        let text = stitched.isEmpty && state != .cleaned ? tier0 : stitched
+        return CleanupOutcome(text: text, state: state, chunks: outcomes, diagnostics: diagnostics)
     }
 
     private func cleanChunk(_ plan: ChunkPlan, deadlineMs: Int, depth: Int,
@@ -124,6 +126,13 @@ public actor CleanupService {
                     maxNewTokens: self.config.maxNewTokens))
             }
             let elapsed = Int((DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
+
+            let emptyOutput = result.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            if emptyOutput, FillerOnlyText.isFillerOnly(plan.text) {
+                return ChunkOutcome(index: plan.index, text: "", state: .cleaned,
+                                    tokensIn: result.tokensIn, tokensOut: result.tokensOut,
+                                    latencyMs: elapsed, attempts: depth + 1)
+            }
 
             if let reason = truncation.detect(input: plan.text, output: result.text, hitTokenCap: result.hitTokenCap),
                depth < config.retryDepth {

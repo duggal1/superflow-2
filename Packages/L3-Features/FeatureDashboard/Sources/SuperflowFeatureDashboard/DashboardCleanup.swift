@@ -167,7 +167,7 @@ public struct CleanupLine: View {
                 if let shown = token.text(in: phase) {
                     let marked = phase == .said && token.isMarked
                     Text(shown)
-                        .font(Typography.large)
+                        .appType(.reading)
                         .foregroundStyle(phase == .typed || marked ? Tok.text : Tok.text2)
                         .padding(.horizontal, 3)
                         .padding(.vertical, 2)
@@ -288,7 +288,7 @@ private struct Caption: View {
 
     var body: some View {
         Text(text)
-            .font(Typography.secondaryMedium)
+            .appType(.label)
             .foregroundStyle(active ? Tok.text : Tok.text2)
     }
 }
@@ -303,12 +303,12 @@ private struct LatestMeta: View {
             }
             if let name = sample.appName {
                 Text(name)
-                    .font(Typography.secondary)
+                    .appType(.caption)
                     .foregroundStyle(Tok.text2)
             }
             if let date = sample.date {
                 Text(date, format: .dateTime.hour().minute())
-                    .font(Typography.secondary)
+                    .appType(.caption)
                     .monospacedDigit()
                     .foregroundStyle(Tok.text2)
             }

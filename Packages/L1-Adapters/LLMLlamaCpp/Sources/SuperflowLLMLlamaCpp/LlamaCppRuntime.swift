@@ -21,6 +21,14 @@ private final class LlamaResources: @unchecked Sendable {
     }
 }
 
+/// Process-wide llama.cpp log control. Benchmark tools call `silence()` so the
+/// model's graph/kernel chatter does not drown the measurement output.
+public enum LlamaLogging {
+    public static func silence() {
+        llama_log_set({ _, _, _ in }, nil)
+    }
+}
+
 /// Owns the process's llama.cpp model and one reusable context. Actor isolation
 /// serializes Metal access and keeps one model mapping resident.
 public actor LlamaCppRuntime: LlamaRuntime {

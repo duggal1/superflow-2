@@ -1,0 +1,12 @@
+{
+  "url": "https://www.youtube.com/watch?v=mQBuZ6Dp0u0",
+  "source_offset_s": 600,
+  "downloaded_window_s": 1830,
+  "note": "Third-party audio downloaded locally for evaluation only; not redistributed.",
+  "fixtures": {
+    "01": "01_min_technical_dictation.wav",
+    "05": "05_min_mixed_stutter_tech.wav",
+    "10": "10_min_agentic_coding.wav",
+    "30": "30_min_long_session.wav"
+  }
+}

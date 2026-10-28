@@ -219,7 +219,7 @@ public struct Dropdown<Value: Hashable>: View {
         Button(action: toggle) {
             HStack(spacing: Space.xs) {
                 Text(selectedTitle)
-                    .font(Typography.body)
+                    .appType(.body)
                     .foregroundStyle(Tok.text)
                     .lineLimit(1)
                 Icon(.chevronUpDown, size: 9, weight: .medium, tint: Tok.text2)

@@ -25,7 +25,7 @@ struct ShortcutRowEditor: View {
             VStack(alignment: .leading, spacing: Space.sm) {
                 HStack(spacing: Space.sm) {
                     Text("Say")
-                        .font(Typography.body)
+                        .appType(.body)
                         .foregroundStyle(Tok.text2)
                     AppField("Trigger", prompt: "sign off", text: $draft.trigger)
                         .frame(maxWidth: 260)
@@ -34,14 +34,14 @@ struct ShortcutRowEditor: View {
                         Segmented.Item("Inline", value: ShortcutMatch.inline),
                     ], onCard: true)
                     Spacer(minLength: Space.md)
-                    Text("On").font(Typography.body).foregroundStyle(Tok.text)
+                    Text("On").appType(.body).foregroundStyle(Tok.text)
                     SettingToggle("Shortcut enabled", isOn: $draft.enabled)
                 }
                 AppTextEditor("Shortcut text", text: $draft.content, minHeight: 96)
                 HStack(spacing: Space.sm) {
                     if let counter = byteCounter {
                         Text(counter)
-                            .font(Typography.body)
+                            .appType(.body)
                             .foregroundStyle(Tok.text2)
                     }
                     Spacer(minLength: Space.md)

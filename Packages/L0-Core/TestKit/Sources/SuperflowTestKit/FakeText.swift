@@ -11,6 +11,8 @@ public actor FakeTextCleaner: TextCleaner {
         case slow(ms: Int)
         case echoPrefix(String)
         case dropLast
+        /// Models S1-mini's valid empty result for filler/noise-only input.
+        case empty
     }
 
     public private(set) var behavior: Behavior
@@ -48,6 +50,8 @@ public actor FakeTextCleaner: TextCleaner {
         case .dropLast:
             let words = Tokenizer.words(in: text).dropLast()
             return CleanResult(text: words.joined(separator: " "), tokensIn: 1, tokensOut: 1, hitTokenCap: false, latencyMs: 1)
+        case .empty:
+            return CleanResult(text: "", tokensIn: 1, tokensOut: 0, hitTokenCap: false, latencyMs: 1)
         }
     }
 }

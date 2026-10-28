@@ -29,11 +29,44 @@ public struct LlamaPrompt: Sendable {
 
     public static func system(options: CleanOptions) -> String { definition.systemPrompt }
 
+    /// S1-mini was trained with exactly four styling values, two structure
+    /// values and two context values. App-level profiles predate that set, so
+    /// untrained values are clamped here, at the model-prompt boundary, rather
+    /// than changing the user's saved settings.
     public static func controlLine(options: CleanOptions) -> String {
         definition.controlLine
-            .replacingOccurrences(of: "{{styling}}", with: options.styling)
-            .replacingOccurrences(of: "{{structure}}", with: options.structure)
-            .replacingOccurrences(of: "{{context}}", with: options.context)
+            .replacingOccurrences(of: "{{styling}}", with: normalizedStyling(options.styling))
+            .replacingOccurrences(of: "{{structure}}", with: normalizedStructure(options.structure))
+            .replacingOccurrences(of: "{{context}}", with: normalizedContext(options.context))
+    }
+
+    private static func normalizedValue(_ raw: String) -> String {
+        raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static func normalizedStyling(_ raw: String) -> String {
+        let value = normalizedValue(raw)
+        switch value {
+        case "casual", "semi-casual", "semi-formal", "formal":
+            return value
+        default:
+            return "semi-formal"
+        }
+    }
+
+    private static func normalizedStructure(_ raw: String) -> String {
+        switch normalizedValue(raw) {
+        case "prose":
+            return "prose"
+        case "lists", "list", "bullets":
+            return "lists"
+        default:
+            return "prose"
+        }
+    }
+
+    private static func normalizedContext(_ raw: String) -> String {
+        normalizedValue(raw) == "email" ? "email" : "general"
     }
 
     public static func render(text: String, options: CleanOptions,
@@ -130,18 +163,27 @@ public actor LlamaCleaner: TextCleaner {
         if !ready { try await prepare() }
         let started = DispatchTime.now().uptimeNanoseconds
         let prompt = LlamaPrompt.render(text: text, options: options)
-        let output = try await runtime.complete(prompt: prompt, maxTokens: options.maxNewTokens)
+        // The model card's sizing rule: output length tracks input length, so a
+        // fixed ceiling wastes generation budget. `countTokens` is the model's
+        // own tokenizer; the estimate is only a fallback for test runtimes.
+        let inputTokens = await runtime.countTokens(text) ?? LlamaPrompt.estimateTokens(text)
+        let outputCap = Self.outputTokenCap(inputTokens: inputTokens, configured: options.maxNewTokens)
+        let output = try await runtime.complete(prompt: prompt, maxTokens: outputCap)
         let cleaned = LlamaPrompt.sanitize(output)
-        guard !cleaned.isEmpty else {
-            throw SuperflowError.modelUnavailable("The cleanup model returned an empty completion")
-        }
         let elapsed = Int((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000)
         let tokensOut = await runtime.countTokens(cleaned) ?? 0
         let tokensIn = await runtime.countTokens(prompt) ?? 0
+        // Filler-only input legitimately normalizes to an empty string.
         return CleanResult(text: cleaned,
                            tokensIn: tokensIn,
                            tokensOut: tokensOut,
-                           hitTokenCap: tokensOut >= options.maxNewTokens,
+                           hitTokenCap: !cleaned.isEmpty && tokensOut >= outputCap,
                            latencyMs: elapsed)
+    }
+
+    static func outputTokenCap(inputTokens: Int, configured: Int) -> Int {
+        let ceiling = max(1, configured)
+        let sized = Int((Double(max(0, inputTokens)) * 1.3).rounded(.up)) + 32
+        return min(ceiling, sized)
     }
 }

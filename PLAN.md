@@ -298,8 +298,9 @@ Shortcuts (TextShortcuts)
 10. Cleanup engine (S1-mini via llama.cpp)
 Goal: reliable on 10-hour transcripts with bounded latency. S1-mini is the speed layer; correctness comes from the safety net around it.
 Runtime
-• Load one model per process (memory-mapped weights, all layers offloaded to Metal). One context per worker with a small n_ctx (start at 2048, shrink if measurement allows). Greedy decoding, temperature 0, thinking disabled through the chat template, stop on end of turn.
-• Prompt assembly follows the model card exactly: fixed system prompt, control line, raw transcript. The prompt resource is pinned by a hash test.
+• Load one model per process (memory-mapped weights, all layers offloaded to Metal). One context per worker with a small n_ctx (start at 2048, shrink if measurement allows).
+• Prompt assembly follows the model card exactly: fixed system prompt, control line, raw transcript. The prompt resource is pinned by a hash test. The control line only receives S1-mini's trained values: styling casual, semi-casual, semi-formal or formal; structure prose or lists; context general or email. App-level profile values (direct, code, prompt, chat, list, bullets) are clamped at this adapter boundary, so saved profiles stay unchanged while the model never sees an untrained value.
+• Decode greedily with thinking off and size `max_new_tokens` to the input: `min(configured cap, 1.3 × input tokens + 32)`. The configured 1024 is a ceiling, not the normal request.
 Chunk planner
 • Count tokens with the model's own tokenizer, never with a character estimate.
 • Size comes from Spike B: target about 55 to 60 percent of the measured safe limit. Until measured, use a soft target of 600 tokens and a hard cap of 850. The brief's 1000 token figure is an upper bound at best.
@@ -309,7 +310,7 @@ Scheduling
 • Interactive requests (short dictation) jump ahead of background meeting chunks.
 • Deadlines: interactive 1.5 s total, background 30 s per chunk. Everything is cancellable.
 Safety net (this is what makes it reliable)
-• TruncationDetector flags a result when: output is empty; output-to-input word ratio is below a loose threshold (cleanup legitimately drops fillers, so start at 0.6 and tune on goldens); the last few input words are missing from the output; the output ends mid-sentence while the input did not; or generation hit the token cap.
+• TruncationDetector flags a result when: output is empty for content-bearing input (a filler/noise-only input legitimately returns an empty string and is stored as a successful `.cleaned` result); output-to-input word ratio is below a loose threshold (cleanup legitimately drops fillers, so start at 0.6 and tune on goldens); the last few input words are missing from the output; the output ends mid-sentence while the input did not; or generation hit the input-sized token cap.
 • Retry policy: on a flag, split the chunk at the best boundary and retry each half, up to depth 3. After that, use the Tier 0 text for that chunk and mark it fallback in the database. A failed chunk must never block the stitch.
 • Hallucination guard: output words must be explained by input words plus a small allowed set (digits, punctuation, contractions, spoken-form conversions like dot to a period or at to an at sign). Violations fall back to Tier 0. Tune the threshold on goldens.
 • Every chunk records latency, tokens in and out, and outcome.

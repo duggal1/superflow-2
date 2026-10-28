@@ -107,6 +107,28 @@ final class SessionTests: XCTestCase {
         XCTAssertTrue(outcome?.text.lowercased().contains("hello world") ?? false)
     }
 
+    /// A filler-only dictation cleans to a valid empty string. The cleaned row
+    /// and the session stay empty; the raw filler must not be inserted.
+    func testFillerOnlyCleanupStoresEmptyResultAndSkipsInsertion() async throws {
+        let repo = InMemoryRepository()
+        let inserter = RecordingInserter()
+        let audio = ScriptedAudioSource(samples: Array(repeating: 0.2, count: 80_000))
+        let recognizer = FakeSpeechRecognizer(script: ["um"], samplesPerSegment: 80_000)
+        let engine = engine(audio: audio, recognizer: recognizer, cleaner: FakeTextCleaner(.empty),
+                            repo: repo, inserter: inserter)
+        let id = try await engine.start()
+        let outcome = await engine.stop()
+        XCTAssertEqual(outcome?.text, "")
+        XCTAssertEqual(outcome?.cleanupState, .cleaned)
+        XCTAssertNil(outcome?.insertion)
+        let segments = try await repo.segments(session: id)
+        XCTAssertEqual(segments.count, 1)
+        XCTAssertEqual(segments[0].cleanedText, "")
+        XCTAssertEqual(segments[0].cleanupState, .cleaned)
+        let inserted = await inserter.inserted
+        XCTAssertTrue(inserted.isEmpty)
+    }
+
     func testNoSpeechCompletesWithoutInsertion() async throws {
         let audio = ScriptedAudioSource(samples: [])
         let inserter = RecordingInserter()
