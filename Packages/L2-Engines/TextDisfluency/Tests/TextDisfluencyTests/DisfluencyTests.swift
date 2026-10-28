@@ -10,15 +10,73 @@ final class DisfluencyTests: XCTestCase {
             .apply(TranscriptDraft(text: input, protected: protected), context: TextContext()).text
     }
 
-    func testCollapsesExactDuplicates() async {
+    func testTierAWordsCollapseAtTwo() async {
         let cases: [(String, String)] = [
+            ("the the cat", "the cat"),
+            ("I I think so", "I think so"),
+            ("we need to to check", "we need to check"),
             ("the the the cat", "the cat"),
-            ("I I I think so", "I think so"),
-            ("very very good", "very good"),
-            ("this is is fine", "this is fine"),
-            ("no duplicates here", "no duplicates here"),
             ("a a", "a"),
-            ("I I don't don't know", "I don't know"),
+        ]
+        for (input, expected) in cases {
+            let actual = await run(input)
+            XCTAssertEqual(actual, expected, "input: \(input)")
+        }
+    }
+
+    func testTierBWordsNeedThree() async {
+        let preserved = [
+            "very very good",
+            "this is is fine",
+            "that that works",
+            "we had had enough",
+            "what it is is fine",
+            "no no that is wrong",
+        ]
+        for input in preserved {
+            let actual = await run(input)
+            XCTAssertEqual(actual, input, "input: \(input)")
+        }
+        let collapsed: [(String, String)] = [
+            ("very very very good", "very good"),
+            ("that that that is the point", "that is the point"),
+        ]
+        for (input, expected) in collapsed {
+            let actual = await run(input)
+            XCTAssertEqual(actual, expected, "input: \(input)")
+        }
+    }
+
+    func testLegitimateDoublesAndPhrasesSurvive() async {
+        let cases = [
+            "bye bye now",
+            "ha ha",
+            "what it is is fine",
+            "we had had lunch",
+        ]
+        for input in cases {
+            let actual = await run(input)
+            XCTAssertEqual(actual, input, "input: \(input)")
+        }
+    }
+
+    func testUnknownRepeatedWordsAreLeftForTheModel() async {
+        let cases = [
+            "the cat cat sat",
+            "I don't don't know",
+            "this works works",
+        ]
+        for input in cases {
+            let actual = await run(input)
+            XCTAssertEqual(actual, input, "input: \(input)")
+        }
+    }
+
+    func testRepeatedTwoAndThreeWordPhrasesCollapse() async {
+        let cases: [(String, String)] = [
+            ("we need to we need to go", "we need to go"),
+            ("check the tests check the tests now", "check the tests now"),
+            ("a b a b a b", "a b"),
         ]
         for (input, expected) in cases {
             let actual = await run(input)
@@ -27,12 +85,52 @@ final class DisfluencyTests: XCTestCase {
     }
 
     func testThresholdIsConfigurable() async {
+        var tierA = DisfluencySettings()
+        tierA.tierAThreshold = 3
+        let doubledA = await run("the the cat", settings: tierA)
+        XCTAssertEqual(doubledA, "the the cat")
+        let tripledA = await run("the the the cat", settings: tierA)
+        XCTAssertEqual(tripledA, "the cat")
+
+        var tierB = DisfluencySettings()
+        tierB.tierBThreshold = 4
+        let tripledB = await run("very very very good", settings: tierB)
+        XCTAssertEqual(tripledB, "very very very good")
+        let quadrupledB = await run("very very very very good", settings: tierB)
+        XCTAssertEqual(quadrupledB, "very good")
+    }
+
+    func testLegacyThresholdAliasCannotGoBelowThree() {
         var settings = DisfluencySettings()
         settings.duplicateThreshold = 3
-        let doubled = await run("very very good", settings: settings)
-        XCTAssertEqual(doubled, "very very good")
-        let tripled = await run("very very very good", settings: settings)
-        XCTAssertEqual(tripled, "very good")
+        XCTAssertEqual(settings.tierBThreshold, 3)
+        settings.duplicateThreshold = 1
+        XCTAssertEqual(settings.tierBThreshold, 3)
+    }
+
+    func testNumberWordsAreNeverCollapsed() async {
+        let cases = [
+            "twenty twenty-six",
+            "one one two",
+            "five five five",
+        ]
+        for input in cases {
+            let actual = await run(input)
+            XCTAssertEqual(actual, input, "input: \(input)")
+        }
+    }
+
+    func testCodeLikeTokensAndEmailsAreBoundaries() async {
+        let cases = [
+            "ping foo@example.com foo@example.com now",
+            "run /usr/local/bin /usr/local/bin again",
+            "edit foo_bar foo_bar please",
+            "twenty-six twenty-six",
+        ]
+        for input in cases {
+            let actual = await run(input)
+            XCTAssertEqual(actual, input, "input: \(input)")
+        }
     }
 
     func testPunctuationOnlyTokensNeverCollapse() async {
@@ -57,23 +155,23 @@ final class DisfluencyTests: XCTestCase {
         XCTAssertEqual(actual, input)
     }
 
-    func testFillerPrepassIsOptIn() async {
-        var settings = DisfluencySettings()
-        settings.fillerPrepass = true
-        let simple = await run("um hello uh world", settings: settings)
+    func testFillerPrepassRunsByDefault() async {
+        let simple = await run("um hello uh world")
         XCTAssertEqual(simple, "hello world")
-        let punctuated = await run("um, hello, uh, world", settings: settings)
+        let punctuated = await run("um, hello, uh, world")
         XCTAssertEqual(punctuated, "hello, world")
-        let elongated = await run("ummm ahh hmmm okay", settings: settings)
+        let elongated = await run("ummm ahh hmmm okay")
         XCTAssertEqual(elongated, "okay")
-        let contentWords = await run("like you know I mean well so", settings: settings)
+        let contentWords = await run("like you know I mean well so")
         XCTAssertEqual(contentWords, "like you know I mean well so")
-        let ahHa = await run("ah ha", settings: settings)
+        let ahHa = await run("ah ha")
         XCTAssertEqual(ahHa, "ah ha")
     }
 
-    func testFillerPrepassOffLeavesFillers() async {
-        let actual = await run("um hello")
+    func testFillerPrepassCanBeDisabled() async {
+        var settings = DisfluencySettings()
+        settings.fillerPrepass = false
+        let actual = await run("um hello", settings: settings)
         XCTAssertEqual(actual, "um hello")
     }
 
@@ -81,26 +179,24 @@ final class DisfluencyTests: XCTestCase {
         let protected = Protected(literals: ["the the", "um"])
         let duplicate = await run("the the cat", protected: protected)
         XCTAssertEqual(duplicate, "the the cat")
-        var settings = DisfluencySettings()
-        settings.fillerPrepass = true
-        let filler = await run("um hello", protected: protected, settings: settings)
+        let filler = await run("um hello", protected: protected)
         XCTAssertEqual(filler, "um hello")
     }
 
     func testIdempotent() async {
-        var settings = DisfluencySettings()
-        settings.fillerPrepass = true
         let inputs = [
             "the the the cat",
             "um hello uh world",
             "I I don't don't know",
             "very very good",
+            "we need to we need to go",
+            "a b a b a b",
             "no duplicates here",
             ".. . .",
         ]
         for input in inputs {
-            let once = await run(input, settings: settings)
-            let twice = await run(once, settings: settings)
+            let once = await run(input)
+            let twice = await run(once)
             XCTAssertEqual(once, twice, "input: \(input)")
         }
     }
@@ -115,10 +211,8 @@ final class DisfluencyTests: XCTestCase {
     }
 
     func testExplainNamesTheRule() async {
-        var settings = DisfluencySettings()
-        settings.fillerPrepass = true
         let before = TranscriptDraft(text: "I um I I think the the")
-        let stage = DisfluencyStage(settings: settings)
+        let stage = DisfluencyStage()
         let after = await stage.apply(before, context: TextContext())
         let edits = await stage.explainEdits(before: before, after: after, context: TextContext())
         XCTAssertEqual(after.text, "I think the")
@@ -131,7 +225,7 @@ final class DisfluencyTests: XCTestCase {
             state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
             return Int((state >> 33) % UInt64(bound))
         }
-        let vocabulary = ["the", "cat", "I", "think", "very", "good", "and", "to"]
+        let vocabulary = ["the", "cat", "I", "think", "very", "good", "and", "to", "had", "bye"]
         for _ in 0..<300 {
             let count = 1 + next(18)
             let words = (0..<count).map { _ in vocabulary[next(vocabulary.count)] }

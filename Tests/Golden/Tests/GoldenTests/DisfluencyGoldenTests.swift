@@ -10,9 +10,10 @@ final class DisfluencyGoldenTests: XCTestCase {
 
     func testRealStyleDictationCorpus() async throws {
         let fixture = try fixture()
-        let stage = DisfluencyStage()
         for c in fixture.cases {
-            let context = TextContext(settings: Golden.stageSettings(c.settings))
+            let settings = Golden.stageSettings(c.settings)
+            let stage = DisfluencyStage(settings: settings.disfluency)
+            let context = TextContext(settings: settings)
             let result = await stage.apply(TranscriptDraft(text: c.input), context: context)
             assertGolden(result.text, c.expected, name: c.name)
         }
@@ -20,9 +21,10 @@ final class DisfluencyGoldenTests: XCTestCase {
 
     func testDisfluencyIsIdempotent() async throws {
         let fixture = try fixture()
-        let stage = DisfluencyStage()
         for c in fixture.cases {
-            let context = TextContext(settings: Golden.stageSettings(c.settings))
+            let settings = Golden.stageSettings(c.settings)
+            let stage = DisfluencyStage(settings: settings.disfluency)
+            let context = TextContext(settings: settings)
             let once = await stage.apply(TranscriptDraft(text: c.input), context: context)
             let twice = await stage.apply(TranscriptDraft(text: once.text), context: context)
             XCTAssertEqual(twice.text, once.text, "not idempotent: \(c.name)")

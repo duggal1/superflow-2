@@ -132,7 +132,7 @@ public enum DisfluencyRewriter {
 
             if settings.collapseRepeatedPhrases {
                 collapseRepeatedPhrases(tokens, keep: &keep, isProtected: isProtected,
-                                        maxWords: 3, settings: settings)
+                                        maxWords: 3)
             }
         }
 
@@ -186,41 +186,44 @@ public enum DisfluencyRewriter {
     /// Collapses an immediately repeated phrase of two or three words. The
     /// first occurrence stays, so "we need to we need to go" becomes "we need
     /// to go". Runs of one word are handled by the tiered rule above.
+    ///
+    /// Matching happens over the tokens still kept, so a run of three identical
+    /// phrases collapses to one instead of leaving a pair behind.
     private static func collapseRepeatedPhrases(_ tokens: [Token], keep: inout [Bool],
                                                 isProtected: (Int) -> Bool,
-                                                maxWords: Int, settings: DisfluencySettings) {
-        var index = 0
-        while index < tokens.count {
-            guard keep[index], !isProtected(index), eligibleWord(tokens[index]) != nil else {
-                index += 1
+                                                maxWords: Int) {
+        var kept = tokens.indices.filter { keep[$0] }
+        var position = 0
+        while position < kept.count {
+            let start = kept[position]
+            guard !isProtected(start), eligibleWord(tokens[start]) != nil else {
+                position += 1
                 continue
             }
             var collapsed = false
-            for length in stride(from: max(2, maxWords), through: 2, by: -1) {
-                let second = index + length
-                guard second + length <= tokens.count else { continue }
-                guard phraseMatches(tokens, first: index, second: second, length: length,
-                                    keep: keep, isProtected: isProtected,
-                                    settings: settings) else { continue }
-                let words = (0..<length).compactMap { eligibleWord(tokens[index + $0]) }
+            for length in stride(from: maxWords, through: 2, by: -1) {
+                let second = position + length
+                guard second + length <= kept.count else { continue }
+                guard phraseMatches(tokens, kept: kept, first: position, second: second,
+                                    length: length, isProtected: isProtected) else { continue }
+                let words = (0..<length).compactMap { eligibleWord(tokens[kept[position + $0]]) }
                 guard words.count == length,
                       !allowlistedPhrases.contains(words.joined(separator: " ")) else { continue }
-                for offset in 0..<length { keep[second + offset] = false }
-                index += length
+                for offset in 0..<length { keep[kept[second + offset]] = false }
+                kept.removeSubrange(second..<(second + length))
                 collapsed = true
                 break
             }
-            if !collapsed { index += 1 }
+            if !collapsed { position += 1 }
         }
     }
 
-    private static func phraseMatches(_ tokens: [Token], first: Int, second: Int, length: Int,
-                                      keep: [Bool], isProtected: (Int) -> Bool,
-                                      settings: DisfluencySettings) -> Bool {
+    private static func phraseMatches(_ tokens: [Token], kept: [Int], first: Int, second: Int,
+                                      length: Int, isProtected: (Int) -> Bool) -> Bool {
         for offset in 0..<length {
-            let a = first + offset
-            let b = second + offset
-            guard keep[a], keep[b], !isProtected(a), !isProtected(b),
+            let a = kept[first + offset]
+            let b = kept[second + offset]
+            guard !isProtected(a), !isProtected(b),
                   let left = eligibleWord(tokens[a]), let right = eligibleWord(tokens[b]),
                   left == right, !numberWords.contains(left) else {
                 return false

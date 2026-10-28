@@ -4,7 +4,7 @@
       "name": "repeated pronoun",
       "input": "I I I think the build is ready",
       "expected": "I think the build is ready",
-      "source": "push-to-talk dictation with a false start"
+      "source": "push-to-talk dictation with a false start; tier A collapses at two"
     },
     {
       "name": "repeated article and verb",
@@ -13,16 +13,16 @@
       "source": "common ASR stutter on function words"
     },
     {
-      "name": "filler is left to the cleanup model by default",
+      "name": "filler prepass plus tiered duplicates",
       "input": "so um the the plan is is ready",
-      "expected": "so um the plan is ready",
-      "source": "filler prepass is off; duplicates still collapse"
+      "expected": "so the plan is is ready",
+      "source": "tiny filler prepass runs; tier B keeps the grammatical is is"
     },
     {
       "name": "three repeats become one",
       "input": "that that that is the point",
       "expected": "that is the point",
-      "source": "run longer than the threshold"
+      "source": "tier B word reaches its three-repeat threshold"
     },
     {
       "name": "ordinary prose is untouched",
@@ -31,16 +31,91 @@
       "source": "no duplicate run present"
     },
     {
-      "name": "two separate repeated words",
-      "input": "this is is fine and that that works",
-      "expected": "this is fine and that works",
+      "name": "legitimate doubles survive",
+      "input": "we had had enough and that that works",
+      "expected": "we had had enough and that that works",
+      "source": "had had and that that are grammar, not stutter"
+    },
+    {
+      "name": "grammatical is is is preserved",
+      "input": "what it is is fine",
+      "expected": "what it is is fine",
+      "source": "the repeated copula is grammatical"
+    },
+    {
+      "name": "reduplicated phrase is preserved",
+      "input": "bye bye for now",
+      "expected": "bye bye for now",
+      "source": "reduplication is intentional"
+    },
+    {
+      "name": "two independent tier A runs",
+      "input": "the the file and we we know",
+      "expected": "the file and we know",
       "source": "two independent runs in one line"
+    },
+    {
+      "name": "repeated three word phrase",
+      "input": "check the tests check the tests now",
+      "expected": "check the tests now",
+      "source": "adjacent repeated phrase collapses to its first occurrence"
+    },
+    {
+      "name": "three repeated phrases collapse to one",
+      "input": "check the tests check the tests check the tests",
+      "expected": "check the tests",
+      "source": "phrase collapse repeats until no adjacent copy remains"
+    },
+    {
+      "name": "number words are never collapsed",
+      "input": "twenty twenty-six was a good year",
+      "expected": "twenty twenty-six was a good year",
+      "source": "a repeated number word can be a year or a count"
+    },
+    {
+      "name": "emails and paths are boundaries",
+      "input": "ping foo@example.com foo@example.com and run /usr/local/bin /usr/local/bin",
+      "expected": "ping foo@example.com foo@example.com and run /usr/local/bin /usr/local/bin",
+      "source": "code-like tokens and emails are never treated as stutter"
     },
     {
       "name": "newlines and list items are preserved",
       "input": "first item\n- the the second\n- third",
       "expected": "first item\n- the second\n- third",
       "source": "line structure must survive the pass"
+    },
+    {
+      "name": "filler prepass can be disabled",
+      "input": "um the the file",
+      "expected": "um the file",
+      "settings": {
+        "disfluency": {
+          "fillerPrepass": false
+        }
+      },
+      "source": "settings opt out of even the small filler pass"
+    },
+    {
+      "name": "phrase collapse can be disabled",
+      "input": "we need to we need to go",
+      "expected": "we need to we need to go",
+      "settings": {
+        "disfluency": {
+          "collapseRepeatedPhrases": false
+        }
+      },
+      "source": "settings keep every repeated phrase for the model"
+    },
+    {
+      "name": "tier thresholds can be raised",
+      "input": "the the cat and the the the dog",
+      "expected": "the the cat and the dog",
+      "settings": {
+        "disfluency": {
+          "tierAThreshold": 3
+        }
+      },
+      "source": "a two-repeat tier A word survives when the threshold is three"
     }
   ]
 }

@@ -79,6 +79,7 @@ struct SettingsPatch: Decodable {
     var spellOutSmallNumbers: Bool?
     var numberStyle: LargeNumberStyle?
     var lineFormat: LineFormatPatch?
+    var disfluency: DisfluencyPatch?
 
     func apply(to base: AppSettings) -> AppSettings {
         var settings = base
@@ -88,7 +89,26 @@ struct SettingsPatch: Decodable {
         if let spellOutSmallNumbers { settings.spellOutSmallNumbers = spellOutSmallNumbers }
         if let numberStyle { settings.numberStyle = numberStyle }
         if let lineFormat { lineFormat.apply(to: &settings.lineFormat) }
+        if let disfluency { disfluency.apply(to: &settings.disfluency) }
         return settings
+    }
+}
+
+struct DisfluencyPatch: Decodable {
+    var enabled: Bool?
+    var collapseDuplicates: Bool?
+    var tierAThreshold: Int?
+    var tierBThreshold: Int?
+    var collapseRepeatedPhrases: Bool?
+    var fillerPrepass: Bool?
+
+    func apply(to settings: inout DisfluencySettings) {
+        if let enabled { settings.enabled = enabled }
+        if let collapseDuplicates { settings.collapseDuplicates = collapseDuplicates }
+        if let tierAThreshold { settings.tierAThreshold = max(2, tierAThreshold) }
+        if let tierBThreshold { settings.tierBThreshold = max(3, tierBThreshold) }
+        if let collapseRepeatedPhrases { settings.collapseRepeatedPhrases = collapseRepeatedPhrases }
+        if let fillerPrepass { settings.fillerPrepass = fillerPrepass }
     }
 }
 

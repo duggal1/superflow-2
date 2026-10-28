@@ -23,4 +23,36 @@ final class KernelTests: XCTestCase {
         XCTAssertFalse(settings.onboardingComplete)
         XCTAssertTrue(settings.cleanupEnabled)
     }
+
+    func testDisfluencySettingsDecodeLegacyThreshold() throws {
+        let json = Data(#"{"duplicateThreshold": 4}"#.utf8)
+        let settings = try JSONDecoder().decode(DisfluencySettings.self, from: json)
+
+        XCTAssertEqual(settings.tierAThreshold, 2)
+        XCTAssertEqual(settings.tierBThreshold, 4)
+        XCTAssertEqual(settings.duplicateThreshold, 4)
+        XCTAssertTrue(settings.fillerPrepass)
+        XCTAssertTrue(settings.collapseRepeatedPhrases)
+    }
+
+    func testDisfluencySettingsRoundTripKeepsBothThresholdKeys() throws {
+        var settings = DisfluencySettings()
+        settings.tierAThreshold = 4
+        settings.tierBThreshold = 5
+        let data = try JSONEncoder().encode(settings)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        XCTAssertEqual(json["duplicateThreshold"] as? Int, 5)
+        XCTAssertEqual(json["tierBThreshold"] as? Int, 5)
+        XCTAssertEqual(try JSONDecoder().decode(DisfluencySettings.self, from: data), settings)
+    }
+
+    func testDisfluencyThresholdsClampToTheirTiers() throws {
+        let json = Data(
+            #"{"tierAThreshold": 1, "tierBThreshold": 1, "duplicateThreshold": 1}"#.utf8)
+        let settings = try JSONDecoder().decode(DisfluencySettings.self, from: json)
+
+        XCTAssertEqual(settings.tierAThreshold, 2)
+        XCTAssertEqual(settings.tierBThreshold, 3)
+    }
 }
