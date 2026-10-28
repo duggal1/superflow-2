@@ -48,6 +48,9 @@ public final class IslandModel {
     @ObservationIgnored public var noticeAction: (IslandNotice) -> Void = { _ in }
 
     public var geometry: NotchGeometry
+    public var box: IslandBox {
+        IslandLayout.box(phase, geometry, hint: hint, live: prefs.liveText, prefs: prefs)
+    }
     public internal(set) var target: IslandTarget?
     public let waveform = WaveformModel()
 

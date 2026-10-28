@@ -6,8 +6,7 @@ import SwiftUI
 /// never draggable. It is created once and never ordered out.
 @MainActor
 final class IslandPanel: NSPanel {
-    /// True only while the "recent" card is open, so Escape works. Never true
-    /// otherwise: the Island must not steal focus.
+    /// Only click-opened cards may take focus for their keyboard controls.
     var allowsKey = false
     var onCancel: (() -> Void)?
 
@@ -43,7 +42,7 @@ final class IslandPanel: NSPanel {
 /// whatever is underneath: menu bar items, other windows, the desktop.
 final class IslandHostingView: NSHostingView<IslandRoot> {
     /// Interactive region in this view's top-left coordinate space.
-    var hitRect: () -> CGRect = { .zero }
+    var containsPoint: (CGPoint) -> Bool = { _ in false }
 
     required init(rootView: IslandRoot) {
         super.init(rootView: rootView)
@@ -61,7 +60,7 @@ final class IslandHostingView: NSHostingView<IslandRoot> {
     override func hitTest(_ point: NSPoint) -> NSView? {
         let local = convert(point, from: superview)
         let y = isFlipped ? local.y : bounds.height - local.y
-        return hitRect().contains(CGPoint(x: local.x, y: y)) ? super.hitTest(point) : nil
+        return containsPoint(CGPoint(x: local.x, y: y)) ? super.hitTest(point) : nil
     }
 }
 
@@ -81,8 +80,8 @@ public final class IslandController {
     public init(model: IslandModel) {
         self.model = model
         host = IslandHostingView(rootView: IslandRoot(model: model))
-        host.hitRect = { [unowned model] in
-            IslandLayout.hitRect(model.phase, model.geometry, hint: model.hint)
+        host.containsPoint = { [unowned model] point in
+            IslandLayout.contains(point, box: model.box)
         }
         panel.contentView = host
         panel.onCancel = { [unowned model] in model.send(.dismissed) }
@@ -152,8 +151,12 @@ public final class IslandController {
             place(.home)
         }
 
-        // Key status only for the click-opened card, so Escape works.
-        if case .recent = phase {
+        let interactiveCard: Bool = switch phase {
+        case .recent, .history, .meetingPanel: true
+        case .idle, .hover, .listening, .handsFree, .meeting, .processing,
+             .landed, .undo, .failed, .notice: false
+        }
+        if interactiveCard {
             panel.allowsKey = true
             panel.makeKey()
         } else {
@@ -166,7 +169,7 @@ public final class IslandController {
         // target field and the transcript must not vanish.
         outsideMonitors.forEach(NSEvent.removeMonitor)
         outsideMonitors = []
-        if case .recent = phase {
+        if interactiveCard {
             let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown]
             if let global = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] _ in
                 MainActor.assumeIsolated { self?.model.send(.dismissed) }

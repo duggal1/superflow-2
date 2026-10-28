@@ -17,6 +17,7 @@ struct HistoryPanel: View {
     var body: some View {
         let geometry = model.geometry
         let rows = model.history
+        let side = (model.box.body.width - geometry.notch.width) / 2
 
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -24,7 +25,7 @@ struct HistoryPanel: View {
                     .appType(.label)
                     .foregroundStyle(Tok.text)
                     .padding(.leading, pad)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(width: side, alignment: .leading)
 
                 if geometry.hasNotch {
                     Color.clear.frame(width: geometry.notch.width)
@@ -32,7 +33,7 @@ struct HistoryPanel: View {
 
                 BarIconButton(glyph: .close, label: "Close") { model.send(.dismissed) }
                     .padding(.trailing, pad - 8)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(width: side, alignment: .trailing)
             }
             .frame(height: geometry.band)
 
@@ -42,16 +43,27 @@ struct HistoryPanel: View {
                                message: "Hold fn and speak.",
                                density: .pane)
                 } else {
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 2) {
-                            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                                HistoryRow(model: model, transcript: row,
-                                           selected: index == cursor,
-                                           expanded: open == row.id) {
-                                    cursor = index
-                                    open = open == row.id ? nil : row.id
+                    ScrollViewReader { proxy in
+                        ScrollView(showsIndicators: false) {
+                            VStack(spacing: 2) {
+                                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                                    HistoryRow(model: model, transcript: row,
+                                               selected: index == cursor,
+                                               expanded: open == row.id) {
+                                        cursor = index
+                                        open = open == row.id ? nil : row.id
+                                    }
+                                    .id(row.id)
                                 }
                             }
+                        }
+                        .onChange(of: cursor) {
+                            if rows.indices.contains(cursor) {
+                                proxy.scrollTo(rows[cursor].id)
+                            }
+                        }
+                        .onChange(of: open) {
+                            if let open { proxy.scrollTo(open, anchor: .top) }
                         }
                     }
                 }
@@ -141,7 +153,7 @@ struct HistoryRow: View {
                         .appType(.caption)
                         .foregroundStyle(Tok.text2)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.leading, 12)
             }
@@ -178,7 +190,7 @@ struct HistoryRow: View {
                 .foregroundStyle(Tok.text)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .clipped()
                 .modifier(EdgeFade(length: 32))
         }

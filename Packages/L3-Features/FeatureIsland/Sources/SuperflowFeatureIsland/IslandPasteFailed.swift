@@ -14,23 +14,20 @@ struct PasteFailedCard: View {
 
     var body: some View {
         let geometry = model.geometry
+        let side = (model.box.body.width - geometry.notch.width) / 2
 
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Text("Not pasted.")
-                    .appType(.label)
-                    .foregroundStyle(Tok.text)
-                    .lineLimit(1)
-                    .padding(.leading, pad)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                if geometry.hasNotch {
-                    Color.clear.frame(width: geometry.notch.width)
-                }
-
+            ViewThatFits(in: .horizontal) {
+                Text("Not pasted.").appType(.label).fixedSize()
+                Text("Not pasted").appType(.caption).fixedSize()
+            }
+            .foregroundStyle(Tok.text)
+            .padding(.leading, pad)
+            .frame(width: side, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .trailing) {
                 BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
                     .padding(.trailing, pad - 8)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .frame(height: geometry.band)
 

@@ -101,18 +101,23 @@ struct MeetingPanel: View {
         let geometry = model.geometry
         let pulse = model.pulse
         let total = max(1, pulse.speakers.reduce(0) { $0 + $1.seconds })
+        let side = (model.box.body.width - geometry.notch.width) / 2
 
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                HStack(spacing: 8) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        RecordDisc()
+                        Text("Recording")
+                            .appType(.label)
+                            .foregroundStyle(Tok.text)
+                    }
+                    .fixedSize()
                     RecordDisc()
-                    Text("Recording")
-                        .appType(.label)
-                        .foregroundStyle(Tok.text)
-                        .lineLimit(1)
                 }
+                .accessibilityLabel("Recording")
                 .padding(.leading, pad)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: side, alignment: .leading)
 
                 if geometry.hasNotch {
                     Color.clear.frame(width: geometry.notch.width)
@@ -120,7 +125,7 @@ struct MeetingPanel: View {
 
                 BarIconButton(glyph: .close, label: "Collapse") { model.send(.notchClicked) }
                     .padding(.trailing, pad - 8)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(width: side, alignment: .trailing)
             }
             .frame(height: geometry.band)
 

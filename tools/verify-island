@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Run Island views and window tests without building unrelated speech engines."""
+
+import json
+from pathlib import Path
+import subprocess
+import tempfile
+
+
+root = Path(__file__).resolve().parent.parent
+feature = root / "Packages/L3-Features/FeatureIsland"
+dependencies = [("DesignSystem", "SuperflowDesignSystem"),
+                ("Icons", "SuperflowIcons"), ("UIComponents", "SuperflowUIComponents")]
+
+with tempfile.TemporaryDirectory(prefix="superflow-island-") as directory:
+    harness = Path(directory)
+    (harness / "Sources").symlink_to(feature / "Sources", target_is_directory=True)
+    (harness / "Tests").symlink_to(feature / "Tests", target_is_directory=True)
+    (harness / "Host").mkdir()
+    (harness / "HostTests").mkdir()
+    (harness / "Host/IslandPanelController.swift").symlink_to(
+        root / "App/SuperflowApp/Sources/SuperflowAppCore/Windowing/IslandPanelController.swift")
+    (harness / "HostTests/IslandPanelControllerTests.swift").symlink_to(
+        root / "App/SuperflowApp/Tests/SuperflowAppCoreTests/IslandPanelControllerTests.swift")
+    packages = ",\n".join(
+        f'.package(path: {json.dumps(str(root / "Packages/L4-UI" / name))})'
+        for name, _ in dependencies)
+    products = ",\n".join(
+        f'.product(name: "{product}", package: "{name}")' for name, product in dependencies)
+    (harness / "Package.swift").write_text('''// swift-tools-version: 6.0
+import PackageDescription
+let package = Package(name: "IslandVerification", platforms: [.macOS(.v15)],
+    dependencies: [
+''' + packages + '''], targets: [
+    .target(name: "SuperflowFeatureIsland", dependencies: [
+''' + products + ''']),
+    .testTarget(name: "SuperflowFeatureIslandTests", dependencies: ["SuperflowFeatureIsland"],
+                path: "Tests/FeatureIslandTests"),
+    .target(name: "SuperflowAppCore", dependencies: ["SuperflowFeatureIsland"], path: "Host"),
+    .testTarget(name: "IslandHostTests", dependencies: ["SuperflowAppCore", "SuperflowFeatureIsland"],
+                path: "HostTests")
+], swiftLanguageModes: [.v6])
+''')
+    result = subprocess.run(["swift", "test", "--package-path", str(harness)])
+    raise SystemExit(result.returncode)

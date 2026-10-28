@@ -20,17 +20,51 @@ final class IslandLayoutTests: XCTestCase {
     }
 
     func testEveryBoxFitsTheCanvas() {
-        for geometry in [notch, plain] {
+        let wideNotch = NotchGeometry(frame: CGRect(x: 0, y: 0, width: 1728, height: 1117),
+                                      safeTop: 38, leftWidth: 704, rightWidth: 704, scale: 2)
+        for geometry in [notch, wideNotch, plain] {
             for phase in phases {
                 for hint in [false, true] {
-                    let size = IslandLayout.box(phase, geometry, hint: hint).frameSize
-                    XCTAssertLessThanOrEqual(size.width, IslandLayout.canvas.width, "\(phase)")
-                    XCTAssertLessThanOrEqual(size.height, IslandLayout.canvas.height, "\(phase)")
-                    XCTAssertGreaterThan(size.width, 0, "\(phase)")
-                    XCTAssertGreaterThan(size.height, 0, "\(phase)")
+                    for live in [false, true] {
+                        let size = IslandLayout.box(phase, geometry, hint: hint, live: live).frameSize
+                        XCTAssertLessThanOrEqual(size.width, IslandLayout.canvas.width, "\(phase)")
+                        XCTAssertLessThanOrEqual(size.height, IslandLayout.canvas.height, "\(phase)")
+                        XCTAssertGreaterThan(size.width, 0, "\(phase)")
+                        XCTAssertGreaterThan(size.height, 0, "\(phase)")
+                    }
                 }
             }
         }
+    }
+
+    func testOnlyTheVisibleSilhouetteReceivesClicks() {
+        for phase in phases {
+            let box = IslandLayout.box(phase, notch, live: true,
+                                       prefs: IslandPrefs(alwaysOn: true, liveText: true))
+            XCTAssertTrue(IslandLayout.contains(CGPoint(x: IslandLayout.canvas.width / 2,
+                                                        y: box.body.height / 2), box: box))
+            XCTAssertFalse(IslandLayout.contains(CGPoint(x: 0, y: box.body.height / 2), box: box))
+            XCTAssertFalse(IslandLayout.contains(CGPoint(x: IslandLayout.canvas.width / 2,
+                                                         y: box.body.height + 1), box: box))
+            let left = (IslandLayout.canvas.width - box.frameSize.width) / 2
+            XCTAssertFalse(IslandLayout.contains(CGPoint(x: left + 1, y: box.body.height - 1),
+                                                 box: box))
+        }
+        XCTAssertFalse(IslandLayout.contains(CGPoint(x: IslandLayout.canvas.width / 2, y: 10),
+                                             box: IslandLayout.box(.idle, plain)))
+    }
+
+    func testAlwaysOnLampExtendsBelowTheHardwareNotch() {
+        let prefs = IslandPrefs(alwaysOn: true)
+        let box = IslandLayout.box(.idle, notch, prefs: prefs)
+        XCTAssertEqual(box.body.width, notch.notch.width)
+        XCTAssertEqual(box.body.height, notch.band + 5)
+        XCTAssertTrue(IslandLayout.contains(CGPoint(x: IslandLayout.canvas.width / 2,
+                                                    y: notch.band + 1), box: box))
+        let external = IslandLayout.box(.idle, plain, prefs: prefs)
+        XCTAssertEqual(external.opacity, 1)
+        XCTAssertTrue(IslandLayout.contains(CGPoint(x: IslandLayout.canvas.width / 2, y: 10),
+                                            box: external))
     }
 
     func testEveryHitRectFitsTheCanvas() {

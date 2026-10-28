@@ -13,11 +13,8 @@ public struct IslandRoot: View {
         self.model = model
     }
 
-    private var live: Bool { model.prefs.liveText }
-
     public var body: some View {
-        let box = IslandLayout.box(model.phase, model.geometry,
-                                   hint: model.hint, live: live, prefs: model.prefs)
+        let box = model.box
         let size = box.frameSize
 
         ZStack(alignment: .top) {
@@ -42,6 +39,7 @@ public struct IslandRoot: View {
                         SurfaceButton(clickLabel) { model.send(.notchClicked) }
                     }
                 }
+                .clipShape(NotchShape(top: box.top, bottom: box.bottom))
                 .onHover { model.hoverChanged($0) }
         }
         .frame(width: IslandLayout.canvas.width, height: IslandLayout.canvas.height,

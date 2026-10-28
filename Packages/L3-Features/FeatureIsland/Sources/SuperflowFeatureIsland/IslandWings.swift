@@ -20,7 +20,7 @@ struct WingsContent: View {
     var body: some View {
         let geometry = model.geometry
         let gap = geometry.hasNotch ? geometry.notch.width : IslandLayout.nonNotchGap
-        let wing = IslandLayout.wingWidth(phase, gap: gap)
+        let wing = (model.box.body.width - gap) / 2
 
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -39,8 +39,9 @@ struct WingsContent: View {
 
             if model.hint, let hints {
                 HintShelf(items: hints)
+                    .frame(height: model.prefs.liveText ? IslandLayout.liveShelf : IslandLayout.hintShelf)
                     .transition(.opacity)
-            } else if model.prefs.liveText {
+            } else if model.prefs.liveText && showsLiveShelf {
                 LiveLine(live: model.live)
                     .padding(.horizontal, 20)
                     .frame(height: IslandLayout.liveShelf)
@@ -50,6 +51,14 @@ struct WingsContent: View {
             Spacer(minLength: 0)
         }
         .animation(reduceMotion ? nil : .smooth(duration: 0.30), value: model.hint)
+    }
+
+    private var showsLiveShelf: Bool {
+        switch phase {
+        case .listening, .handsFree, .meeting: true
+        case .idle, .hover, .meetingPanel, .processing, .landed, .failed,
+             .recent, .history, .undo, .notice: false
+        }
     }
 
     @ViewBuilder private var leading: some View {

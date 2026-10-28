@@ -15,7 +15,7 @@ struct LiveLine: View {
                     .appType(.caption)
                     .foregroundStyle(Ramp.blue[4])
                     .lineLimit(1)
-                    .fixedSize()
+                    .frame(maxWidth: 100, alignment: .leading)
             }
             HStack(spacing: 2) {
                 if live.text.isEmpty {
@@ -33,7 +33,7 @@ struct LiveLine: View {
                     .fill(Ramp.blue[4])
                     .frame(width: 2, height: 14)
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
             .clipped()
             .modifier(EdgeFadeLeading(length: 32))
         }

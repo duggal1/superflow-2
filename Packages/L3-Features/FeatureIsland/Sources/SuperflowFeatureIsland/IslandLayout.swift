@@ -127,11 +127,12 @@ public enum IslandLayout {
 
         func wings(_ extra: CGFloat, below: CGFloat = 0, top: CGFloat = 6,
                    bottom: CGFloat = 14) -> IslandBox {
-            IslandBox(body: .init(width: gap + extra, height: geometry.band + below),
+            IslandBox(body: .init(width: min(gap + extra, canvas.width - 2 * top),
+                                  height: geometry.band + below),
                       top: top, bottom: bottom, opacity: 1)
         }
         func wide(_ extra: CGFloat, below: CGFloat) -> IslandBox {
-            IslandBox(body: .init(width: max(gap + extra, 400),
+            IslandBox(body: .init(width: min(max(gap + extra, 400), canvas.width - 16),
                                   height: geometry.band + below),
                       top: 8, bottom: 18, opacity: 1)
         }
@@ -143,7 +144,9 @@ public enum IslandLayout {
         switch phase {
         case .idle:
             if geometry.hasNotch {
-                return IslandBox(body: geometry.notch, top: 0, bottom: restBottom, opacity: 1)
+                return IslandBox(body: .init(width: geometry.notch.width,
+                                             height: geometry.band + (prefs.alwaysOn ? 5 : 0)),
+                                 top: 0, bottom: restBottom, opacity: 1)
             }
             // "Always show Island" puts a small black pill on a notch-less
             // display instead of hiding the Island entirely.
@@ -198,6 +201,13 @@ public enum IslandLayout {
                       width: size.width, height: size.height)
             .insetBy(dx: -slop, dy: -slop)
             .intersection(CGRect(origin: .zero, size: canvas))
+    }
+
+    public static func contains(_ point: CGPoint, box: IslandBox) -> Bool {
+        guard box.opacity > 0 else { return false }
+        let frame = CGRect(x: (canvas.width - box.frameSize.width) / 2, y: 0,
+                           width: box.frameSize.width, height: box.frameSize.height)
+        return NotchShape(top: box.top, bottom: box.bottom).path(in: frame).contains(point)
     }
 
     public static func animation(from a: IslandPhase, to b: IslandPhase,

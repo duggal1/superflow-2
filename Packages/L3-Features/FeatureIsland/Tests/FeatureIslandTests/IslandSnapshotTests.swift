@@ -6,10 +6,12 @@ import XCTest
 private struct StubFeed: IslandFeed {
     var last: IslandTranscript?
     var stores = true
+    var rows: [IslandTranscript] = []
 
     var events: AsyncStream<IslandEvent> { AsyncStream { $0.finish() } }
     var levels: AsyncStream<Float> { AsyncStream { $0.finish() } }
     func lastTranscript() -> IslandTranscript? { last }
+    func history(limit: Int) -> [IslandTranscript] { Array(rows.prefix(limit)) }
     var storesTranscripts: Bool { stores }
 }
 
@@ -153,6 +155,70 @@ final class IslandSnapshotTests: XCTestCase {
         model.send(.holdBegan(nil))
         model.send(.pasteFailed(transcript))
         XCTAssertNoThrow(try render(model))
+    }
+
+    func testExpandedStatesRenderAtTwoTimesScale() throws {
+        let rows = (0..<5).map { index in
+            IslandTranscript(text: transcript.text, bundleID: transcript.bundleID,
+                             appName: transcript.appName,
+                             date: transcript.date.addingTimeInterval(Double(index)), words: transcript.words)
+        }
+        let wideNotch = NotchGeometry(frame: CGRect(x: 0, y: 0, width: 1728, height: 1117),
+                                      safeTop: 38, leftWidth: 704, rightWidth: 704, scale: 2)
+        for (name, geometry) in [("notch", wideNotch), ("external", geometry(notch: false))] {
+            let model = IslandModel(feed: StubFeed(last: transcript, rows: rows), geometry: geometry)
+            model.configure(IslandPrefs(alwaysOn: true, liveText: true))
+            model.live = LiveText(text: String(repeating: "The newest words stay beside the caret. ", count: 8),
+                                  speaker: "Alexandra", isFinal: false)
+            model.pulse = MeetingPulse(words: 1248, speakers: [
+                SpeakerShare(id: "you", name: "You", seconds: 240, isYou: true),
+                SpeakerShare(id: "alex", name: "Alexandra", seconds: 180, isYou: false),
+                SpeakerShare(id: "sam", name: "Sam", seconds: 60, isYou: false),
+            ], current: "Alexandra")
+            model.meetingStart = Date().addingTimeInterval(-480)
+            model.history = rows
+            let phases: [(String, IslandPhase)] = [
+                ("idle", .idle), ("hover", .hover), ("live", .listening),
+                ("hands-free", .handsFree), ("meeting", .meeting),
+                ("meeting-panel", .meetingPanel), ("history", .history),
+                ("failed", .failed(transcript)),
+                ("notification", .notice(.milestone(words: 1000))),
+            ]
+            for (state, phase) in phases {
+                model.go(phase)
+                let bitmap = try hostedBitmap(model)
+                let image = try render(model)
+                XCTAssertEqual(image.size, IslandLayout.canvas)
+                XCTAssertGreaterThan(try opaquePixels(image), 0)
+                if let output = ProcessInfo.processInfo.environment["ISLAND_SNAPSHOT_DIR"] {
+                    let directory = URL(fileURLWithPath: output, isDirectory: true)
+                    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                    let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+                    try data.write(to: directory.appendingPathComponent("\(name)-\(state).png"))
+                }
+            }
+        }
+    }
+
+    private func hostedBitmap(_ model: IslandModel) throws -> NSBitmapImageRep {
+        _ = NSApplication.shared
+        let host = NSHostingView(rootView: IslandRoot(model: model)
+            .transaction { $0.animation = nil; $0.disablesAnimations = true })
+        host.sizingOptions = []
+        let window = NSWindow(contentRect: CGRect(origin: .zero, size: IslandLayout.canvas),
+                              styleMask: [.borderless], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.hasShadow = false
+        window.contentView = host
+        window.orderFront(nil)
+        defer { window.close() }
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        host.layoutSubtreeIfNeeded()
+        let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+        host.cacheDisplay(in: host.bounds, to: bitmap)
+        return bitmap
     }
 
     // MARK: measured pixels
