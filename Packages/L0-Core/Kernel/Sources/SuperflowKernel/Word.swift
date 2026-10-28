@@ -32,7 +32,14 @@ public struct Word: Equatable, Sendable {
 public extension Tokenizer {
     static func words(_ text: String, protected: Protected = Protected()) -> [Word] {
         let slices = text.split(whereSeparator: \.isWhitespace)
-        let spans = protected.ranges(in: text).sorted { $0.lowerBound < $1.lowerBound }
+        var spans: [Range<String.Index>] = []
+        for range in protected.ranges(in: text).sorted(by: { $0.lowerBound < $1.lowerBound }) {
+            if let previous = spans.last, range.lowerBound <= previous.upperBound {
+                spans[spans.count - 1] = previous.lowerBound..<max(previous.upperBound, range.upperBound)
+            } else {
+                spans.append(range)
+            }
+        }
         var spanIndex = 0
         let leads = Set<Character>("(\"'“‘[{")
         let trails = Set<Character>(".,;:!?)\"'”’…]}")
