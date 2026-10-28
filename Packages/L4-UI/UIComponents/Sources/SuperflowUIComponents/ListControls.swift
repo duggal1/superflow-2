@@ -38,7 +38,7 @@ public struct ListControls<Scope: Hashable>: View {
                 SearchField(text: $query, prompt: prompt, isFocused: $searchFocus)
                 Spacer(minLength: 16)
                 ActionMenu(actions: menu)
-                AppButton(addTitle, glyph: .add, kind: .primary, height: 32, action: onAdd)
+                AppButton(addTitle, glyph: .add, kind: .primary, height: ControlHeight.regular, action: onAdd)
             }
         }
     }

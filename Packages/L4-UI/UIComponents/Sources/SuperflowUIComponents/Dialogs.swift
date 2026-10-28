@@ -83,9 +83,9 @@ public struct DialogFrame<Content: View>: View {
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
                 if showsCancel {
-                    AppButton("Cancel", kind: .quiet, height: 32) { host.dismiss() }
+                    AppButton("Cancel", kind: .quiet, height: ControlHeight.regular) { host.dismiss() }
                 }
-                AppButton(confirmTitle, kind: .primary, height: 32, enabled: canConfirm) {
+                AppButton(confirmTitle, kind: .primary, height: ControlHeight.regular, enabled: canConfirm) {
                     onConfirm()
                     host.dismiss()
                 }
