@@ -1,44 +1,94 @@
-import AppKit
 import SuperflowDesignSystem
+import SuperflowIcons
 import SwiftUI
 
-@MainActor
-public enum MenuMetrics {
-    public static let row: CGFloat = 32
-    public static let inset: CGFloat = 4
-    public static let gap: CGFloat = 8
+struct MenuPanel: View {
+    let presented: MenuHost.Presented
+    let bounds: CGSize
+    let origin: CGPoint
+    @Environment(MenuHost.self) private var host
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    @FocusState private var focused: Bool
+    @State private var shown = false
 
-    public static func height(_ items: [MenuItem]) -> CGFloat {
-        inset * 2 + CGFloat(items.count) * row + CGFloat(items.filter(\.gapBefore).count) * gap
-    }
-
-    public static func offsets(_ items: [MenuItem]) -> [CGFloat] {
-        var y = inset
-        return items.map { item in
-            if item.gapBefore { y += gap }
-            defer { y += row }
-            return y
+    var body: some View {
+        let items = presented.items
+        let width = min(MenuMetrics.width(items, minWidth: presented.anchor.width), max(1, bounds.width - 16))
+        let height = min(MenuMetrics.height(items), max(1, bounds.height - 16))
+        let offsets = MenuMetrics.offsets(items)
+        let place = MenuMetrics.placement(anchor: presented.anchor,
+            size: CGSize(width: width, height: height), bounds: bounds, origin: origin)
+        ScrollViewReader { scroll in
+            ScrollView(showsIndicators: false) {
+                ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: Radius.field, style: .continuous)
+                        .fill(Tok.controlPressed)
+                        .frame(width: width - 8, height: MenuMetrics.row)
+                        .offset(x: 4, y: host.cursor.flatMap { offsets.indices.contains($0) ? offsets[$0] : nil } ?? 4)
+                        .opacity(host.cursor == nil ? 0 : 1)
+                        .animation(reduce ? nil : .smooth(duration: 0.18), value: host.cursor)
+                    VStack(spacing: 0) {
+                        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                            if item.gapBefore { Color.clear.frame(height: MenuMetrics.gap) }
+                            Button { host.commit(index) } label: { MenuRow(item: item) }
+                                .buttonStyle(.plain)
+                                .disabled(!item.enabled)
+                                .focusEffectDisabled()
+                                .clickable(item.enabled)
+                                .onHover { inside in host.hover(inside ? index : nil) }
+                                .id(index)
+                                .accessibilityLabel(item.title)
+                                .accessibilityAddTraits(item.checked ? .isSelected : [])
+                        }
+                    }
+                    .padding(.vertical, MenuMetrics.inset)
+                }
+                .frame(width: width, height: MenuMetrics.height(items), alignment: .topLeading)
+            }
+            .onChange(of: host.cursor) { _, index in
+                if let index { scroll.scrollTo(index) }
+            }
+        }
+        .frame(width: width, height: height)
+        .background(Tok.controlHover, in: .rect(cornerRadius: Radius.nested, style: .continuous))
+        .modifier(ContrastStroke(radius: Radius.nested))
+        .clipShape(.rect(cornerRadius: Radius.nested))
+        .focusable().focused($focused).focusEffectDisabled()
+        .onKeyPress(.downArrow) { host.move(1); return .handled }
+        .onKeyPress(.upArrow) { host.move(-1); return .handled }
+        .onKeyPress(.return) { host.commit(); return .handled }
+        .onKeyPress(.escape) { host.dismiss(); return .handled }
+        .scaleEffect(shown || reduce ? 1 : 0.96, anchor: place.flipped ? .bottomTrailing : .topTrailing)
+        .offset(y: shown || reduce ? 0 : (place.flipped ? 4 : -4))
+        .opacity(shown || reduce ? 1 : 0)
+        .offset(x: place.point.x, y: place.point.y)
+        .onAppear {
+            focused = true
+            withAnimation(reduce ? nil : .smooth(duration: 0.20)) { shown = true }
         }
     }
+}
 
-    public static func width(_ items: [MenuItem], minWidth: CGFloat) -> CGFloat {
-        let font = Typography.nsUIFont(AppType.label.size, weight: AppType.label.weight)
-        let text = items.map { ($0.title as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
-        return max(minWidth, ceil(text) + 96)
-    }
-
-    public static func index(at y: CGFloat, _ items: [MenuItem]) -> Int? {
-        offsets(items).enumerated().first { y >= $0.element && y < $0.element + row }?.offset
-    }
-
-    public static func placement(anchor: CGRect, size: CGSize, bounds: CGSize,
-                                 origin: CGPoint) -> (point: CGPoint, flipped: Bool) {
-        let left = origin.x + 8
-        let right = max(left, origin.x + bounds.width - size.width - 8)
-        let x = min(max(anchor.maxX - size.width, left), right)
-        let below = anchor.maxY + 6
-        let flipped = below + size.height > origin.y + bounds.height - 8
-        let y = max(origin.y + 8, flipped ? anchor.minY - 6 - size.height : below)
-        return (CGPoint(x: x - origin.x, y: y - origin.y), flipped)
+private struct MenuRow: View {
+    let item: MenuItem
+    var body: some View {
+        let tone = item.role == .destructive ? Tok.statusBad : Tok.text
+        HStack(spacing: 8) {
+            ZStack {
+                if let leading = item.leading { leading }
+                else if let glyph = item.glyph { Icon(glyph, size: 14, tint: tone) }
+            }
+            .frame(width: 20, height: 20)
+            Text(item.title).appType(.label).foregroundStyle(tone).lineLimit(1)
+            Spacer(minLength: 16)
+            if item.checked {
+                Icon(.checkmark, size: 12, tint: Tok.accentText).frame(width: 20, height: 20)
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: MenuMetrics.row)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(.rect)
+        .opacity(item.enabled ? 1 : Opacity.disabled)
     }
 }

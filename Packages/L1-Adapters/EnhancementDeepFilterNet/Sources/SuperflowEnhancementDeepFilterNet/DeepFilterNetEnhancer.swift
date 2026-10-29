@@ -22,6 +22,10 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
 
     public func isAvailable() async -> Bool { await store.isAvailable() }
 
+    public func prepare() async throws {
+        try await prepare(progress: { _ in })
+    }
+
     public func prepare(progress: @escaping @Sendable (Double) -> Void) async throws {
         try await store.ensure { progress($0 * 0.9) }
         try await load()
@@ -51,10 +55,10 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
             throw SuperflowError.modelUnavailable("Download DeepFilterNet 3 in Models, or turn off noise suppression in Settings.")
         }
         try await load()
-        reset()
+        await reset()
     }
 
-    public func process(_ samples: [Float]) throws -> [Float] {
+    public func process(_ samples: [Float]) async throws -> [Float] {
         guard let streamer else { throw SuperflowError.invalidState("DeepFilterNet 3 is not prepared.") }
         inputCount += samples.count
         return try process48(resampler.upsample(samples), streamer: streamer)
@@ -75,17 +79,17 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
         return limited
     }
 
-    public func finish() throws -> [Float] {
+    public func finish() async throws -> [Float] {
         guard let streamer else { return [] }
-        defer { reset() }
         // Flush both FIR delays and the model lookahead without counting padding as input.
         var output = try process48(resampler.upsample([Float](repeating: 0, count: 960)), streamer: streamer)
         let remaining = max(0, inputCount - outputCount)
         output.append(contentsOf: resampler.downsample(try streamer.flush()).prefix(remaining))
+        await reset()
         return output
     }
 
-    public func reset() {
+    public func reset() async {
         streamer?.reset()
         resampler = EnhancementResampler()
         pending.removeAll(keepingCapacity: true)
