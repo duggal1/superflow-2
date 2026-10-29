@@ -211,7 +211,7 @@ public enum Tok {
     /// The one vendor colour in the app: NVIDIA green, taken from the vendor's own
     /// logo asset. Vendor marks are the only place a non-token hue is allowed, and
     /// it is a token precisely so it appears exactly once.
-    public static let brandNvidia = Color(hex: 0x87D501)
+    public static let brandNvidia = Color(hex: 0x8EE000)
 }
 
 public enum Ramp {

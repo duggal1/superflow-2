@@ -38,8 +38,8 @@ final class GlyphTests: XCTestCase {
     func testNVIDIAProviderMarkIsBundled() throws {
         let url = try XCTUnwrap(NVIDIAIcon.resourceURL)
         let svg = try String(contentsOf: url, encoding: .utf8)
-        XCTAssertTrue(svg.contains("viewBox=\"56.781 31.512 248.899 164.698\""))
-        XCTAssertTrue(svg.contains("#87cf02"))
+        XCTAssertTrue(svg.contains("viewBox=\"0 0 163.3 108\""))
+        XCTAssertTrue(svg.contains("#8EE000"))
         XCTAssertNotNil(NSImage(contentsOf: url))
     }
 }

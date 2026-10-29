@@ -37,6 +37,11 @@ public struct SettingsView: View {
         self.model = model
     }
 
+    init(model: SettingsViewModel, initialTab: SettingsTab) {
+        self.model = model
+        _tab = State(initialValue: initialTab)
+    }
+
     private var query: String {
         model.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
     }

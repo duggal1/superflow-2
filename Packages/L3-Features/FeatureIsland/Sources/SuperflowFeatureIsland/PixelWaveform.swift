@@ -24,7 +24,7 @@ struct IslandPixelMeter: View {
                     let value = distance == 0
                         ? live
                         : trail[min(distance - 1, trail.count - 1)]
-                    let half = islandHalf(value, max: 2)
+                    let half = value < 0.04 ? 0 : (value < 0.75 ? 1 : 2)
                     let direction: CGFloat = column == cols / 2 ? 0 : (column < cols / 2 ? -1 : 1)
                     let x = CGFloat(column) * 3 + direction * phase * 3
                     guard half > 0 else {

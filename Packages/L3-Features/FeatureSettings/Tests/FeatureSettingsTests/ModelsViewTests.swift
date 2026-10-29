@@ -92,8 +92,16 @@ final class ModelsViewTests: XCTestCase {
         let vm = ModelsViewModel(models: FakeModelProvider(asrURL: nil, llmURL: nil),
                                  asrModels: InstalledASRProvider(installed: false))
         XCTAssertTrue(vm.isChecking)
+        XCTAssertFalse(vm.showsDownloadRemaining)
         await vm.refresh()
         XCTAssertFalse(vm.isChecking)
+        XCTAssertTrue(vm.showsDownloadRemaining)
+        XCTAssertEqual(vm.remainingDownloadCount, 4)
+        vm.download(ModelsViewModel.enhancementID)
+        XCTAssertFalse(vm.showsDownloadRemaining)
+        XCTAssertEqual(vm.remainingDownloadCount, 3)
+        vm.cancel(ModelsViewModel.enhancementID)
+        XCTAssertTrue(vm.showsDownloadRemaining)
     }
 
     /// A cancelled row cannot be repainted by a late progress callback.

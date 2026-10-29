@@ -44,9 +44,9 @@ public struct ModelMark: View {
 
     @ViewBuilder public var body: some View {
         switch kind {
-        case .speech: IconView(.speechModel, size: 14)
+        case .speech: NVIDIAIcon(width: 24)
         case .enhancement: IconView(.noiseSuppression, size: 14)
-        case .cleanup: IconView(.cleanup, size: 14)
+        case .cleanup: S1MiniMark(size: 24)
         case .meetings: IconView(.speakerSeparation, size: 14)
         }
     }
@@ -121,6 +121,12 @@ public final class ModelsViewModel {
         items.filter { if case .installed = $0.state { true } else { false } }.count
     }
     public var missingCount: Int { items.count - installedCount }
+    public var remainingDownloadCount: Int {
+        items.filter { !isInstalled($0.state) && !isBusy($0.state) }.count
+    }
+    public var showsDownloadRemaining: Bool {
+        !isChecking && remainingDownloadCount > 0 && !items.contains { isBusy($0.state) }
+    }
     /// "2 of 3 installed." — the only subtitle on the page.
     public var subtitle: String { "\(installedCount) of \(items.count) installed." }
     public var activeName: String {
@@ -262,8 +268,8 @@ public struct ModelsView: View {
         Page(title: "Models", subtitle: vm.subtitle) {
             EmptyView()
         } trailing: {
-            if vm.missingCount > 0 {
-                AppButton("Download all", kind: .primary) { vm.downloadAll() }
+            if vm.showsDownloadRemaining {
+                AppButton("Download remaining (\(vm.remainingDownloadCount))", kind: .primary) { vm.downloadAll() }
             }
         } content: {
             if vm.items.isEmpty {

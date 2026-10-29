@@ -22,11 +22,13 @@ public struct StatusNote: View {
     /// True only while the work genuinely has no end to show. Deterministic states
     /// must pass `false`, or the note would animate forever.
     public var working: Bool
+    public var compact: Bool
 
-    public init(text: String, level: DotLevel = .warning, working: Bool = false) {
+    public init(text: String, level: DotLevel = .warning, working: Bool = false, compact: Bool = false) {
         self.text = text
         self.level = level
         self.working = working
+        self.compact = compact
     }
 
     public var body: some View {
@@ -43,8 +45,8 @@ public struct StatusNote: View {
             StatusScanRail(active: working)
                 .padding(.leading, 29)
         }
-        .padding(.horizontal, 10)
-        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+        .padding(.horizontal, compact ? 6 : 10)
+        .frame(maxWidth: .infinity, minHeight: compact ? 32 : 40, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 }

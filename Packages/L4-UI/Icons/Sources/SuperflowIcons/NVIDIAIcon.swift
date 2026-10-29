@@ -10,9 +10,9 @@ import SwiftUI
 /// 64 pt in a page header, with no raster fallback.
 @MainActor
 public struct NVIDIAIcon: View {
-    /// The asset's own ratio (248.899 × 164.698). The mark is wider than it is tall,
+    /// The asset's own ratio (163.3 × 108). The mark is wider than it is tall,
     /// so callers give a width and the height follows.
-    public static let aspect: CGFloat = 248.899 / 164.698
+    public static let aspect: CGFloat = 163.3 / 108
 
     public static var resourceURL: URL? {
         Bundle.module.url(forResource: "nvidia", withExtension: "svg")
@@ -52,7 +52,7 @@ public struct NVIDIAIcon: View {
 @MainActor
 public struct S1MiniMark: View {
     private static let image: NSImage? =
-        Bundle.module.url(forResource: "s1-mini", withExtension: "webp")
+        Bundle.module.url(forResource: "s1-mini", withExtension: "png")
             .flatMap { NSImage(contentsOf: $0) }
 
     public var size: CGFloat

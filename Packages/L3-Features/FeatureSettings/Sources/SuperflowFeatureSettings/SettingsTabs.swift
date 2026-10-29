@@ -56,7 +56,7 @@ struct DictationTab: View {
                                     get: { model.settings.asrProfile },
                                     set: { model.setProfile($0) }),
                                  options: model.profileOptions.map {
-                                     .init(value: $0, title: model.profileName($0), leading: { AnyView(IconView(.speechModel, size: 14)) })
+                                     .init(value: $0, title: model.profileName($0), leading: { AnyView(NVIDIAIcon(width: 16)) })
                                  },
                                  label: "Speech model")
                     }

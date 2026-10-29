@@ -8,6 +8,7 @@ import SuperflowFeatureOnboarding
 import SuperflowFeatureSettings
 import SuperflowFeatureShortcuts
 import SuperflowIcons
+import SuperflowKernel
 import SuperflowUIComponents
 import SwiftUI
 
@@ -77,7 +78,17 @@ public struct MainWindowRootView: View {
     private var mainWindow: some View {
         HStack(spacing: 0) {
             if windowController.sidebarVisible {
-                MainSidebar(selection: route, status: engineStatus) { open(engineStatus.fix) }
+                MainSidebar(selection: route, status: engineStatus) {
+                    let status = engineStatus
+                    dialogHost.present {
+                        SystemStatusDialog(status: status.label,
+                                           speech: ModelProfile.byID(coordinator.settings.asrProfile).displayName,
+                                           cleanupEnabled: coordinator.settings.cleanupEnabled,
+                                           needsAttention: status == .noMicrophone || status == .noKeyboardAccess) {
+                            open(status.fix)
+                        }
+                    }
+                }
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
             ZStack {
@@ -275,7 +286,8 @@ private struct SidebarStatus: View {
 
     var body: some View {
         Button(action: action) {
-            StatusNote(text: status.label, level: status.level, working: status.isWorking)
+            StatusNote(text: status.label, level: status.level, working: status.isWorking, compact: true)
+                .frame(maxWidth: 184)
                 .background(hover ? Tok.wash : .clear,
                             in: .rect(cornerRadius: Radius.nested, style: .continuous))
                 .contentShape(.rect(cornerRadius: Radius.nested, style: .continuous))
