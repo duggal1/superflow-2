@@ -4,7 +4,7 @@
 
 
 <p align="center">
-  <strong>There are plenty of AI dictation tools. This one is yours.</strong>
+  <strong>There are so many AI dictation tools. This one is yours.</strong>
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/macOS-15%2B-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="macOS 15+">
-  <img src="https://img.shields.io/badge/Swift-6-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="Swift 6">
+  <img src="https://img.shields.io/badge/Swift-6.4-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="Swift 6.4">
   <img src="https://img.shields.io/badge/AI-on--device-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="On-device AI">
   <img src="https://img.shields.io/badge/Electron-none-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="No Electron">
 </p>
@@ -24,7 +24,7 @@ Superflow turns speech into properly formatted text in the app you're already us
 
 ## What makes it different
 
-- **Native, not Electron.** A Swift 6 and SwiftUI macOS app, with Rust used for the Harper grammar integration. No bundled Chromium UI.
+- **Native, not Electron.** A Swift 6.4 and SwiftUI macOS app, with Rust used for the Harper grammar integration. No bundled Chromium UI.
 - **Streaming by design.** Core ML recognition through FluidAudio emits partial transcripts as you speak. You don't have to wait until the end to see recognition progress.
 - **Runs on your Mac.** Recognition, cleanup, formatting, and transcript storage are local after the models are downloaded. No account or telemetry endpoint.
 - **Small, local text storage.** SQLite stores transcripts, history, dictionary entries, and settings. Transcript data is lightweight; optional saved audio and downloaded AI models take additional disk space.
@@ -101,7 +101,7 @@ The dependency direction is checked with `make deps-check`. Native UI and local 
 
 ## Build and run
 
-**Requirements:** macOS 15+, Xcode 16 / Swift 6, and disk space for the local models. Apple silicon is recommended for streaming recognition.
+**Requirements:** macOS 15+, Xcode 27 / Swift 6.4.1, and disk space for the local models. Apple silicon is recommended for streaming recognition.
 
 ```bash
 git clone https://github.com/duggal1/superflow-2.git

@@ -2059,7 +2059,7 @@ Every rule is checkable. If you cannot point to a token or a number for a visual
 
 **R8. Pointer.** Everything clickable shows the pointing hand through one modifier (5.3). Text inputs keep the I-beam. Disabled controls keep the arrow. Lint enforces it.
 
-**R9. Native glass and blur, and only on the navigation layer.** Glass: sidebar, toolbar, popovers (dropdowns), sheets, toasts, the command palette, the Island. Never glass on cards, rows, lists, badges, in-content buttons or behind long text. No glass on glass. No hand-rolled blur, no tinted material. `.blur(radius:)` is a transition effect of 6pt or less.
+**R9. Native glass and blur, and only on the navigation layer.** Glass: sidebar, toolbar, sheets, toasts, the command palette, the Island. Menus and dropdowns are solid `controlHover` panels with a `ContrastStroke` and never glass. Never glass on cards, rows, lists, badges, in-content buttons or behind long text. No glass on glass. No hand-rolled blur, no tinted material. `.blur(radius:)` is a transition effect of 6pt or less.
 
 **R10. Structure is information.** Each page has one job and one skeleton chosen for that job (section 7). Search and filters live in the toolbar, not in the page body. Import and Export live in an overflow menu. The single primary action lives in the toolbar. Empty states say what to do in one sentence and never repeat the toolbar action as a button.
 

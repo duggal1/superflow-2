@@ -14,6 +14,7 @@ flowchart TB
     Packages_L1_Adapters_AudioJournal["AudioJournal"]
     Packages_L1_Adapters_Diagnostics["Diagnostics"]
     Packages_L1_Adapters_DiarizationFluidAudio["DiarizationFluidAudio"]
+    Packages_L1_Adapters_EnhancementDeepFilterNet["EnhancementDeepFilterNet"]
     Packages_L1_Adapters_GrammarHarper["GrammarHarper"]
     Packages_L1_Adapters_HotkeyEngine["HotkeyEngine"]
     Packages_L1_Adapters_LLMLlamaCpp["LLMLlamaCpp"]
@@ -25,6 +26,7 @@ flowchart TB
     Packages_L1_Adapters_TextInsertion["TextInsertion"]
   end
   subgraph L2_Engines["L2 Engines"]
+    Packages_L2_Engines_AudioEnhancement["AudioEnhancement"]
     Packages_L2_Engines_ContextProfiles["ContextProfiles"]
     Packages_L2_Engines_GestureKit["GestureKit"]
     Packages_L2_Engines_MeetingEngine["MeetingEngine"]
@@ -72,6 +74,7 @@ flowchart TB
   App_SuperflowApp --> Packages_L1_Adapters_AudioJournal
   App_SuperflowApp --> Packages_L1_Adapters_Diagnostics
   App_SuperflowApp --> Packages_L1_Adapters_DiarizationFluidAudio
+  App_SuperflowApp --> Packages_L1_Adapters_EnhancementDeepFilterNet
   App_SuperflowApp --> Packages_L1_Adapters_GrammarHarper
   App_SuperflowApp --> Packages_L1_Adapters_HotkeyEngine
   App_SuperflowApp --> Packages_L1_Adapters_LLMLlamaCpp
@@ -111,6 +114,7 @@ flowchart TB
   Packages_L1_Adapters_Diagnostics --> Packages_L0_Core_Ports
   Packages_L1_Adapters_DiarizationFluidAudio --> Packages_L0_Core_Kernel
   Packages_L1_Adapters_DiarizationFluidAudio --> Packages_L0_Core_Ports
+  Packages_L1_Adapters_EnhancementDeepFilterNet --> Packages_L0_Core_Ports
   Packages_L1_Adapters_GrammarHarper --> Packages_L0_Core_Kernel
   Packages_L1_Adapters_GrammarHarper --> Packages_L0_Core_Ports
   Packages_L1_Adapters_HotkeyEngine --> Packages_L0_Core_Kernel
@@ -130,12 +134,14 @@ flowchart TB
   Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_Kernel
   Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_Ports
   Packages_L1_Adapters_TextInsertion --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_AudioEnhancement --> Packages_L0_Core_Ports
   Packages_L2_Engines_ContextProfiles --> Packages_L0_Core_Kernel
   Packages_L2_Engines_GestureKit --> Packages_L0_Core_Kernel
   Packages_L2_Engines_GestureKit --> Packages_L0_Core_Ports
   Packages_L2_Engines_MeetingEngine --> Packages_L0_Core_Kernel
   Packages_L2_Engines_MeetingEngine --> Packages_L0_Core_Ports
   Packages_L2_Engines_MeetingEngine --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_MeetingEngine --> Packages_L2_Engines_AudioEnhancement
   Packages_L2_Engines_MeetingEngine --> Packages_L2_Engines_TextPipeline
   Packages_L2_Engines_RecoveryEngine --> Packages_L0_Core_Kernel
   Packages_L2_Engines_RecoveryEngine --> Packages_L0_Core_Ports
@@ -143,6 +149,7 @@ flowchart TB
   Packages_L2_Engines_SessionEngine --> Packages_L0_Core_Kernel
   Packages_L2_Engines_SessionEngine --> Packages_L0_Core_Ports
   Packages_L2_Engines_SessionEngine --> Packages_L0_Core_TestKit
+  Packages_L2_Engines_SessionEngine --> Packages_L2_Engines_AudioEnhancement
   Packages_L2_Engines_SessionEngine --> Packages_L2_Engines_TextPipeline
   Packages_L2_Engines_StatsEngine --> Packages_L0_Core_Kernel
   Packages_L2_Engines_TextCleanup --> Packages_L0_Core_Kernel

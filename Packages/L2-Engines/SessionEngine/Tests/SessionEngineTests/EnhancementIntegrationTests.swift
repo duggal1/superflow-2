@@ -6,12 +6,12 @@ import XCTest
 @testable import SuperflowSessionEngine
 
 private actor GainEnhancer: SpeechEnhancer {
-    func isAvailable() -> Bool { true }
-    func prepare(progress: @escaping @Sendable (Double) -> Void) { progress(1) }
-    func begin() {}
-    func process(_ samples: [Float]) -> [Float] { samples.map { $0 * 0.5 } }
-    func finish() -> [Float] { [] }
-    func reset() {}
+    func isAvailable() async -> Bool { true }
+    func prepare() async throws {}
+    func begin() async throws {}
+    func process(_ samples: [Float]) async throws -> [Float] { samples.map { $0 * 0.5 } }
+    func finish() async throws -> [Float] { [] }
+    func reset() async {}
 }
 
 private actor RecordingRecognition: RecognitionStream {

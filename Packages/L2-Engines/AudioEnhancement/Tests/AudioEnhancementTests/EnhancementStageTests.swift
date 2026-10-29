@@ -7,17 +7,17 @@ private actor DelayedEnhancer: SpeechEnhancer {
     let fail: Bool
     var pending: [Float] = []
     init(fail: Bool = false) { self.fail = fail }
-    func isAvailable() -> Bool { true }
-    func prepare(progress: @escaping @Sendable (Double) -> Void) { progress(1) }
-    func begin() { pending = [] }
-    func process(_ samples: [Float]) throws -> [Float] {
+    func isAvailable() async -> Bool { true }
+    func prepare() async throws {}
+    func begin() async throws { pending = [] }
+    func process(_ samples: [Float]) async throws -> [Float] {
         if fail, !pending.isEmpty { throw CancellationError() }
         let output = pending.map { $0 * 0.5 }
         pending = samples
         return output
     }
-    func finish() -> [Float] { defer { pending = [] }; return pending.map { $0 * 0.5 } }
-    func reset() { pending = [] }
+    func finish() async throws -> [Float] { defer { pending = [] }; return pending.map { $0 * 0.5 } }
+    func reset() async { pending = [] }
 }
 
 final class EnhancementStageTests: XCTestCase, @unchecked Sendable {
@@ -49,10 +49,10 @@ final class EnhancementStageTests: XCTestCase, @unchecked Sendable {
 
 private struct StallingEnhancer: SpeechEnhancer {
     func isAvailable() async -> Bool { true }
-    func prepare(progress: @escaping @Sendable (Double) -> Void) async {}
-    func begin() async {}
-    func process(_ samples: [Float]) async -> [Float] { [] }
-    func finish() async -> [Float] { [] }
+    func prepare() async throws {}
+    func begin() async throws {}
+    func process(_ samples: [Float]) async throws -> [Float] { [] }
+    func finish() async throws -> [Float] { [] }
     func reset() async {}
 }
 

@@ -1,5 +1,6 @@
 import AppKit
 import SuperflowDesignSystem
+import SuperflowIcons
 import SuperflowKernel
 import SuperflowUIComponents
 import SwiftUI

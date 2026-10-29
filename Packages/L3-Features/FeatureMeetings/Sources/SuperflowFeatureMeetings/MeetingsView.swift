@@ -13,14 +13,14 @@ public struct MeetingsView: View {
     }
 
     public var body: some View {
-        Page(title: "Meetings") {
+        Page(title: "Meetings", leading: {
             HStack(spacing: Space.sm) {
                 Segmented(selection: $model.tab, items: [
                     Segmented.Item(MeetingsTab.live.label, value: MeetingsTab.live),
                     Segmented.Item(MeetingsTab.past.label, value: MeetingsTab.past),
                 ])
             }
-        } content: {
+        }, trailing: { EmptyView() }) {
             VStack(alignment: .leading, spacing: Space.md) {
                 switch model.tab {
                 case .live:
