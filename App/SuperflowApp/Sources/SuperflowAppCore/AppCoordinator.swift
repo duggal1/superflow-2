@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import OSLog
 import SuperflowDesignSystem
 import SuperflowFeatureDashboard
 import SuperflowFeatureDictionary
@@ -189,6 +190,8 @@ public final class AppCoordinator: ObservableObject {
     }
     public func launch() async {
         guard !didLaunch else { return }
+        let launchStarted = DispatchTime.now().uptimeNanoseconds
+        let launchLog = Logger(subsystem: "com.superflow.app", category: "ModelWarmup")
         didLaunch = true
         StaleDefaults.removeIslandLegacy()
         guard let environment else {
@@ -237,11 +240,16 @@ public final class AppCoordinator: ObservableObject {
             // Order matters: `RecoveryEngine` calls `makeStream`, which requires a
             // prepared profile, so the model load has to finish first. The hotkeys are
             // already installed, so a press in this window is answered instead of lost.
-            if shouldWarmModels { _ = await environment.sessionEngine.warmUp() }
+            let modelReady = shouldWarmModels ? await environment.sessionEngine.warmUp() : false
             await self.recoverInterruptedSessions(environment: environment)
             self.menuBarController.setRecoveryReady(true)
+            launchLog.info("Recovery gate opened after \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms; model ready: \(modelReady)")
         }
-        Task { _ = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute) }
+        Task {
+            let started = DispatchTime.now().uptimeNanoseconds
+            let ready = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute)
+            launchLog.info("Cleanup preparation: \((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000) ms; ready: \(ready)")
+        }
         if settings.speechEnhancementEnabled {
             modelsModel?.download(ModelsViewModel.enhancementID)
             Task { [weak self] in
@@ -250,6 +258,7 @@ public final class AppCoordinator: ObservableObject {
             }
         }
         isLoaded = true
+        launchLog.info("UI initialization: \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms")
     }
 
     public func copyRecoveredTranscript() {

@@ -1,5 +1,6 @@
 import FluidAudio
 import Foundation
+import OSLog
 import SuperflowKernel
 import SuperflowPorts
 
@@ -15,7 +16,8 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
     private let pool: FluidAudioManagerPool
 
     private var preparedProfiles: Set<String> = []
-    private var preparing: [String: Task<any StreamingAsrManager, Error>] = [:]
+    private var preparing: [String: Task<Void, Error>] = [:]
+    private static let logger = Logger(subsystem: "com.superflow.app", category: "ModelWarmup")
     private var vadManager: VadManager?
 
     public init(modelCacheRoot: URL? = nil, fileManager: FileManager = .default,
@@ -88,27 +90,9 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
         }
 
         progress(0.92)
-        let task: Task<any StreamingAsrManager, Error>
-        if let existing = preparing[profileID] {
-            task = existing
-        } else {
-            let factory = engineFactory
-            let directory = FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: modelCacheRoot)
-            task = Task { try await factory(profileID, directory) }
-            preparing[profileID] = task
-        }
-
-        do {
-            let manager = try await task.value
-            preparing[profileID] = nil
-            preparedProfiles.insert(profileID)
-            await Self.warmPredictions(manager)
-            await pool.release(manager, profileID: profileID)
-            progress(1)
-        } catch {
-            preparing[profileID] = nil
-            throw error
-        }
+        let directory = FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: modelCacheRoot)
+        try await prime(profileID: profileID, directory: directory)
+        progress(1)
     }
 
     /// Load-only warm-up for launch and record time. It never downloads: if the verified
@@ -126,27 +110,45 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
             throw SuperflowError.modelUnavailable(
                 "\(profile.id) is not downloaded (missing \(missing.joined(separator: ", "))).")
         }
-        let task: Task<any StreamingAsrManager, Error>
-        if let existing = preparing[profile.id] {
+        let directory = FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: modelCacheRoot)
+        try await prime(profileID: profile.id, directory: directory)
+        let started = DispatchTime.now().uptimeNanoseconds
+        _ = await makeVoiceActivity()
+        let elapsed = (DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
+        Self.logger.info("Voice activity preparation: \(elapsed) ms")
+    }
+
+    private func prime(profileID: String, directory: URL) async throws {
+        if preparedProfiles.contains(profileID) { return }
+        let task: Task<Void, Error>
+        if let existing = preparing[profileID] {
             task = existing
         } else {
             let factory = engineFactory
-            let directory = FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: modelCacheRoot)
-            task = Task { try await factory(profile.id, directory) }
-            preparing[profile.id] = task
+            let pool = self.pool
+            task = Task {
+                let started = DispatchTime.now().uptimeNanoseconds
+                let manager = try await factory(profileID, directory)
+                let loaded = DispatchTime.now().uptimeNanoseconds
+                Self.logger.info("ASR model load: \((loaded - started) / 1_000_000) ms")
+                do {
+                    try await Self.warmPredictions(manager)
+                } catch {
+                    await manager.cleanup()
+                    throw error
+                }
+                let primed = DispatchTime.now().uptimeNanoseconds
+                Self.logger.info("ASR first inference: \((primed - loaded) / 1_000_000) ms")
+                await pool.release(manager, profileID: profileID)
+            }
+            preparing[profileID] = task
         }
         do {
-            let manager = try await task.value
-            preparing[profile.id] = nil
-            preparedProfiles.insert(profile.id)
-            await Self.warmPredictions(manager)
-            await pool.release(manager, profileID: profile.id)
-            // The VAD model is loaded lazily on the first `makeStream`, which put a Core ML
-            // load (and its one-time specialization) on the key-press path. Load it here,
-            // while the app is idle, so starting a session only has to stream.
-            _ = await makeVoiceActivity()
+            try await task.value
+            preparedProfiles.insert(profileID)
+            if preparing[profileID] == task { preparing[profileID] = nil }
         } catch {
-            preparing[profile.id] = nil
+            if preparing[profileID] == task { preparing[profileID] = nil }
             throw error
         }
     }
@@ -206,16 +208,16 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
 
     /// Load plus one dummy prediction. The first prediction triggers Core ML's
     /// ANE specialization and warms the decode buffers; paying it at launch keeps
-    /// it off the record path. Best effort: a failed warm-up must not fail prepare.
-    private static func warmPredictions(_ manager: any StreamingAsrManager) async {
+    /// it off the record path.
+    private static func warmPredictions(_ manager: any StreamingAsrManager) async throws {
         // 4 s of silence covers the largest streaming chunk in the catalog
         // (2,240 ms) with margin; FluidAudio re-chunks internally.
         let silence = [Float](repeating: 0, count: sampleRate * 4)
-        guard let buffer = try? FluidAudioBuffer.make(silence) else { return }
-        try? await manager.appendAudio(buffer)
-        try? await manager.processBufferedAudio()
-        _ = try? await manager.finish()
-        try? await manager.reset()
+        let buffer = try FluidAudioBuffer.make(silence)
+        try await manager.appendAudio(buffer)
+        try await manager.processBufferedAudio()
+        _ = try await manager.finish()
+        try await manager.reset()
     }
 
     private func makeVoiceActivity() async -> any VoiceActivityClassifying {

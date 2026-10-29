@@ -5,6 +5,52 @@ import XCTest
 @testable import SuperflowASRFluidAudio
 
 final class FluidAudioRecognizerTests: XCTestCase {
+    func testConcurrentWarmupsDoNotPoolTheSameEngineTwice() async throws {
+        let profile = ModelProfile.parakeetEOU120M.id
+        let root = try makeModelCache(profileID: profile)
+        let spy = EngineSpy()
+        let recognizer = FluidAudioRecognizer(modelCacheRoot: root, engineFactory: { _, _ in
+            try await Task.sleep(for: .milliseconds(100))
+            return try await spy.make()
+        }, voiceActivityFactory: { FakeVoiceActivity() })
+        async let first: Void = recognizer.warmUp(profile: profile)
+        async let second: Void = recognizer.warmUp(profile: profile)
+        _ = try await (first, second)
+        let mic = try await recognizer.makeStream(profile: profile, source: .mic)
+        let system = try await recognizer.makeStream(profile: profile, source: .system)
+        let count = await spy.count
+        XCTAssertEqual(count, 2, "two simultaneous streams require distinct engines")
+        await mic.finish()
+        await system.finish()
+    }
+
+    func testProfileIsNotReadyUntilPrimedEngineIsInThePool() async throws {
+        let profile = ModelProfile.parakeetEOU120M.id
+        let root = try makeModelCache(profileID: profile)
+        let spy = EngineSpy()
+        let recognizer = FluidAudioRecognizer(modelCacheRoot: root, engineFactory: { _, _ in
+            let engine = try await spy.make()
+            await engine.setHangProcessing(true)
+            return engine
+        }, voiceActivityFactory: { FakeVoiceActivity() })
+        let warming = Task { try await recognizer.warmUp(profile: profile) }
+        for _ in 0..<100 {
+            if let engine = await spy.engine(at: 0), await engine.appendedSamples > 0 { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        let created = await spy.engine(at: 0)
+        let engine = try XCTUnwrap(created)
+        let received = await engine.appendedSamples
+        XCTAssertGreaterThan(received, 0)
+        let readyDuringPrediction = await recognizer.isPrepared(profile: profile)
+        XCTAssertFalse(readyDuringPrediction, "the warm engine is not yet available for a session")
+        try await warming.value
+        let stream = try await recognizer.makeStream(profile: profile, source: .mic)
+        let count = await spy.count
+        XCTAssertEqual(count, 1, "a warm launch must reuse the primed engine")
+        await stream.finish()
+    }
+
     func testCatalogMapsEveryStreamingRegistryProfile() {
         for profile in ModelProfile.all where profile.supportsLiveDictation {
             XCTAssertTrue(FluidAudioCatalog.supports(profile.id), profile.id)
