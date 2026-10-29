@@ -24,7 +24,7 @@ struct PlayerBar: View {
             if let id = entry.record.frontmostBundleID { AppIcon(bundleID: id, size: 16) }
             else { IconView(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16) }
 
-            WaveTape(clip: clip, unavailable: failed, player: player, hover: $hover,
+            WaveTape(clip: clip, unavailable: failed || player.playbackError != nil, player: player, hover: $hover,
                      onTouch: { focused = true })
                 .frame(maxWidth: .infinity, alignment: .leading)
 

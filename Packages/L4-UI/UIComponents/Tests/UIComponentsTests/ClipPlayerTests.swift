@@ -4,6 +4,13 @@ import XCTest
 
 @MainActor
 final class ClipPlayerTests: XCTestCase {
+    func testPrewarmWithoutAClipDoesNotStartPlayback() {
+        let player = ClipPlayer()
+        player.prewarm()
+        guard case .idle = player.state else { return XCTFail("Prewarming started playback") }
+        XCTAssertEqual(player.duration, 0)
+    }
+
     func testDecodesAndStartsPlayback() async throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("clip-\(UUID().uuidString).caf")

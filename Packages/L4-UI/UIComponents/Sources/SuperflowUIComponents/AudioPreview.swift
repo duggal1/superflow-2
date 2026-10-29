@@ -46,7 +46,7 @@ public struct AudioPreview: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SpectroScrubber(clip: clip, unavailable: failed, player: player,
+            SpectroScrubber(clip: clip, unavailable: failed || player.playbackError != nil, player: player,
                             hover: $hover, onTouch: { focused = true })
             HStack(spacing: 8) {
                 BarIconButton(glyph: player.state == .playing ? .pause : .play,
@@ -132,6 +132,7 @@ public final class ClipPlayer {
 
     public private(set) var state: State = .idle
     public private(set) var duration: TimeInterval = 0
+    public private(set) var playbackError: String?
     /// Bumps on every seek and scrub, so a paused scrubber redraws.
     public private(set) var moves = 0
 
@@ -150,7 +151,10 @@ public final class ClipPlayer {
 
     public var outputLatency: TimeInterval { engine.outputNode.presentationLatency }
 
-    public func prewarm() { if !engine.isRunning { engine.prepare() } }
+    public func prewarm() {
+        guard clip != nil, !engine.isRunning else { return }
+        engine.prepare()
+    }
 
     /// Position in seconds. Read once per frame by the views; deliberately not observed.
     public var time: TimeInterval {
@@ -162,6 +166,7 @@ public final class ClipPlayer {
 
     public func load(_ clip: ClipData) {
         stop()
+        playbackError = nil
         self.clip = clip
         duration = clip.duration
         parked = 0
@@ -180,6 +185,7 @@ public final class ClipPlayer {
 
     public func play() {
         guard let clip else { return }
+        playbackError = nil
         start(at: parked >= clip.duration - 0.02 ? 0 : parked)
     }
 
@@ -286,6 +292,7 @@ public final class ClipPlayer {
             try engine.start()
             return true
         } catch {
+            playbackError = error.localizedDescription
             return false
         }
     }
