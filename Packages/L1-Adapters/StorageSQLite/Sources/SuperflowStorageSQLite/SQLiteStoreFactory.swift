@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import OSLog
+import SQLite3
 
 public enum SQLiteStoreFactory {
     private static let logger = Logger(subsystem: "com.superflow.app", category: "Storage")
@@ -21,6 +22,14 @@ public enum SQLiteStoreFactory {
         let lock = try DatabaseOpenLock(path: url.path + ".open-lock")
         defer { lock.release() }
         do {
+            if fileManager.fileExists(atPath: url.path) {
+                let file = try FileHandle(forReadingFrom: url)
+                defer { try? file.close() }
+                let header = try file.read(upToCount: 16) ?? Data()
+                if !header.isEmpty && header != Data("SQLite format 3\0".utf8) {
+                    throw SQLiteError(code: SQLITE_NOTADB, message: "database header is invalid")
+                }
+            }
             let store = try SQLiteStore(path: url.path)
             logger.info("Database opened successfully")
             return store

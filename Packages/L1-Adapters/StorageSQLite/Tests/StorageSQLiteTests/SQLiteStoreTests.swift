@@ -236,14 +236,13 @@ final class SQLiteStoreTests: XCTestCase {
         XCTAssertEqual(fallback, .default)
     }
 
-    func testFactoryQuarantinesCorruptFile() async throws {
+    func testFactoryPreservesCorruptFile() throws {
         let url = directory.appendingPathComponent("corrupt.sqlite")
         try Data("this is not sqlite".utf8).write(to: url)
-        let opened = try SQLiteStoreFactory.open(url: url)
-        let count = try await opened.sessionCount(kind: nil)
-        XCTAssertEqual(count, 0)
+        XCTAssertThrowsError(try SQLiteStoreFactory.open(url: url))
+        XCTAssertEqual(try Data(contentsOf: url), Data("this is not sqlite".utf8))
         let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
-        XCTAssertTrue(files.contains { $0.contains("Superflow-corrupt") })
+        XCTAssertFalse(files.contains { $0.contains("Superflow-corrupt") })
     }
 
     func testMigrationsAreIdempotent() async throws {
