@@ -1,3 +1,4 @@
+
 .build/
 build/
 dist/
@@ -19,7 +20,7 @@ Rust/**/HarperFFI.xcframework/
 *.rlib
 *.rlib.meta
 
-# Swift package build artifacts (redundant safety)
+# Swift package build artifacts
 **/.build/
 *.xcarchive
 
@@ -45,32 +46,34 @@ coverage/
 XCTestResults/
 *.xctestrun
 Package.resolved
-# local model caches
+
+# Local model caches
 .models/
 *.mlmodelc
 *.mlpackage
 
-# local agent/editor workspaces
+# Local agent/editor workspaces
 .kilo/
 .kiloPlan
 .kiloPlan.vscode
 .vscode/
 
-# local plans, notes and backend briefs (not shipped)
+# Local plans, notes, and backend briefs
 /PLAN.md
 /RULES.md
 /FIX-BACKEND.MD
+/SUPERFLOW-DEMO.md
 
-# local reference screenshots and vendor artwork
+# Local reference screenshots and vendor artwork
 /fix-download-card.jpg
 /fix-download-card-1.jpg
 /s1-mini.webp
 
-# loose audio at the repo root. The cues the app ships live in
-# Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Resources/Sounds/
+# Loose audio at repository root
+# Shipped sounds belong in UIComponents/Resources/Sounds/
 /*.mp3
 
-# local design notes, plans and cookbook (not shipped)
+# Local design notes, plans, and cookbook
 /cookbook/
 /DESIGN-RULES.MD
 /DESIGN-REBUILD-GUIDE.MD
