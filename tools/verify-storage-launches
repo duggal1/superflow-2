@@ -45,7 +45,7 @@ with tempfile.TemporaryDirectory(prefix='superflow-launch-proof-') as root:
                                             capture_output=True).returncode == 0
                     if opened:
                         with sqlite3.connect(database) as connection:
-                            if connection.execute('PRAGMA user_version').fetchone()[0] == 3:
+                            if connection.execute('PRAGMA user_version').fetchone()[0] >= 4:
                                 break
                     time.sleep(0.1)
                 else:
@@ -65,7 +65,7 @@ with tempfile.TemporaryDirectory(prefix='superflow-launch-proof-') as root:
                     rows = connection.execute('SELECT count(*) FROM durability_probe').fetchone()[0]
                     assert rows == iteration + 1, (rows, iteration + 1)
                 assert not list(directory.glob('Superflow-corrupt-*'))
-                print(f'launch {iteration + 1}/{args.runs}: DB opened; duplicate rejected; killed during WAL write; {rows} committed rows preserved', flush=True)
+                print(f'launch {iteration + 1}/{args.runs}: DB opened; duplicate rejected; app and external WAL writer killed; {rows} committed rows preserved', flush=True)
             finally:
                 for process in (writer, app):
                     if process is not None and process.poll() is None:
