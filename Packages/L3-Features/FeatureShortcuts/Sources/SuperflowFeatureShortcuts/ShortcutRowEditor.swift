@@ -32,7 +32,7 @@ struct ShortcutRowEditor: View {
                     Segmented(selection: $draft.match, items: [
                         Segmented.Item("Whole utterance", value: ShortcutMatch.wholeUtterance),
                         Segmented.Item("Inline", value: ShortcutMatch.inline),
-                    ], onCard: true)
+                    ], level: .dialog)
                     Spacer(minLength: Space.md)
                     Text("On").appType(.body).foregroundStyle(Tok.text)
                     SettingToggle("Shortcut enabled", isOn: $draft.enabled)

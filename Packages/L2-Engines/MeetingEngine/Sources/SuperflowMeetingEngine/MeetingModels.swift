@@ -12,7 +12,7 @@ public struct MeetingSpeaker: Sendable, Equatable, Codable, Identifiable {
     }
 }
 
-public struct MeetingTurn: Sendable, Equatable, Identifiable {
+public struct MeetingTurn: Sendable, Equatable, Identifiable, Codable {
     public var index: Int
     public var speakerID: String
     public var speakerName: String
@@ -38,7 +38,7 @@ public struct MeetingTurn: Sendable, Equatable, Identifiable {
     public var timestampLabel: String { Segment.timeLabel(startMs) }
 }
 
-public struct MeetingDocument: Sendable, Equatable {
+public struct MeetingDocument: Sendable, Equatable, Codable {
     public var sessionID: SessionID
     public var title: String
     public var startedAt: Date

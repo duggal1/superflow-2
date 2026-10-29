@@ -21,8 +21,8 @@ struct PlayerBar: View {
         let player = model.audio
         let playing = player.state == .playing
         HStack(spacing: 12) {
-            if let id = entry.record.frontmostBundleID { AppIcon(bundleID: id, size: 20) }
-            else { Icon(.mic, size: 14, tint: Tok.text2).frame(width: 20, height: 20) }
+            if let id = entry.record.frontmostBundleID { AppIcon(bundleID: id, size: 16) }
+            else { Icon(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16) }
 
             WaveTape(clip: clip, unavailable: failed, player: player, hover: $hover,
                      onTouch: { focused = true })
@@ -31,7 +31,7 @@ struct PlayerBar: View {
             PlayerReadout(player: player, hover: hover, total: total)
 
             HStack(spacing: 4) {
-                BarIconButton(glyph: playing ? .pause : .play,
+                RowIconButton(glyph: playing ? .pause : .play,
                               label: playing ? "Pause" : "Play") {
                     focused = true
                     player.toggle()

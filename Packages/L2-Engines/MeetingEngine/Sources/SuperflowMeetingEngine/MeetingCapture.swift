@@ -1,4 +1,5 @@
 import Foundation
+import SuperflowAudioEnhancement
 import SuperflowKernel
 import SuperflowPorts
 
@@ -13,6 +14,7 @@ extension MeetingEngine {
                                                    startingSample: offset)
         writers[source] = writer
         let streams = try await audio.start()
+        if source == .mic, settings.speechEnhancementEnabled { try await enhancer?.begin() }
         let recognition = try await recognizer.makeStream(profile: settings.asrProfile, source: source)
         recognitionStreams[source] = recognition
         recognitionTasks[source] = Task { [weak self] in
@@ -36,15 +38,27 @@ extension MeetingEngine {
     /// boundaries stay stable; `persist` applies the same offset to committed timestamps.
     func consumeAudio(_ samples: AsyncStream<AudioChunk>, source: AudioSourceKind, offset: Int64,
                       writer: (any AudioJournalWriter)?, stream: any RecognitionStream) async {
+        let enhancing = source == .mic && settings.speechEnhancementEnabled && enhancer != nil
+        var stage = EnhancementStage(enhancer: enhancer, enabled: enhancing)
+        var cleanCursor: Int64 = 0
+        var warned = false
         var counter = 0
         for await chunk in samples {
             let journalChunk = Self.offset(chunk, by: offset)
             await writer?.append(journalChunk)
-            await stream.feed(chunk)
+            let clean = await stage.push(chunk.samples)
+            if let failure = stage.failure, !warned { warned = true; emit(.notice(failure)) }
+            if !clean.isEmpty {
+                await stream.feed(AudioChunk(samples: clean, startSample: enhancing ? cleanCursor : chunk.startSample, source: source))
+                cleanCursor += Int64(clean.count)
+            }
             if source == .system { await diarizer?.feed(chunk) }
             counter += 1
             if counter % 4 == 0 { emit(.level(source, Self.rms(chunk.samples))) }
         }
+        let tail = await stage.finish()
+        if !tail.isEmpty { await stream.feed(AudioChunk(samples: tail, startSample: cleanCursor, source: source)) }
+        if let failure = stage.failure, !warned { emit(.notice(failure)) }
     }
 
     func consumeEvents(_ events: AsyncStream<AudioEvent>, source: AudioSourceKind,

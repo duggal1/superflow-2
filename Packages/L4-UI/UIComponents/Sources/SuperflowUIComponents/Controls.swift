@@ -16,14 +16,16 @@ public struct Segmented<Value: Hashable>: View {
     @Binding private var selection: Value
     private let items: [Item]
     private let onCard: Bool
+    private let level: FieldLevel?
     @Namespace private var ns
     @FocusState private var focused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(selection: Binding<Value>, items: [Item], onCard: Bool = false) {
+    public init(selection: Binding<Value>, items: [Item], onCard: Bool = false, level: FieldLevel? = nil) {
         _selection = selection
         self.items = items
         self.onCard = onCard
+        self.level = level
     }
 
     public var body: some View {
@@ -37,7 +39,7 @@ public struct Segmented<Value: Hashable>: View {
                         .frame(height: 24)
                         .background {
                             if selection == item.value {
-                                Capsule().fill(onCard ? Tok.control : Tok.controlHover)
+                                Capsule().fill(level == .dialog ? Tok.controlPressed : onCard ? Tok.control : Tok.controlHover)
                                     .matchedGeometryEffect(id: "thumb", in: ns)
                             }
                         }
@@ -50,7 +52,7 @@ public struct Segmented<Value: Hashable>: View {
             }
         }
         .padding(2)
-        .background(onCard ? Tok.well : Tok.surface, in: .capsule)
+        .background(level == .dialog ? Tok.control : onCard ? Tok.well : Tok.surface, in: .capsule)
         .animation(reduceMotion ? nil : .smooth(duration: 0.25), value: selection)
         .focusable()
         .focusEffectDisabled()

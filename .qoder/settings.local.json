@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status --short 2>&1 | head -60; echo \"---BRANCH---\"; git log --oneline -3)",
+      "Bash(ls -la /tmp/superflow-*.log 2>/dev/null | head -40)",
+      "Bash(cat /tmp/superflow-plan-status.md 2>/dev/null; echo \"=== PLAN ===\"; cat work/plan/backend/microphone-enhancement.md 2>/dev/null)",
+      "Read(//private/tmp/**)",
+      "Bash(grep -n 'error:' /tmp/superflow-app-test.log | head -30)",
+      "Bash(tail -20 /tmp/superflow-enhance-real.log; echo \"=== ERRORS ===\"; grep -n 'error:' /tmp/superflow-enhance-real.log | head -20)",
+      "Bash(grep -n 'public init' Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Sliders.swift | head -20)",
+      "Bash(grep -n 'struct Segmented' -A 30 Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Controls.swift | head -45)",
+      "Bash(grep -n 'struct Dropdown' -A 25 Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Controls.swift | head -35)",
+      "Bash(ps -axo pid,etime,args | grep -iE 'codex|swift-\\(build|test\\)|xcodebuild' | grep -v grep | head -20; echo \"--- recent file mtimes ---\"; ls -lT Packages/L3-Features/FeatureSettings/Sources/SuperflowFeatureSettings/SettingsTabs*.swift Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/MenuTriggers.swift Packages/L4-UI/UIComponents/Sources/SuperflowUIComponents/Controls.swift)",
+      "Bash(ps -axo pid,etime,command | awk '/codex|swift-build|swift-test|xcodebuild|swift test/ && !/awk/' | head -20; echo \"=== now ===\"; date)",
+      "Bash(wc -l DESIGN.md DESIGN-RULES.MD 2>/dev/null; echo \"---\"; find Packages/L4-UI Packages/L3-Features -name \"*.swift\" -type f | wc -l; echo \"--- L4 lines\"; find Packages/L4-UI -name \"*.swift\" -type f -exec wc -l {} + | tail -1; echo \"--- L3 lines\"; find Packages/L3-Features -name \"*.swift\" -type f -exec wc -l {} + | tail -1)",
+      "Bash(awk:*)",
+      "Bash(cd /Users/harshitduggal/workspace/superflow && /usr/bin/find Packages/L4-UI Packages/L3-Features -name \"*.swift\" -type f -exec wc -l {} + | sort -n | tail -80)",
+      "Bash(cd /Users/harshitduggal/workspace/superflow && /usr/bin/find Packages/L4-UI Packages/L3-Features -name \"*.swift\" -type f -not -path \"*/.build/*\" -not -path \"*/Tests/*\" | sort > /tmp/sf_fe.txt && wc -l < /tmp/sf_fe.txt && xargs wc -l < /tmp/sf_fe.txt | tail -1 && echo \"=== FILES ===\" && cat /tmp/sf_fe.txt)",
+      "Bash(cd /Users/harshitduggal/workspace/superflow && swift build --package-path App/SuperflowApp > /tmp/sf-app-build-2.log 2>&1; echo \"EXIT=$?\"; grep -n 'error:' /tmp/sf-app-build-2.log | head -30; tail -5 /tmp/sf-app-build-2.log)"
+    ]
+  }
+}

@@ -13,6 +13,8 @@ public final class SettingsViewModel: ObservableObject {
     @Published public private(set) var saved: AppSettings
     @Published public private(set) var isLoading = false
     @Published public private(set) var error: String?
+    @Published public private(set) var enhancementReady = false
+    private let enhancer: (any SpeechEnhancer)?
     @Published public private(set) var asrReady = false
     @Published public private(set) var cleanupReady = false
     public var cleanupModelInstalled: Bool { cleanupReady }
@@ -49,6 +51,7 @@ public final class SettingsViewModel: ObservableObject {
                 models: (any ModelProvider)? = nil,
                 asrModels: (any ASRModelProvider)? = nil,
                 diarizer: (any SpeakerDiarizer)? = nil,
+                enhancer: (any SpeechEnhancer)? = nil,
                 launchAtLogin: (any LaunchAtLoginController)? = nil,
                 diagnostics: (any DiagnosticsExporting)? = nil,
                 toast: ToastCenter = ToastCenter(),
@@ -57,6 +60,7 @@ public final class SettingsViewModel: ObservableObject {
                 onCleanupModelReady: (@MainActor () -> Void)? = nil,
                 onSettingsSaved: (@MainActor (AppSettings) -> Void)? = nil) {
         self.store = store
+        self.enhancer = enhancer
         self.models = models
         self.asrModels = asrModels ?? models
         self.diarizer = diarizer
@@ -210,6 +214,7 @@ public final class SettingsViewModel: ObservableObject {
     // MARK: models
 
     public func refreshModelState() async {
+        enhancementReady = await enhancer?.isAvailable() ?? false
         isCheckingModels = true
         defer { isCheckingModels = false }
         if let asrModels, profile.supportsLiveDictation {

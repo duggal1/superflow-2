@@ -74,7 +74,7 @@ struct OnboardingShell<Content: View>: View {
                         skipAction()
                     }
                 }
-                AppButton(primaryTitle, kind: .sapphire, height: 32) {
+                AppButton(primaryTitle, kind: .primary, height: 32) {
                     Sounds.play(.clickSoft)
                     primaryAction()
                 }

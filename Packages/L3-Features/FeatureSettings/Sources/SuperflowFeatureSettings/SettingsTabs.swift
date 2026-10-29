@@ -36,7 +36,7 @@ struct GeneralTab: View {
 
 struct DictationTab: View {
     @Environment(\.openModels) private var openModels
-    nonisolated static let titles = ["Speech model", "Clean up with S1-mini", "Dictation key",
+    nonisolated static let titles = ["Speech model", "Clean up with S1-mini", "Noise suppression", "Dictation key",
                                      "Show live text", "Hold to talk", "Double-tap window",
                                      "Meeting hold"]
 
@@ -45,7 +45,7 @@ struct DictationTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.lg) {
-            SettingsCard(titles: Array(Self.titles.prefix(2)), query: query) {
+            SettingsCard(titles: Array(Self.titles.prefix(3)), query: query) {
                 SettingRow(.waveform, "Speech model", filter: query) {
                     HStack(spacing: 8) {
                         if !model.asrReady {
@@ -55,9 +55,17 @@ struct DictationTab: View {
                                     get: { model.settings.asrProfile },
                                     set: { model.setProfile($0) }),
                                  options: model.profileOptions.map {
-                                     .init(model.profileName($0), value: $0)
+                                     .init(value: $0, title: model.profileName($0), leading: { AnyView(NVIDIAIcon(size: 16)) })
                                  },
                                  label: "Speech model")
+                    }
+                }
+                SettingRow(.waveform, "Noise suppression", filter: query) {
+                    HStack(spacing: 12) {
+                        if !model.enhancementReady {
+                            AppButton("Get model", kind: .quiet, height: 28) { openModels() }
+                        }
+                        AppToggle("Noise suppression", isOn: $model.settings.speechEnhancementEnabled)
                     }
                 }
                 SettingRow(.cleanup, "Clean up with S1-mini", filter: query) {
@@ -74,7 +82,7 @@ struct DictationTab: View {
                 SettingRow(.keyboard, "Dictation key", filter: query) {
                     Dropdown(selection: $model.settings.dictationKey,
                              options: DictationKey.allCases.map {
-                                 .init($0.caption, value: $0)
+                                 .init(value: $0, title: $0.caption)
                              },
                              label: "Dictation key")
                 }
@@ -153,7 +161,7 @@ struct PrivacyTab: View {
                 SettingRow(.settingClock, "Delete audio after", filter: query) {
                     Dropdown(selection: $model.settings.audioRetentionDays,
                              options: SettingsViewModel.audioRetentionOptions.map {
-                                 .init(SettingsViewModel.audioRetentionLabel(for: $0), value: $0)
+                                 .init(value: $0, title: SettingsViewModel.audioRetentionLabel(for: $0))
                              },
                              label: "Delete audio after")
                 }
@@ -162,7 +170,7 @@ struct PrivacyTab: View {
                 SettingRow(.delete, "Delete transcripts", filter: query) {
                     Dropdown(selection: $model.settings.retentionDays,
                              options: SettingsViewModel.retentionOptions.map {
-                                 .init(SettingsViewModel.retentionLabel(for: $0), value: $0)
+                                 .init(value: $0, title: SettingsViewModel.retentionLabel(for: $0))
                              },
                              label: "Delete transcripts")
                 }
@@ -220,7 +228,7 @@ struct AdvancedTab: View {
             }
             SettingRow(.settingCompute, "Cleanup compute", filter: query) {
                 Dropdown(selection: $model.settings.cleanupCompute,
-                         options: ModelCompute.allCases.map { .init($0.label, value: $0) },
+                         options: ModelCompute.allCases.map { .init(value: $0, title: $0.label) },
                          label: "Cleanup compute")
             }
         }

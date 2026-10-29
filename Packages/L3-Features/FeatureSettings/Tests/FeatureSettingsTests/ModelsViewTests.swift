@@ -38,7 +38,7 @@ final class ModelsViewTests: XCTestCase {
         XCTAssertEqual(cleanup.state, .installed)
         XCTAssertTrue(cleanup.isActive, "Cleanup runs on every dictation unless the owner turns it off.")
         XCTAssertEqual(vm.installedCount, 3)
-        XCTAssertEqual(vm.missingCount, 0)
+        XCTAssertEqual(vm.missingCount, 1)
     }
 
     /// Turning cleanup off in Settings leaves the model on disk; only its `Active`
@@ -82,7 +82,7 @@ final class ModelsViewTests: XCTestCase {
         let speech = try XCTUnwrap(vm.items.first { $0.kind == .speech })
         XCTAssertEqual(speech.state, .installed)
         XCTAssertTrue(speech.isActive)
-        XCTAssertEqual(vm.missingCount, 0)
+        XCTAssertEqual(vm.missingCount, 1)
         XCTAssertFalse(vm.isChecking)
     }
 
@@ -106,5 +106,24 @@ final class ModelsViewTests: XCTestCase {
         let cleanup = try XCTUnwrap(vm.items.first { $0.kind == .cleanup })
         XCTAssertEqual(cleanup.state, .idle)
         XCTAssertFalse(cleanup.isActive)
+    }
+}
+
+@MainActor
+final class EnhancementModelTests: XCTestCase {
+    func testDeepFilterNetIsRequiredAndShownByDefault() throws {
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
+        XCTAssertTrue(settings.speechEnhancementEnabled)
+        let vm = ModelsViewModel()
+        let item = try XCTUnwrap(vm.items.first { $0.kind == .enhancement })
+        XCTAssertEqual(item.name, "DeepFilterNet 3")
+        XCTAssertTrue(item.detail.contains("Required"))
+        XCTAssertFalse(item.isActive)
+    }
+    func testDisabledSettingSurvivesPersistence() throws {
+        var settings = AppSettings()
+        settings.speechEnhancementEnabled = false
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(settings))
+        XCTAssertFalse(decoded.speechEnhancementEnabled)
     }
 }

@@ -201,7 +201,7 @@ struct MeetingPanel: View {
                     AppButton("Discard", glyph: nil, kind: .quiet, height: 24) {
                         model.discardMeeting()
                     }
-                    AppButton("End meeting", glyph: nil, kind: .sapphire, height: IslandLayout.actionHeight) {
+                    AppButton("End meeting", glyph: nil, kind: .primary, height: IslandLayout.actionHeight) {
                         model.endMeeting()
                     }
                 }

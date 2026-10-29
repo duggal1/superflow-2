@@ -26,20 +26,11 @@ public final class MeetingsViewModel: ObservableObject {
     @Published public private(set) var micLevels: [Float] = []
     @Published public private(set) var systemLevels: [Float] = []
     @Published public private(set) var notice: String?
-    @Published public private(set) var pastSessions: [SessionRecord] = []
-    @Published public private(set) var selectedID: SessionID?
-    @Published public private(set) var selectedDocument: MeetingDocument?
-    @Published public private(set) var barcodes: [SessionID: [MeetingTurn]] = [:]
-    @Published public private(set) var isLoadingPast = false
-    @Published public private(set) var error: String?
-    @Published public var tab: MeetingsTab = .live
-    @Published public var pastQuery = ""
+    public let past: PastMeetingsModel
 
     public let toast: ToastCenter
     private let engine: MeetingEngine?
     private let events: AsyncStream<MeetingEvent>?
-    private let repository: any TranscriptRepository
-    private let inserter: any TextInserter
     private let now: () -> Date
     private var eventTask: Task<Void, Never>?
     private var startedAt: Date?
@@ -51,8 +42,7 @@ public final class MeetingsViewModel: ObservableObject {
                 now: @escaping () -> Date = { Date() }) {
         self.engine = engine
         self.events = events
-        self.repository = repository
-        self.inserter = inserter
+        self.past = PastMeetingsModel(repository: repository, inserter: inserter, toast: toast)
         self.toast = toast
         self.now = now
     }
@@ -93,8 +83,6 @@ public final class MeetingsViewModel: ObservableObject {
         }
     }
 
-    public var selectedSpeakers: [MeetingSpeaker] { selectedDocument?.speakers ?? [] }
-    public var isEmptyPast: Bool { !isLoadingPast && pastSessions.isEmpty }
 
     public func observe() async {
         guard eventTask == nil, let engine else { return }
@@ -177,100 +165,6 @@ public final class MeetingsViewModel: ObservableObject {
         }
     }
 
-    public func loadPast() async {
-        guard !isLoadingPast else { return }
-        isLoadingPast = true
-        error = nil
-        defer { isLoadingPast = false }
-        do {
-            let query = pastQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-            pastSessions = try await repository.sessions(kind: .meeting,
-                                                         query: query.isEmpty ? nil : query,
-                                                         limit: 100, offset: 0)
-            if let selectedID, pastSessions.contains(where: { $0.id == selectedID }) {
-                return
-            }
-            if let first = pastSessions.first {
-                await select(first.id)
-            } else {
-                selectedID = nil
-                selectedDocument = nil
-            }
-        } catch {
-            self.error = "Could not load past meetings. \(error.localizedDescription)"
-        }
-    }
-
-    public func select(_ id: SessionID) async {
-        selectedID = id
-        do {
-            guard let record = try await repository.session(id) else {
-                selectedDocument = nil
-                return
-            }
-            let segments = try await repository.segments(session: id)
-            let speakers = try await repository.speakers(session: id)
-            let document = Self.document(record: record, segments: segments, speakers: speakers)
-            selectedDocument = document
-            barcodes[id] = document.turns
-        } catch {
-            self.error = "Could not load this meeting. \(error.localizedDescription)"
-        }
-    }
-
-    /// The list shows the shape of every meeting, not only the selected one. Turns
-    /// are small and cached per session so scrolling never refetches them.
-    public func loadBarcode(for id: SessionID) async {
-        guard barcodes[id] == nil else { return }
-        guard let record = try? await repository.session(id) else { return }
-        let segments = (try? await repository.segments(session: id)) ?? []
-        let speakers = (try? await repository.speakers(session: id)) ?? []
-        barcodes[id] = Self.document(record: record, segments: segments, speakers: speakers).turns
-    }
-
-    public func renameSpeaker(id: String, label: String) async {
-        let name = label.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, let document = selectedDocument else { return }
-        do {
-            try await repository.renameSpeaker(session: document.sessionID, id: id, label: name)
-            var updated = document
-            for index in updated.speakers.indices where updated.speakers[index].id == id {
-                updated.speakers[index].name = name
-            }
-            for index in updated.turns.indices where updated.turns[index].speakerID == id {
-                updated.turns[index].speakerName = name
-            }
-            selectedDocument = updated
-            toast.show("Speaker renamed to “\(name)”.", style: .success)
-        } catch {
-            toast.show("Could not rename this speaker. \(error.localizedDescription)", style: .error)
-        }
-    }
-
-    public func copySelected() async {
-        guard let document = selectedDocument else { return }
-        do {
-            _ = try await inserter.insert(MeetingExport.markdown(document), strategy: .clipboardOnly)
-            toast.show("Meeting copied as Markdown.", style: .success)
-        } catch {
-            toast.show("Could not copy this meeting. \(error.localizedDescription)", style: .error)
-        }
-    }
-
-    public func markdownExport() -> Data? {
-        selectedDocument.map { Data(MeetingExport.markdown($0).utf8) }
-    }
-
-    public func jsonExport() -> Data? {
-        guard let document = selectedDocument else { return nil }
-        do {
-            return try MeetingExport.jsonData(document)
-        } catch {
-            toast.show("Could not build the JSON export. \(error.localizedDescription)", style: .error)
-            return nil
-        }
-    }
-
     // MARK: projection
 
     private func apply(_ next: MeetingState) {
@@ -302,12 +196,7 @@ public final class MeetingsViewModel: ObservableObject {
         startedAt = nil
         elapsedMs = max(elapsedMs, document.durationMs)
         if let last = document.notices.last { notice = last }
-        selectedID = document.sessionID
-        selectedDocument = document
-        if !pastSessions.contains(where: { $0.id == document.sessionID }),
-           let record = try? await repository.session(document.sessionID) {
-            pastSessions.insert(record, at: 0)
-        }
+        await past.absorb(document)
     }
 
     private func resetLive() {
@@ -320,32 +209,4 @@ public final class MeetingsViewModel: ObservableObject {
         notice = nil
     }
 
-    private static func document(record: SessionRecord, segments: [Segment],
-                                 speakers: [SpeakerRecord]) -> MeetingDocument {
-        let names = Dictionary(speakers.map { ($0.id, $0.label) }, uniquingKeysWith: { first, _ in first })
-        var seen = Set<String>()
-        let meetingSpeakers = speakers.map { speaker in
-            seen.insert(speaker.id)
-            return MeetingSpeaker(id: speaker.id, name: speaker.label, isSelf: speaker.isSelf)
-        }
-        let turns = segments.map { segment -> MeetingTurn in
-            let speakerID = segment.speakerID ?? (segment.source == .mic ? "self" : "remote-1")
-            let isGap = segment.rawText.hasPrefix("[") && segment.rawText.hasSuffix("]")
-            let text = isGap ? String(segment.rawText.dropFirst().dropLast()) : segment.bestText
-            return MeetingTurn(index: segment.index, speakerID: speakerID,
-                               speakerName: names[speakerID] ?? (speakerID == "self" ? "You" : speakerID),
-                               startMs: segment.startMs, endMs: segment.endMs, text: text,
-                               rawText: segment.rawText, source: segment.source, isGap: isGap)
-        }
-        var allSpeakers = meetingSpeakers
-        for turn in turns where !turn.isGap && !seen.contains(turn.speakerID) {
-            seen.insert(turn.speakerID)
-            allSpeakers.append(MeetingSpeaker(id: turn.speakerID, name: turn.speakerName,
-                                              isSelf: turn.speakerID == "self"))
-        }
-        return MeetingDocument(sessionID: record.id,
-                               title: record.title ?? record.displayTitle,
-                               startedAt: record.startedAt, endedAt: record.endedAt,
-                               durationMs: record.durationMs, speakers: allSpeakers, turns: turns)
-    }
 }

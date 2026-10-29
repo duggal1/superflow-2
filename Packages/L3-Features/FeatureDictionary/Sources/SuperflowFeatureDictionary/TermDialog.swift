@@ -56,7 +56,7 @@ struct TermDialog: View {
                 Segmented(selection: $kind, items: [
                     .init("Term", value: .term),
                     .init("Correction", value: .correction),
-                ], onCard: true)
+                ], level: .dialog)
                 DialogField(kind == .term ? "Term" : "You say") {
                     AppTextField(text: $say, prompt: kind == .term ? "Next.js" : "next js",
                                  autofocus: true)

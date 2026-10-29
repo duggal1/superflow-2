@@ -12,13 +12,13 @@ public struct ListControls<Scope: Hashable>: View {
     private let prompt: String
     @Binding private var searchFocus: Bool
     private let addTitle: String
-    private let menu: [ActionMenu.Action]
+    private let menu: [MenuItem]
     private let onAdd: () -> Void
 
     public init(scope: Binding<Scope>, scopes: [Segmented<Scope>.Item],
                 query: Binding<String>, prompt: String,
                 searchFocus: Binding<Bool>, addTitle: String,
-                menu: [ActionMenu.Action], onAdd: @escaping () -> Void) {
+                menu: [MenuItem], onAdd: @escaping () -> Void) {
         _scope = scope
         self.scopes = scopes
         _query = query
@@ -37,7 +37,7 @@ public struct ListControls<Scope: Hashable>: View {
             HStack(spacing: 12) {
                 SearchField(text: $query, prompt: prompt, isFocused: $searchFocus)
                 Spacer(minLength: 16)
-                ActionMenu(actions: menu)
+                ActionMenu(items: menu)
                 AppButton(addTitle, glyph: .add, kind: .primary, height: ControlHeight.regular, action: onAdd)
             }
         }

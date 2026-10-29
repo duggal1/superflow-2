@@ -65,13 +65,13 @@ private struct TranscriptRow: View {
                     .transition(.opacity)
             } else {
                 HStack(spacing: 4) {
-                    RowButton(title, height: 56, hoverFill: .clear,
+                    RowButton(title, height: 48, hoverFill: .clear,
                               action: { model.toggle(entry.id) }) { label }
                         .focused($focused)
                         .focusEffectDisabled()
                     actions
                 }
-                .frame(height: 56)
+                .frame(height: 48)
                 .transition(.opacity)
             }
             if expanded { detail.transition(.opacity) }
@@ -96,8 +96,8 @@ private struct TranscriptRow: View {
 
     private var label: some View {
         HStack(spacing: Space.sm) {
-            if let bundle = entry.record.frontmostBundleID { AppIcon(bundleID: bundle, size: 20) }
-            else { Icon(.mic, size: 14, tint: Tok.text2).frame(width: 20, height: 20) }
+            if let bundle = entry.record.frontmostBundleID { AppIcon(bundleID: bundle, size: 16) }
+            else { Icon(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16) }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .appType(.label)
@@ -112,7 +112,7 @@ private struct TranscriptRow: View {
                         Text(Humanize.when(entry.record.startedAt, now: context.date))
                     }
                     Text(Humanize.duration(Double(entry.record.durationMs) / 1000))
-                    if !failed { Text(Humanize.words(entry.record.wordCount)).monospacedDigit() }
+                    if !failed && entry.record.wordCount > 0 { Text(Humanize.words(entry.record.wordCount)).monospacedDigit() }
                 }
                 .appType(.caption)
                 .foregroundStyle(Tok.text2)
@@ -124,26 +124,24 @@ private struct TranscriptRow: View {
 
     @ViewBuilder private var actions: some View {
         if entry.retrying {
-            Color.clear.frame(width: 32, height: 32)
+            Color.clear.frame(width: 28, height: 28)
         } else if failed {
             HStack(spacing: Space.sm) {
                 Badge(entry.record.status == .cancelled ? "Cancelled" : "Failed")
                 AppButton("Retry transcript", glyph: nil, kind: .secondary, height: 24) { model.retry(entry) }
                     .disabled(entry.audio == nil || !model.canRetry)
-                ActionMenu(actions: menu, isOpen: $menuOpen).focused($focused)
+                ActionMenu(items: menu, isOpen: $menuOpen).focused($focused)
             }
             .padding(.trailing, -8)
         } else {
-            HStack(spacing: 4) {
+            HStack(spacing: 0) {
                 if entry.audio != nil {
-                    BarIconButton(glyph: .play, label: "Play audio") { model.play(entry) }
+                    RowIconButton(glyph: .play, label: "Play audio") { model.play(entry) }
                         .focused($focused)
-                } else {
-                    Color.clear.frame(width: 32, height: 32)
                 }
-                BarIconButton(glyph: .copy, label: "Copy transcript") { model.copy(shown) }
+                RowCopyButton { model.copy(shown) }
                     .focused($focused)
-                ActionMenu(actions: menu, isOpen: $menuOpen).focused($focused)
+                ActionMenu(items: menu, isOpen: $menuOpen).focused($focused)
             }
             .padding(.trailing, -8)                                     // glyph edge, not the 32 pt target
             .opacity(revealed ? 1 : 0)
@@ -152,14 +150,16 @@ private struct TranscriptRow: View {
         }
     }
 
-    private var menu: [ActionMenu.Action] {
-        var actions: [ActionMenu.Action] = []
-        if entry.audio != nil, model.canRetry {
-            actions.append(.init("Retry transcript", run: { model.retry(entry) }))
-        }
-        actions.append(.init("Delete transcript", run: { model.delete(entry) }))
-        if entry.audio != nil { actions.append(.init("Extract audio", run: { model.extractAudio(entry) })) }
-        return actions
+    private var menu: [MenuItem] {
+        let audio = entry.audio != nil
+        return [
+            MenuItem("Play audio", glyph: .play, enabled: audio) { model.play(entry) },
+            MenuItem("Retry transcript", glyph: .refresh, enabled: audio && model.canRetry && !entry.retrying) {
+                model.retry(entry)
+            },
+            MenuItem("Extract audio", glyph: .exportOut, enabled: audio) { model.extractAudio(entry) },
+            MenuItem("Delete transcript", glyph: .delete, role: .destructive, gapBefore: true) { model.delete(entry) },
+        ]
     }
 
     private var detail: some View {
@@ -181,7 +181,7 @@ private struct TranscriptRow: View {
 struct ExampleRow: View {
     var body: some View {
         HStack(spacing: Space.sm) {
-            Icon(.mic, size: 14, tint: Tok.text2).frame(width: 20, height: 20)
+            Icon(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16)
             VStack(alignment: .leading, spacing: 2) {
                 Text("The budget is $12,000, and we meet on Tuesday at 3 PM.")
                     .appType(.label)
@@ -192,6 +192,6 @@ struct ExampleRow: View {
             Badge("Example")
         }
         .padding(.horizontal, Space.sm)
-        .frame(height: 56)
+        .frame(height: 48)
     }
 }

@@ -27,17 +27,17 @@ final class AudioRingBuffer: @unchecked Sendable {
     var droppedSamples: Int { dropped.load(ordering: .relaxed) }
 
     @discardableResult
-    func write(_ source: UnsafeBufferPointer<Float>) -> Int {
+    func write(_ source: UnsafeBufferPointer<Float>, stride: Int = 1) -> Int {
         let write = writeIndex.load(ordering: .relaxed)
         let read = readIndex.load(ordering: .acquiring)
         let free = capacity - (write - read)
-        let count = min(source.count, max(0, free))
-        if count < source.count {
-            _ = dropped.wrappingAdd(source.count - count, ordering: .relaxed)
+        let count = min(source.count / stride, max(0, free))
+        if count < source.count / stride {
+            _ = dropped.wrappingAdd(source.count / stride - count, ordering: .relaxed)
         }
         guard count > 0 else { return 0 }
         for i in 0..<count {
-            storage[(write + i) % capacity] = source[i]
+            storage[(write + i) % capacity] = source[i * stride]
         }
         writeIndex.store(write + count, ordering: .releasing)
         return count

@@ -3,7 +3,7 @@ import SuperflowIcons
 import SwiftUI
 
 public enum ButtonKind: Sendable {
-    case primary, sapphire, secondary, quiet, link
+    case primary, secondary, quiet, link
 }
 
 public struct AppButtonStyle: ButtonStyle {
@@ -31,55 +31,45 @@ public struct AppButtonStyle: ButtonStyle {
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @State private var hover = false
 
-        private var px: CGFloat { typeScope == .island || kind == .sapphire || height >= 28 ? 12 : 10 }
+        private var px: CGFloat { typeScope == .island || height >= 28 ? 12 : 10 }
         private var typeRole: AppType { typeScope == .island || height >= 28 ? .label : .caption }
         private var font: CGFloat { typeRole.size(in: typeScope) }
 
+        private var deadPrimary: Bool { !enabled && kind == .primary }
+
         private var fill: Color {
-            switch kind {
-            case .primary, .sapphire: configuration.isPressed ? Tok.accentPressed : hover ? Tok.accentHover : Tok.accent
+            if deadPrimary { return Tok.control }
+            return switch kind {
+            case .primary: configuration.isPressed ? Tok.accentPressed : hover ? Tok.accentHover : Tok.accent
             case .secondary: configuration.isPressed ? Tok.controlPressed : hover ? Tok.controlHover : Tok.control
             case .quiet, .link: hover || configuration.isPressed ? Tok.wash : .clear
             }
         }
 
         private var label: Color {
-            switch kind {
-            case .primary, .sapphire: .white
+            if deadPrimary { return Tok.text2 }
+            return switch kind {
+            case .primary: .white
             case .secondary: Tok.text
             case .quiet: hover || configuration.isPressed ? Tok.text : Tok.text2
             case .link: hover || configuration.isPressed ? Tok.text : Tok.textAction
             }
         }
 
-        @ViewBuilder private var face: some View {
-            if kind == .sapphire {
-                Capsule()
-                    .fill(fill.shadow(.inner(color: Tok.sapphireHighlight, radius: 0, x: 0, y: 1))
-                        .shadow(.inner(color: hover ? Tok.sapphireInnerHover : Tok.sapphireInnerRest,
-                                       radius: hover ? 5 : 3, x: 0, y: hover ? -4 : -2)))
-                    .overlay { Capsule().strokeBorder(Tok.sapphireEdge, lineWidth: 1) }
-            } else {
-                Capsule().fill(fill)
-            }
-        }
-
         var body: some View {
             configuration.label
                 .font(Typography.ui(font, weight: AppFont.emphasisWeight))
-                .tracking(kind == .sapphire ? AppType.label.tracking(in: .island)
-                          : typeScope == .island ? typeRole.tracking(in: typeScope) : 0)
+                .tracking(typeScope == .island ? typeRole.tracking(in: typeScope) : 0)
                 .foregroundStyle(label)
                 .padding(.horizontal, px)
                 .frame(minWidth: minimumWidth)
                 .frame(height: height)
-                .background { face }
+                .background(fill, in: .capsule)
                 .contentShape(.capsule)
-                .opacity(enabled ? 1 : Opacity.disabled)
+                .opacity(enabled || deadPrimary ? 1 : Opacity.disabled)
                 .scaleEffect(configuration.isPressed && !reduceMotion && typeScope != .island ? Opacity.pressScale : 1)
                 .animation(reduceMotion ? nil : (configuration.isPressed ? Motion.hoverIn : Motion.hoverOut), value: configuration.isPressed)
-                .animation(reduceMotion ? nil : kind == .sapphire ? .easeOut(duration: 0.20)
-                           : (hover ? Motion.hoverIn : Motion.hoverOut), value: hover)
+                .animation(reduceMotion ? nil : (hover ? Motion.hoverIn : Motion.hoverOut), value: hover)
                 .onHover { hover = $0 }
                 .clickable(enabled)
                 .focusStep()
@@ -113,15 +103,14 @@ public struct AppButton: View {
         self.minimumWidth = minimumWidth
         self.action = action
         #if DEBUG
-        assert(height == 24 || height == 28 || (kind == .sapphire && height == 32),
-               "AppButton height must be 24/28, or 32 for Sapphire")
+        assert(height == 24 || height == 28 || height == 32, "AppButton height must be 24, 28 or 32")
         #endif
     }
 
     public var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
-                if let glyph { Icon(glyph, size: 12, weight: .medium, tint: (kind == .primary || kind == .sapphire) ? .white : nil) }
+                if let glyph { Icon(glyph, size: 12, weight: .medium, tint: kind == .primary ? .white : nil) }
                 Text(title).contentTransition(.opacity)
             }
         }

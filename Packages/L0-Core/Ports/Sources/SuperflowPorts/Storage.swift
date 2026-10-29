@@ -16,6 +16,7 @@ public protocol TranscriptRepository: Sendable {
     func finalizeSession(_ id: SessionID, endedAt: Date, status: SessionStatus, durationMs: Int,
                          wordCount: Int, cleanupState: CleanupState) async throws
     func sessions(kind: SessionKind?, query: String?, limit: Int, offset: Int) async throws -> [SessionRecord]
+    func renameSession(_ id: SessionID, title: String) async throws
     func session(_ id: SessionID) async throws -> SessionRecord?
     func segment(session: SessionID, index: Int) async throws -> Segment?
     func segments(session: SessionID) async throws -> [Segment]

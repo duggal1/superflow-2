@@ -76,7 +76,7 @@ struct UndoContent: View {
 
                 AppButton(model.copied ? "Copied" : "Undo",
                           glyph: model.copied ? .checkmark : .undo,
-                          kind: .sapphire,
+                          kind: .primary,
                           height: IslandLayout.actionHeight,
                           enabled: !undo.isEmpty, minimumWidth: 80) {
                     model.keepUndo(undo)

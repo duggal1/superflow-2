@@ -48,9 +48,10 @@ public final class RecentDictationViewModel: ObservableObject {
             entries = []; stopPlayback(); return
         }
         do {
-            let records = try await repository.sessions(kind: .dictation, query: nil, limit: 10, offset: 0)
+            let records = try await repository.sessions(kind: .dictation, query: nil, limit: 24, offset: 0)
             var loaded: [RecentDictationEntry] = []
-            for record in records where !hidden.contains(record.id) {
+            for record in records where !hidden.contains(record.id)
+                && (record.wordCount > 0 || record.status != .complete) {
                 guard loaded.count < 5 else { break }
                 let segments = try await repository.segments(session: record.id).sorted { $0.index < $1.index }
                 let url = AudioArchiveLocation.url(for: record.id)
@@ -95,7 +96,8 @@ public final class RecentDictationViewModel: ObservableObject {
                 try Task.checkCancellation()
                 guard !hidden.contains(entry.id), !settings.noTranscriptStorage else { return }
                 guard !result.cleaned.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    edit(entry.id) { $0.failure = "No speech found." }; return
+                    await failRetry(entry, message: "No speech found.")
+                    return
                 }
                 let old = try await repository.segments(session: entry.id)
                 let first = old.first?.index ?? 0
@@ -120,8 +122,17 @@ public final class RecentDictationViewModel: ObservableObject {
                 try? await repository.addDailyStat(DailyStat(day: record.localDay,
                     words: record.wordCount - entry.record.wordCount, audioMs: 0, sessions: 0))
                 edit(entry.id) { $0.record = record; $0.raw = result.raw; $0.cleaned = result.cleaned }
-            } catch is CancellationError {} catch { edit(entry.id) { $0.failure = "Transcription failed." } }
+            } catch is CancellationError {} catch { await failRetry(entry, message: "Transcription failed.") }
         }
+    }
+
+    private func failRetry(_ entry: RecentDictationEntry, message: String) async {
+        do {
+            try await repository.finalizeSession(entry.id, endedAt: entry.record.endedAt ?? Date(),
+                status: .failed, durationMs: entry.record.durationMs, wordCount: entry.record.wordCount,
+                cleanupState: entry.record.cleanupState)
+        } catch { self.error = "Could not save the retry status." }
+        edit(entry.id) { $0.record.status = .failed; $0.failure = message }
     }
 
     public func delete(_ entry: RecentDictationEntry) {

@@ -17,7 +17,7 @@ struct MeetingDiscardCard: View {
                 Text("Recording continues.").appType(.caption).foregroundStyle(Tok.text2)
                 Spacer(minLength: 0)
                 AppButton("Keep recording", kind: .secondary, height: IslandLayout.actionHeight) { model.keepMeeting() }
-                AppButton("Discard", kind: .sapphire, height: IslandLayout.actionHeight) { model.confirmDiscard() }
+                AppButton("Discard", kind: .primary, height: IslandLayout.actionHeight) { model.confirmDiscard() }
             }
             .padding(.horizontal, IslandLayout.cardPad)
             .frame(height: 60)

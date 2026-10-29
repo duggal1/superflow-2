@@ -58,33 +58,33 @@ final class MeetingsViewModelTests: XCTestCase {
     func testLoadPastBuildsDocumentAndFlagsGaps() async throws {
         _ = try await makePastMeeting()
         let model = MeetingsViewModel(engine: nil, repository: repository, inserter: inserter)
-        await model.loadPast()
+        await model.past.reload()
 
-        XCTAssertEqual(model.pastSessions.count, 1)
-        XCTAssertEqual(model.selectedID?.value, "past-1")
-        let document = try XCTUnwrap(model.selectedDocument)
+        XCTAssertEqual(model.past.sessions.count, 1)
+        XCTAssertEqual(model.past.selectedID?.value, "past-1")
+        let document = try XCTUnwrap(model.past.selectedDocument)
         XCTAssertEqual(document.title, "Weekly sync")
         XCTAssertEqual(document.turns.count, 3)
         XCTAssertEqual(document.turns.filter(\.isGap).count, 1)
         XCTAssertEqual(document.speakers.first { $0.isSelf }?.name, "Harshit")
-        XCTAssertEqual(model.selectedSpeakers.count, 2)
+        XCTAssertEqual(model.past.selectedDocument?.speakers.count, 2)
     }
 
     func testCopyAndExportsUseSelectedDocument() async throws {
         _ = try await makePastMeeting()
         let model = MeetingsViewModel(engine: nil, repository: repository, inserter: inserter)
-        await model.loadPast()
+        await model.past.reload()
 
-        await model.copySelected()
+        _ = await model.past.copyMarkdown(try XCTUnwrap(model.past.selectedDocument))
         let copied = await inserter.inserted
         XCTAssertEqual(copied.count, 1)
         XCTAssertTrue(copied[0].contains("# Weekly sync"))
         XCTAssertTrue(copied[0].contains("**Harshit**"))
         XCTAssertTrue(copied[0].contains("_[System audio lost]_"))
 
-        let markdown = try XCTUnwrap(model.markdownExport())
+        let markdown = try XCTUnwrap(model.past.selectedDocument.map { Data(MeetingExport.markdown($0).utf8) })
         XCTAssertTrue(String(decoding: markdown, as: UTF8.self).contains("Their reply."))
-        let json = try XCTUnwrap(model.jsonExport())
+        let json = try XCTUnwrap(try model.past.selectedDocument.map { try MeetingExport.jsonData($0) })
         let object = try JSONSerialization.jsonObject(with: json) as? [String: Any]
         XCTAssertEqual(object?["schemaVersion"] as? Int, 1)
     }
@@ -92,11 +92,11 @@ final class MeetingsViewModelTests: XCTestCase {
     func testRenameSpeakerUpdatesDocumentAndRepository() async throws {
         _ = try await makePastMeeting()
         let model = MeetingsViewModel(engine: nil, repository: repository, inserter: inserter)
-        await model.loadPast()
+        await model.past.reload()
 
-        await model.renameSpeaker(id: "remote-1", label: "Alice")
-        XCTAssertEqual(model.selectedDocument?.speakers.first { $0.id == "remote-1" }?.name, "Alice")
-        XCTAssertTrue(model.selectedDocument?.turns.filter { $0.speakerID == "remote-1" }
+        await model.past.renameSpeaker(id: "remote-1", label: "Alice")
+        XCTAssertEqual(model.past.selectedDocument?.speakers.first { $0.id == "remote-1" }?.name, "Alice")
+        XCTAssertTrue(model.past.selectedDocument?.turns.filter { $0.speakerID == "remote-1" }
             .allSatisfy { $0.speakerName == "Alice" } ?? false)
         let speakers = try await repository.speakers(session: SessionID("past-1"))
         XCTAssertEqual(speakers.first { $0.id == "remote-1" }?.label, "Alice")
@@ -108,9 +108,9 @@ final class MeetingsViewModelTests: XCTestCase {
         _ = try await makePastMeeting(id: "b", title: "Design review",
                                       startedAt: Date(timeIntervalSince1970: 200))
         let model = MeetingsViewModel(engine: nil, repository: repository, inserter: inserter)
-        model.pastQuery = "design"
-        await model.loadPast()
-        XCTAssertEqual(model.pastSessions.map(\.id.value), ["b"])
+        model.past.query = "design"
+        await model.past.reload()
+        XCTAssertEqual(model.past.sessions.map(\.id.value), ["b"])
     }
 
     func testEventProjectionTracksPartialsLevelsAndCompletion() async throws {
@@ -143,7 +143,7 @@ final class MeetingsViewModelTests: XCTestCase {
                                        speakers: [], turns: [])
         await model.handle(.finished(SessionID("live"), document))
         XCTAssertEqual(model.state, .complete(SessionID("live")))
-        XCTAssertEqual(model.selectedDocument?.title, "Meeting")
+        XCTAssertEqual(model.past.selectedDocument?.title, "Meeting")
         XCTAssertEqual(model.elapsedMs, 3_000)
     }
 
@@ -159,8 +159,8 @@ final class MeetingsViewModelTests: XCTestCase {
         XCTAssertEqual(model.state, .complete(document.sessionID))
         XCTAssertTrue(document.turns.contains { $0.source == .mic })
         XCTAssertTrue(document.turns.contains { $0.source == .system })
-        XCTAssertEqual(model.selectedDocument?.sessionID, document.sessionID)
-        XCTAssertFalse(model.pastSessions.isEmpty)
+        XCTAssertEqual(model.past.selectedDocument?.sessionID, document.sessionID)
+        XCTAssertFalse(model.past.sessions.isEmpty)
         let stored = try await repository.session(document.sessionID)
         XCTAssertEqual(stored?.kind, .meeting)
     }

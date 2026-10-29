@@ -109,7 +109,7 @@ struct CardContent: View {
 
                 AppButton(model.copied ? "Copied" : "Copy",
                           glyph: model.copied ? .checkmark : nil,
-                          kind: model.copied ? .secondary : .sapphire,
+                          kind: model.copied ? .secondary : .primary,
                           height: IslandLayout.actionHeight, minimumWidth: 80) {
                     model.copy(transcript)
                 }

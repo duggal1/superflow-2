@@ -6,11 +6,12 @@ import SuperflowUIComponents
 import SwiftUI
 
 public enum ModelKind: String, CaseIterable, Identifiable, Sendable {
-    case speech, cleanup, meetings
+    case speech, enhancement, cleanup, meetings
     public var id: Self { self }
     public var title: String {
         switch self {
         case .speech: "Speech"
+        case .enhancement: "Noise suppression"
         case .cleanup: "Cleanup"
         case .meetings: "Meetings"
         }
@@ -44,6 +45,7 @@ public struct ModelMark: View {
     @ViewBuilder public var body: some View {
         switch kind {
         case .speech: NVIDIAIcon(size: 24)
+        case .enhancement: DeepFilterNetMark()
         case .cleanup: S1MiniMark(size: 24)
         case .meetings: Icon(.meetings, size: 14, tint: Tok.text2)
         }
@@ -57,6 +59,8 @@ public struct ModelMark: View {
 public final class ModelsViewModel {
     public private(set) var items: [ModelItem]
 
+    private let enhancer: (any SpeechEnhancer)?
+    private let enhancementEnabled: @MainActor () -> Bool
     private let models: (any ModelProvider)?
     /// The speech model is installed and read through the same port onboarding and
     /// Settings use (`ASRModelProvider`, the recognizer). `ModelProvider`'s ASR
@@ -81,7 +85,11 @@ public final class ModelsViewModel {
                 asrModels: (any ASRModelProvider)? = nil,
                 diarizer: (any SpeakerDiarizer)? = nil,
                 asrProfile: String = ModelProfile.nemotron35Streaming.id,
+                enhancer: (any SpeechEnhancer)? = nil,
+                enhancementEnabled: @escaping @MainActor () -> Bool = { true },
                 cleanupEnabled: @escaping @MainActor () -> Bool = { true }) {
+        self.enhancer = enhancer
+        self.enhancementEnabled = enhancementEnabled
         self.models = models
         self.asrModels = asrModels ?? models
         self.diarizer = diarizer
@@ -92,6 +100,9 @@ public final class ModelsViewModel {
                       name: ModelProfile.byID(asrProfile).displayName,
                       detail: "Streaming speech recognition for English. Runs on this Mac.",
                       bytes: 620_000_000),
+            ModelItem(id: Self.enhancementID, kind: .enhancement, name: "DeepFilterNet 3",
+                      detail: "Required when noise suppression is on. Cleans microphone audio before speech detection.",
+                      bytes: 13_223_348),
             ModelItem(id: Self.cleanupID, kind: .cleanup, name: "S1-mini",
                       detail: "Cleans every dictation: filler words, punctuation, false starts.",
                       bytes: 484_219_808),
@@ -102,6 +113,7 @@ public final class ModelsViewModel {
         syncActive()
     }
 
+    public static let enhancementID = "deepfilternet3"
     private static let cleanupID = "s1-mini"
     private static let meetingsID = "speaker-separation"
 
@@ -123,9 +135,11 @@ public final class ModelsViewModel {
         }
         guard let models else { return }
         let speech = await asrModels?.isAvailable(profileID: asrProfile) ?? false
+        let enhancement = await enhancer?.isAvailable() ?? false
         let cleanup = await models.llmModelURL() != nil
         let meetings = (await diarizer?.isReady()) ?? false
         set(.installed, for: asrProfile, whenIdle: speech)
+        set(.installed, for: Self.enhancementID, whenIdle: enhancement)
         set(.installed, for: Self.cleanupID, whenIdle: cleanup)
         set(.installed, for: Self.meetingsID, whenIdle: meetings)
     }
@@ -137,6 +151,7 @@ public final class ModelsViewModel {
             let onDisk = isInstalled(items[i].state)
             switch items[i].kind {
             case .speech: items[i].isActive = onDisk
+            case .enhancement: items[i].isActive = onDisk && enhancementEnabled()
             case .cleanup: items[i].isActive = onDisk && cleanupEnabled()
             case .meetings: items[i].isActive = false
             }
@@ -155,7 +170,7 @@ public final class ModelsViewModel {
     }
 
     public func download(_ id: String) {
-        guard let item = items.first(where: { $0.id == id }) else { return }
+        guard tokens[id] == nil, let item = items.first(where: { $0.id == id }) else { return }
         let token = UUID()
         tokens[id] = token
         setState(.downloading(0), for: id)
@@ -167,6 +182,9 @@ public final class ModelsViewModel {
                 case .speech:
                     guard let asrModels else { setState(.failed("Model support is unavailable."), for: id); return }
                     try await asrModels.prepare(profileID: asrProfile, progress: report)
+                case .enhancement:
+                    guard let enhancer else { setState(.failed("Noise suppression is unavailable."), for: id); return }
+                    try await enhancer.prepare(progress: report)
                 case .cleanup:
                     guard let models else { setState(.failed("Model support is unavailable."), for: id); return }
                     _ = try await models.ensureLLM(progress: report)
@@ -178,6 +196,7 @@ public final class ModelsViewModel {
                 setState(.verifying, for: id)
                 let installed: Bool
                 switch item.kind {
+                case .enhancement: installed = await enhancer?.isAvailable() ?? false
                 case .speech: installed = await asrModels?.isAvailable(profileID: asrProfile) ?? false
                 case .cleanup: installed = await models?.llmModelURL() != nil
                 case .meetings: installed = (await diarizer?.isReady()) ?? false

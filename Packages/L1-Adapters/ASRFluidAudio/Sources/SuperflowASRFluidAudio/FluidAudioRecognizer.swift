@@ -179,6 +179,17 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
         return stream
     }
 
+    /// Installs and loads Silero during model setup, never from the audio consumer.
+    public func prepareVoiceActivity() async throws {
+        guard vadManager == nil else { return }
+        if !FluidAudioCatalog.vadIsInstalled(cacheRoot: modelCacheRoot) {
+            try await ModelHub.download(.vad, to: modelCacheRoot,
+                                        additionalModelNames: [ModelNames.VAD.sileroVadFile])
+        }
+        vadManager = try SileroVoiceActivityLoader.makeManager(
+            modelURL: FluidAudioCatalog.vadModelURL(cacheRoot: modelCacheRoot))
+    }
+
     public func describeAvailability() -> String { FluidAudioAvailability.explanation }
 
     /// Releases every idle engine. Safe to call from any state; the next

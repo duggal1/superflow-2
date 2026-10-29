@@ -7,7 +7,6 @@ import UniformTypeIdentifiers
 
 public struct MeetingsView: View {
     @ObservedObject private var model: MeetingsViewModel
-    @State private var searchFocus = false
 
     public init(model: MeetingsViewModel) {
         self.model = model
@@ -20,55 +19,26 @@ public struct MeetingsView: View {
                     Segmented.Item(MeetingsTab.live.label, value: MeetingsTab.live),
                     Segmented.Item(MeetingsTab.past.label, value: MeetingsTab.past),
                 ])
-                if model.tab == .past {
-                    SearchField(text: $model.pastQuery, prompt: "Search meetings",
-                                isFocused: $searchFocus)
-                }
-            }
-        } trailing: {
-            if model.tab == .past {
-                ActionMenu(actions: [
-                    .init("Export Markdown…") {
-                        export(model.markdownExport(), name: "meeting.md", type: .plainText)
-                    },
-                    .init("Export JSON…") {
-                        export(model.jsonExport(), name: "meeting.json", type: .json)
-                    },
-                ])
-                AppButton("Copy Markdown", glyph: .copy, kind: .primary,
-                          height: ControlHeight.regular, enabled: model.selectedDocument != nil) {
-                    Task { await model.copySelected() }
-                }
             }
         } content: {
             VStack(alignment: .leading, spacing: Space.md) {
-                if model.tab == .past, let error = model.error {
-                    NoticeBanner(error, tone: .rose, actionTitle: "Reload") {
-                        Task { await model.loadPast() }
-                    }
-                }
                 switch model.tab {
                 case .live:
                     live
                 case .past:
-                    MeetingPastView(model: model)
+                    PastMeetingsView(model: model.past)
                 }
             }
         }
-        .searchShortcut($searchFocus)
         .task {
             await model.observe()
-            await model.loadPast()
+            await model.past.reload()
         }
         .task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 model.tick()
             }
-        }
-        .onChange(of: model.pastQuery) { _, _ in
-            guard model.tab == .past else { return }
-            Task { await model.loadPast() }
         }
         .toast(model.toast)
     }

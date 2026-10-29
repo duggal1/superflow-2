@@ -1,0 +1,4 @@
+Hugging Face logo, unmodified.
+Source: https://huggingface.co/front/assets/huggingface_logo-noborder.svg
+Brand: https://huggingface.co/brand
+Used to identify the model's download source, not as a DeepFilterNet project logo.

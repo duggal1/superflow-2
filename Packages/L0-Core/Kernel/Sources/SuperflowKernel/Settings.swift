@@ -199,6 +199,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     /// Nemotron 3.5 ASR Streaming 0.6B is the model the app installs and runs. It is
     /// the default in one place only, so onboarding and the Models page cannot drift.
     public var asrProfile: String = ModelProfile.default.id
+    public var speechEnhancementEnabled = true
     public var cleanupEnabled = true
     public var harperEnabled = false
     public var commandsEnabled = true
@@ -256,6 +257,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         asrProfile = resolved.id == storedProfile && resolved.supportsLiveDictation
             ? storedProfile
             : ModelProfile.default.id
+        speechEnhancementEnabled = try c.decodeIfPresent(Bool.self, forKey: .speechEnhancementEnabled) ?? d.speechEnhancementEnabled
         cleanupEnabled = try c.decodeIfPresent(Bool.self, forKey: .cleanupEnabled) ?? d.cleanupEnabled
         harperEnabled = try c.decodeIfPresent(Bool.self, forKey: .harperEnabled) ?? d.harperEnabled
         commandsEnabled = try c.decodeIfPresent(Bool.self, forKey: .commandsEnabled) ?? d.commandsEnabled

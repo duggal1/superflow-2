@@ -21,6 +21,7 @@ public actor MeetingEngine {
 
     let mic: any AudioSource
     let system: (any AudioSource)?
+    let enhancer: (any SpeechEnhancer)?
     let recognizer: any SpeechRecognizer
     let diarizer: (any SpeakerDiarizer)?
     var pipeline: TextPipeline
@@ -56,11 +57,12 @@ public actor MeetingEngine {
     public init(mic: any AudioSource, system: (any AudioSource)?, recognizer: any SpeechRecognizer,
                 diarizer: (any SpeakerDiarizer)? = nil, pipeline: TextPipeline,
                 repository: any TranscriptRepository, journals: any JournalStore,
-                settings: AppSettings = .default, project: ProjectContext? = nil,
+                settings: AppSettings = .default, enhancer: (any SpeechEnhancer)? = nil, project: ProjectContext? = nil,
                 clock: TimeSource = SystemTimeSource()) {
         self.mic = mic
         self.system = system
         self.recognizer = recognizer
+        self.enhancer = enhancer
         self.diarizer = diarizer
         self.pipeline = pipeline
         self.repository = repository

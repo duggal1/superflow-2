@@ -14,6 +14,10 @@ public actor InMemoryRepository: TranscriptRepository {
         sessionsByID[s.id] = s
     }
 
+    public func renameSession(_ id: SessionID, title: String) async throws {
+        sessionsByID[id]?.title = title
+    }
+
     public func appendSegment(_ s: Segment) async throws {
         var list = segmentsBySession[s.sessionID, default: []]
         list.removeAll { $0.index == s.index }

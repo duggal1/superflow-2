@@ -67,15 +67,17 @@ public struct AppTextField: View {
     private let prompt: String
     private let mono: Bool
     private let autofocus: Bool
+    private let level: FieldLevel
     @FocusState private var focused: Bool
     @State private var hover = false
 
     public init(text: Binding<String>, prompt: String, mono: Bool = false,
-                autofocus: Bool = false) {
+                autofocus: Bool = false, level: FieldLevel = .dialog) {
         _text = text
         self.prompt = prompt
         self.mono = mono
         self.autofocus = autofocus
+        self.level = level
     }
 
     public var body: some View {
@@ -88,7 +90,7 @@ public struct AppTextField: View {
             .focusEffectDisabled()
             .padding(.horizontal, 12)
             .frame(height: 32)
-            .background(focused || hover ? Tok.bg : Tok.well,
+            .background(level.fill(active: focused || hover),
                         in: .rect(cornerRadius: Radius.field, style: .continuous))
             .contentShape(.rect(cornerRadius: Radius.field, style: .continuous))
             .onTapGesture { focused = true }

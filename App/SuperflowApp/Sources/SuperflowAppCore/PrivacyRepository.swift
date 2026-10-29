@@ -20,6 +20,10 @@ public actor PrivacyRepository: TranscriptRepository {
         try await base.createSession(session)
     }
 
+    public func renameSession(_ id: SessionID, title: String) async throws {
+        try await base.renameSession(id, title: title)
+    }
+
     public func appendSegment(_ segment: Segment) async throws {
         if suppressTranscripts {
             ephemeralSegments[segment.sessionID, default: [:]][segment.index] = segment

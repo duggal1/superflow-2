@@ -397,9 +397,11 @@ Source: `FeatureSettings/ModelsView.swift`. Models have their own sidebar route 
 
 Source: `FeatureIsland` (all views and geometry) plus `IslandPanelController.swift` and `IslandBridge.swift` in AppCore. Three words: **attached, alive, smooth**. It is not a floating badge and it is not glass; it is the hardware notch, extended.
 
+**Island typography.** The Island uses Albert Sans at variable weight 350 for every role and shared text button. Scoped sizes are caption 11, body/label 12, reading/title 13, metric 22 pt. Tracking is −0.2/−0.3/−0.4/−0.6 pt respectively. The root enables the shared native font-smoothing policy. Other app screens retain their existing typography. Pixel artwork stays on device pixels and is never scaled to shrink the text.
+
 **Silhouette.** Flat top flush at `screen.frame.maxY`, concave top fillets that flare into the menu bar, convex rounded bottom. `NotchShape` draws it with true quarter-circle Béziers (kappa `0.5522847498`), never quadratics, so the radii read as circles at 8× zoom. The shape is `body.width + 2 × top` wide; the flares live outside the body.
 
-**One window, one shape.** The panel is created once at `IslandLayout.canvas` (520 × 360), pinned flush to the top edge, centred on the notch, and ordered front at launch. Its frame never animates and never changes size; the window moves only while the Island is idle (invisible) and only with `setFrame(display: false)`. All motion is one SwiftUI animation on the shape and its radii, so shape and content share one `Transaction` and retarget mid-flight without restarting. `IslandPanel.constrainFrameRect` returns its argument, or AppKit would push the panel below the menu bar.
+**One window, one shape.** The panel is created once at `IslandLayout.canvas` (520 × 360), pinned flush to the top edge, centred on the notch, and ordered front at launch. Its frame never animates and never changes size; the window moves only while the Island is idle (invisible) and only with `setFrame(display: false)`. The silhouette follows four exact critically damped spring channels, preserving position and velocity on retarget. Width leads height; content lays out at its destination size and is revealed by the current silhouette. The display timeline pauses when all channels settle. `IslandPanel.constrainFrameRect` returns its argument, or AppKit would push the panel below the menu bar.
 
 **Notch geometry.** `NotchGeometry` is the only thing that reads a screen. It uses `frame`, `safeAreaInsets.top`, `auxiliaryTopLeftArea` and `auxiliaryTopRightArea`, and snaps the centre to a device pixel. It never reads the menu-bar-excluding rectangle. Notch width and height are never hardcoded.
 
@@ -440,11 +442,11 @@ Wing content hugs the outer edge at 14 (12 on the wide wings) and is centred on 
 
 **Edge fade.** The transcript preview dissolves over its last 32 pt instead of ending in a clip or an ellipsis: an alpha mask on text, never a gradient fill. `EdgeFade` is the one file allowed to contain a `LinearGradient`.
 
-**Motion.** Rest to open `smooth 0.44`; open to rest `smooth 0.32`; wings ↔ card `smooth 0.38`; rest ↔ rest and wings ↔ wings `snappy 0.20`; content in `smooth 0.30` delayed 0.10 (`Motion.islandIn`); content out `easeOut 0.10` (`Motion.islandOut`); blur 6 → 0, scale 0.94 → 1 anchored top. Nothing bounces, overshoots or loops. Reduce Motion makes the size instant and cross-dissolves content, no blur, no scale.
+**Motion.** `IslandKinematics` integrates critically damped springs analytically. Width/height/radius frequencies (rad/s): closing 20/18/28, opening 15/12/26, card-to-card 18/15/26, wings 30/28/34. New content enters with blur 6→0 and scale 0.94→1, removal fades. Reduce Motion snaps geometry and cross-fades. `PixelSweep` is the submitting mark (1.1 s per pass); `PixelDissolve` freezes the last meter and dissolves it in 14 steps over 0.52 s. The meter follows input at display cadence with 10 ms attack, 80 ms release and a 30 Hz sample trail. These are configured constants, not measured display performance.
 
 **Placement and focus.** The Island lives on the notch display at rest and hops to the focused display while working, only while idle, never animated. It is `.nonactivatingPanel`; `recent`, `history` and `meetingPanel` become key (so their keyboard controls work) and the failure card never takes focus. Outside clicks dismiss `recent` and `history` and collapse `meetingPanel`; the failure card survives them because the owner may click into the target field. Level is `mainMenu + 3`, collection behaviour `canJoinAllSpaces`, `fullScreenAuxiliary`, `stationary`, `ignoresCycle`.
 
-**Hit testing.** The canvas overlaps the menu bar and desktop, so `IslandHostingView.hitTest` uses the same `model.box` as the shell and checks the actual silhouette path, including its concave flares and rounded bottom. Transparent corners, the hidden external idle state, and all canvas space outside the silhouette remain click-through. `onHover` is attached to the shape, never the canvas.
+**Hit testing.** The host reads the current spring-driven `model.hitRect` on the main actor, with 4 pt slop except for idle on a notch. Transparent corners, the hidden external idle state, and all canvas space outside the silhouette remain click-through. `onHover` is attached to the shape, never the canvas.
 
 **Timers.** Hover dwell 120 ms; landed 900 ms; failure timeout 12 s (4 s after the pointer leaves; disabled when transcripts are not stored, in which case the card stays until dismissed); copied 900 ms; undo 6 s and notice 5 s, both ticked once per second so their rails and the deadline agree.
 
@@ -456,15 +458,14 @@ Wing content hugs the outer edge at 14 (12 on the wide wings) and is centred on 
 
 ## 9. Dashboard
 
-Source: `DashboardView.swift`, `DashboardLowerHalf.swift`, `DashboardCleanup.swift`, `ActivityYear.swift`.
+Source: `DashboardView.swift`, `RecentTranscripts.swift`, `UsageCard.swift`, `RowPlayer.swift`, `ActivityYear.swift`.
 
 - **Ledger:** one card, four equal `Metric` columns, 24 gap. One bare 14 pt symbol per metric, drawn in a fixed 16 × 16 box with a 6 pt gap to the 12 pt `text2` label, so the four values share one baseline. Value 28 / 400 tabular with `.numericText`. **Label and value only** — no note line: a third line under the number was a caption for a number that already says what it is, and the ledger reads in one pass without it. The session count is clamped at zero: `daily_stats.sessions` is a running counter that a delete can drive negative, so the ledger can never read "-1 sessions".
 - **12-month graph:** `ActivityYear`. The year is **twelve small calendars**, not one wall: each month is its own block (weeks as columns, 7 rows), separated by an 8 pt gap with its own label, cells laid out at gap 3 on `Ramp.blue`. Days before the user's first dictation are **dust** (2 × 2 specks), days with history are cells, and **today is one `Tok.text` cell** — the caret where the next word lands. One `Metrics` value owns the geometry, so the canvas, the hit test and the labels cannot disagree. Hover does not open a tooltip: the line under the title becomes the readout and the number rolls. It reveals once per launch, right to left, in 14 whole steps over 600 ms.
 - **Cleanup line:** left-aligned on the page's single left edge, one real 4 pt space between words, always.
 - The old 53 × 7 `ContributionGrid` and its `levels` input are deleted; the ramp moved to `Ramp.blue`.
-- **Latest dictation:** `LatestDictationCard` sits directly under the 12-month graph and is the only block that carries audio. Header: the `fn` keycap, the `You said` / `It typed` caption, the app icon, name and `Humanize.when` time, then `Replay` and a `Badge("Example")` before there is data. Body: `AudioPreview(url:chrome: .bare)` for the newest session's archived clip, then the cleanup line, so the picture of what the recognizer heard and what cleanup typed are one card. **The keycap is a control**: a click replays hold → release → clean, and it also goes down for real while the physical fn key is held (`DashboardViewModel.isFnHeld`, fed by `MenuBarController` from the hotkey stream). No audio is drawn when the archive has no clip for that session.
-- **Lower half:** `AppsCard` (padding 8, 40 pt rows, real `NSWorkspace` icons) beside `HoursCard`, equal height via `fixedSize(vertical)`. Below the latest-dictation card.
-  - **Where it lands.** Each row's share is a solid `accentSoft` block that ends in a two-column front of 4 pt cells, the column's density falling away from the solid (`ShareFront`, `cellHash` seed 11). It is the download card's fill in row form — real pixels, not a gradient — and every edge is snapped with `Pixel`.
+- **Recent dictation:** `RecentTranscripts` sits directly below the graph, with up to five stored sessions. Hover or keyboard focus reveals Play, Copy and the action menu. Play replaces the row with the cached pixel waveform, pause/play, tenths readout and Transcript control. Raw/Cleaned expansion remains selectable. Failed/cancelled sessions expose Retry when archived audio exists. Empty or private libraries show the labelled Example row.
+- **Lower half:** `UsageCard` ("Where you dictate") beside `HoursCard`, stacking at narrow widths. Usage is dictation-only, with 7-day, 30-day and all-time filters, six app rows, pixel barcode bars and a hover readout. Empty/private libraries show labelled examples. The former keycap/replay card is removed.
   - **Your hours.** The day is cut into three 8-hour blocks with the same 12 pt gap the 12-month graph uses, and one label per block start (12 AM, 8 AM, 4 PM), so the shape of the working day is legible before reading a single label. Above it, a readout: `Peak hour` / the hovered hour at `metric`, and that hour's word count on the right edge. The readout is the tooltip; there is no floating label.
 - **Audio component:** `AudioPreview`, `SpectroScrubber`, `ClipPlayer` and the spectrogram analysis live in `SuperflowUIComponents`, not in `FeatureHistory`. One implementation serves History and the dashboard, and no feature imports another feature.
 - **Privacy:** "Don't store transcripts" means there is nothing to aggregate; the example state shows.
@@ -3871,3 +3872,2886 @@ private func clock(_ t: TimeInterval) -> String {
 - **Engine route changes:** the engine does not handle output-device changes yet.
 - **API names:** `Icon(_:size:tint:)`, `.clickable()`, `.contrastStroke` and `ContributionGrid.ramp` access are matched to what I saw in your code. Fix any that differ.
 - **Contrast:** the unplayed neutral steps (1F, 26, 2E on 17) are meant to be quiet. If the picture is invisible on your display, raise the steps. Do not add strokes.
+
+Code is inline below, in the order you'd drop it in. I haven't compiled any of it, and I haven't seen `IslandModel`, the shell view or `NotchGeometry`, so those seams are listed at the end.
+
+## 0. Tokens and glyph
+
+```swift
+// Colors.swift (DesignSystem)
+static let statusOK  = Color(light: .init(hex: 0x16A34A), dark: .init(hex: 0x4ADE80))
+static let statusBad = Color(light: .init(hex: 0xDC2626), dark: .init(hex: 0xF87171))
+// Glyph.swift
+case undo = "arrow.uturn.backward"
+```
+
+## 1. Bottom-left status (no black background)
+
+The mark is the brand pixel disc. It sits directly on the sidebar blur, with only a `wash` fill on hover.
+
+```swift
+// EngineStatusFooter.swift
+import SuperflowDesignSystem
+import SuperflowUIComponents
+import SwiftUI
+
+public enum EngineStatus: Equatable, Sendable {
+    case ready, warming(progress: Double?), basic, noMic
+    var word: String {
+        switch self {
+        case .ready: "Ready"
+        case .warming: "Warming up"
+        case .basic: "Basic cleanup"
+        case .noMic: "No microphone access"
+        }
+    }
+}
+
+private let discRows = [".###.", "#####", "#####", "#####", ".###."]
+private let ringRows = [".###.", "#...#", "#...#", "#...#", ".###."]
+
+struct StatusMark: View {
+    let status: EngineStatus
+    let hover: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduce
+
+    private var animating: Bool {
+        if case .warming(nil) = status { return !reduce }
+        return false
+    }
+
+    var body: some View {
+        let status = status, hover = hover, reduce = reduce
+        TimelineView(.animation(minimumInterval: 0.14, paused: !animating)) { tl in
+            let step = Int(tl.date.timeIntervalSinceReferenceDate / 0.14) % 8
+            Canvas { ctx, _ in
+                let rows: [String]
+                if case .noMic = status { rows = ringRows } else { rows = discRows }
+                for (j, line) in rows.enumerated() {
+                    for (i, ch) in line.enumerated() where ch == "#" {
+                        let d = hypot(Double(i) - 2, Double(j) - 2)
+                        var tone: Color?
+                        switch status {
+                        case .ready:
+                            tone = (hover && i == 2 && j == 2) ? Tok.text : Tok.statusOK
+                        case .warming(let p):
+                            if reduce { tone = Ramp.blue[3] }
+                            else if let p { tone = d / 2.83 <= p ? Ramp.blue[4] : Tok.washStrong }
+                            else { tone = d <= Double(step) * 0.45 ? Ramp.blue[4] : Tok.washStrong }
+                        case .basic:
+                            tone = (i + j) % 2 == 0 ? Tok.text2 : nil          // dithered: half-power
+                        case .noMic:
+                            tone = Tok.statusBad
+                        }
+                        guard let tone else { continue }
+                        ctx.fill(Path(CGRect(x: CGFloat(i) * 4, y: CGFloat(j) * 4, width: 3, height: 3)),
+                                 with: .color(tone), style: FillStyle(antialiased: false))
+                    }
+                }
+            }
+        }
+        .frame(width: 19, height: 19)
+        .frame(width: 20, height: 20)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Lives in UIComponents next to Sidebar (lint bans raw Button in features).
+struct EngineStatusFooter: View {
+    let status: EngineStatus
+    let action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                StatusMark(status: status, hover: hover)
+                Text(status.word)
+                    .appType(.label).foregroundStyle(Tok.text).lineLimit(1)
+                    .id(status.word).transition(.opacity)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12).frame(height: 40)
+            .background(hover ? Tok.wash : .clear, in: .rect(cornerRadius: Radius.nested, style: .continuous))
+            .contentShape(.rect(cornerRadius: Radius.nested, style: .continuous))
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .onHover { hover = $0 }
+        .animation(hover ? Motion.hoverIn : Motion.hoverOut, value: hover)
+        .animation(.snappy(duration: 0.20), value: status.word)
+        .clickable()
+        .accessibilityLabel(status.word)
+    }
+}
+```
+
+## 2. Island scenes, events and sizes
+
+```swift
+// IslandScene.swift
+import CoreGraphics
+import Foundation
+
+public enum ListenMode: Equatable, Sendable { case hold, latched }
+
+public struct HeldClip: Equatable, Sendable {
+    public let words: Int
+    public let preview: String?
+    public init(words: Int, preview: String? = nil) { self.words = words; self.preview = preview }
+}
+
+public struct IslandNote: Equatable, Sendable, Identifiable {
+    public enum Kind: Equatable, Sendable { case milestone, streak, modelReady, update, info }
+    public let id: UUID
+    public let kind: Kind
+    public let title: String
+    public let detail: String?
+    public let action: String?
+    public init(kind: Kind, title: String, detail: String? = nil, action: String? = nil, id: UUID = UUID()) {
+        self.kind = kind; self.title = title; self.detail = detail; self.action = action; self.id = id
+    }
+    public static func milestone(words: Int) -> IslandNote {
+        .init(kind: .milestone, title: "\(words.formatted()) words", detail: "dictated so far")
+    }
+    public static func streak(days: Int) -> IslandNote {
+        .init(kind: .streak, title: "\(days)-day streak", detail: "keep it going tomorrow")
+    }
+    public static func modelReady(_ name: String) -> IslandNote {
+        .init(kind: .modelReady, title: name, detail: "installed and ready")
+    }
+}
+
+public enum Milestones {
+    public static let words = [1_000, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000]
+    public static func crossed(from old: Int, to new: Int) -> Int? { words.last { old < $0 && new >= $0 } }
+}
+
+public enum MeetingScene: Equatable, Sendable {
+    case recording(hint: Bool), confirmDiscard, saving
+}
+
+public enum IslandScene: Equatable, Sendable {
+    case idle, hover
+    case listening(ListenMode, hint: Bool)
+    case processing
+    case landed(words: Int)
+    case cancelled(HeldClip)
+    case failed(IslandTranscript)
+    case recent
+    case meeting(MeetingScene)
+    case note(IslandNote)
+}
+
+public enum IslandTimer: String, CaseIterable, Hashable, Sendable {
+    case hoverDwell, landed, hint, cancel, discard, noteShow, noteGap, failed, failedLeave
+    public var seconds: TimeInterval {
+        switch self {
+        case .hoverDwell: 0.12
+        case .landed: 0.9
+        case .hint: 2.4
+        case .cancel, .discard: 6
+        case .noteShow: 4.5
+        case .noteGap: 0.6
+        case .failed: 12
+        case .failedLeave: 4
+        }
+    }
+}
+
+public enum IslandHaptic: Sendable { case alignment, levelChange, generic }
+
+/// Replaces the old IslandEvent in IslandFeed.swift.
+public enum IslandEvent: Equatable, Sendable {
+    // from the feed
+    case holdBegan(IslandTarget?), holdEnded
+    case landed(words: Int), pasteFailed(IslandTranscript)
+    case meetingBegan(Date), meetingEnded
+    case note(IslandNote)
+    // from the hotkey router
+    case latched, submitted, cancelled(HeldClip), undone
+    case meetingDiscardAsked, meetingKept, meetingDiscarded
+    // from the Island itself
+    case dismissed, hoverChanged(Bool), notchClicked, timer(IslandTimer)
+}
+
+public protocol IslandActions: Sendable {
+    func undoCancel() async
+    func dropCancelled()
+    func discardMeeting()
+    func retryPaste(_ t: IslandTranscript) async
+    func open(_ note: IslandNote)
+}
+
+public struct IslandShapeSpec: Equatable, Sendable {
+    public var width: CGFloat, height: CGFloat, top: CGFloat, bottom: CGFloat
+}
+
+extension IslandScene {
+    /// Feed this to the shape. Keep your existing idle/hover radii if they differ.
+    public func spec(notch: CGFloat, band: CGFloat) -> IslandShapeSpec {
+        func wings(_ extra: CGFloat, below: CGFloat = 0, top: CGFloat = 6, bottom: CGFloat = 14) -> IslandShapeSpec {
+            IslandShapeSpec(width: notch + extra, height: band + below, top: top, bottom: bottom)
+        }
+        func card() -> IslandShapeSpec { IslandShapeSpec(width: 480, height: band + 60, top: 12, bottom: 24) }
+        switch self {
+        case .idle: return IslandShapeSpec(width: notch, height: band, top: 0, bottom: 8)
+        case .hover: return IslandShapeSpec(width: notch + 8, height: band + 4, top: 6, bottom: 10)
+        case .listening(let mode, let hint):
+            switch (mode, hint) {
+            case (.hold, _): return wings(112)
+            case (.latched, false): return wings(168)
+            case (.latched, true): return wings(168, below: 32, top: 8, bottom: 18)
+            }
+        case .processing, .landed: return wings(112)
+        case .cancelled, .failed, .recent, .note: return card()
+        case .meeting(let m):
+            switch m {
+            case .recording(let hint): return hint ? wings(232, below: 32, top: 8, bottom: 18) : wings(232)
+            case .confirmDiscard: return card()
+            case .saving: return wings(232)
+            }
+        }
+    }
+}
+```
+
+## 3. The reducer (pure, testable)
+
+```swift
+// IslandMachine.swift
+import Foundation
+
+public enum IslandEffect: Equatable, Sendable {
+    case start(IslandTimer), stop(IslandTimer)
+    case haptic(IslandHaptic), announce(String)
+    case restoreHeld, dropHeld, discardMeeting
+}
+
+public struct IslandMachine: Sendable {
+    public private(set) var scene: IslandScene = .idle
+    public private(set) var target: IslandTarget?
+    public private(set) var meetingStart: Date?
+    public private(set) var deadline: Date?
+    private var queue: [IslandNote] = []
+    private var hovering = false
+    private let hasNotch: Bool
+
+    public init(hasNotch: Bool) { self.hasNotch = hasNotch }
+
+    private var stopAll: [IslandEffect] { IslandTimer.allCases.map { .stop($0) } }
+
+    private mutating func rest() -> [IslandEffect] {
+        scene = .idle; deadline = nil
+        return queue.isEmpty ? [] : [.start(.noteGap)]
+    }
+
+    private mutating func show(_ n: IslandNote) -> [IslandEffect] {
+        scene = .note(n)
+        return [.stop(.hoverDwell), .start(.noteShow), .haptic(.levelChange), .announce(n.title)]
+    }
+
+    public mutating func send(_ event: IslandEvent, now: Date = .now) -> [IslandEffect] {
+        switch event {
+        case .holdBegan(let t):
+            if case .meeting = scene { return [] }
+            var fx = stopAll
+            if case .cancelled = scene { fx.append(.dropHeld) }
+            target = t; deadline = nil
+            scene = .listening(.hold, hint: false)
+            return fx + [.haptic(.alignment), .announce("Listening")]
+
+        case .holdEnded:
+            guard case .listening(.hold, _) = scene else { return [] }
+            scene = .processing
+            return []
+
+        case .latched:
+            guard case .listening(.hold, _) = scene else { return [] }
+            scene = .listening(.latched, hint: true)
+            return [.start(.hint), .haptic(.levelChange),
+                    .announce("Hands-free. Return sends. Escape cancels.")]
+
+        case .submitted:
+            switch scene {
+            case .listening:
+                scene = .processing
+                return [.stop(.hint), .haptic(.generic)]
+            case .meeting(.recording(_)), .meeting(.confirmDiscard):
+                scene = .meeting(.saving); deadline = nil
+                return [.stop(.hint), .stop(.discard), .haptic(.generic)]
+            default: return []
+            }
+
+        case .cancelled(let clip):
+            switch scene {
+            case .listening, .processing:
+                guard clip.words > 0 || clip.preview != nil else { return [.stop(.hint), .dropHeld] + rest() }
+                scene = .cancelled(clip); deadline = now + IslandTimer.cancel.seconds
+                return [.stop(.hint), .start(.cancel), .haptic(.generic),
+                        .announce("Cancelled. Undo available for six seconds.")]
+            default: return []
+            }
+
+        case .undone:
+            guard case .cancelled = scene else { return [] }
+            scene = .processing; deadline = nil
+            return [.stop(.cancel), .restoreHeld, .haptic(.levelChange)]
+
+        case .landed(let w):
+            switch scene {
+            case .processing, .listening:
+                scene = .landed(words: w)
+                return [.start(.landed), .haptic(.levelChange), .announce("Pasted")]
+            default: return []
+            }
+
+        case .pasteFailed(let t):
+            if case .meeting = scene { return [] }
+            scene = .failed(t)
+            return stopAll + [.start(.failed), .haptic(.generic),
+                              .announce("Couldn't paste. Transcript ready to copy.")]
+
+        case .dismissed:
+            switch scene {
+            case .cancelled: return [.stop(.cancel), .dropHeld] + rest()
+            case .failed, .recent, .note: return stopAll + rest()
+            default: return []
+            }
+
+        case .hoverChanged(let inside):
+            hovering = inside
+            switch scene {
+            case .idle: return inside ? (hasNotch ? [.start(.hoverDwell)] : []) : [.stop(.hoverDwell)]
+            case .hover: return rest()
+            case .note: return inside ? [.stop(.noteShow)] : [.start(.noteShow)]
+            case .failed: return inside ? [.stop(.failed), .stop(.failedLeave)] : [.start(.failedLeave)]
+            default: return []
+            }
+
+        case .notchClicked:
+            switch scene {
+            case .idle, .hover: scene = .recent; return [.stop(.hoverDwell)]
+            case .recent: return rest()
+            default: return []
+            }
+
+        case .meetingBegan(let d):
+            if case .meeting = scene { return [] }
+            var fx = stopAll
+            if case .cancelled = scene { fx.append(.dropHeld) }
+            meetingStart = d; deadline = nil
+            scene = .meeting(.recording(hint: true))
+            return fx + [.start(.hint), .haptic(.alignment), .announce("Meeting recording")]
+
+        case .meetingDiscardAsked:
+            guard case .meeting(.recording(_)) = scene else { return [] }
+            scene = .meeting(.confirmDiscard); deadline = now + IslandTimer.discard.seconds
+            return [.stop(.hint), .start(.discard), .haptic(.generic),
+                    .announce("Discard this meeting? Recording continues.")]
+
+        case .meetingKept:
+            guard case .meeting(.confirmDiscard) = scene else { return [] }
+            scene = .meeting(.recording(hint: false)); deadline = nil
+            return [.stop(.discard)]
+
+        case .meetingDiscarded:
+            guard case .meeting = scene else { return [] }
+            meetingStart = nil
+            return [.stop(.discard), .discardMeeting] + rest()
+
+        case .meetingEnded:
+            guard case .meeting = scene else { return [] }
+            meetingStart = nil
+            return [.haptic(.levelChange)] + rest()
+
+        case .note(let n):
+            switch scene {
+            case .idle, .hover: return show(n)
+            default:
+                if queue.count < 4 { queue.append(n) }
+                return []
+            }
+
+        case .timer(let t):
+            switch t {
+            case .hoverDwell:
+                if scene == .idle, hovering { scene = .hover }
+                return []
+            case .landed:
+                if case .landed = scene { return rest() }
+                return []
+            case .hint:
+                if case .listening(.latched, true) = scene { scene = .listening(.latched, hint: false) }
+                if case .meeting(.recording(true)) = scene { scene = .meeting(.recording(hint: false)) }
+                return []
+            case .cancel:
+                if case .cancelled = scene { return [.dropHeld] + rest() }
+                return []
+            case .discard:
+                if case .meeting(.confirmDiscard) = scene {
+                    scene = .meeting(.recording(hint: false)); deadline = nil
+                }
+                return []
+            case .noteShow:
+                if case .note = scene { return rest() }
+                return []
+            case .noteGap:
+                if scene == .idle || scene == .hover, !queue.isEmpty { return show(queue.removeFirst()) }
+                return []
+            case .failed, .failedLeave:
+                if case .failed = scene { return rest() }
+                return []
+            }
+        }
+    }
+}
+```
+
+## 4. The model (replaces `IslandModel`)
+
+```swift
+// IslandModel.swift
+import AppKit
+import Foundation
+
+@MainActor @Observable
+public final class IslandModel {
+    public private(set) var scene: IslandScene = .idle
+    public private(set) var target: IslandTarget?
+    public private(set) var meetingStart: Date?
+    public private(set) var deadline: Date?
+    public private(set) var copied = false
+    public private(set) var recent: IslandTranscript?
+    public var meetingEscClaimed = false
+    public var geometry: NotchGeometry
+    public let meter = IslandMeterModel()
+    @ObservationIgnored public var onSceneChange: ((IslandScene) -> Void)?
+
+    @ObservationIgnored private var machine: IslandMachine
+    @ObservationIgnored private var timers: [IslandTimer: Task<Void, Never>] = [:]
+    @ObservationIgnored private var pumps: [Task<Void, Never>] = []
+    @ObservationIgnored private let feed: IslandFeed
+    @ObservationIgnored private let actions: IslandActions
+
+    public init(feed: IslandFeed, actions: IslandActions, geometry: NotchGeometry) {
+        self.feed = feed; self.actions = actions; self.geometry = geometry
+        machine = IslandMachine(hasNotch: geometry.hasNotch)
+    }
+
+    /// The shell animates THIS (one transaction for shape, radii and content).
+    public var shape: IslandShapeSpec { scene.spec(notch: geometry.notch.width, band: geometry.band) }
+
+    public func start() {
+        guard pumps.isEmpty else { return }
+        let feed = self.feed
+        pumps = [
+            Task { [weak self] in for await e in feed.events { self?.send(e) } },
+            Task { [weak self] in for await l in feed.levels { self?.meter.ingest(l) } },
+        ]
+    }
+
+    public func send(_ event: IslandEvent) {
+        let fx = machine.send(event)
+        scene = machine.scene; target = machine.target
+        meetingStart = machine.meetingStart; deadline = machine.deadline
+        run(fx); syncMeter(); onSceneChange?(scene)
+    }
+
+    // MARK: intents from the UI
+    public func hover(_ inside: Bool) { send(.hoverChanged(inside)) }
+    public func notchClicked() { recent = feed.lastTranscript(); send(.notchClicked) }
+    public func undo() { send(.undone) }
+    public func keepMeeting() { send(.meetingKept) }
+    public func discardMeeting() { send(.meetingDiscarded) }
+    public func retryPaste(_ t: IslandTranscript) { let a = actions; Task { await a.retryPaste(t) } }
+    public func open(_ n: IslandNote) { actions.open(n); send(.dismissed) }
+
+    public func copy(_ t: IslandTranscript) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(t.text, forType: .string)
+        copied = true
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+        Task { try? await Task.sleep(for: .milliseconds(900)); copied = false }
+    }
+
+    // MARK: effects
+    private func syncMeter() {
+        switch scene {
+        case .listening, .meeting: if !meter.isRunning { meter.start() }
+        default: if meter.isRunning { meter.stop() }
+        }
+    }
+
+    private func run(_ effects: [IslandEffect]) {
+        for fx in effects {
+            switch fx {
+            case .start(let t): arm(t)
+            case .stop(let t): timers[t]?.cancel(); timers[t] = nil
+            case .haptic(let h):
+                let p: NSHapticFeedbackManager.FeedbackPattern =
+                    h == .alignment ? .alignment : h == .levelChange ? .levelChange : .generic
+                NSHapticFeedbackManager.defaultPerformer.perform(p, performanceTime: .now)
+            case .announce(let s):
+                NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
+                                     userInfo: [.announcement: s,
+                                                .priority: NSAccessibilityPriorityLevel.high.rawValue])
+            case .restoreHeld: let a = actions; Task { await a.undoCancel() }
+            case .dropHeld: actions.dropCancelled()
+            case .discardMeeting: actions.discardMeeting()
+            }
+        }
+    }
+
+    private func arm(_ t: IslandTimer) {
+        if (t == .failed || t == .failedLeave) && !feed.storesTranscripts { return }
+        timers[t]?.cancel()
+        timers[t] = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(t.seconds))
+            guard !Task.isCancelled else { return }
+            self?.send(.timer(t))
+        }
+    }
+}
+```
+
+## 5. The pixel waveform (this fixes the "no waveform" bug)
+
+The old meter drew silence as `Tok.controlPressed` (#2E2E2E) on pure black, which is nearly invisible, and it only lit a cell once the level passed a 0.05 gate. This one draws silence as a visible blue dotted line and lights a cell at the smallest signal. It also has its own 30 Hz ticker and resets at the start of every session.
+
+```swift
+// IslandMeter.swift
+import SuperflowDesignSystem
+import SwiftUI
+
+@MainActor @Observable
+public final class IslandMeterModel {
+    public static let depth = 24
+    public private(set) var trail = [Float](repeating: 0, count: IslandMeterModel.depth)   // newest first
+    @ObservationIgnored private var peak: Float = 0
+    @ObservationIgnored private var shown: Float = 0
+    @ObservationIgnored private var task: Task<Void, Never>?
+    public var isRunning: Bool { task != nil }
+
+    public func ingest(_ level: Float) { peak = max(peak, min(1, max(0, level))) }
+
+    public func start() {
+        stop()
+        task = Task { [weak self] in
+            while !Task.isCancelled {
+                self?.tick()
+                try? await Task.sleep(for: .milliseconds(33))
+            }
+        }
+    }
+
+    public func stop() {
+        task?.cancel(); task = nil; peak = 0; shown = 0
+        if trail.contains(where: { $0 != 0 }) { trail = [Float](repeating: 0, count: Self.depth) }
+    }
+
+    private func tick() {
+        let target = peak; peak = 0
+        shown += (target - shown) * (target > shown ? 0.6 : 0.25)       // attack 0.6, release 0.25
+        if shown < 0.01 { shown = 0 }
+        if shown == 0, trail.allSatisfy({ $0 == 0 }) { return }
+        trail.insert(shown, at: 0); trail.removeLast()
+    }
+}
+
+/// Level -> half-height in cells. Any real signal lights at least one cell.
+func islandHalf(_ v: Float, max m: Int) -> Int {
+    v < 0.04 ? 0 : min(m, Int((v * Float(m) * 1.15).rounded(.up)))
+}
+
+private func cell(_ ctx: inout GraphicsContext, _ c: Int, _ r: Int, _ tone: Color) {
+    ctx.fill(Path(CGRect(x: CGFloat(c) * 3, y: CGFloat(r) * 3, width: 2, height: 2)),
+             with: .color(tone), style: FillStyle(antialiased: false))
+}
+
+/// Dictation: a symmetric envelope radiating from the notch. Newest level in the centre column.
+struct IslandPixelMeter: View {
+    let trail: [Float]
+    var columns = 11
+    var body: some View {
+        let cols = columns, trail = trail
+        Canvas { ctx, _ in
+            let mid = 3
+            for c in 0..<cols {
+                let d = abs(c - cols / 2)
+                let h = islandHalf(trail[min(d, trail.count - 1)], max: 3)
+                if h == 0 { cell(&ctx, c, mid, Ramp.blue[2]); continue }       // visible silence
+                for r in (mid - h)...(mid + h) {
+                    cell(&ctx, c, r, abs(r - mid) == h ? Ramp.blue[4] : Ramp.blue[3])
+                }
+            }
+        }
+        .frame(width: CGFloat(cols) * 3 - 1, height: 20)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Meetings: a scrolling barcode. Newest column on the right is a white scan head, older columns cool to navy.
+struct IslandPixelBarcode: View {
+    let trail: [Float]
+    var columns = 24
+    var body: some View {
+        let cols = columns, trail = trail
+        Canvas { ctx, _ in
+            let mid = 2
+            for c in 0..<cols {
+                let age = cols - 1 - c
+                let h = islandHalf(trail[min(age, trail.count - 1)], max: 2)
+                if h == 0 { cell(&ctx, c, mid, age > 15 ? Ramp.blue[1] : Ramp.blue[2]); continue }
+                let tone: Color = age == 0 ? Tok.text : age < 3 ? Ramp.blue[4] : age < 14 ? Ramp.blue[3] : Ramp.blue[2]
+                for r in (mid - h)...(mid + h) { cell(&ctx, c, r, tone) }
+            }
+        }
+        .frame(width: CGFloat(cols) * 3 - 1, height: 14)
+        .accessibilityHidden(true)
+    }
+}
+```
+
+## 6. Pixel marks: bitmaps, countdown, burst, wait
+
+```swift
+// IslandPixels.swift
+import SuperflowDesignSystem
+import SwiftUI
+
+/// Tiny hand-drawn glyphs. '#' is a cell. Develops left to right in whole steps.
+struct PixelBitmap: View {
+    let rows: [String]
+    var cell: CGFloat = 2
+    var gap: CGFloat = 1
+    var tone: Color = Ramp.blue[4]
+    var develop: TimeInterval = 0
+    @State private var born = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduce
+
+    static let check  = ["......#", ".....#.", "#...#..", ".#.#...", "..#...."]
+    static let lock   = [".###.", "#...#", "#...#", "#####", "#####", "#####"]
+    static let spark  = ["...#...", "...#...", "..###..", "#######", "..###..", "...#...", "...#..."]
+    static let flame  = ["..#..", "..##.", ".###.", "#####", "#####", ".###."]
+    static let arrowUp = ["..#..", ".###.", "#.#.#", "..#..", "..#.."]
+    static let dot    = [".##.", "####", "####", ".##."]
+
+    var body: some View {
+        let cols = rows.map(\.count).max() ?? 0
+        let rows = rows, cell = cell, gap = gap, tone = tone
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: develop == 0 || reduce)) { tl in
+            let p = (develop == 0 || reduce) ? 1 : min(1, tl.date.timeIntervalSince(born) / develop)
+            let visible = Int((p * Double(cols)).rounded(.up))
+            Canvas { ctx, _ in
+                for (r, line) in rows.enumerated() {
+                    for (c, ch) in line.enumerated() where ch == "#" && c < visible {
+                        ctx.fill(Path(CGRect(x: CGFloat(c) * (cell + gap), y: CGFloat(r) * (cell + gap),
+                                             width: cell, height: cell)),
+                                 with: .color(tone), style: FillStyle(antialiased: false))
+                    }
+                }
+            }
+        }
+        .frame(width: CGFloat(cols) * (cell + gap) - gap, height: CGFloat(rows.count) * (cell + gap) - gap)
+        .accessibilityHidden(true)
+    }
+}
+
+/// 6-second undo drain. 18 cells, one leaves every third of a second. Whole steps, no gradient.
+struct PixelCountdown: View {
+    let deadline: Date
+    let total: TimeInterval
+    var cells = 18
+    var body: some View {
+        let cells = cells, total = total, deadline = deadline
+        TimelineView(.animation(minimumInterval: 0.1)) { tl in
+            let left = max(0, deadline.timeIntervalSince(tl.date))
+            let lit = Int(ceil(left / total * Double(cells)))
+            Canvas { ctx, _ in
+                for i in 0..<cells {
+                    let x = CGFloat(i) * 4
+                    if i < lit {
+                        ctx.fill(Path(CGRect(x: x, y: 0, width: 3, height: 3)),
+                                 with: .color(i == lit - 1 ? Ramp.blue[4] : Ramp.blue[3]),
+                                 style: FillStyle(antialiased: false))
+                    } else {
+                        ctx.fill(Path(CGRect(x: x + 1, y: 1, width: 1, height: 1)),
+                                 with: .color(Tok.controlPressed), style: FillStyle(antialiased: false))
+                    }
+                }
+            }
+        }
+        .frame(width: CGFloat(cells) * 4 - 1, height: 3)
+        .accessibilityHidden(true)
+    }
+}
+
+/// One-shot milestone burst: a dithered ring of cells expanding in 14 whole steps over 700 ms.
+struct PixelBurst: View {
+    @State private var born = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    private let n = 14
+
+    var body: some View {
+        if reduce { Color.clear } else {
+            TimelineView(.animation(minimumInterval: 1.0 / 30)) { tl in
+                let p = min(1, tl.date.timeIntervalSince(born) / 0.7)
+                let step = (p * 14).rounded(.up) / 14
+                Canvas { ctx, _ in
+                    guard step < 1 else { return }
+                    let c = CGFloat(n - 1) / 2
+                    for j in 0..<n {
+                        for i in 0..<n {
+                            let d = hypot(CGFloat(i) - c, CGFloat(j) - c)
+                            guard abs(d - step * 8) < 1.2, hash(i, j) > step * 0.85 else { continue }
+                            ctx.fill(Path(CGRect(x: CGFloat(i) * 4, y: CGFloat(j) * 4, width: 3, height: 3)),
+                                     with: .color(abs(d - step * 8) < 0.6 ? Ramp.blue[4] : Ramp.blue[3]),
+                                     style: FillStyle(antialiased: false))
+                        }
+                    }
+                }
+            }
+            .frame(width: 55, height: 55).allowsHitTesting(false).accessibilityHidden(true)
+        }
+    }
+
+    private func hash(_ i: Int, _ j: Int) -> Double {
+        var h = UInt32(truncatingIfNeeded: i) &* 374761393 &+ UInt32(truncatingIfNeeded: j) &* 668265263
+        h = (h ^ (h >> 13)) &* 1274126177
+        h ^= h >> 16
+        return Double(h) / Double(UInt32.max)
+    }
+}
+
+/// Three 2 pt cells stepping every 160 ms. Reduce Motion holds all three.
+struct IslandWait: View {
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    var body: some View {
+        let reduce = reduce
+        TimelineView(.periodic(from: .now, by: 0.16)) { tl in
+            let active = reduce ? -1 : Int(tl.date.timeIntervalSinceReferenceDate / 0.16) % 3
+            Canvas { ctx, _ in
+                for i in 0..<3 {
+                    let tone = i == active ? Ramp.blue[4] : (reduce ? Ramp.blue[3] : Ramp.blue[2])
+                    ctx.fill(Path(CGRect(x: CGFloat(i) * 6, y: 0, width: 2, height: 2)),
+                             with: .color(tone), style: FillStyle(antialiased: false))
+                }
+            }
+        }
+        .frame(width: 14, height: 2).accessibilityHidden(true)
+    }
+}
+```
+
+## 7. Wings: listening, hands-free, meeting
+
+```swift
+// IslandWings.swift
+import SuperflowDesignSystem
+import SuperflowIcons
+import SuperflowUIComponents
+import SwiftUI
+
+/// Exhaustive on purpose. No default.
+public struct IslandContent: View {
+    let model: IslandModel
+    public init(model: IslandModel) { self.model = model }
+
+    public var body: some View {
+        switch model.scene {
+        case .idle: Color.clear
+        case .hover: VStack { Spacer(); Rectangle().fill(Ramp.blue[4]).frame(width: 2, height: 2).padding(.bottom, 1) }
+        case .listening(let mode, let hint): ListeningView(model: model, mode: mode, hint: hint)
+        case .processing:
+            WingRow(model: model) { TargetIcon(bundleID: model.target?.bundleID) } right: { IslandWait() }
+        case .landed:
+            WingRow(model: model) { TargetIcon(bundleID: model.target?.bundleID) } right: {
+                PixelBitmap(rows: PixelBitmap.check, develop: 0.16)
+            }
+        case .cancelled(let clip): CancelledCard(model: model, clip: clip)
+        case .failed(let t): TranscriptCard(model: model, kind: .failed, transcript: t)
+        case .recent: TranscriptCard(model: model, kind: .recent, transcript: model.recent)
+        case .meeting(let m): MeetingView(model: model, state: m)
+        case .note(let n): NoteCard(model: model, note: n)
+        }
+    }
+}
+
+struct WingRow<L: View, R: View>: View {
+    let model: IslandModel
+    @ViewBuilder var left: L
+    @ViewBuilder var right: R
+    var body: some View {
+        let g = model.geometry
+        HStack(spacing: 0) {
+            left.padding(.leading, 16).frame(maxWidth: .infinity, alignment: .leading)
+            if g.hasNotch { Color.clear.frame(width: g.notch.width) }
+            right.padding(.trailing, 16).frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(height: g.band)
+    }
+}
+
+struct TargetIcon: View {
+    let bundleID: String?
+    var body: some View {
+        if let bundleID { AppIcon(bundleID: bundleID, size: 20) }
+        else { Icon(.mic, size: 14, tint: Tok.text2).frame(width: 20, height: 20) }
+    }
+}
+
+struct ListeningView: View {
+    let model: IslandModel
+    let mode: ListenMode
+    let hint: Bool
+    var body: some View {
+        VStack(spacing: 0) {
+            WingRow(model: model) {
+                HStack(spacing: 8) {
+                    TargetIcon(bundleID: model.target?.bundleID)
+                    if mode == .latched { PixelBitmap(rows: PixelBitmap.lock, develop: 0.12) }   // the hands-free mark
+                }
+            } right: {
+                IslandPixelMeter(trail: model.meter.trail, columns: mode == .latched ? 15 : 11)
+            }
+            if mode == .latched && hint {
+                HintShelf(items: [("⏎ / fn", "Send"), ("esc", "Cancel")]).transition(.opacity)
+            }
+            Spacer(minLength: 0)
+        }
+        .animation(.smooth(duration: 0.30), value: hint)
+    }
+}
+
+struct HintShelf: View {
+    let items: [(key: String, label: String)]
+    var body: some View {
+        HStack(spacing: 20) {
+            ForEach(items.indices, id: \.self) { i in
+                HStack(spacing: 8) {
+                    HintKey(label: items[i].key)
+                    Text(items[i].label).appType(.caption).foregroundStyle(Tok.text2)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity).frame(height: 32)
+    }
+}
+
+struct HintKey: View {
+    let label: String
+    var body: some View {
+        Text(label).appType(.caption).foregroundStyle(Tok.text)
+            .padding(.horizontal, 6).frame(minWidth: 20, minHeight: 20)
+            .background(Tok.control, in: .rect(cornerRadius: Radius.chip, style: .continuous))
+    }
+}
+
+struct ElapsedText: View {
+    let since: Date
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { tl in
+            let s = max(0, Int(tl.date.timeIntervalSince(since)))
+            Text(s >= 3600 ? String(format: "%d:%02d:%02d", s / 3600, (s / 60) % 60, s % 60)
+                           : String(format: "%d:%02d", s / 60, s % 60))
+                .appType(.caption).monospacedDigit().foregroundStyle(Tok.text)
+        }
+        .frame(width: 44, alignment: .leading)
+    }
+}
+
+struct MeetingView: View {
+    let model: IslandModel
+    let state: MeetingScene
+    var body: some View {
+        switch state {
+        case .recording(let hint):
+            VStack(spacing: 0) {
+                WingRow(model: model) {
+                    HStack(spacing: 8) {
+                        PixelStop(cells: 7, cell: 2)                        // the brand disc is the record mark
+                        ElapsedText(since: model.meetingStart ?? .now)
+                    }
+                } right: {
+                    IslandPixelBarcode(trail: model.meter.trail)
+                }
+                if hint {
+                    HintShelf(items: model.meetingEscClaimed
+                              ? [("⌘ ×2", "Save"), ("esc", "Discard")]
+                              : [("⌘ ×2", "Save and end")])
+                    .transition(.opacity)
+                }
+                Spacer(minLength: 0)
+            }
+            .animation(.smooth(duration: 0.30), value: hint)
+        case .confirmDiscard: DiscardCard(model: model)
+        case .saving:
+            WingRow(model: model) {
+                HStack(spacing: 8) {
+                    Icon(.meetings, size: 14, tint: Tok.text2).frame(width: 20, height: 20)
+                    Text("Saving").appType(.caption).foregroundStyle(Tok.text2)
+                }
+            } right: { IslandWait() }
+        }
+    }
+}
+```
+
+## 8. Cards: undo, discard, failed or recent, notifications
+
+```swift
+// IslandCards.swift
+import SuperflowDesignSystem
+import SuperflowIcons
+import SuperflowUIComponents
+import SwiftUI
+
+struct CardFrame<Lead: View, Trail: View, Row: View>: View {
+    let model: IslandModel
+    var trailInset: CGFloat = IslandLayout.cardPad
+    @ViewBuilder var lead: Lead
+    @ViewBuilder var trail: Trail
+    @ViewBuilder var row: Row
+    var body: some View {
+        let g = model.geometry
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                lead.padding(.leading, IslandLayout.cardPad).frame(maxWidth: .infinity, alignment: .leading)
+                if g.hasNotch { Color.clear.frame(width: g.notch.width) }
+                trail.padding(.trailing, trailInset).frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .frame(height: g.band)
+            row.padding(.top, IslandLayout.cardGap).padding(.horizontal, IslandLayout.cardPad)
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+struct CountdownNumeral: View {
+    let deadline: Date?
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.25)) { tl in
+            let n = Int(ceil(max(0, (deadline ?? tl.date).timeIntervalSince(tl.date))))
+            Text("\(n)").appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
+                .contentTransition(.numericText(countsDown: true))
+        }
+        .frame(width: 16, alignment: .trailing)
+    }
+}
+
+/// Esc during a dictation. The audio and partial text are held for 6 s.
+struct CancelledCard: View {
+    let model: IslandModel
+    let clip: HeldClip
+    var body: some View {
+        CardFrame(model: model) {
+            Text("Cancelled.").appType(.label).foregroundStyle(Tok.text).lineLimit(1)
+        } trail: {
+            CountdownNumeral(deadline: model.deadline)
+        } row: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Was that an accident?").appType(.reading).foregroundStyle(Tok.text)
+                    if let d = model.deadline { PixelCountdown(deadline: d, total: IslandTimer.cancel.seconds) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                AppButton("Undo", glyph: .undo, kind: .primary, height: 28) { model.undo() }.frame(width: 88)
+            }
+            .frame(minHeight: IslandLayout.cardRow)
+        }
+    }
+}
+
+/// Esc during a meeting. Recording never stops; the safe default (Keep) wins after 6 s.
+struct DiscardCard: View {
+    let model: IslandModel
+    var body: some View {
+        CardFrame(model: model) {
+            Text("Discard?").appType(.label).foregroundStyle(Tok.text)
+        } trail: {
+            CountdownNumeral(deadline: model.deadline)
+        } row: {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Recording continues.").appType(.reading).foregroundStyle(Tok.text)
+                    if let d = model.deadline { PixelCountdown(deadline: d, total: IslandTimer.discard.seconds) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                AppButton("Discard", glyph: nil, kind: .secondary, height: 28) { model.discardMeeting() }.frame(width: 80)
+                AppButton("Keep", glyph: nil, kind: .primary, height: 28) { model.keepMeeting() }.frame(width: 72)
+            }
+            .frame(minHeight: IslandLayout.cardRow)
+        }
+    }
+}
+
+/// "Not pasted." and the click-the-notch card. Failed gains Paste again.
+struct TranscriptCard: View {
+    enum Kind { case failed, recent }
+    let model: IslandModel
+    let kind: Kind
+    let transcript: IslandTranscript?
+
+    var body: some View {
+        CardFrame(model: model, trailInset: kind == .failed ? IslandLayout.cardPad - 8 : IslandLayout.cardPad) {
+            HStack(spacing: 8) {
+                if kind == .recent {
+                    TargetIcon(bundleID: transcript?.bundleID)
+                }
+                Text(kind == .failed ? "Not pasted." : (transcript?.appName ?? "Dictation"))
+                    .appType(.label).foregroundStyle(Tok.text).lineLimit(1)
+            }
+        } trail: {
+            if kind == .failed {
+                BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
+            } else if let transcript {
+                Text(Humanize.when(transcript.date)).appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
+            }
+        } row: {
+            content
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        if let t = transcript {
+            HStack(spacing: 8) {
+                Text(t.text.replacingOccurrences(of: "\n", with: " "))
+                    .appType(.reading).foregroundStyle(Tok.text).lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity, alignment: .leading).clipped()
+                    .modifier(EdgeFade(length: 32))
+                if kind == .failed {
+                    AppButton("Paste again", glyph: nil, kind: .secondary, height: 28) { model.retryPaste(t) }
+                        .frame(width: 104)
+                }
+                AppButton(model.copied ? "Copied" : "Copy", glyph: model.copied ? .checkmark : nil,
+                          kind: kind == .failed && !model.copied ? .primary : .secondary, height: 28) { model.copy(t) }
+                    .frame(width: 88)
+            }
+            .frame(height: IslandLayout.cardRow)
+            .animation(.snappy(duration: 0.20), value: model.copied)
+        } else {
+            Text("Hold fn and speak.").appType(.reading).foregroundStyle(Tok.text2)
+                .frame(maxWidth: .infinity, alignment: .leading).frame(height: IslandLayout.cardRow)
+        }
+    }
+}
+
+/// Superflow's own notifications. A milestone gets a one-shot pixel burst behind its mark.
+struct NoteCard: View {
+    let model: IslandModel
+    let note: IslandNote
+
+    private var rows: [String] {
+        switch note.kind {
+        case .milestone: PixelBitmap.spark
+        case .streak: PixelBitmap.flame
+        case .modelReady: PixelBitmap.check
+        case .update: PixelBitmap.arrowUp
+        case .info: PixelBitmap.dot
+        }
+    }
+
+    var body: some View {
+        CardFrame(model: model, trailInset: IslandLayout.cardPad - 8) {
+            PixelBitmap(rows: rows, develop: 0.2)
+                .frame(width: 20, height: 20)
+                .overlay { if note.kind == .milestone { PixelBurst() } }
+        } trail: {
+            BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
+        } row: {
+            HStack(spacing: 12) {
+                HStack(spacing: 8) {
+                    Text(note.title).appType(.label).foregroundStyle(Tok.text)
+                    if let d = note.detail { Text(d).appType(.caption).foregroundStyle(Tok.text2) }
+                }
+                .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                if let a = note.action {
+                    AppButton(a, glyph: nil, kind: .secondary, height: 28) { model.open(note) }.fixedSize()
+                }
+            }
+            .frame(height: IslandLayout.cardRow)
+        }
+    }
+}
+```
+
+## 9. Hands-free: double-tap fn and double-tap right ⌘
+
+The first quick tap keeps recording, so no audio is lost. If a second tap lands inside the window, the session latches. If the window expires, the tap is discarded.
+
+```swift
+// HandsFreeDetector.swift
+import Foundation
+
+public struct KeyEdge: Equatable, Sendable {
+    public enum Key: Equatable, Sendable { case fn, rightCommand, enter, escape, other }
+    public let key: Key, down: Bool, at: TimeInterval
+    public init(key: Key, down: Bool, at: TimeInterval) { self.key = key; self.down = down; self.at = at }
+}
+
+public enum DictationIntent: Equatable, Sendable { case began, ended, latched, submitted, cancelled, tapDiscarded }
+public enum MeetingIntent: Equatable, Sendable { case began, submitted, discardAsked }
+public enum CardIntent: Equatable, Sendable { case confirm, dismiss }
+public enum HotkeyIntent: Equatable, Sendable { case dictation(DictationIntent), meeting(MeetingIntent), card(CardIntent) }
+
+public struct HandsFreeConfig: Sendable {
+    public var tapMax: TimeInterval = 0.25
+    public var doubleTapWindow: TimeInterval = 0.35      // wire to the existing "Double-tap window" setting
+    /// Off by default: claiming Enter/Esc for a whole meeting would break every other app.
+    public var meetingClaimsKeys = false
+    public init() {}
+}
+
+public struct HandsFreeDetector: Sendable {
+    private enum D: Equatable { case idle, holding(since: TimeInterval, dirty: Bool), armed(until: TimeInterval), latched, awaitingRelease }
+    private enum M: Equatable { case idle, pressed(since: TimeInterval, dirty: Bool), armed(until: TimeInterval), awaitingRelease }
+    private var d: D = .idle
+    private var m: M = .idle
+    public var meetingActive = false
+    public var cardOpen = false
+    public var config: HandsFreeConfig
+
+    public init(config: HandsFreeConfig = .init()) { self.config = config }
+
+    public var deadline: TimeInterval? {
+        var out: [TimeInterval] = []
+        if case .armed(let u) = d { out.append(u) }
+        if case .armed(let u) = m { out.append(u) }
+        return out.min()
+    }
+
+    /// Ask BEFORE handle(): decides whether the key is swallowed.
+    public func claims(_ key: KeyEdge.Key) -> Bool {
+        switch key {
+        case .enter: return cardOpen || d == .latched || (config.meetingClaimsKeys && meetingActive)
+        case .escape:
+            if cardOpen || (config.meetingClaimsKeys && meetingActive) { return true }
+            switch d { case .holding, .armed, .latched: return true; default: return false }
+        default: return false
+        }
+    }
+
+    public mutating func tick(_ now: TimeInterval) -> [HotkeyIntent] {
+        var out: [HotkeyIntent] = []
+        if case .armed(let u) = d, now > u { d = .idle; out.append(.dictation(.tapDiscarded)) }
+        if case .armed(let u) = m, now > u { m = .idle }
+        return out
+    }
+
+    public mutating func handle(_ e: KeyEdge) -> [HotkeyIntent] {
+        var out: [HotkeyIntent] = []
+        switch e.key {
+        case .other:
+            // Any other key while a modifier is held means a chord, not a tap.
+            switch d {
+            case .holding(let s, _): d = .holding(since: s, dirty: true)
+            case .armed: d = .idle; out.append(.dictation(.tapDiscarded))
+            default: break
+            }
+            switch m {
+            case .pressed(let s, _): m = .pressed(since: s, dirty: true)
+            case .armed: m = .idle
+            default: break
+            }
+        case .fn: fn(e, &out)
+        case .rightCommand: command(e, &out)
+        case .enter: if e.down { enter(&out) }
+        case .escape: if e.down { escape(&out) }
+        }
+        return out
+    }
+
+    private mutating func fn(_ e: KeyEdge, _ out: inout [HotkeyIntent]) {
+        switch (d, e.down) {
+        case (.idle, true):
+            d = .holding(since: e.at, dirty: false); out.append(.dictation(.began))
+        case (.holding(let s, let dirty), false):
+            if !dirty && e.at - s <= config.tapMax { d = .armed(until: e.at + config.doubleTapWindow) }
+            else { d = .idle; out.append(.dictation(.ended)) }
+        case (.armed(let u), true):
+            if e.at <= u { d = .latched; out.append(.dictation(.latched)) }
+            else { d = .holding(since: e.at, dirty: false); out += [.dictation(.tapDiscarded), .dictation(.began)] }
+        case (.latched, true):
+            d = .awaitingRelease; out.append(.dictation(.submitted))
+        case (.awaitingRelease, false):
+            d = .idle
+        default: break
+        }
+    }
+
+    private mutating func command(_ e: KeyEdge, _ out: inout [HotkeyIntent]) {
+        switch (m, e.down) {
+        case (.idle, true): m = .pressed(since: e.at, dirty: false)
+        case (.pressed(let s, let dirty), false):
+            m = (!dirty && e.at - s <= config.tapMax) ? .armed(until: e.at + config.doubleTapWindow) : .idle
+        case (.armed(let u), true):
+            guard e.at <= u else { m = .pressed(since: e.at, dirty: false); return }
+            m = .awaitingRelease
+            if meetingActive { meetingActive = false; out.append(.meeting(.submitted)) }
+            else { meetingActive = true; out.append(.meeting(.began)) }
+        case (.awaitingRelease, false): m = .idle
+        default: break
+        }
+    }
+
+    private mutating func enter(_ out: inout [HotkeyIntent]) {
+        if cardOpen { out.append(.card(.confirm)); return }
+        if d == .latched { d = .idle; out.append(.dictation(.submitted)); return }
+        if config.meetingClaimsKeys && meetingActive { meetingActive = false; out.append(.meeting(.submitted)) }
+    }
+
+    private mutating func escape(_ out: inout [HotkeyIntent]) {
+        if cardOpen { out.append(.card(.dismiss)); return }
+        switch d {
+        case .holding: d = .awaitingRelease; out.append(.dictation(.cancelled)); return
+        case .armed, .latched: d = .idle; out.append(.dictation(.cancelled)); return
+        default: break
+        }
+        if config.meetingClaimsKeys && meetingActive { out.append(.meeting(.discardAsked)) }
+    }
+}
+```
+
+```swift
+// GlobalKeyTap.swift
+// Needs Accessibility (active tap, so it can swallow Return and Escape). If you already own a tap
+// for hold-to-talk, feed its edges into HandsFreeDetector instead and keep only the swallow logic.
+import ApplicationServices
+import CoreGraphics
+import Foundation
+
+private let tapCallback: CGEventTapCallBack = { _, type, event, refcon in
+    guard let refcon else { return Unmanaged.passUnretained(event) }
+    let tap = Unmanaged<GlobalKeyTap>.fromOpaque(refcon).takeUnretainedValue()
+    let swallow = MainActor.assumeIsolated { tap.handle(type: type, event: event) }
+    return swallow ? nil : Unmanaged.passUnretained(event)
+}
+
+@MainActor
+public final class GlobalKeyTap {
+    public let intents: AsyncStream<HotkeyIntent>
+    private let continuation: AsyncStream<HotkeyIntent>.Continuation
+    public var detector: HandsFreeDetector
+    private var port: CFMachPort?
+    private var swallowedUps: Set<Int64> = []
+    private var tickTask: Task<Void, Never>?
+
+    public init(config: HandsFreeConfig = .init()) {
+        let pair = AsyncStream<HotkeyIntent>.makeStream()
+        intents = pair.stream; continuation = pair.continuation
+        detector = HandsFreeDetector(config: config)
+    }
+
+    @discardableResult
+    public func start() -> Bool {
+        guard port == nil else { return true }
+        let mask: CGEventMask = (1 << CGEventType.flagsChanged.rawValue)
+            | (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue)
+        let refcon = Unmanaged.passUnretained(self).toOpaque()
+        guard let p = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap,
+                                        options: .defaultTap, eventsOfInterest: mask,
+                                        callback: tapCallback, userInfo: refcon) else { return false }
+        port = p
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, p, 0)
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: p, enable: true)
+        return true
+    }
+
+    fileprivate func handle(type: CGEventType, event: CGEvent) -> Bool {
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let port { CGEvent.tapEnable(tap: port, enable: true) }
+            return false
+        }
+        let code = event.getIntegerValueField(.keyboardEventKeycode)
+        let t = TimeInterval(event.timestamp) / 1_000_000_000
+        var edge: KeyEdge?
+        switch type {
+        case .flagsChanged:
+            if code == 54 {                                   // right command, device-dependent bit 0x10
+                edge = KeyEdge(key: .rightCommand, down: event.flags.rawValue & 0x10 != 0, at: t)
+            } else if code == 63 {                            // fn / globe
+                edge = KeyEdge(key: .fn, down: event.flags.contains(.maskSecondaryFn), at: t)
+            }
+        case .keyDown, .keyUp:
+            let down = type == .keyDown
+            switch code {
+            case 36, 76: edge = KeyEdge(key: .enter, down: down, at: t)
+            case 53: edge = KeyEdge(key: .escape, down: down, at: t)
+            default: if down { edge = KeyEdge(key: .other, down: true, at: t) }
+            }
+        default: break
+        }
+        guard let edge else { return false }
+        if !edge.down, swallowedUps.remove(code) != nil { return true }     // the matching key-up
+        let claim = edge.down && detector.claims(edge.key)
+        for i in detector.handle(edge) { continuation.yield(i) }
+        if claim { swallowedUps.insert(code) }
+        scheduleTick()
+        return claim
+    }
+
+    private func scheduleTick() {
+        tickTask?.cancel()
+        guard let deadline = detector.deadline else { return }
+        let delay = max(0, deadline - ProcessInfo.processInfo.systemUptime) + 0.01
+        tickTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled, let self else { return }
+            for i in self.detector.tick(ProcessInfo.processInfo.systemUptime) { self.continuation.yield(i) }
+        }
+    }
+}
+```
+
+```swift
+// HotkeyRouter.swift
+import Foundation
+
+@MainActor
+public protocol SessionControl: AnyObject {
+    func beginDictation()
+    func endDictation()
+    func discardTap()
+    func cancelDictation(keepFor seconds: TimeInterval) -> HeldClip
+    func beginMeeting()
+    func endMeeting()
+}
+
+@MainActor
+public final class HotkeyRouter {
+    private let tap: GlobalKeyTap
+    private let control: SessionControl
+    private let island: IslandModel
+    private var task: Task<Void, Never>?
+
+    public init(tap: GlobalKeyTap, control: SessionControl, island: IslandModel) {
+        self.tap = tap; self.control = control; self.island = island
+        island.onSceneChange = { [weak self] s in self?.sync(s) }
+    }
+
+    public func start() {
+        guard tap.start(), task == nil else { return }
+        let intents = tap.intents
+        task = Task { [weak self] in for await i in intents { self?.route(i) } }
+    }
+
+    private func sync(_ scene: IslandScene) {
+        switch scene {
+        case .cancelled, .meeting(.confirmDiscard): tap.detector.cardOpen = true
+        default: tap.detector.cardOpen = false
+        }
+        if case .meeting(let m) = scene, m != .saving { tap.detector.meetingActive = true }
+        else { tap.detector.meetingActive = false }
+        island.meetingEscClaimed = tap.detector.config.meetingClaimsKeys
+    }
+
+    private func route(_ intent: HotkeyIntent) {
+        switch intent {
+        case .dictation(let d):
+            switch d {
+            case .began: control.beginDictation()
+            case .ended: control.endDictation()
+            case .latched: island.send(.latched)
+            case .submitted: control.endDictation(); island.send(.submitted)
+            case .cancelled: island.send(.cancelled(control.cancelDictation(keepFor: IslandTimer.cancel.seconds)))
+            case .tapDiscarded: control.discardTap(); island.send(.cancelled(HeldClip(words: 0)))
+            }
+        case .meeting(let m):
+            switch m {
+            case .began: control.beginMeeting()
+            case .submitted: control.endMeeting(); island.send(.submitted)
+            case .discardAsked: island.send(.meetingDiscardAsked)
+            }
+        case .card(let c):
+            switch (island.scene, c) {
+            case (.cancelled, .confirm): island.undo()                       // Return = Undo
+            case (.cancelled, .dismiss): island.send(.dismissed)             // Esc = let it go
+            case (.meeting(.confirmDiscard), .confirm): island.keepMeeting()  // Return = Keep
+            case (.meeting(.confirmDiscard), .dismiss): island.discardMeeting() // Esc again = Discard
+            default: break
+            }
+        }
+    }
+}
+```
+
+## 10. Posting a notification
+
+```swift
+// In the stats writer, after a session lands:
+if let m = Milestones.crossed(from: oldTotalWords, to: newTotalWords) {
+    islandFeed.emit(.note(.milestone(words: m)))
+}
+islandFeed.emit(.note(.modelReady("S1-mini")))
+```
+
+## What you need to wire, and what I haven't verified
+
+- **Shell:** read `model.shape` (width, height, top, bottom) instead of your phase switch, put `IslandContent(model:)` inside it, and call `model.hover(_:)` and `model.notchClicked()` from the shape. Keep your existing idle and hover radii if they differ from mine.
+- **Feed:** delete the old `IslandEvent` in `IslandFeed.swift`. Your engine now has to emit `.latched`, `.cancelled(HeldClip)` and `.meetingBegan(Date)`, and implement `undoCancel()`, which keeps the audio and partial transcript for 6 s.
+- **Hotkeys:** this replaces the old hold-to-talk hotkey layer, so don't run both. A second tap only latches if the first tap kept recording instead of ending the session.
+- **Waveform:** if it is still flat after this, the cause is the feed. Check that `feed.levels` is actually being consumed and that `IslandBridge` yields to it.
+- **Meetings:** I did not make Return and Escape global for a whole meeting, because that would break every other app for an hour. `meetingClaimsKeys` defaults to off, so a meeting ends with a double-tap of right ⌘ and discards from the card. Flip the flag if you want it anyway.
+- **Notifications:** the Island shows Superflow's own notifications only. macOS has no public API for reading other apps' notifications.
+- **Design spec:** the warming status mark is a second looping animation, so update `DESIGN.md`. The Island meter's silence tone also changes to `Ramp.blue[2]`.
+- **Unmeasured:** nothing is checked at 2× or on a real notch. The `CGEventTap` flags, and `MainActor.assumeIsolated` under strict concurrency, are the most likely compile and behaviour surprises.Everything below builds on the files from my last message. Nothing here is compiled, and I still haven't seen your shell view, `IslandPanelController` or `IslandLayout`.
+
+I read your notification line as "iOS banners drop in from above, and this one grows out of the notch and is absorbed back into it". Tell me if you meant something else. Only genuine notifications are allowed through, which section 7 enforces.
+
+## 1. Scene, prefs and types
+
+Replace the matching declarations in `IslandScene.swift`.
+
+```swift
+// IslandScene.swift (changed or added)
+public struct IslandPrefs: Equatable, Sendable {
+    public var alwaysOn = false      // "Always show Island": visible at rest, click opens history
+    public var liveText = false      // "Show live text": streaming is always on, this only shows it
+    public init(alwaysOn: Bool = false, liveText: Bool = false) { self.alwaysOn = alwaysOn; self.liveText = liveText }
+}
+
+public struct LiveText: Equatable, Sendable {
+    public var text: String
+    public var speaker: String?
+    public var isFinal: Bool
+    public init(text: String, speaker: String? = nil, isFinal: Bool = false) { self.text = text; self.speaker = speaker; self.isFinal = isFinal }
+    public static let empty = LiveText(text: "")
+}
+
+public struct SpeakerShare: Equatable, Sendable, Identifiable {
+    public var id: String, name: String
+    public var seconds: Double
+    public var isYou: Bool
+    public init(id: String, name: String, seconds: Double, isYou: Bool) { self.id = id; self.name = name; self.seconds = seconds; self.isYou = isYou }
+}
+
+public struct MeetingPulse: Equatable, Sendable {
+    public var words: Int
+    public var speakers: [SpeakerShare]
+    public var current: String?
+    public init(words: Int, speakers: [SpeakerShare], current: String?) { self.words = words; self.speakers = speakers; self.current = current }
+    public static let empty = MeetingPulse(words: 0, speakers: [], current: nil)
+}
+
+extension IslandTranscript: Identifiable {
+    public var id: String { "\(date.timeIntervalSinceReferenceDate)" }
+}
+
+public struct IslandNote: Equatable, Sendable, Identifiable {
+    public enum Kind: Equatable, Sendable { case milestone, streak, modelReady, update, info }
+    public let id: UUID
+    public let kind: Kind
+    public let title: String
+    public let detail: String?
+    public let action: String?
+    public let value: Int?
+    public let postedAt: Date
+    public init(kind: Kind, title: String, detail: String? = nil, action: String? = nil,
+                value: Int? = nil, id: UUID = UUID(), postedAt: Date = .now) {
+        self.kind = kind; self.title = title; self.detail = detail; self.action = action
+        self.value = value; self.id = id; self.postedAt = postedAt
+    }
+    public static func milestone(words: Int) -> IslandNote {
+        .init(kind: .milestone, title: "\(words.formatted()) words", detail: "dictated by you", value: words)
+    }
+    public static func streak(days: Int) -> IslandNote {
+        .init(kind: .streak, title: "\(days)-day streak", detail: "keep it going tomorrow", value: days)
+    }
+    public static func modelReady(_ name: String) -> IslandNote {
+        .init(kind: .modelReady, title: name, detail: "installed and ready")
+    }
+}
+
+public enum MeetingScene: Equatable, Sendable {
+    case recording(hint: Bool), expanded, confirmDiscard, saving      // + expanded
+}
+
+public enum IslandScene: Equatable, Sendable {
+    case idle, hover
+    case listening(ListenMode, hint: Bool)
+    case processing
+    case landed(words: Int)
+    case cancelled(HeldClip)
+    case failed(IslandTranscript)
+    case recent
+    case history                                                       // + history
+    case meeting(MeetingScene)
+    case note(IslandNote)
+}
+
+// IslandEvent: add one case
+//     case configured(IslandPrefs)
+// IslandActions: add
+//     func openHistory()
+
+extension IslandScene {
+    public func spec(notch: CGFloat, band: CGFloat, prefs: IslandPrefs) -> IslandShapeSpec {
+        func wings(_ extra: CGFloat, below: CGFloat = 0, top: CGFloat = 6, bottom: CGFloat = 14) -> IslandShapeSpec {
+            IslandShapeSpec(width: notch + extra, height: band + below, top: top, bottom: bottom)
+        }
+        func wide(_ extra: CGFloat, below: CGFloat) -> IslandShapeSpec {
+            IslandShapeSpec(width: max(notch + extra, 400), height: band + below, top: 8, bottom: 18)
+        }
+        func card(_ below: CGFloat = 60) -> IslandShapeSpec {
+            IslandShapeSpec(width: 480, height: band + below, top: 12, bottom: 24)
+        }
+        switch self {
+        case .idle: return IslandShapeSpec(width: notch, height: band, top: 0, bottom: 8)
+        case .hover:
+            return prefs.alwaysOn
+                ? IslandShapeSpec(width: max(notch + 8, 232), height: band + 28, top: 6, bottom: 14)
+                : IslandShapeSpec(width: notch + 8, height: band + 4, top: 6, bottom: 10)
+        case .listening(let mode, let hint):
+            let extra: CGFloat = mode == .latched ? 168 : 112
+            if prefs.liveText { return wide(extra, below: 40) }
+            return (mode == .latched && hint) ? wings(168, below: 32, top: 8, bottom: 18) : wings(extra)
+        case .processing, .landed: return wings(112)
+        case .cancelled, .recent: return card()
+        case .failed: return card(148)
+        case .history: return card(296)
+        case .note: return card(76)
+        case .meeting(let m):
+            switch m {
+            case .recording(let hint):
+                if prefs.liveText { return wide(232, below: 40) }
+                return hint ? wings(232, below: 32, top: 8, bottom: 18) : wings(232)
+            case .expanded: return card(168)
+            case .confirmDiscard: return card()
+            case .saving: return wings(232)
+            }
+        }
+    }
+}
+
+// IslandFeed: add
+//     var live: AsyncStream<LiveText> { get }          // streaming partials, always produced
+//     var pulses: AsyncStream<MeetingPulse> { get }    // diarizer + word counter, about 1 Hz
+//     func history(limit: Int) -> [IslandTranscript]
+//     func wordsToday() -> Int
+```
+
+## 2. Reducer patches (`IslandMachine.swift`)
+
+```swift
+// stored property
+private var prefs = IslandPrefs()
+
+// new case
+case .configured(let p):
+    prefs = p
+    if !p.alwaysOn, scene == .history { return stopAll + rest() }
+    return []
+
+// replace these cases
+case .hoverChanged(let inside):
+    hovering = inside
+    switch scene {
+    case .idle: return inside ? ((hasNotch || prefs.alwaysOn) ? [.start(.hoverDwell)] : []) : [.stop(.hoverDwell)]
+    case .hover: return rest()
+    case .note: return inside ? [.stop(.noteShow)] : [.start(.noteShow)]
+    case .failed: return inside ? [.stop(.failed), .stop(.failedLeave)] : [.start(.failedLeave)]
+    default: return []
+    }
+
+case .notchClicked:
+    switch scene {
+    case .idle, .hover: scene = prefs.alwaysOn ? .history : .recent; return [.stop(.hoverDwell)]
+    case .recent, .history: return rest()
+    case .meeting(.recording(_)): scene = .meeting(.expanded); return [.stop(.hint)]
+    case .meeting(.expanded): scene = .meeting(.recording(hint: false)); return []
+    default: return []
+    }
+
+case .dismissed:
+    switch scene {
+    case .cancelled: return [.stop(.cancel), .dropHeld] + rest()
+    case .failed, .recent, .history, .note: return stopAll + rest()
+    case .meeting(.expanded): scene = .meeting(.recording(hint: false)); return []
+    default: return []
+    }
+
+// in .submitted
+case .meeting(.recording(_)), .meeting(.expanded), .meeting(.confirmDiscard):
+
+// in .meetingDiscardAsked
+switch scene {
+case .meeting(.recording(_)), .meeting(.expanded):
+    scene = .meeting(.confirmDiscard); deadline = now + IslandTimer.discard.seconds
+    return [.stop(.hint), .start(.discard), .haptic(.generic),
+            .announce("Discard this meeting? Recording continues.")]
+default: return []
+}
+
+// in .timer(.noteGap): stale notes never show
+queue.removeAll { now.timeIntervalSince($0.postedAt) > 120 }
+if scene == .idle || scene == .hover, !queue.isEmpty { return show(queue.removeFirst()) }
+return []
+```
+
+## 3. Model patches (`IslandModel.swift`)
+
+```swift
+// properties
+public private(set) var prefs = IslandPrefs()
+public private(set) var history: [IslandTranscript] = []
+public private(set) var today = 0
+public private(set) var live = LiveText.empty
+public private(set) var pulse = MeetingPulse.empty
+public private(set) var copiedID: String?
+public var copied: Bool { copiedID != nil }                       // replaces the old Bool
+
+public var shape: IslandShapeSpec { scene.spec(notch: geometry.notch.width, band: geometry.band, prefs: prefs) }
+
+// start(): add two pumps. Streaming always runs; the model only keeps text when the setting is on.
+Task { [weak self] in for await l in live { if self?.prefs.liveText == true { self?.live = l } } },
+Task { [weak self] in for await p in pulses { self?.pulse = p } },
+// with:  let live = feed.live, pulses = feed.pulses   (declared next to `let feed`)
+
+// send(): first lines
+if case .holdBegan = event { live = .empty }
+if case .meetingBegan = event { live = .empty; pulse = .empty }
+
+public func configure(_ p: IslandPrefs) { prefs = p; send(.configured(p)) }
+public func openHistory() { actions.openHistory(); send(.dismissed) }
+
+public func hover(_ inside: Bool) {
+    if inside, prefs.alwaysOn { today = feed.wordsToday() }
+    send(.hoverChanged(inside))
+}
+
+public func notchClicked() {
+    recent = feed.lastTranscript()
+    history = feed.history(limit: 5)
+    send(.notchClicked)
+}
+
+/// Copies the CLEANED text. A failed paste closes itself 0.9 s after the copy.
+public func copy(_ t: IslandTranscript) {
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(t.text, forType: .string)
+    copiedID = t.id
+    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    let wasFailed: Bool = { if case .failed = scene { return true } else { return false } }()
+    Task {
+        try? await Task.sleep(for: .milliseconds(wasFailed ? 900 : 1200))
+        copiedID = nil
+        if wasFailed, case .failed = scene { send(.dismissed) }
+    }
+}
+```
+
+## 4. Add to `EdgeFade.swift`
+
+This is the only file the lint allows to contain a gradient.
+
+```swift
+/// Live text: the oldest words dissolve on the left.
+struct EdgeFadeLeading: ViewModifier {
+    let length: CGFloat
+    func body(content: Content) -> some View {
+        content.mask {
+            HStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing).frame(width: length)
+                Rectangle()
+            }
+        }
+    }
+}
+
+/// A truncated multi-line transcript dissolves at the bottom.
+struct EdgeFadeBottom: ViewModifier {
+    let length: CGFloat
+    func body(content: Content) -> some View {
+        content.mask {
+            VStack(spacing: 0) {
+                Rectangle()
+                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: length)
+            }
+        }
+    }
+}
+```
+
+## 5. Live streaming text
+
+```swift
+// IslandLive.swift
+import SuperflowDesignSystem
+import SuperflowUIComponents
+import SwiftUI
+
+/// Newest words on the right, the oldest dissolve out of the left edge.
+/// Partials are `text2`; a finalised phrase turns `text`. The caret is the one blue pixel column where the next word lands.
+struct LiveLine: View {
+    let live: LiveText
+    var body: some View {
+        HStack(spacing: 8) {
+            if let s = live.speaker {
+                Text(s).appType(.caption).foregroundStyle(Ramp.blue[4]).lineLimit(1).fixedSize()
+            }
+            HStack(spacing: 2) {
+                if live.text.isEmpty {
+                    Text("Listening").appType(.reading).foregroundStyle(Tok.text2)
+                } else {
+                    Text(String(live.text.suffix(160)).replacingOccurrences(of: "\n", with: " "))
+                        .appType(.reading)
+                        .foregroundStyle(live.isFinal ? Tok.text : Tok.text2)
+                        .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                }
+                Rectangle().fill(Ramp.blue[4]).frame(width: 2, height: 14)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .clipped()
+            .modifier(EdgeFadeLeading(length: 32))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityHidden(true)               // VoiceOver reads the final transcript, not the churn
+    }
+}
+```
+
+## 6. Meeting intelligence panel
+
+Click the meeting wings to open the panel, and click again to collapse it. It shows a live timer, the live word count, who is speaking, and a talk-share bar made of pixel cells.
+
+```swift
+// IslandMeetingPanel.swift
+import SuperflowDesignSystem
+import SuperflowIcons
+import SuperflowUIComponents
+import SwiftUI
+
+struct ClockMetric: View {
+    let since: Date
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { tl in
+            let s = max(0, Int(tl.date.timeIntervalSince(since)))
+            Text(s >= 3600 ? String(format: "%d:%02d:%02d", s / 3600, (s / 60) % 60, s % 60)
+                           : String(format: "%d:%02d", s / 60, s % 60))
+                .appType(.metric).foregroundStyle(Tok.text)
+                .contentTransition(.numericText())
+        }
+        .frame(minWidth: 96, alignment: .leading)
+    }
+}
+
+/// 88 cells, one per ~1.1% of the meeting. Largest-remainder allocation, so the bar always fills exactly.
+struct PixelShareBar: View {
+    let shares: [SpeakerShare]
+    private let cells = 88
+
+    static func tone(_ s: SpeakerShare, index: Int) -> Color {
+        if s.isYou { return Ramp.blue[4] }
+        return [Tok.text2, Ramp.blue[2], Ramp.blue[3], Tok.controlPressed][index % 4]
+    }
+
+    private func allocation() -> [Int] {
+        let total = shares.reduce(0) { $0 + $1.seconds }
+        guard total > 0 else { return shares.map { _ in 0 } }
+        let raw = shares.map { $0.seconds / total * Double(cells) }
+        var out = raw.map { Int($0) }
+        let rest = cells - out.reduce(0, +)
+        let order = raw.indices.sorted { raw[$0] - Double(out[$0]) > raw[$1] - Double(out[$1]) }
+        for i in order.prefix(rest) { out[i] += 1 }
+        return out
+    }
+
+    var body: some View {
+        let alloc = allocation(), shares = shares, cells = cells
+        Canvas { ctx, _ in
+            guard alloc.reduce(0, +) > 0 else {
+                for c in 0..<cells {                                    // nothing said yet: dust
+                    ctx.fill(Path(CGRect(x: CGFloat(c) * 5 + 1.5, y: 1.5, width: 1, height: 1)),
+                             with: .color(Tok.controlPressed), style: FillStyle(antialiased: false))
+                }
+                return
+            }
+            var c = 0
+            for (i, n) in alloc.enumerated() {
+                for _ in 0..<n {
+                    ctx.fill(Path(CGRect(x: CGFloat(c) * 5, y: 0, width: 4, height: 4)),
+                             with: .color(Self.tone(shares[i], index: i)), style: FillStyle(antialiased: false))
+                    c += 1
+                }
+            }
+        }
+        .frame(width: CGFloat(cells) * 5 - 1, height: 4)
+        .animation(.snappy(duration: 0.20), value: alloc)
+        .accessibilityLabel("Talk time")
+        .accessibilityValue(shares.map { "\($0.name) \(Int(round(Double($0.seconds) / max(1, shares.reduce(0) { $0 + $1.seconds }) * 100))) percent" }.joined(separator: ", ")) 
+    }
+}
+
+struct MeetingPanel: View {
+    let model: IslandModel
+    var body: some View {
+        let p = model.pulse
+        let total = max(1, p.speakers.reduce(0) { $0 + $1.seconds })
+        CardFrame(model: model, trailInset: IslandLayout.cardPad - 8) {
+            HStack(spacing: 8) {
+                PixelStop(cells: 7, cell: 2)
+                Text("Recording").appType(.label).foregroundStyle(Tok.text)
+            }
+        } trail: {
+            BarIconButton(glyph: .close, label: "Collapse") { model.send(.notchClicked) }
+        } row: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .lastTextBaseline, spacing: 24) {
+                    ClockMetric(since: model.meetingStart ?? .now)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(p.words.formatted()).appType(.title).monospacedDigit().foregroundStyle(Tok.text)
+                            .contentTransition(.numericText())
+                        Text("words").appType(.caption).foregroundStyle(Tok.text2)
+                    }
+                    Spacer(minLength: 0)
+                    if let c = p.current {
+                        HStack(spacing: 6) {
+                            Rectangle().fill(Ramp.blue[4]).frame(width: 4, height: 4)
+                            Text(c).appType(.caption).foregroundStyle(Tok.text).lineLimit(1)
+                        }
+                    }
+                }
+                PixelShareBar(shares: p.speakers)
+                HStack(spacing: 16) {                                   // legend: separate elements, no dotted chain
+                    ForEach(Array(p.speakers.prefix(4).enumerated()), id: \.element.id) { i, s in
+                        HStack(spacing: 6) {
+                            Rectangle().fill(PixelShareBar.tone(s, index: i)).frame(width: 4, height: 4)
+                            Text(s.name).appType(.caption).foregroundStyle(Tok.text2).lineLimit(1)
+                            Text("\(Int((s.seconds / total * 100).rounded()))%")
+                                .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
+                        }
+                    }
+                }
+                if model.prefs.liveText { LiveLine(live: model.live).frame(height: 20) }
+            }
+        }
+    }
+}
+```
+
+## 7. Paste failed, notifications, history, idle
+
+```swift
+// IslandCards2.swift
+import SuperflowDesignSystem
+import SuperflowIcons
+import SuperflowUIComponents
+import SwiftUI
+
+/// Paste failed. The card opens, shows the cleaned text truncated with a fade, and closes itself 0.9 s after Copy.
+struct PasteFailedCard: View {
+    let model: IslandModel
+    let transcript: IslandTranscript
+    var body: some View {
+        let t = transcript
+        CardFrame(model: model, trailInset: IslandLayout.cardPad - 8) {
+            Text("Not pasted.").appType(.label).foregroundStyle(Tok.text).lineLimit(1)
+        } trail: {
+            BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
+        } row: {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(t.text.replacingOccurrences(of: "\n", with: " "))
+                    .appType(.reading).foregroundStyle(Tok.text)
+                    .lineLimit(3).multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60, alignment: .topLeading)
+                    .modifier(FadeIf(active: t.text.count > 120))
+                    .padding(12)
+                    .background(Tok.control, in: .rect(cornerRadius: Radius.nested, style: .continuous))
+                HStack(spacing: 12) {
+                    TargetIcon(bundleID: t.bundleID)
+                    if let n = t.appName { Text(n).appType(.caption).foregroundStyle(Tok.text2).lineLimit(1) }
+                    Text(Humanize.words(t.words)).appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
+                    Spacer(minLength: 0)
+                    AppButton("Paste again", glyph: nil, kind: .secondary, height: 28) { model.retryPaste(t) }.frame(width: 104)
+                    AppButton(model.copied ? "Copied" : "Copy", glyph: model.copied ? .checkmark : nil,
+                              kind: model.copied ? .secondary : .primary, height: 28) { model.copy(t) }.frame(width: 88)
+                }
+                .frame(height: 28)
+                .animation(.snappy(duration: 0.20), value: model.copied)
+            }
+        }
+    }
+}
+
+private struct FadeIf: ViewModifier {
+    let active: Bool
+    func body(content: Content) -> some View {
+        if active { content.modifier(EdgeFadeBottom(length: 20)) } else { content }
+    }
+}
+
+/// Counts up in 14 whole steps over 0.7 s. The final frame is always the exact value.
+struct CountUp: View {
+    let value: Int
+    @State private var born = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    var body: some View {
+        let value = value
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduce)) { tl in
+            let p = reduce ? 1 : min(1, tl.date.timeIntervalSince(born) / 0.7)
+            let shown = p >= 1 ? value : Int(Double(value) * (p * 14).rounded(.down) / 14)
+            ZStack(alignment: .leading) {
+                Text(value.formatted()).hidden()                        // reserves the final width
+                Text(shown.formatted()).contentTransition(.numericText())
+            }
+            .appType(.metric).monospacedDigit().foregroundStyle(Tok.text)
+        }
+    }
+}
+
+/// A genuine notification. It grows out of the notch and is absorbed back into it.
+struct NoteCard: View {
+    let model: IslandModel
+    let note: IslandNote
+    private var rows: [String] {
+        switch note.kind {
+        case .milestone: PixelBitmap.spark
+        case .streak: PixelBitmap.flame
+        case .modelReady: PixelBitmap.check
+        case .update: PixelBitmap.arrowUp
+        case .info: PixelBitmap.dot
+        }
+    }
+    var body: some View {
+        CardFrame(model: model, trailInset: IslandLayout.cardPad - 8) {
+            PixelBitmap(rows: rows, develop: 0.2).frame(width: 20, height: 20)
+                .overlay { if note.kind == .milestone { PixelBurst() } }
+        } trail: {
+            BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
+        } row: {
+            HStack(alignment: .lastTextBaseline, spacing: 8) {
+                if let v = note.value {
+                    CountUp(value: v)
+                    Text(note.kind == .streak ? "days in a row" : "words, dictated by you")
+                        .appType(.caption).foregroundStyle(Tok.text2)
+                } else {
+                    Text(note.title).appType(.title).foregroundStyle(Tok.text)
+                    if let d = note.detail { Text(d).appType(.caption).foregroundStyle(Tok.text2) }
+                }
+                Spacer(minLength: 12)
+                if let a = note.action {
+                    AppButton(a, glyph: nil, kind: .secondary, height: 28) { model.open(note) }.fixedSize()
+                }
+            }
+            .lineLimit(1).frame(minHeight: 36)
+        }
+    }
+}
+
+/// Resting state when "Always show Island" is on: a five-cell lamp on the notch's lower edge.
+struct IdleMark: View {
+    let model: IslandModel
+    var body: some View {
+        if model.prefs.alwaysOn {
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                Canvas { ctx, _ in
+                    let tones = [Ramp.blue[1], Ramp.blue[2], Ramp.blue[4], Ramp.blue[2], Ramp.blue[1]]
+                    for (i, t) in tones.enumerated() {
+                        ctx.fill(Path(CGRect(x: CGFloat(i) * 3, y: 0, width: 2, height: 2)),
+                                 with: .color(t), style: FillStyle(antialiased: false))
+                    }
+                }
+                .frame(width: 14, height: 2).padding(.bottom, 3)
+            }
+            .accessibilityHidden(true)
+        } else { Color.clear }
+    }
+}
+
+/// Hover on the resting Island: today's words, rolling.
+struct HoverShelf: View {
+    let model: IslandModel
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            if model.prefs.alwaysOn {
+                HStack(spacing: 8) {
+                    Text(model.today.formatted()).appType(.label).monospacedDigit()
+                        .foregroundStyle(Tok.text).contentTransition(.numericText())
+                    Text("words today").appType(.caption).foregroundStyle(Tok.text2)
+                }
+                .frame(height: 28)
+            } else {
+                Rectangle().fill(Ramp.blue[4]).frame(width: 2, height: 2).padding(.bottom, 1)
+            }
+        }
+    }
+}
+```
+
+```swift
+// IslandHistory.swift
+import SuperflowDesignSystem
+import SuperflowIcons
+import SuperflowUIComponents
+import SwiftUI
+
+/// Click the always-visible Island and it grows downward into your last five dictations.
+/// Copy always copies the CLEANED text. Up/down move, Return copies, Space expands, Esc closes.
+struct HistoryPanel: View {
+    let model: IslandModel
+    @State private var cursor = 0
+    @State private var open: String?
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        let g = model.geometry, rows = model.history
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Text("Recent").appType(.label).foregroundStyle(Tok.text)
+                    .padding(.leading, IslandLayout.cardPad).frame(maxWidth: .infinity, alignment: .leading)
+                if g.hasNotch { Color.clear.frame(width: g.notch.width) }
+                BarIconButton(glyph: .close, label: "Close") { model.send(.dismissed) }
+                    .padding(.trailing, IslandLayout.cardPad - 8).frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .frame(height: g.band)
+
+            Group {
+                if rows.isEmpty {
+                    EmptyState(title: "Nothing dictated yet.", message: "Hold fn and speak.", density: .pane)
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 2) {
+                            ForEach(Array(rows.enumerated()), id: \.element.id) { i, t in
+                                HistoryRow(model: model, transcript: t, selected: i == cursor, expanded: open == t.id) {
+                                    cursor = i; open = open == t.id ? nil : t.id
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(height: 240).padding(.top, 12).padding(.horizontal, 12)
+
+            HStack(spacing: 16) {
+                keyHint("↑↓", "Move"); keyHint("⏎", "Copy"); keyHint("esc", "Close")
+                Spacer(minLength: 0)
+                AppButton("Open History", glyph: nil, kind: .quiet, height: 24) { model.openHistory() }
+            }
+            .padding(.horizontal, IslandLayout.cardPad).frame(height: 44)
+            Spacer(minLength: 0)
+        }
+        .focusable().focused($focused).focusEffectDisabled()
+        .onAppear { focused = true; cursor = 0; open = nil }
+        .onKeyPress(.upArrow) { cursor = max(0, cursor - 1); return .handled }
+        .onKeyPress(.downArrow) { cursor = min(max(0, rows.count - 1), cursor + 1); return .handled }
+        .onKeyPress(.return) { if rows.indices.contains(cursor) { model.copy(rows[cursor]) }; return .handled }
+        .onKeyPress(.space) {
+            if rows.indices.contains(cursor) { open = open == rows[cursor].id ? nil : rows[cursor].id }
+            return .handled
+        }
+        .onKeyPress(.escape) { model.send(.dismissed); return .handled }
+    }
+
+    private func keyHint(_ k: String, _ label: String) -> some View {
+        HStack(spacing: 6) { HintKey(label: k); Text(label).appType(.caption).foregroundStyle(Tok.text2) }
+    }
+}
+
+/// Lives in UIComponents (lint bans raw Button in feature packages).
+struct HistoryRow: View {
+    let model: IslandModel
+    let transcript: IslandTranscript
+    let selected: Bool
+    let expanded: Bool
+    let onToggle: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        let t = transcript
+        let copied = model.copiedID == t.id
+        HStack(spacing: 4) {
+            Button(action: onToggle) {
+                HStack(spacing: 12) {
+                    TargetIcon(bundleID: t.bundleID)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Group {
+                            if expanded {
+                                Text(t.text).lineLimit(8).fixedSize(horizontal: false, vertical: true)
+                            } else {
+                                Text(t.text.replacingOccurrences(of: "\n", with: " "))
+                                    .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                                    .frame(maxWidth: .infinity, alignment: .leading).clipped()
+                                    .modifier(EdgeFade(length: 32))
+                            }
+                        }
+                        .appType(.label).foregroundStyle(Tok.text)
+                        HStack(spacing: 12) {
+                            Text(Humanize.when(t.date))
+                            Text(Humanize.words(t.words)).monospacedDigit()
+                        }
+                        .appType(.caption).foregroundStyle(Tok.text2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain).focusEffectDisabled().clickable()
+
+            // Always visible: hover-only controls are invisible to keyboard and VoiceOver users.
+            BarIconButton(glyph: copied ? .checkmark : .copy, label: "Copy cleaned transcript") { model.copy(t) }
+        }
+        .padding(.leading, 12).padding(.trailing, 4).padding(.vertical, 8)
+        .frame(minHeight: 48)
+        .background(selected ? Tok.control : hover ? Tok.surface : .clear,
+                    in: .rect(cornerRadius: Radius.nested, style: .continuous))
+        .overlay(alignment: .leading) {
+            if selected { Rectangle().fill(Ramp.blue[4]).frame(width: 2, height: 16) }   // pixel caret, not a stroke
+        }
+        .onHover { hover = $0 }
+        .animation(hover ? Motion.hoverIn : Motion.hoverOut, value: hover)
+        .animation(.snappy(duration: 0.20), value: copied)
+    }
+}
+```
+
+## 8. Updated content switch, notification gate and settings
+
+```swift
+// IslandContent.body: replace the switch
+switch model.scene {
+case .idle: IdleMark(model: model)
+case .hover: HoverShelf(model: model)
+case .listening(let mode, let hint): ListeningView(model: model, mode: mode, hint: hint)
+case .processing: WingRow(model: model) { TargetIcon(bundleID: model.target?.bundleID) } right: { IslandWait() }
+case .landed:
+    WingRow(model: model) { TargetIcon(bundleID: model.target?.bundleID) } right: {
+        PixelBitmap(rows: PixelBitmap.check, develop: 0.16)
+    }
+case .cancelled(let clip): CancelledCard(model: model, clip: clip)
+case .failed(let t): PasteFailedCard(model: model, transcript: t)
+case .recent: TranscriptCard(model: model, kind: .recent, transcript: model.recent)
+case .history: HistoryPanel(model: model)
+case .meeting(let m): MeetingView(model: model, state: m)
+case .note(let n): NoteCard(model: model, note: n)
+}
+
+// MeetingView.body: add the expanded case, and show live text in the recording shelf
+case .expanded: MeetingPanel(model: model)
+// recording shelf: if hint { HintShelf(...) } else if model.prefs.liveText { LiveLine(live: model.live).padding(.horizontal, 20).frame(height: 40) }
+
+// ListeningView: the shelf slot after WingRow
+if mode == .latched && hint {
+    HintShelf(items: [("⏎ / fn", "Send"), ("esc", "Cancel")]).frame(height: model.prefs.liveText ? 40 : 32)
+} else if model.prefs.liveText {
+    LiveLine(live: model.live).padding(.horizontal, 20).frame(height: 40)
+}
+```
+
+```swift
+// IslandNotifier.swift: only genuine notifications get through
+import Foundation
+
+@MainActor
+public final class IslandNotifier {
+    private let d = UserDefaults.standard
+    private let island: IslandModel
+    public init(island: IslandModel) { self.island = island }
+
+    /// Call from the stats writer with DICTATION totals only (meetings stay out of these numbers).
+    public func dictationTotalChanged(from old: Int, to new: Int) {
+        if let m = Milestones.crossed(from: old, to: new) { post(.milestone(words: m)) }
+    }
+    public func streakChanged(to days: Int) {
+        if days == 0 { d.set(0, forKey: "island.note.lastStreak"); return }
+        if [3, 7, 14, 30, 60, 100, 365].contains(days) { post(.streak(days: days)) }
+    }
+    public func modelInstalled(_ name: String) { post(.modelReady(name)) }   // the user asked for the download
+
+    private func post(_ n: IslandNote) {
+        let now = Date.now
+        switch n.kind {
+        case .info, .update: return                                           // never auto-posted
+        case .milestone:
+            guard let v = n.value, v > d.integer(forKey: "island.note.lastMilestone") else { return }
+            guard rateOK(now) else { return }
+            d.set(v, forKey: "island.note.lastMilestone")
+        case .streak:
+            guard let v = n.value, v > d.integer(forKey: "island.note.lastStreak") else { return }
+            guard rateOK(now) else { return }
+            d.set(v, forKey: "island.note.lastStreak")
+        case .modelReady: break
+        }
+        d.set(now.timeIntervalSince1970, forKey: "island.note.lastAt")
+        island.send(.note(n))
+    }
+    private func rateOK(_ now: Date) -> Bool { now.timeIntervalSince1970 - d.double(forKey: "island.note.lastAt") > 600 }
+}
+```
+
+```swift
+// Glyph.swift
+case island = "capsule", liveText = "captions.bubble"
+
+// Settings, General tab, card 1 (4 rows)
+SettingRow(.island, "Always show Island") { AppToggle(label: "Always show Island", isOn: $vm.islandAlwaysOn) }
+// Settings, Dictation tab, card 1 (3 rows)
+SettingRow(.liveText, "Show live text") { AppToggle(label: "Show live text", isOn: $vm.islandLiveText) }
+
+// App launch: keep the model's prefs in sync with settings
+@MainActor func bindPrefs(_ s: AppSettings, _ island: IslandModel) {
+    func track() {
+        withObservationTracking {
+            island.configure(IslandPrefs(alwaysOn: s.islandAlwaysOn, liveText: s.islandLiveText))
+        } onChange: { Task { @MainActor in track() } }
+    }
+    track()
+}
+```
+
+## Shell and host changes
+
+- **Canvas:** `IslandLayout.canvas` goes from 520 × 128 to 520 × 360, because the history panel needs the height. Click-through outside the silhouette already works through `hitTest`, so the taller transparent area doesn't block clicks.
+- **Idle opacity:** the shell draws idle at full opacity when `hasNotch || prefs.alwaysOn`. On an external display with no notch, `alwaysOn` shows a small black pill.
+- **Panel focus:** `IslandPanelController` makes the panel key for `.history` and `.meeting(.expanded)`, the same as `.recent`. An outside click closes `.history`, and `.failed` still survives outside clicks.
+- **Settings keys:** the new keys are `island.alwaysOn` and `island.liveText`. They don't collide with the keys `StaleDefaults` removes.
+- **Streaming:** it stays on in the engine, and only the model's `live` subscription checks the setting.
+- **DESIGN.md:** update §8.18 for the always-on lamp, the history panel and the live shelf. Reinstate the idle-pill Settings row that §0.11 said was deleted, now named "Always show Island".
+
+## What I haven't verified
+
+- **Layout and sizes:** the fixed card heights (148 failed, 168 meeting, 296 history) are arithmetic against a ~32 pt band. Check them on a 16″ notch.
+- **Focus:** key handling in `HistoryPanel` depends on the panel becoming key, which I haven't seen.
+- **Feed data:** `MeetingPulse` assumes your diarizer can report per-speaker seconds live, and I haven't checked that FluidAudio streams them.
+- **New API surface:** `.onKeyPress(.escape)` and `withObservationTracking` re-arming are the likeliest to need small fixes.
+- **History fields:** `history(limit:)` returns `IslandTranscript`, which only carries cleaned text, so Copy is always the cleaned version. Raw copy would need a `raw` field added to it.
+
+This replaces the "Latest dictation" card with two new components: a recent-dictation list and a usage card. It also swaps the ugly icons, and none of it is compiled.
+
+**Icons.** You said Shortcuts and Meetings are good, so `command` and `person.2.wave.2` stay. Everything else changes. If you want those two replaced as well, add them to `fallbacks` below. All icons stay native SF Symbols, as DESIGN.md §6 requires.
+
+## 1. Icons
+
+| Where | Old | New | Fallbacks |
+|---|---|---|---|
+| Sidebar: Dashboard | chart line | `circle.grid.3x3` | `circle.grid.2x2`, `square.grid.2x2` |
+| Sidebar: History | bullet list | `clock` | `clock.arrow.circlepath` |
+| Sidebar: Dictionary | book with A | `textformat.abc` | `textformat`, `character.book.closed` |
+| Sidebar: Models | window | `square.stack.3d.up` | `cpu`, `shippingbox` |
+| Sidebar: Settings | sliders | `switch.2` | `slider.horizontal.3`, `gearshape` |
+| Dashboard: Words | `text.cursor` | `text.word.spacing` | `text.alignleft` |
+| Dashboard: Time saved | hourglass | `timer` | `stopwatch`, `hourglass` |
+| Dashboard: Average speed | dotted gauge | `speedometer` | `bolt` |
+| Dashboard: Day streak | flame | `calendar` | `flame` |
+
+The sidebar Dashboard icon is a 3×3 dot grid, which echoes the 12-month graph.
+
+```swift
+// Glyph.swift: change these raw values (keep shortcuts and meetings as they are)
+case dashboard = "circle.grid.3x3"
+case history = "clock"
+case dictionary = "textformat.abc"
+case models = "square.stack.3d.up"
+case settings = "switch.2"
+case words = "text.word.spacing"
+case timeSaved = "timer"
+case speed = "speedometer"
+case streak = "calendar"
+
+// Glyph+Fallback.swift
+import AppKit
+
+extension Glyph {
+    private static let fallbacks: [Glyph: [String]] = [
+        .dashboard:  ["circle.grid.3x3", "circle.grid.2x2", "square.grid.2x2"],
+        .history:    ["clock", "clock.arrow.circlepath"],
+        .dictionary: ["textformat.abc", "textformat", "character.book.closed"],
+        .models:     ["square.stack.3d.up", "cpu", "shippingbox"],
+        .settings:   ["switch.2", "slider.horizontal.3", "gearshape"],
+        .words:      ["text.word.spacing", "text.alignleft"],
+        .timeSaved:  ["timer", "stopwatch", "hourglass"],
+        .speed:      ["speedometer", "bolt"],
+        .streak:     ["calendar", "flame"],
+    ]
+    /// First symbol this macOS actually ships. validateGlyphs() still runs in DEBUG.
+    private static let resolved: [Glyph: String] = {
+        var out: [Glyph: String] = [:]
+        for (g, names) in fallbacks {
+            out[g] = names.first { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil }
+        }
+        return out
+    }()
+    public var symbolName: String { Self.resolved[self] ?? rawValue }
+}
+
+// Icon.swift: use the resolver, draw flat
+Image(systemName: glyph.symbolName)
+    .font(.system(size: size, weight: weight))
+    .symbolRenderingMode(.monochrome)
+```
+
+The status footer reads "Fn needs Input Moni…" and clips. Change that status word to "Input Monitoring off", which fits on one line.
+
+## 2. Model, audio rule, actions
+
+```swift
+// RecentModel.swift
+import AppKit
+import Foundation
+import UniformTypeIdentifiers
+
+public struct DictationEntry: Identifiable, Equatable, Sendable {
+    public enum Status: Equatable, Sendable { case done, failed(String), cancelled, retrying }
+    public let id: UUID
+    public var bundleID: String?
+    public var date: Date
+    public var duration: TimeInterval
+    public var words: Int
+    public var cleaned: String
+    public var raw: String
+    public var audio: URL?
+    public var status: Status
+
+    public init(id: UUID = UUID(), bundleID: String? = nil, date: Date, duration: TimeInterval,
+                words: Int = 0, cleaned: String = "", raw: String = "", audio: URL? = nil, status: Status = .done) {
+        self.id = id; self.bundleID = bundleID; self.date = date; self.duration = duration
+        self.words = words; self.cleaned = cleaned; self.raw = raw; self.audio = audio; self.status = status
+    }
+}
+
+public enum AudioPolicy {
+    public static let keepAfterCancel: TimeInterval = 30
+    /// Esc on a clip of 30 s or less: gone (the 6 s undo already covered accidents).
+    /// Esc on a longer clip: the audio is kept and the row offers "Retry transcript".
+    public static func keepsAudio(onCancelAfter seconds: TimeInterval) -> Bool { seconds > keepAfterCancel }
+}
+
+@MainActor public protocol DictationStore: AnyObject {
+    func recent(limit: Int) -> [DictationEntry]
+    func update(_ e: DictationEntry)
+    func softDelete(id: UUID)                  // tombstone: the row leaves lists, the file stays
+    func restore(_ e: DictationEntry)
+    func removeAudio(_ url: URL)
+}
+
+public protocol Retranscriber: Sendable {
+    /// Decode the clip and run the SAME pipeline as live dictation (non-streaming). Returns both texts.
+    func transcribe(file: URL) async throws -> (raw: String, cleaned: String)
+}
+
+@MainActor @Observable
+public final class RecentViewModel {
+    public private(set) var entries: [DictationEntry] = []
+    public var expandedID: UUID?
+
+    @ObservationIgnored private let store: any DictationStore
+    @ObservationIgnored private let engine: any Retranscriber
+    @ObservationIgnored private let toast: (String, String?, (() -> Void)?) -> Void
+    @ObservationIgnored private var pending: [UUID: Task<Void, Never>] = [:]
+
+    public init(store: any DictationStore, engine: any Retranscriber,
+                toast: @escaping (String, String?, (() -> Void)?) -> Void) {
+        self.store = store; self.engine = engine; self.toast = toast
+    }
+
+    public func reload() { entries = store.recent(limit: 5) }
+    public func toggle(_ id: UUID) { expandedID = expandedID == id ? nil : id }
+
+    public func copy(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    // MARK: retry
+    public func retry(_ e: DictationEntry) {
+        guard let url = e.audio, e.status != .retrying else { return }
+        edit(e.id) { $0.status = .retrying }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let r = try await engine.transcribe(file: url)
+                guard !r.cleaned.isEmpty else { return edit(e.id) { $0.status = .failed("No speech found.") } }
+                edit(e.id) {
+                    $0.raw = r.raw; $0.cleaned = r.cleaned
+                    $0.words = r.cleaned.split(whereSeparator: \.isWhitespace).count
+                    $0.status = .done
+                }
+            } catch {
+                edit(e.id) { $0.status = .failed("Transcription failed.") }
+            }
+            if let updated = entries.first(where: { $0.id == e.id }) { store.update(updated) }
+        }
+    }
+
+    // MARK: delete with a 6 s undo. The audio file leaves with the toast.
+    public func delete(_ e: DictationEntry) {
+        guard let i = entries.firstIndex(where: { $0.id == e.id }) else { return }
+        entries.remove(at: i); store.softDelete(id: e.id)
+        pending[e.id] = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled, let self else { return }
+            if let u = e.audio { store.removeAudio(u) }
+            pending[e.id] = nil
+        }
+        toast("Transcript deleted", "Undo") { [weak self] in
+            guard let self else { return }
+            pending[e.id]?.cancel(); pending[e.id] = nil
+            store.restore(e); entries.insert(e, at: min(i, entries.count))
+        }
+    }
+
+    // MARK: extract audio
+    public func extractAudio(_ e: DictationEntry) {
+        guard let src = e.audio else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.mpeg4Audio]
+        panel.nameFieldStringValue = "Superflow \(e.date.formatted(.iso8601.year().month().day())).m4a"
+        panel.begin { response in
+            guard response == .OK, let dst = panel.url else { return }
+            try? FileManager.default.removeItem(at: dst)
+            if (try? FileManager.default.copyItem(at: src, to: dst)) != nil {
+                NSWorkspace.shared.activateFileViewerSelecting([dst])
+            }
+        }
+    }
+
+    private func edit(_ id: UUID, _ change: (inout DictationEntry) -> Void) {
+        guard let i = entries.firstIndex(where: { $0.id == id }) else { return }
+        change(&entries[i])
+    }
+}
+```
+
+**Cancel rule.** In your `dropCancelled()`, which the Island calls when the 6 s undo expires:
+
+```swift
+func dropCancelled() {
+    guard let held = heldSession else { return }
+    let allowed = settings.keepAudio && !settings.dontStoreTranscripts          // privacy still wins
+    if allowed, held.audioURL != nil, AudioPolicy.keepsAudio(onCancelAfter: held.duration) {
+        store.saveCancelled(held)         // row: status .cancelled, audio kept, offers "Retry transcript"
+    } else { store.discardAudio(held) }
+}
+// Failed and cancelled rows are exempt from the 7-day sweep for 30 days, so Retry still works.
+```
+
+## 3. Component 1: recent dictation
+
+Hover or keyboard focus reveals Play, Copy and ⋯. The cluster is always laid out and always in the accessibility tree, so nothing reflows and keyboard users still reach it. Failed and cancelled rows show their status and **Retry transcript** at all times. Play opens the pixel spectrogram inline and starts playing.
+
+```swift
+// RecentView.swift
+import SuperflowDesignSystem
+import SuperflowIcons
+import SuperflowUIComponents
+import SwiftUI
+
+struct RecentTranscripts: View {
+    let vm: RecentViewModel
+    let openHistory: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                SectionHeader(title: "Recent dictation")
+                Spacer(minLength: 16)
+                AppButton("Open History", glyph: nil, kind: .quiet, height: 24, action: openHistory)
+            }
+            Card(padding: 8) {
+                VStack(spacing: 2) {
+                    if vm.entries.isEmpty { ExampleRow() }
+                    else { ForEach(vm.entries) { TranscriptRow(entry: $0, vm: vm) } }
+                }
+            }
+        }
+    }
+}
+
+struct TranscriptRow: View {
+    enum Variant: Hashable { case cleaned, raw }
+    let entry: DictationEntry
+    let vm: RecentViewModel
+    @State private var hover = false
+    @State private var mode: Variant = .cleaned
+    @State private var showAudio = false
+    @State private var menuOpen = false
+    @FocusState private var focused: Bool
+
+    private var expanded: Bool { vm.expandedID == entry.id }
+    private var revealed: Bool { hover || focused || menuOpen || expanded }
+    private var shown: String { mode == .raw && !entry.raw.isEmpty ? entry.raw : entry.cleaned }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                Button { vm.toggle(entry.id) } label: { label }
+                    .buttonStyle(.plain).focused($focused).focusEffectDisabled().clickable()
+                trailing
+            }
+            .frame(height: 56)
+            if expanded { detail.transition(.opacity) }
+        }
+        .padding(.horizontal, 12)
+        .background(hover ? Tok.control : .clear, in: .rect(cornerRadius: Radius.nested, style: .continuous))
+        .overlay(alignment: .leading) {
+            if expanded { Rectangle().fill(Ramp.blue[4]).frame(width: 2, height: 16) }     // pixel caret, not a stroke
+        }
+        .onHover { hover = $0 }
+        .animation(hover ? Motion.hoverIn : Motion.hoverOut, value: hover)
+        .animation(.smooth(duration: 0.30), value: expanded)
+        .onChange(of: expanded) { _, open in if !open { showAudio = false } }
+    }
+
+    // MARK: label
+    private var label: some View {
+        HStack(spacing: 12) {
+            if let id = entry.bundleID { AppIcon(bundleID: id, size: 20) }
+            else { Icon(.mic, size: 14, tint: Tok.text2).frame(width: 20, height: 20) }
+            VStack(alignment: .leading, spacing: 2) {
+                title
+                HStack(spacing: 12) {
+                    TimelineView(.everyMinute) { ctx in Text(Humanize.when(entry.date, now: ctx.date)) }
+                    Text(Humanize.duration(entry.duration))
+                    if entry.status == .done { Text(Humanize.words(entry.words)).monospacedDigit() }
+                }
+                .appType(.caption).foregroundStyle(Tok.text2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .contentShape(.rect)
+    }
+
+    @ViewBuilder private var title: some View {
+        switch entry.status {
+        case .done:
+            Text(entry.cleaned.replacingOccurrences(of: "\n", with: " "))
+                .appType(.label).foregroundStyle(Tok.text)
+                .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                .frame(maxWidth: .infinity, alignment: .leading).clipped()
+                .modifier(EdgeFade(length: 32))
+        case .failed(let why): Text(why).appType(.label).foregroundStyle(Tok.text2)
+        case .cancelled: Text("Cancelled. Audio kept.").appType(.label).foregroundStyle(Tok.text2)
+        case .retrying:
+            HStack(spacing: 8) { RowWait(); Text("Transcribing").appType(.label).foregroundStyle(Tok.text2) }
+        }
+    }
+
+    // MARK: actions
+    @ViewBuilder private var trailing: some View {
+        switch entry.status {
+        case .done:
+            HStack(spacing: 4) {
+                play
+                CopyButton { vm.copy(shown) }
+                ActionMenu(actions: menu, isOpen: $menuOpen)
+            }
+            .padding(.trailing, -8)                              // glyph edge, not the 32 pt target
+            .opacity(revealed ? 1 : 0)
+            .animation(revealed ? Motion.hoverIn : Motion.hoverOut, value: revealed)
+        case .failed, .cancelled:
+            HStack(spacing: 8) {
+                Badge(entry.status == .cancelled ? "Cancelled" : "Failed")
+                AppButton("Retry transcript", glyph: nil, kind: .secondary, height: 24) { vm.retry(entry) }
+                ActionMenu(actions: menu, isOpen: $menuOpen)
+            }
+            .padding(.trailing, -8)
+        case .retrying:
+            Color.clear.frame(width: 32, height: 32)
+        }
+    }
+
+    @ViewBuilder private var play: some View {
+        if entry.audio != nil {
+            BarIconButton(glyph: .play, label: "Play audio") {
+                showAudio.toggle()
+                if showAudio { vm.expandedID = entry.id }
+            }
+        } else { Color.clear.frame(width: 32, height: 32) }
+    }
+
+    private var menu: [ActionMenu.Action] {
+        var a: [ActionMenu.Action] = []
+        if entry.audio != nil { a.append(.init(title: "Retry transcript", run: { vm.retry(entry) })) }
+        a.append(.init(title: "Delete transcript", run: { vm.delete(entry) }))
+        if entry.audio != nil { a.append(.init(title: "Extract audio", run: { vm.extractAudio(entry) })) }
+        return a
+    }
+
+    // MARK: expanded
+    private var detail: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if entry.status == .done {
+                if !entry.raw.isEmpty {
+                    Segmented(selection: $mode,
+                              items: [.init(value: .cleaned, title: "Cleaned"), .init(value: .raw, title: "Raw")],
+                              onCard: true)
+                }
+                Text(shown).appType(.reading).foregroundStyle(Tok.text)
+                    .textSelection(.enabled).frame(maxWidth: 720, alignment: .leading)
+            }
+            if showAudio, let url = entry.audio {
+                AudioPreview(url: url, autoplay: true, onCard: true).id(entry.id)
+            }
+        }
+        .padding(.leading, 32).padding(.bottom, 16)
+    }
+}
+
+struct ExampleRow: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            Icon(.mic, size: 14, tint: Tok.text2).frame(width: 20, height: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("The budget is $12,000, and we meet on Tuesday at 3 PM.")
+                    .appType(.label).foregroundStyle(Tok.text)
+                Text("Hold fn and speak.").appType(.caption).foregroundStyle(Tok.text2)
+            }
+            Spacer(minLength: 16)
+            Badge("Example")
+        }
+        .padding(.horizontal, 12).frame(height: 56)
+    }
+}
+
+/// Three 2 pt cells stepping every 160 ms. The one allowed looping mark. Reduce Motion holds them.
+private struct RowWait: View {
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    var body: some View {
+        let reduce = reduce
+        TimelineView(.periodic(from: .now, by: 0.16)) { tl in
+            let on = reduce ? -1 : Int(tl.date.timeIntervalSinceReferenceDate / 0.16) % 3
+            Canvas { ctx, _ in
+                for i in 0..<3 {
+                    ctx.fill(Path(CGRect(x: CGFloat(i) * 6, y: 0, width: 2, height: 2)),
+                             with: .color(i == on ? Ramp.blue[4] : (reduce ? Ramp.blue[3] : Ramp.blue[2])),
+                             style: FillStyle(antialiased: false))
+                }
+            }
+        }
+        .frame(width: 14, height: 2).accessibilityHidden(true)
+    }
+}
+```
+
+**Two small patches to `AudioPreview.swift`:**
+
+```swift
+struct AudioPreview: View {
+    let url: URL
+    var autoplay = false                 // new
+    var onCard = false                   // new: sits on a surface card, so it uses the well step
+    ...
+    .background(onCard ? Tok.well : Tok.surface, in: .rect(cornerRadius: Radius.card, style: .continuous))
+    ...
+    // in load(), after `clip = loaded`:
+    if autoplay { player.play() }
+}
+```
+
+## 4. Component 2: where you dictate
+
+This replaces `AppsCard` and sits beside `HoursCard`. Each app gets a **pixel barcode**.
+- **Colour:** it cools from navy to bright blue along its length, so length reads twice.
+- **Head tick:** the head tick is a white scan column on the leader.
+- **Trail and idle:** a dithered trail sits behind the head, and unlit ticks are 1 pt dust.
+- **Readout:** hovering a row turns the line under the title into the readout, as the 12-month graph does, with no tooltip.
+
+```swift
+// UsageCard.swift
+import AppKit
+import SuperflowDesignSystem
+import SuperflowIcons
+import SuperflowUIComponents
+import SwiftUI
+
+public struct AppUsage: Identifiable, Equatable, Sendable {
+    public var id: String { bundleID }
+    public let bundleID: String
+    public let words: Int
+    public let sessions: Int
+    public let seconds: TimeInterval
+    public init(bundleID: String, words: Int, sessions: Int, seconds: TimeInterval) {
+        self.bundleID = bundleID; self.words = words; self.sessions = sessions; self.seconds = seconds
+    }
+    static let examples = [
+        AppUsage(bundleID: "com.google.Chrome", words: 1_840, sessions: 41, seconds: 1_020),
+        AppUsage(bundleID: "com.microsoft.VSCode", words: 1_210, sessions: 29, seconds: 760),
+        AppUsage(bundleID: "com.apple.Terminal", words: 640, sessions: 17, seconds: 380),
+        AppUsage(bundleID: "com.apple.mail", words: 310, sessions: 9, seconds: 190),
+    ]
+}
+
+public enum UsageRange: Hashable, Sendable { case week, month, all }
+
+@MainActor private enum AppNames {
+    private static var cache: [String: String] = [:]
+    private static let short = ["com.microsoft.VSCode": "VS Code", "com.google.Chrome": "Chrome",
+                                "com.apple.Terminal": "Terminal", "com.apple.mail": "Mail"]
+    static func name(_ id: String) -> String {
+        if let s = short[id] { return s }
+        if let c = cache[id] { return c }
+        let n: String
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) {
+            n = FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
+        } else { n = id.split(separator: ".").last.map { String($0).capitalized } ?? id }
+        cache[id] = n
+        return n
+    }
+}
+
+@MainActor private enum LaunchFlags { static var usageRevealed = false }      // once per launch
+
+struct UsageCard: View {
+    let usage: [AppUsage]                       // sorted by words, descending
+    @Binding var range: UsageRange
+    var isExample = false
+    @State private var hovered: String?
+    @State private var reveal: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduce
+
+    private var rows: [AppUsage] { Array(usage.prefix(6)) }
+    private var total: Int { max(1, usage.reduce(0) { $0 + $1.words }) }
+    private var top: Double { Double(max(1, rows.first?.words ?? 1)) }
+
+    private var readout: String {
+        guard let id = hovered, let a = usage.first(where: { $0.id == id }) else { return "Words typed in each app" }
+        return "\(AppNames.name(a.bundleID)): \(Humanize.words(a.words)), \(a.sessions) sessions, \(Humanize.duration(a.seconds))"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                SectionHeader(title: "Where you dictate", note: readout)
+                Spacer(minLength: 16)
+                if isExample { Badge("Example") }
+                else {
+                    Segmented(selection: $range, items: [.init(value: .week, title: "7 days"),
+                                                         .init(value: .month, title: "30 days"),
+                                                         .init(value: .all, title: "All time")])
+                }
+            }
+            Card(padding: 8) {
+                VStack(spacing: 2) {
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, a in
+                        UsageRow(app: a, rank: i, share: Double(a.words) / Double(total),
+                                 fraction: Double(a.words) / top, reveal: reveal, hovered: $hovered)
+                    }
+                }
+            }
+        }
+        .task { await develop() }
+    }
+
+    /// 14 whole steps over 600 ms, once per launch. Reduce Motion starts finished.
+    private func develop() async {
+        guard !LaunchFlags.usageRevealed, !reduce else { reveal = 1; return }
+        LaunchFlags.usageRevealed = true
+        for k in 1...14 {
+            try? await Task.sleep(for: .milliseconds(43))
+            let t = Double(k) / 14
+            reveal = CGFloat(1 - pow(1 - t, 3))
+        }
+        reveal = 1
+    }
+}
+
+struct UsageRow: View {
+    let app: AppUsage
+    let rank: Int
+    let share: Double
+    let fraction: Double
+    let reveal: CGFloat
+    @Binding var hovered: String?
+    @State private var hover = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            AppIcon(bundleID: app.bundleID, size: 20)
+            Text(AppNames.name(app.bundleID)).appType(.label).foregroundStyle(Tok.text)
+                .lineLimit(1).frame(width: 112, alignment: .leading)
+            UsageBar(fraction: fraction, leader: rank == 0, reveal: reveal)
+                .frame(maxWidth: .infinity).frame(height: 16)
+                .animation(.snappy(duration: 0.25), value: fraction)
+            Text(app.words.formatted()).appType(.body).monospacedDigit()
+                .foregroundStyle(Tok.text).frame(width: 56, alignment: .trailing)
+            Text(share < 0.01 ? "<1%" : "\(Int((share * 100).rounded()))%")
+                .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
+                .frame(width: 36, alignment: .trailing)
+        }
+        .padding(.horizontal, 12).frame(height: 40)
+        .background(hover ? Tok.control : .clear, in: .rect(cornerRadius: Radius.nested, style: .continuous))
+        .onHover { inside in hover = inside; hovered = inside ? app.id : (hovered == app.id ? nil : hovered) }
+        .animation(hover ? Motion.hoverIn : Motion.hoverOut, value: hover)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(AppNames.name(app.bundleID)), \(app.words) words, \(Int((share * 100).rounded())) percent")
+    }
+}
+
+/// 3 x 10 pt ticks on a 4 pt pitch. Colour cools along the length, so a long bar is brighter.
+/// Animatable: while the fraction changes, whole ticks arrive one by one.
+struct UsageBar: View, Animatable {
+    var fraction: Double
+    let leader: Bool
+    let reveal: CGFloat
+    @Environment(\.displayScale) private var scale
+    var animatableData: Double { get { fraction } set { fraction = newValue } }
+
+    var body: some View {
+        let f = fraction, leader = leader, reveal = reveal, scale = scale
+        Canvas { ctx, size in
+            let pitch: CGFloat = 4, w: CGFloat = 3, h: CGFloat = 10
+            let cols = max(8, Int((size.width + 1) / pitch))
+            let lit = f <= 0 ? 0 : max(1, Int((f * Double(cols)).rounded(.up)))
+            let shown = Int((Double(lit) * Double(reveal)).rounded(.down))
+            let y = ((size.height - h) / 2 * scale).rounded() / scale
+            let head: Color = leader ? Tok.text : Ramp.blue[4]
+            for c in 0..<cols {
+                let x = CGFloat(c) * pitch
+                if c < shown {
+                    let t = Double(c) / Double(max(cols - 1, 1))
+                    var tone: Color = t < 0.35 ? Ramp.blue[2] : t < 0.7 ? Ramp.blue[3] : Ramp.blue[4]
+                    if c == shown - 1 { tone = head }
+                    else if c == shown - 2, c % 2 == 0 { tone = head }          // dithered cooling trail
+                    ctx.fill(Path(CGRect(x: x, y: y, width: w, height: h)),
+                             with: .color(tone), style: FillStyle(antialiased: false))
+                } else {
+                    ctx.fill(Path(CGRect(x: x + 1, y: y + 4, width: 1, height: 1)),    // dust
+                             with: .color(Tok.controlPressed), style: FillStyle(antialiased: false))
+                }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+```
+
+## 5. Wiring
+
+```swift
+// DashboardView body, after the 12-month graph. Delete CleanupCard, DashboardCleanup.swift, AppsCard
+// and the isFnHeld plumbing: the example row now teaches "Hold fn and speak."
+RecentTranscripts(vm: recent, openHistory: { route = .history })
+HStack(alignment: .top, spacing: 16) {
+    UsageCard(usage: vm.usage.isEmpty ? AppUsage.examples : vm.usage,
+              range: $vm.usageRange, isExample: vm.usage.isEmpty)
+    HoursCard(/* unchanged */).frame(width: 320)
+}
+.fixedSize(horizontal: false, vertical: true)
+```
+
+```sql
+-- usage query (names illustrative). Dictation only: meetings stay out of these numbers.
+SELECT app_bundle_id, SUM(words) AS words, COUNT(*) AS sessions, SUM(duration) AS seconds
+FROM sessions
+WHERE kind = 'dictation' AND words > 0 AND app_bundle_id IS NOT NULL AND started_at >= :since
+GROUP BY app_bundle_id ORDER BY words DESC LIMIT 12;
+```
+
+- **Privacy:** with "Don't store transcripts" on, the recent list and the usage card both show their `Example` state.
+- **`ActionMenu`:** I assumed a binding, `ActionMenu(actions:isOpen:)`. If yours has none, add `@Binding var isOpen` and set it where `MenuLayer` presents and dismisses. Without it, the ⋯ cluster disappears while the menu is open.
+- **Lint:** `TranscriptRow` uses a raw `Button`, which the lint bans in feature packages. Move that one `Button` into a UIComponents `RowButton`.
+- **`DESIGN.md`:**
+  - §6: the new glyph table.
+  - §9: the lower half becomes Recent plus Usage, and `CleanupCard` and its replay are gone.
+  - §0.5: the 30-second cancel rule, and the 30-day sweep exemption for failed and cancelled clips.
+
+## Not verified
+
+- **SF Symbol names:** the resolver falls back and `validateGlyphs()` covers DEBUG, but I haven't seen any of these symbols rendered on your Mac.
+- **Animatable `UsageBar`:** `View` plus `Animatable` should step whole ticks, but I haven't checked it.
+- **Hover cluster and menu:** whether the cluster stays visible while `ActionMenu` is open depends on the binding above.
+- **Retry path:** `Retranscriber` must run the same ASR and cleanup pipeline as live dictation. I wrote the contract, not the engine side.
+- **Pixel alignment:** nothing is measured at 2×, and `pixelAudit` hasn't run.

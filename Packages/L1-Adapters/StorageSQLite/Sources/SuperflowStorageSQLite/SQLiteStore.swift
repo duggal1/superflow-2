@@ -217,6 +217,12 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
         return result
     }
 
+    public func renameSession(_ id: SessionID, title: String) async throws {
+        let statement = try db.prepare("UPDATE sessions SET title = ? WHERE id = ?")
+        try statement.bind([.text(title), .text(id.value)])
+        try statement.step()
+    }
+
     public func renameSpeaker(session: SessionID, id: String, label: String) async throws {
         let statement = try db.prepare("UPDATE speakers SET label = ? WHERE session_id = ? AND id = ?")
         try statement.bind([.text(label), .text(session.value), .text(id)])

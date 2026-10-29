@@ -1,15 +1,19 @@
 import Foundation
+import SuperflowAudioEnhancement
 import SuperflowKernel
 import SuperflowPorts
 
 extension SessionEngine {
-    /// Drains capture into the journal, the archive and the recognizer. The
-    /// archive is the only addition: the same buffers are copied, never decoded.
+    /// Journal raw capture first. Archive and recognize the enhanced stream,
+    /// including its delayed tail before the recognition stream is finished.
     func consumeAudio(_ samples: AsyncStream<AudioChunk>, writer: (any AudioJournalWriter)?,
                       archive: (any AudioArchiveWriter)?,
                       stream: any RecognitionStream) async {
+        let enhancing = settings.speechEnhancementEnabled && enhancer != nil
+        var stage = EnhancementStage(enhancer: enhancer, enabled: enhancing)
+        var cleanCursor: Int64 = 0
+        var warned = false
         for await chunk in samples {
-            await archive?.append(chunk)
             if let writer {
                 await writer.append(chunk)
                 // Journaling can stop mid-session (disk full / IO error). Keep
@@ -19,12 +23,26 @@ extension SessionEngine {
                     emit(.notice("Audio journal stopped (disk). Transcription continues, crash recovery is off."))
                 }
             }
-            await stream.feed(chunk)
+            let clean = await stage.push(chunk.samples)
+            if let failure = stage.failure, !warned { warned = true; emit(.notice(failure)) }
+            if !clean.isEmpty {
+                let enhanced = AudioChunk(samples: clean, startSample: enhancing ? cleanCursor : chunk.startSample, source: .mic)
+                await archive?.append(enhanced)
+                await stream.feed(enhanced)
+                cleanCursor += Int64(clean.count)
+            }
             levelCounter += 1
             if levelCounter % 4 == 0 {
                 emit(.level(Self.rms(chunk.samples)))
             }
         }
+        let tail = await stage.finish()
+        if !tail.isEmpty {
+            let chunk = AudioChunk(samples: tail, startSample: cleanCursor, source: .mic)
+            await archive?.append(chunk)
+            await stream.feed(chunk)
+        }
+        if let failure = stage.failure, !warned { emit(.notice(failure)) }
     }
 
     func consumeAudioEvents(_ events: AsyncStream<AudioEvent>) async {

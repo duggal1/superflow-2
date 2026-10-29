@@ -10,6 +10,7 @@ let package = Package(
         .package(path: "../../L0-Core/Ports"),
         .package(path: "../../L0-Core/TestKit"),
         .package(path: "../../L2-Engines/TextPipeline"),
+        .package(path: "../../L2-Engines/AudioEnhancement"),
     ],
     targets: [
         .target(
@@ -18,6 +19,7 @@ let package = Package(
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowPorts", package: "Ports"),
                 .product(name: "SuperflowTextPipeline", package: "TextPipeline"),
+                .product(name: "SuperflowAudioEnhancement", package: "AudioEnhancement"),
             ]
         ),
         .testTarget(
@@ -27,6 +29,7 @@ let package = Package(
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowPorts", package: "Ports"),
                 .product(name: "SuperflowTextPipeline", package: "TextPipeline"),
+                .product(name: "SuperflowAudioEnhancement", package: "AudioEnhancement"),
                 .product(name: "SuperflowTestKit", package: "TestKit"),
             ],
             path: "Tests/MeetingEngineTests"

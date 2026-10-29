@@ -52,37 +52,36 @@ struct PixelDissolve: View {
 /// Submitting. One pulse of the meter's own shape sweeps left to right with a white head and a dithered wake.
 /// 1.1 s per pass, display-rate. This replaces the three-cell wait mark and stays the one looping mark.
 struct PixelSweep: View {
-    var columns = 11
-    @Environment(\.displayScale) private var scale
     @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.displayScale) private var scale
     var body: some View {
-        let cols = columns, reduce = reduce
-        let grid = IslandPixelGrid(scale: scale)
-        TimelineView(.animation(paused: reduce)) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
-            let p = reduce ? Double(cols) / 2 : (t.truncatingRemainder(dividingBy: 1.1) / 1.1) * Double(cols + 8) - 4
-            Canvas { ctx, _ in
-                func fill(_ c: Int, _ r: Int, _ tone: Color) {
-                    ctx.fill(Path(grid.rect(CGRect(x: CGFloat(c) * 3, y: CGFloat(r) * 3, width: 2, height: 2))),
-                             with: .color(tone), style: FillStyle(antialiased: false))
+        TimelineView(.animation(paused: reduce)) { timeline in
+            let phase = timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.2)
+                / 1.2 * 2 * Double.pi
+            let progress = reduce ? 0.5 : (1 - cos(phase)) / 2
+            let direction: CGFloat = reduce || sin(phase) >= 0 ? 1 : -1
+            Canvas { context, _ in
+                func snap(_ value: CGFloat) -> CGFloat { (value * scale).rounded() / scale }
+                func cell(_ x: CGFloat, _ y: CGFloat, _ tone: Color) {
+                    context.fill(Path(CGRect(x: snap(x), y: snap(y), width: 2, height: 2)),
+                                 with: .color(tone), style: FillStyle(antialiased: false))
                 }
-                for c in 0..<cols {
-                    let x = Double(c), behind = x <= p
-                    let g = exp(-pow((x - p) / 1.7, 2))
-                    let h = Int((2.6 * g).rounded())
-                    if h == 0 {
-                        fill(c, 3, behind ? Ramp.blue[2] : Ramp.blue[1])
-                        if behind, p - x < 4, c % 2 == 0 { fill(c, 2, Ramp.blue[2]); fill(c, 4, Ramp.blue[2]) }   // the wake
-                        continue
-                    }
-                    for r in (3 - h)...(3 + h) {
-                        let tip = abs(r - 3) == h, head = abs(x - p) < 0.5
-                        fill(c, r, head && tip ? Tok.text : tip ? Ramp.blue[4] : Ramp.blue[3])
+                for column in 0..<11 { cell(CGFloat(column) * 3, 3, Ramp.blue[1]) }
+                let head = snap(CGFloat(progress) * 30)
+                let wake = [Ramp.blue[4], Ramp.blue[3], Ramp.blue[2], Ramp.blue[2]]
+                for age in 1...4 {
+                    let x = snap(head - direction * CGFloat(age) * 3)
+                    guard x >= 0, x <= 30 else { continue }
+                    cell(x, 3, wake[age - 1])
+                    if age <= 2, (Int(x / 3) + age) % 2 == 0 {
+                        cell(x, 0, wake[age]); cell(x, 6, wake[age])
                     }
                 }
+                for row in 0..<3 { cell(head, CGFloat(row) * 3, Tok.text) }
             }
         }
-        .frame(width: grid.length(CGFloat(cols) * 3 - 1), height: grid.length(20)).accessibilityHidden(true)
+        .frame(width: 32, height: 8)
+        .accessibilityHidden(true)
     }
 }
 

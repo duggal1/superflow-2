@@ -1,188 +1,132 @@
 import AVFoundation
+import CoreAudio
 import Foundation
 import SuperflowKernel
 import SuperflowPorts
 
-/// AVAudioEngine microphone capture converted to 16 kHz mono Float32.
-///
-/// The sample-rate conversion happens inside the audio graph: the input node is
-/// connected to a mixer at the hardware format and the mixer to the main mixer
-/// at 16 kHz mono. That avoids the aliasing and per-buffer allocation of a
-/// hand-written linear resampler on the realtime thread.
-public final class MicrophoneCapture: AudioSource, @unchecked Sendable {
-    public let kind: AudioSourceKind = .mic
-    private let lock = NSLock()
-    private var engine: AVAudioEngine?
-    private var mixer: AVAudioMixerNode?
-    private var continuation: AsyncStream<AudioChunk>.Continuation?
-    private var eventContinuation: AsyncStream<AudioEvent>.Continuation?
-    private var consumer: Task<Void, Never>?
+/// Explicit Core Audio input capture. Conversion and stream delivery run on this
+/// actor; the IOProc only copies into a preallocated SPSC ring.
+public actor MicrophoneCapture: AudioSource {
+    public nonisolated let kind: AudioSourceKind = .mic
+    private var stream: HALInputStream?
+    private var samples: AsyncStream<AudioChunk>.Continuation?
+    private var events: AsyncStream<AudioEvent>.Continuation?
+    private var pump: Task<Void, Never>?
     private var running = false
-    private var stopping = false
-    private var observer: NSObjectProtocol?
-    private let ring = AudioRingBuffer()
+    private var cursor: Int64 = 0
+    private var lastProgress = ContinuousClock.now
+    private var lastSignal = ContinuousClock.now
+    private var silenceReported = false
+    private var lastRouteCheck = ContinuousClock.now
+    private var lastDropped = 0
+    private var retryAfter = ContinuousClock.now
 
-    /// Samples the audio thread had to drop because the consumer fell behind.
-    public var droppedSamples: Int { ring.droppedSamples }
+    public var droppedSamples: Int { stream?.ring.droppedSamples ?? lastDropped }
 
     public init() {}
 
     public func start() async throws -> AudioStreams {
-        if lock.withLock({ running || stopping }) { throw SuperflowError.invalidState("microphone already running") }
+        guard !running else { throw SuperflowError.invalidState("microphone already running") }
+        running = true
         let granted = await AVCaptureDevice.requestAccess(for: .audio)
-        guard granted else { throw SuperflowError.permissionDenied(Permission.microphone.label) }
-
-        let (samples, sampleContinuation) = AsyncStream<AudioChunk>.makeStream(bufferingPolicy: .bufferingNewest(600))
-        let (events, eventContinuation) = AsyncStream<AudioEvent>.makeStream(bufferingPolicy: .bufferingNewest(16))
-        let (engine, mixer) = try makeEngine()
-
-        lock.withLock {
-            self.engine = engine
-            self.mixer = mixer
-            self.continuation = sampleContinuation
-            self.eventContinuation = eventContinuation
-            self.running = true
+        guard running else { throw CancellationError() }
+        guard granted else {
+            running = false
+            throw SuperflowError.permissionDenied(Permission.microphone.label)
         }
-        let consumer = Task { [weak self] in
-            guard let self else { return }
-            await self.drain(into: sampleContinuation)
+        do {
+            let capture = try HALInputStream(device: InputDevice.resolve())
+            try capture.start()
+            stream = capture
+        } catch { running = false; throw error }
+        let (audio, sampleSink) = AsyncStream<AudioChunk>.makeStream(bufferingPolicy: .bufferingNewest(600))
+        let (notifications, eventSink) = AsyncStream<AudioEvent>.makeStream(bufferingPolicy: .bufferingNewest(16))
+        samples = sampleSink
+        events = eventSink
+        cursor = 0
+        lastDropped = 0
+        lastProgress = .now
+        lastSignal = .now
+        silenceReported = false
+        lastRouteCheck = .now
+        pump = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(10))
+                guard !Task.isCancelled else { return }
+                await self?.tick()
+            }
         }
-        lock.withLock { self.consumer = consumer }
-        observeRouteChanges(for: engine)
-        return AudioStreams(samples: samples, events: events)
+        return AudioStreams(samples: audio, events: notifications)
     }
 
     public func stop() async {
-        let (shouldStop, engineToStop, mixerToStop) = lock.withLock { () -> (Bool, AVAudioEngine?, AVAudioMixerNode?) in
-            guard running, !stopping else { return (false, nil, nil) }
-            stopping = true
-            return (true, engine, mixer)
-        }
-        guard shouldStop else { return }
-        mixerToStop?.removeTap(onBus: 0)
-        engineToStop?.stop()
-
-        let state = lock.withLock { () -> (AsyncStream<AudioChunk>.Continuation?,
-                                            AsyncStream<AudioEvent>.Continuation?, Task<Void, Never>?,
-                                            NSObjectProtocol?) in
-            let value = (continuation, eventContinuation, consumer, observer)
-            engine = nil
-            mixer = nil
-            continuation = nil
-            eventContinuation = nil
-            consumer = nil
-            observer = nil
-            running = false
-            return value
-        }
-        if let consumer = state.2 { await consumer.value }
-        lock.withLock { stopping = false }
-        state.0?.finish()
-        state.1?.yield(.stopped)
-        state.1?.finish()
-        if let observer = state.3 {
-            NotificationCenter.default.removeObserver(observer)
-        }
+        guard running else { return }
+        running = false
+        pump?.cancel()
+        pump = nil
+        stream?.stop()
+        deliver()
+        stream = nil
+        samples?.finish()
+        samples = nil
+        events?.yield(.stopped)
+        events?.finish()
+        events = nil
     }
 
-    private func drain(into continuation: AsyncStream<AudioChunk>.Continuation) async {
-        var scratch: [Float] = Array(repeating: 0, count: 1_600)
-        var cursor: Int64 = 0
-        while true {
-            let count = ring.read(into: &scratch, max: 1_600)
-            if count == 0 {
-                if !lock.withLock({ running }) { break }
-                try? await Task.sleep(for: .milliseconds(10))
-                continue
-            }
-            let samples = Array(scratch[0..<count])
-            continuation.yield(AudioChunk(samples: samples, startSample: cursor, source: .mic))
-            cursor += Int64(count)
-        }
-    }
-
-    private func makeEngine() throws -> (AVAudioEngine, AVAudioMixerNode) {
-        let engine = AVAudioEngine()
-        let input = engine.inputNode
-        let hardware = input.outputFormat(forBus: 0)
-        guard hardware.sampleRate > 0, hardware.channelCount > 0 else {
-            throw SuperflowError.audioFailure("no microphone input format")
-        }
-        guard let target = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                         sampleRate: Double(sampleRate),
-                                         channels: 1, interleaved: false) else {
-            throw SuperflowError.audioFailure("could not create a 16 kHz mono format")
-        }
-
-        let mixer = AVAudioMixerNode()
-        engine.attach(mixer)
-        engine.connect(input, to: mixer, format: hardware)
-        engine.connect(mixer, to: engine.mainMixerNode, format: target)
-        // Keep the graph pulled while monitoring nothing: dictation must not echo.
-        engine.mainMixerNode.outputVolume = 0
-
-        let ring = self.ring
-        mixer.installTap(onBus: 0, bufferSize: 1_024, format: target) { buffer, _ in
-            guard let channel = buffer.floatChannelData?[0] else { return }
-            _ = ring.write(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
-        }
-
-        engine.prepare()
+    private func deliver() {
+        guard let stream else { return }
         do {
-            try engine.start()
-            return (engine, mixer)
-        } catch {
-            mixer.removeTap(onBus: 0)
-            throw SuperflowError.audioFailure(error.localizedDescription)
-        }
+            let audio = try stream.drain()
+            if !audio.isEmpty {
+                lastProgress = .now
+                if audio.contains(where: { $0 != 0 }) { lastSignal = .now; silenceReported = false }
+                let result = samples?.yield(AudioChunk(samples: audio, startSample: cursor, source: .mic))
+                if case .dropped = result { events?.yield(.failed("Microphone delivery overflowed; some audio was lost.")) }
+                cursor += Int64(audio.count)
+            }
+            let dropped = stream.ring.droppedSamples
+            if dropped > lastDropped { events?.yield(.failed("Microphone capture overflowed; some audio was lost.")) }
+            lastDropped = dropped
+        } catch { events?.yield(.failed(error.localizedDescription)) }
     }
 
-    private func observeRouteChanges(for engine: AVAudioEngine) {
-        let observer = NotificationCenter.default.addObserver(
-            forName: .AVAudioEngineConfigurationChange, object: engine, queue: nil) { [weak self] _ in
-            guard let self else { return }
-            Task.detached { self.rebuildAfterRouteChange() }
+    private func tick() {
+        guard running else { return }
+        deliver()
+        let now = ContinuousClock.now
+        if stream != nil, !silenceReported, now - lastSignal > .seconds(2) {
+            silenceReported = true
+            events?.yield(.failed("The microphone is sending silence. Check its mute switch and macOS input level."))
         }
-        let installed = lock.withLock { () -> Bool in
-            guard running, self.engine === engine else { return false }
-            self.observer = observer
-            return true
+        guard now - lastRouteCheck >= .milliseconds(250), now >= retryAfter else { return }
+        lastRouteCheck = now
+        guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else {
+            events?.yield(.permissionRevoked)
+            stream?.stop()
+            stream = nil
+            return
         }
-        if !installed { NotificationCenter.default.removeObserver(observer) }
-    }
-
-    private func rebuildAfterRouteChange() {
-        let state = lock.withLock { () -> (AVAudioEngine, AVAudioMixerNode?, NSObjectProtocol?,
-                                            AsyncStream<AudioEvent>.Continuation?)? in
-            guard running, !stopping, let engine else { return nil }
-            self.engine = nil
-            let mixer = self.mixer
-            self.mixer = nil
-            let observer = self.observer
-            self.observer = nil
-            return (engine, mixer, observer, eventContinuation)
-        }
-        guard let (oldEngine, oldMixer, oldObserver, events) = state else { return }
-        if let oldObserver { NotificationCenter.default.removeObserver(oldObserver) }
-        oldMixer?.removeTap(onBus: 0)
-        oldEngine.stop()
-        events?.yield(.routeChanged)
-
         do {
-            let (replacement, replacementMixer) = try makeEngine()
-            let installed = lock.withLock { () -> Bool in
-                guard running, !stopping else { return false }
-                engine = replacement
-                mixer = replacementMixer
-                return true
-            }
-            guard installed else {
-                replacementMixer.removeTap(onBus: 0)
-                replacement.stop()
-                return
-            }
-            observeRouteChanges(for: replacement)
+            let device = try InputDevice.resolve()
+            let changed = stream?.device != device || InputDevice.format(device)?.mSampleRate != stream?.sampleRate
+            let stalled = now - lastProgress > .milliseconds(1500)
+            guard changed || stalled else { return }
+            stream?.stop()
+            deliver()
+            stream = nil
+            let replacement = try HALInputStream(device: device)
+            try replacement.start()
+            stream = replacement
+            lastProgress = now
+            lastSignal = now
+            silenceReported = false
+            lastDropped = 0
+            events?.yield(.routeChanged)
         } catch {
+            stream?.stop()
+            stream = nil
+            retryAfter = now + .seconds(1)
             events?.yield(.failed(error.localizedDescription))
         }
     }

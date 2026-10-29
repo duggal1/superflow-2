@@ -7,6 +7,7 @@ import SuperflowTextPipeline
 /// ASR commits them; cleanup runs per segment in the background and only the final insert waits.
 public actor SessionEngine {
     private let audio: any AudioSource
+    let enhancer: (any SpeechEnhancer)?
     private let recognizer: any SpeechRecognizer
     private var pipeline: TextPipeline
     private let repository: any TranscriptRepository
@@ -50,11 +51,12 @@ public actor SessionEngine {
     public init(audio: any AudioSource, recognizer: any SpeechRecognizer, pipeline: TextPipeline,
                 repository: any TranscriptRepository, journals: any JournalStore,
                 inserter: any TextInserter, archive: (any AudioArchiveStore)? = nil,
-                settings: AppSettings = .default, project: ProjectContext? = nil,
+                settings: AppSettings = .default, enhancer: (any SpeechEnhancer)? = nil, project: ProjectContext? = nil,
                 metrics: MetricsSink = NoopMetrics(), clock: TimeSource = SystemTimeSource(),
                 insertionDeadline: Duration = .seconds(8)) {
         self.audio = audio
         self.recognizer = recognizer
+        self.enhancer = enhancer
         self.pipeline = pipeline
         self.repository = repository
         self.journals = journals
@@ -159,6 +161,7 @@ public actor SessionEngine {
             let clip = await openArchive(for: newRecord.id)
             archiveWriter = clip
             let streams = try await audio.start()
+            if settings.speechEnhancementEnabled { try await enhancer?.begin() }
             let recognition = try await withDeadline(modelDeadline, label: "recognition stream") {
                 try await recognizer.makeStream(profile: profile, source: .mic)
             }

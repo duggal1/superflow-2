@@ -97,10 +97,6 @@ public enum IslandVisual {
 }
 
 public enum Tok {
-    public static let sapphireEdge = Color(hex: 0x0011FF)
-    public static let sapphireHighlight = Color(hex: 0xFFFFFF, alpha: 0.35)
-    public static let sapphireInnerRest = Color(hex: 0x1E3A8A, alpha: 0.5)
-    public static let sapphireInnerHover = Color(hex: 0x93C5FD, alpha: 0.55)
 
     public enum Hex {
         public static let bgLight: UInt32 = 0xF4F4F4

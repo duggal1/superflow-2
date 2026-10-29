@@ -1,0 +1,10 @@
+DeepFilterNet 3 speech enhancement
+Original project: https://github.com/Rikorose/DeepFilterNet
+Model source: https://huggingface.co/iky1e/DeepFilterNet3-Streaming-CoreML
+Model revision: dfc12319b3a62d09e9d51aace480c981067b9d7b
+Swift runtime: https://github.com/kylehowells/DeepFilterNet-mlx
+Runtime revision: c6c4b9dc98c62bfa90ed66c5fd4f5d54e88c7b4f
+Runtime copyright 2026 Kyle Howells. Apache-2.0 or MIT.
+DeepFilterNet and its model remain works of their respective authors.
+Model license files are downloaded and verified alongside its weights.
+Hugging Face's unmodified logo identifies the model source; it is not a DeepFilterNet logo.

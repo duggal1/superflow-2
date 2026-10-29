@@ -37,6 +37,7 @@ public struct DialogLayer: View {
             if let presented = host.presented {
                 ZStack {
                     Tok.modalScrim
+                        .ignoresSafeArea()
                         .contentShape(.rect)
                         .onTapGesture { host.dismiss() }
                     presented.content
@@ -46,11 +47,13 @@ public struct DialogLayer: View {
                 }
                 .id(presented.id)
                 .transition(.opacity)
-                .onAppear { withAnimation(Motion.menuIn) { shown = true } }
+                .onAppear { withAnimation(reduceMotion ? nil : Motion.menuIn) { shown = true } }
                 .onDisappear { shown = false }
             }
         }
-        .animation(Motion.menuOut, value: host.presented?.id)
+        .ignoresSafeArea()
+        .allowsHitTesting(host.presented != nil)
+        .animation(reduceMotion ? nil : Motion.menuOut, value: host.presented?.id)
     }
 }
 
@@ -83,32 +86,20 @@ public struct DialogFrame<Content: View>: View {
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
                 if showsCancel {
-                    AppButton("Cancel", kind: .quiet, height: ControlHeight.regular) { host.dismiss() }
+                    AppButton("Cancel", kind: .secondary, height: 32) { host.dismiss() }
+                        .keyboardShortcut(.cancelAction)
                 }
-                AppButton(confirmTitle, kind: .primary, height: ControlHeight.regular, enabled: canConfirm) {
+                AppButton(confirmTitle, kind: .primary, height: 32, enabled: canConfirm) {
                     onConfirm()
                     host.dismiss()
                 }
+                .keyboardShortcut(.return, modifiers: .command)
             }
         }
         .padding(24)
         .frame(width: 480)
         .background(Tok.surface, in: .rect(cornerRadius: Radius.card, style: .continuous))
         .modifier(ContrastStroke(radius: Radius.card))
-        .background {
-            // Esc cancels, ⌘Return confirms. The shortcuts live on real Buttons,
-            // so they fire regardless of which field has focus.
-            Group {
-                Button("Cancel") { host.dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Button("Confirm") { onConfirm(); host.dismiss() }
-                    .keyboardShortcut(.return, modifiers: .command)
-                    .disabled(!canConfirm)
-            }
-            .opacity(0)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-        }
         .pixelAudit("DialogFrame")
     }
 }
@@ -136,14 +127,14 @@ public struct DialogField<Content: View>: View {
 public struct AppEditor: View {
     @Binding private var text: String
     private let prompt: String
-    private let minHeight: CGFloat
+    private let level: FieldLevel
     @FocusState private var focus: Bool
     @State private var hover = false
 
-    public init(text: Binding<String>, prompt: String, minHeight: CGFloat = 128) {
+    public init(text: Binding<String>, prompt: String, level: FieldLevel = .dialog) {
         _text = text
         self.prompt = prompt
-        self.minHeight = minHeight
+        self.level = level
     }
 
     public var body: some View {
@@ -154,8 +145,8 @@ public struct AppEditor: View {
             .focused($focus)
             .focusEffectDisabled()
             .padding(8)
-            .frame(minHeight: minHeight)
-            .background(focus || hover ? Tok.bg : Tok.well,
+            .frame(height: 128)
+            .background(level.fill(active: focus || hover),
                         in: .rect(cornerRadius: Radius.field, style: .continuous))
             .overlay(alignment: .topLeading) {
                 // TextEditor insets its text by about 5pt; tune the two paddings

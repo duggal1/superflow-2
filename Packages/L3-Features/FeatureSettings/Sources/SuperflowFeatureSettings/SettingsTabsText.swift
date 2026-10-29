@@ -36,7 +36,7 @@ struct TextTab: View {
                 }
                 SettingRow(.blocks, "Block length", filter: query) {
                     Dropdown(selection: $model.blockLength,
-                             options: BlockLength.allCases.map { .init($0.title, value: $0) },
+                             options: BlockLength.allCases.map { .init(value: $0, title: $0.title) },
                              label: "Block length")
                 }
             }

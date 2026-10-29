@@ -1,6 +1,7 @@
 import Foundation
 import SuperflowASRFluidAudio
 import SuperflowAudioCapture
+import SuperflowEnhancementDeepFilterNet
 import SuperflowAudioJournal
 import SuperflowDiagnostics
 import SuperflowDiarizationFluidAudio
@@ -33,6 +34,7 @@ public final class AppEnvironment {
     public let diarizer: FluidAudioDiarizer
     public let llamaRuntime: XPCInferenceHelperRuntime
     public let llamaCleaner: LlamaCleaner
+    public let speechEnhancer: DeepFilterNetEnhancer
     public let microphone: MicrophoneCapture
     public let systemAudio: SystemAudioCapture
     public let journalStore: FileJournalStore
@@ -81,6 +83,8 @@ public final class AppEnvironment {
         )
         let llamaRuntime = XPCInferenceHelperRuntime()
         let llamaCleaner = LlamaCleaner(modelProvider: modelProvider, runtime: llamaRuntime)
+        let speechEnhancer = DeepFilterNetEnhancer()
+        self.speechEnhancer = speechEnhancer
         let microphone = MicrophoneCapture()
         let systemAudio = SystemAudioCapture()
         let journalStore = FileJournalStore(
@@ -123,6 +127,7 @@ public final class AppEnvironment {
             journals: journalStore,
             inserter: textInserter,
             archive: audioArchive,
+            enhancer: speechEnhancer,
             metrics: metrics
         )
         meetingEngine = MeetingEngine(
@@ -132,7 +137,8 @@ public final class AppEnvironment {
             diarizer: diarizer,
             pipeline: pipeline,
             repository: transcripts,
-            journals: journalStore
+            journals: journalStore,
+            enhancer: speechEnhancer
         )
     }
 
