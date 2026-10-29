@@ -25,7 +25,7 @@ final class IslandFeedBox: @unchecked Sendable {
         events = eventPair.stream
         eventContinuation = eventPair.continuation
 
-        let levelPair = AsyncStream<Float>.makeStream(bufferingPolicy: .bufferingNewest(8))
+        let levelPair = AsyncStream<Float>.makeStream(bufferingPolicy: .bufferingNewest(1))
         levels = levelPair.stream
         levelContinuation = levelPair.continuation
 
