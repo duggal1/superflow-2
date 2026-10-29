@@ -6,10 +6,10 @@ import CoreText
 public enum TypeScale {
     public static let displaySize: CGFloat = 40
     public static let displayLineHeight: CGFloat = 0.96
-    public static let displayTracking: CGFloat = -2
+    public static let displayTracking: CGFloat = 0
     public static let displaySSize: CGFloat = 28
     public static let displaySLineHeight: CGFloat = 0.98
-    public static let displaySTracking: CGFloat = -1.4
+    public static let displaySTracking: CGFloat = 0
     public static let titleSize: CGFloat = 22
     public static let largeSize: CGFloat = 15
     public static let headlineSize: CGFloat = 15
@@ -20,22 +20,20 @@ public enum TypeScale {
 }
 
 public enum AppFont {
-    /// PostScript name of the bundled display face, `Fonts/SerifVinci.otf`
-    /// (TRJN DaVinci italic, CFF). Titles only, 28 and 40, never upright.
+    /// PostScript name of the legacy bundled display face.
     public static let displayName = "TRJNDaVinci-Italic-Trial"
-    /// PostScript name of the bundled UI face, `Fonts/AlbertSans-Variable.ttf`.
+    /// PostScript name of the bundled UI face, `Fonts/InstrumentSans-Variable.ttf`.
     /// Every paragraph, label, row and control uses it.
-    public static let baseName = "AlbertSans-Regular"
+    public static let baseName = "InstrumentSans-Regular"
+    public static let islandName = "AlbertSans-Regular"
 
     /// Both faces are variable, so weight is an axis value rather than a face
-    /// name. Text sits at 325; emphasis at 350. Nothing else is allowed (R5).
-    public static let textWeight: CGFloat = 325
-    public static let emphasisWeight: CGFloat = 350
+    /// name. Text and emphasis use weight 400.
+    public static let textWeight: CGFloat = 400
+    public static let emphasisWeight: CGFloat = 400
 
-    /// The faces shipped in `Contents/Resources/Fonts`. Both are real font files:
-    /// they arrived as WOFF2 with a `.ttf` extension, which CoreText refuses, so
-    /// every screen silently fell back to system faces until they were converted.
-    public static let bundledFiles = ["SerifVinci.otf", "AlbertSans-Variable.ttf"]
+    /// Native font files shipped in `Contents/Resources/Fonts`.
+    public static let bundledFiles = ["SerifVinci.otf", "AlbertSans-Variable.ttf", "InstrumentSans-Variable.ttf"]
 
     /// Registers every bundled face the process does not already have. The system
     /// does this for a bundled app through `ATSApplicationFontsPath`; this is the
@@ -73,11 +71,9 @@ public enum Typography {
         .system(size: TypeScale.displaySSize, weight: .medium, design: .serif).italic()
     }
 
-    public static var italic: Font { .custom(AppFont.displayName, size: TypeScale.bodySize) }
+    public static var italic: Font { ui(TypeScale.bodySize) }
 
-    // One UI face: Albert Sans. Every label, control, row and line of body text
-    // uses one of these roles at weight 325, with 350 reserved for emphasis.
-    // Display titles keep the bundled serif.
+    // One UI face at regular weight for labels, controls and body text.
     public static var title: Font { ui(TypeScale.titleSize, weight: AppFont.emphasisWeight) }
     public static var large: Font { ui(TypeScale.largeSize, weight: AppFont.textWeight) }
     public static var headline: Font { ui(TypeScale.headlineSize, weight: AppFont.emphasisWeight) }
@@ -89,19 +85,19 @@ public enum Typography {
     public static var metric: Font { ui(TypeScale.metricSize, weight: AppFont.emphasisWeight) }
     public static var mono: Font { ui(TypeScale.secondarySize, weight: AppFont.textWeight) }
 
-    /// Reading text. One step above body, Albert Sans 325, sized for a sentence
+    /// Reading text. One step above body, sized for a sentence
     /// that has to be read once and understood.
     public static var reading: Font { ui(15, weight: AppFont.textWeight) }
     public static var readingSmall: Font { ui(14, weight: AppFont.textWeight) }
-    /// Larger sizes read loose on Albert Sans; this keeps them on the same rhythm.
-    public static let readingTracking: CGFloat = -0.2
+    /// Use normal tracking for reading text.
+    public static let readingTracking: CGFloat = 0
 
     /// The bundled UI face at an explicit variable weight. Missing on a fresh
     /// build or a broken bundle, it falls back to the system face rather than
     /// rendering nothing.
     public static func ui(_ size: CGFloat, weight: CGFloat = AppFont.textWeight) -> Font {
         guard NSFont(name: AppFont.baseName, size: size) != nil else {
-            return .system(size: size, weight: weight >= AppFont.emphasisWeight ? .medium : .regular)
+            return .system(size: size, weight: .regular)
         }
         return font(name: AppFont.baseName, size: size, weight: weight)
     }
@@ -114,7 +110,7 @@ public enum Typography {
             NSFontDescriptor.AttributeName.variation: [tag: weight],
         ])
         if let font = NSFont(descriptor: descriptor, size: size) { return font }
-        return .systemFont(ofSize: size, weight: weight >= AppFont.emphasisWeight ? .medium : .regular)
+        return .systemFont(ofSize: size, weight: .regular)
     }
 
     public static func font(name: String, size: CGFloat, weight: CGFloat? = nil) -> Font {
@@ -136,19 +132,14 @@ public enum Typography {
 
     public static func displayFont(size: CGFloat) -> Font {
         let size = max(TypeScale.minimumDisplaySize, size)
-        guard NSFont(name: AppFont.displayName, size: size) != nil else {
-            return .system(size: size, weight: .medium, design: .serif).italic()
-        }
-        return Typography.font(name: AppFont.displayName, size: size)
+        return ui(size)
     }
 
     public static func display(_ size: CGFloat) -> Font { displayFont(size: size) }
 
 
     public static func displayTracking(size: CGFloat) -> CGFloat {
-        let size = max(TypeScale.minimumDisplaySize, size)
-        guard NSFont(name: AppFont.displayName, size: size) != nil else { return 0 }
-        return size >= TypeScale.displaySize ? TypeScale.displayTracking : TypeScale.displaySTracking
+        0
     }
 }
 

@@ -126,8 +126,8 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(TypeScale.headlineSize, 15)
         XCTAssertEqual(TypeScale.bodySize, 13)
         XCTAssertEqual(TypeScale.secondarySize, 12)
-        XCTAssertEqual(TypeScale.displayTracking, -2)
-        XCTAssertEqual(TypeScale.displaySTracking, -1.4)
+        XCTAssertEqual(TypeScale.displayTracking, 0)
+        XCTAssertEqual(TypeScale.displaySTracking, 0)
     }
 
     func testOpacityValues() {

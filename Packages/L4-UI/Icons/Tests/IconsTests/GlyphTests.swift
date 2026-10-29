@@ -22,8 +22,8 @@ final class GlyphTests: XCTestCase {
     }
 
     @MainActor
-    func testSidebarIconsUseHugeicons() {
-        for glyph: Glyph in [.dashboard, .history, .dictionary, .shortcuts, .meetings, .models, .settings] {
+    func testSelectedSidebarIconsUseHugeicons() {
+        for glyph: Glyph in [.dashboard, .dictionary, .meetings, .models] {
             XCTAssertNotNil(HugeIcon.image(for: glyph))
         }
     }

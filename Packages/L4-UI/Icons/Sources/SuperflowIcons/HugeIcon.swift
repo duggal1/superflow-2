@@ -3,9 +3,10 @@ import AppKit
 @MainActor
 enum HugeIcon {
     private static let names: [Glyph: String] = [
-        .dashboard: "dashboard", .history: "history", .dictionary: "dictionary",
-        .shortcuts: "shortcuts", .meetings: "meetings", .settings: "settings",
-        .models: "models",
+        .dashboard: "dashboard", .dictionary: "dictionary",
+        .meetings: "meetings",
+        .models: "models", .person: "person", .appearance: "appearance",
+        .liveText: "liveText", .chart: "chart", .paragraph: "paragraph", .licenses: "licenses",
     ]
 
     private static let images: [Glyph: NSImage] = names.reduce(into: [:]) { result, entry in

@@ -1,17 +1,17 @@
 import AppKit
 import SwiftUI
 
-/// Shared sans-serif roles with normal and medium variable weights.
+/// Shared sans-serif roles.
 public enum AppType: Sendable, CaseIterable {
-    /// 12 / 350 — meta lines, badges of text, field labels.
+    /// 12 / 400 — meta lines, badges of text, field labels.
     case caption
-    /// 13 / 350 — reading rows and secondary copy.
+    /// 13 / 400 — reading rows and secondary copy.
     case body
-    /// 13 / 500 — titles and labels you scan.
+    /// 13 / 400 — titles and labels you scan.
     case label
-    /// 15 / 350 — transcript and page prose.
+    /// 15 / 400 — transcript and page prose.
     case reading
-    /// 15 / 500 — section and page titles.
+    /// 15 / 400 — section and page titles.
     case title
     /// 28 / 400, tabular — the one big number on a card.
     case metric
@@ -25,14 +25,7 @@ public enum AppType: Sendable, CaseIterable {
         }
     }
 
-    public var tracking: CGFloat {
-        switch self {
-        case .caption: 0
-        case .body, .label: -0.1
-        case .reading, .title: -0.2
-        case .metric: -0.6
-        }
-    }
+    public var tracking: CGFloat { 0 }
 
     public var weight: CGFloat {
         switch self {
@@ -92,7 +85,9 @@ private struct AppTypeModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .font(Typography.ui(role.size(in: scope), weight: role.weight(in: scope)))
+            .font(scope == .island
+                  ? Typography.font(name: AppFont.islandName, size: role.size(in: scope), weight: role.weight(in: scope))
+                  : Typography.ui(role.size(in: scope), weight: role.weight(in: scope)))
             .tracking(role.tracking(in: scope))
     }
 }
