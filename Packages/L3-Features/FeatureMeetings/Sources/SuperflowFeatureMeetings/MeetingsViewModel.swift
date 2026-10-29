@@ -19,6 +19,7 @@ public enum MeetingsTab: String, CaseIterable, Sendable {
 
 @MainActor
 public final class MeetingsViewModel: ObservableObject {
+    @Published public var tab: MeetingsTab = .live
     @Published public private(set) var state: MeetingState = .idle
     @Published public private(set) var elapsedMs = 0
     @Published public private(set) var micPartial = ""

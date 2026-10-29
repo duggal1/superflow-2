@@ -6,6 +6,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kylehowells/DeepFilterNet-mlx",
       "state" : {
+        "branch" : "master",
         "revision" : "c6c4b9dc98c62bfa90ed66c5fd4f5d54e88c7b4f"
       }
     },

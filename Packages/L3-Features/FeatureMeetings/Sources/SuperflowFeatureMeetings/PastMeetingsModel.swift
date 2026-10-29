@@ -164,7 +164,7 @@ public final class PastMeetingsModel: ObservableObject {
                 self.toast.show("Could not delete the meeting.", style: .error)
             }
         }
-        toast.show("Meeting deleted", actionTitle: "Undo", duration: 6) { [weak self] in
+        toast.show("Meeting deleted", actionTitle: "Undo") { [weak self] in
             guard let self, let task = self.pending.removeValue(forKey: id) else { return }
             task.cancel()
             self.restore(record, document: document)

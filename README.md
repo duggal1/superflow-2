@@ -1,225 +1,134 @@
 <p align="center">
-  <img src="docs/brand/superflow-banner.svg" alt="Superflow — hold a key, speak, it types" width="880">
+  <img src="docs/brand/superflow-banner.svg" alt="Superflow" width="340">
+</p>
+
+<h1 align="center">Superflow</h1>
+
+<p align="center">
+  <strong>There are plenty of AI dictation tools. This one is yours.</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/macOS-15%2B-2563EB?style=flat-square" alt="macOS 15+">
-  <img src="https://img.shields.io/badge/Swift-6-2563EB?style=flat-square" alt="Swift 6">
-  <img src="https://img.shields.io/badge/100%25-on--device-2563EB?style=flat-square" alt="100% on-device">
+  Fast, private, native dictation for macOS. Hold a key, speak, and keep working.
 </p>
 
-### Dictation that feels like typing.
 
-Hold a key, say the thing, let go. The words appear in whatever app you were
-already in — cursor where you left it, formatting intact, no window to manage.
-Superflow is a macOS dictation app that runs the whole pipeline on your Mac:
-speech recognition, cleanup and insertion. No account, no cloud, no telemetry.
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-15%2B-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="macOS 15+">
+  <img src="https://img.shields.io/badge/Swift-6-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="Swift 6">
+  <img src="https://img.shields.io/badge/AI-on--device-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="On-device AI">
+  <img src="https://img.shields.io/badge/Electron-none-171717?style=flat-square&labelColor=09090b&color=1d4ed8" alt="No Electron">
+</p>
 
-It is built for the kind of writing people actually do at a keyboard — messages,
-notes, tickets, prompts, code comments — and for the long tail of words a generic
-model gets wrong: names, product terms, file paths, `camelCase` identifiers.
 
----
+Superflow turns speech into properly formatted text in the app you're already using. No separate editor, account, cloud transcription, or subscription service is needed for the local pipeline. It is built for actual writing: messages, documents, notes, prompts, technical terms, and code-aware text.
 
-## How it feels
+## What makes it different
 
-| Gesture | What happens |
-| --- | --- |
-| **Hold** the dictation key | Push-to-talk. Release and the text is inserted. |
-| **Double-tap** the dictation key | Hands-free. Talk for as long as you like; tap once to stop. |
-| **Press Escape** while dictating | Cancel the take. Nothing is inserted. |
-| **Hold right ⌘** | Starts a meeting. Tap right ⌘ again to stop it. |
+- **Native, not Electron.** A Swift 6 and SwiftUI macOS app, with Rust used for the Harper grammar integration. No bundled Chromium UI.
+- **Streaming by design.** Core ML recognition through FluidAudio emits partial transcripts as you speak. You don't have to wait until the end to see recognition progress.
+- **Runs on your Mac.** Recognition, cleanup, formatting, and transcript storage are local after the models are downloaded. No account or telemetry endpoint.
+- **Small, local text storage.** SQLite stores transcripts, history, dictionary entries, and settings. Transcript data is lightweight; optional saved audio and downloaded AI models take additional disk space.
+- **Formatting beyond transcription.** Handles fillers, punctuation, spoken commands, numbers, dates, line breaks, lists, personal shortcuts, and protected terminology.
+- **Made for the keyboard.** Text lands in the frontmost app, at your cursor. No copy-and-paste ritual.
+- **A quiet interface.** Menu bar access, a compact recording island, a focused dashboard, and matching light and dark appearances.
 
-Fn is the default dictation key because it is already under your left thumb. If
-you would rather use another modifier, setup lets you pick one — the gesture,
-not the key, is what the rest of the app understands.
+## Dictation modes
 
-Everything visible is one small app: a menu-bar item, a dashboard, a notch
-island while recording, and a settings window. There is no editor to live in and
-no new workflow to learn.
+| Mode | Gesture | Behavior |
+| --- | --- | --- |
+| **Push to talk** | Hold the dictation key | Speak while held; release to insert text. |
+| **Hands-free** | Double-tap the dictation key | Keep dictating without holding a key; tap again to stop. |
+| **Meeting** | Hold right ⌘ | Record microphone and system audio; tap right ⌘ again to finish. |
+| **Cancel** | Press Escape while dictating | Discard the current take without inserting text. |
 
-## What is inside
+`Fn` is the default dictation key. You can choose another modifier during setup.
 
-- **Streaming dictation** — partial text arrives while you speak, so releasing
-  the key feels like the end of a sentence, not the start of a wait.
-- **Local cleanup** — a small on-device language model removes fillers, fixes
-  punctuation and formats lists, without rewriting what you meant.
-- **A text pipeline, not a prompt** — spoken commands, personal shortcuts,
-  numbers and dates, your dictionary, code-aware spans and line formatting all
-  run as deterministic stages around the model.
-- **Meetings** — record microphone and system audio together, transcribe, and
-  separate speakers when the diarization model is installed.
-- **History** — every take, its raw and cleaned text, and (optionally) the audio
-  behind it, searchable and copyable.
-- **Recovery** — audio is journaled while you record. If the app or the machine
-  dies mid-sentence, the take can be replayed instead of lost.
-- **A real dictionary** — teach it the words it keeps missing; they are protected
-  through cleanup.
-- **Stats** — words, time saved, streaks and meeting time, computed locally.
+## Features
 
-## Architecture
+- **Live speech recognition:** Streaming ASR with partial and committed segments, including support for long takes.
+- **On-device cleanup:** Removes disfluencies and improves punctuation and readability while aiming to preserve the original meaning.
+- **Structured formatting:** Converts spoken numbers and dates, applies line formatting, and handles lists through an ordered text pipeline.
+- **Developer-friendly dictation:** Preserves file paths, names, and code-aware spans, with optional code-speak handling.
+- **Personal dictionary and shortcuts:** Protects your custom vocabulary and expands repeatable phrases.
+- **Meeting capture:** Records microphone and system audio together; speaker separation is available when the diarization model is installed.
+- **Searchable history:** Browse, search, copy, and revisit raw or cleaned transcripts, with optional audio playback.
+- **Crash recovery:** Journals audio during capture so interrupted takes can be recovered on a subsequent launch.
+- **Private by default:** Configurable transcript persistence and audio retention, with local export and deletion.
+- **Local usage insights:** Tracks words, estimated time saved, streaks, and meeting duration without an analytics service.
 
-Superflow is a set of Swift packages with a strict dependency direction. The app
-is the composition root; everything below it is replaceable, testable, and
-unaware of SwiftUI unless it is a feature.
+## How it works
 
 ```text
-App/SuperflowApp          Composition root, coordinator, menu bar, packaging
-        │
-Packages/L3-Features      SwiftUI screens and their view models
-        │                 Dashboard · History · Dictionary · Shortcuts
-        │                 Meetings · Onboarding · Settings · Island
-Packages/L4-UI            Design tokens, icons, reusable controls
-        │
-Packages/L2-Engines       Pure state machines and text stages
-        │                 Session · Meeting · Recovery · Gesture · Stats
-        │                 TextPipeline + its ordered stages
-Packages/L1-Adapters      The outside world, behind ports
-        │                 Core ML ASR · llama.cpp · audio · SQLite
-        │                 key taps · permissions · journals · insertion
-Packages/L0-Core          Kernel value types, port protocols, test doubles
+Hotkey / gesture
+       ↓
+Microphone capture + recovery journal
+       ↓
+Streaming ASR (Core ML / FluidAudio)
+       ↓
+Deterministic text stages + local AI cleanup
+       ↓
+Insert at cursor → finalize in SQLite
 ```
 
-The arrow only points one way. `L0` knows nothing about `L1`; engines do not
-import AppKit; features do not open a database. `make deps-check` enforces this
-with a dependency graph, so a shortcut through the layers fails the build instead
-of quietly becoming architecture.
+The text pipeline applies spoken commands, shortcuts, disfluency handling, numbers and dates, protected dictionary terms, code-aware spans, grammar checks, and final line formatting. A language model is one part of that pipeline, not a substitute for the rest.
 
-### One dictation, end to end
+The cleanup model runs in an XPC helper process to isolate inference failures from the main app.
 
-1. **Capture the gesture.** The hotkey adapter watches modifier flags and emits
-   a key event. `GestureKit` turns that into a push-to-talk hold, a double-tap
-   hands-free toggle, or a meeting.
-2. **Open a session.** `SessionEngine` starts microphone capture, opens the audio
-   journal, and streams fixed-size chunks to the recognizer.
-3. **Recognize.** The ASR adapter runs Nemotron 3.5 streaming through Core ML /
-   FluidAudio and emits partial and committed segments.
-4. **Clean.** `TextPipeline` runs the stored text through its stages in order,
-   with the local model only where language judgement is actually needed.
-5. **Insert.** The insertion adapter writes into the frontmost app, then the
-   session is finalized in SQLite and the island returns to idle.
-6. **Recover if needed.** A take that never finalized is replayed from its
-   journal the next time the app starts.
+## Built natively
 
-Long recordings rotate recognizer segments internally; a pause is not the end of
-a dictation. Only the key coming up ends the take.
+Superflow uses a layered set of Swift packages rather than a web application wrapped for desktop:
 
-### The text pipeline
-
-Order matters more than any single stage. Each one either improves the text or
-returns it unchanged with a diagnostic — never a guess.
-
-```text
-spoken commands → personal shortcuts → disfluency collapse → numbers & dates
-→ opt-in code speak → dictionary / protected spans → code-aware spans
-→ local cleanup → numbers & dictionary assertion → grammar gate
-→ line formatting
-```
-
-Stages are pure Swift where they can be, so they are cheap to test and easy to
-reason about. The model is one stage, not the system. The cleanup model runs in
-an XPC helper process, so a wedged model restarts the helper instead of taking
-the app down with it.
-
-## Design language
-
-The interface is deliberately quiet: one accent (blue 600), SF Symbols only, a
-4 pt pixel grid, no gradients and no decorative strokes. Depth is a fill step or
-a second surface, never a shadow. The onboarding pixel field and the recording
-island are drawn as whole cells so nothing lands on a half pixel. Motion is
-short, one-shot and respects **Reduce Motion**; nothing loops in the background.
-
-Dark and light are the same design, not two themes. Type is one UI face with two
-weights; the display face is reserved for the few moments that deserve it.
-
-## Privacy and data
-
-- **On device by default.** Models are downloaded once and run locally. There is
-  no account, no sync, no analytics endpoint.
-- **You own the database.** Transcripts live in a local SQLite store. History,
-  dictionary and settings can be exported or deleted.
-- **Storage is a choice.** “Don’t store transcripts” skips transcript
-  persistence. Audio retention is separate, defaults to one week, and can be
-  turned off entirely.
-- **Journals are temporary.** They exist to recover an interrupted take and are
-  deleted when the session finalizes, unless you ask to keep them.
-- **No hidden microphone.** Capture starts on an explicit gesture and stops when
-  the take ends.
-
-## Repository map
-
-| Path | What lives there |
+| Layer | Responsibility |
 | --- | --- |
-| `App/SuperflowApp` | App target, `AppCoordinator`, `AppEnvironment`, menu bar, windowing |
-| `App/InferenceHelper` | XPC helper that owns the local model runtimes |
-| `Packages/L0-Core` | `Kernel` value types, `Ports` protocols, `TestKit` fakes |
-| `Packages/L1-Adapters` | ASR, LLM, audio capture, SQLite, hotkeys, model store, insertion |
-| `Packages/L2-Engines` | Session, meeting, recovery, gesture, stats, text pipeline |
-| `Packages/L3-Features` | One package per screen: dashboard, history, settings, … |
-| `Packages/L4-UI` | `DesignSystem`, `Icons`, `UIComponents` |
-| `Tests` | Golden transcripts, integration and soak suites |
-| `tools` | Packaging, dependency check, forbidden-pattern lint, fixtures |
-| `docs` | ADRs, architecture notes, runbooks, quality log, status |
+| `App/SuperflowApp` | App lifecycle, coordination, menu bar, and packaging |
+| `Packages/L3-Features` | Dashboard, onboarding, history, meetings, settings, and SwiftUI screens |
+| `Packages/L4-UI` | Design system, icons, and reusable UI components |
+| `Packages/L2-Engines` | Session management, gestures, recovery, and text processing |
+| `Packages/L1-Adapters` | Core ML, audio, SQLite, insertion, permissions, and model runtimes |
+| `Packages/L0-Core` | Kernel types, protocols, and testing support |
+| `Rust/harper-ffi` | Rust-backed Harper grammar integration |
+
+The dependency direction is checked with `make deps-check`. Native UI and local inference avoid Electron's bundled browser runtime, although actual speed and memory usage depend on the hardware and models in use.
+
+## Privacy and storage
+
+- Transcription and cleanup run locally after model setup.
+- Transcripts and preferences are stored in local SQLite rather than a hosted database.
+- Transcript storage can be disabled; saved audio has its own retention setting and can be turned off.
+- Temporary audio journals support recovery and are removed after successful finalization unless retention is requested.
+- Models are downloaded on first use and can require **several gigabytes**. Lightweight transcript storage does **not** mean the complete AI installation is tiny.
+- Microphone recording begins with an explicit user gesture.
 
 ## Build and run
 
-Requirements: **macOS 15 or newer**, **Xcode 16 / Swift 6**, and enough disk for
-the models (several GB on first run). Apple silicon is recommended for the
-streaming path.
+**Requirements:** macOS 15+, Xcode 16 / Swift 6, and disk space for the local models. Apple silicon is recommended for streaming recognition.
 
 ```bash
 git clone https://github.com/duggal1/superflow-2.git
 cd superflow-2
-
-make app       # build and assemble dist/Superflow.app
-make run       # assemble, then open the app
-make verify    # build + all tests + dependency check + forbidden-pattern lint
+make app       # Build dist/Superflow.app
+make run       # Build and launch
+make verify    # Build, tests, dependency check, and lint
 ```
 
-Useful narrower commands:
+For focused checks:
 
 ```bash
-make test-fast     # everything except the model-heavy packages
-make test-models   # ASR, diarization, llama.cpp and grammar adapters
-make lint          # dependency direction + forbidden patterns
-make app-smoke     # package the bundle and check it launches
+make test-fast
+make test-models
+make lint
+make app-smoke
 ```
 
-Models are not committed. The app downloads and verifies them on first use into
-`.models/`; the checksums and sizes are in `docs/STATUS.md`.
+Model files are not committed to Git. See `docs/STATUS.md` for model details and development status.
 
-### Tests
+## Project status
 
-The suite is layered the same way as the code:
+Superflow is under active development. Dictation, meetings, history, dictionary, shortcuts, and settings are implemented, while hardware performance and model choices continue to be evaluated. No unverified speed, memory, accuracy, or disk-space benchmarks are claimed here.
 
-- **Golden** transcripts pin the text pipeline against real speech fixtures.
-- **Integration** runs capture → recognition → cleanup → insertion with fakes at
-  the hardware boundary.
-- **Soak** replays long audio in accelerated and real time to catch journal,
-  memory and finalization bugs that a unit test cannot see.
-- **Package tests** cover engines, adapters and features individually.
+Start reading the code at `App/SuperflowApp/Sources/SuperflowAppCore/AppCoordinator.swift`, then follow `GestureKit` → `SessionEngine` → `TextPipeline`.
 
-## Status
+## Acknowledgments
 
-Superflow is under active development. The dictation path, meetings, history,
-dictionary, shortcuts and settings are implemented; model choices and performance
-numbers are still being measured on real hardware. `docs/STATUS.md` is the honest
-log — what works, what was discarded, and what is still blocked.
-
-If you are reading the code for the first time, start at
-`App/SuperflowApp/Sources/SuperflowAppCore/AppCoordinator.swift`, then follow one
-event through `GestureKit` → `SessionEngine` → `TextPipeline`. That path explains
-most of the repository.
-
-## Credits
-
-Superflow stands on excellent local-first work:
-
-- [FluidAudio](https://github.com/FluidInference/FluidAudio) for streaming ASR
-  and diarization on Apple silicon.
-- [llama.cpp](https://github.com/ggml-org/llama.cpp) for local model inference.
-- [Harper](https://github.com/Automattic/harper) for the grammar gate.
-- **S1-mini** by Superwhisper for the cleanup model.
-
-Their licenses and notices are collected in `docs/licenses/` and shipped with
-the app.
+Superflow builds on [FluidAudio](https://github.com/FluidInference/FluidAudio), [llama.cpp](https://github.com/ggml-org/llama.cpp), [Harper](https://github.com/Automattic/harper), and the **S1-mini** cleanup model by Superwhisper. Licenses and third-party notices are in `docs/licenses/`.
