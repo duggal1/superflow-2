@@ -67,9 +67,9 @@ public struct ActivityYear: View {
     @Environment(\.displayScale) private var scale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    fileprivate static let gap: CGFloat = 3
-    fileprivate static let monthGap: CGFloat = 8
-    fileprivate static let rows = 7
+    nonisolated fileprivate static let gap: CGFloat = 3
+    nonisolated fileprivate static let monthGap: CGFloat = 8
+    nonisolated fileprivate static let rows = 7
 
     public init(days: [ActivityDay], animatesIn: Bool = true) {
         self.days = days

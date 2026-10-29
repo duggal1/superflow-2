@@ -93,7 +93,7 @@ extension SQLiteStore: SettingsStore {
         ON CONFLICT(key) DO UPDATE SET json = excluded.json
         """) else { return }
         try? statement.bind([.text(Self.settingsKey), .text(json)])
-        try? statement.step()
+        _ = try? statement.step()
     }
 }
 

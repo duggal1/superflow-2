@@ -48,6 +48,7 @@ struct MeetingBarcode: View {
 
     var body: some View {
         let samples = MeetingBarcodeSamples.make(turns: turns, durationMs: durationMs, columns: columns)
+        let scale = scale
         Canvas { context, size in
             func fill(_ rect: CGRect, _ color: Color) {
                 let rect = CGRect(x: Pixel.snap(rect.minX, scale), y: Pixel.snap(rect.minY, scale),

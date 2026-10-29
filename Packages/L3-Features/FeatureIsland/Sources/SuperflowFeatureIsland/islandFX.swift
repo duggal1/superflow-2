@@ -60,6 +60,7 @@ struct PixelSweep: View {
                 / 1.2 * 2 * Double.pi
             let progress = reduce ? 0.5 : (1 - cos(phase)) / 2
             let direction: CGFloat = reduce || sin(phase) >= 0 ? 1 : -1
+            let scale = scale
             Canvas { context, _ in
                 func snap(_ value: CGFloat) -> CGFloat { (value * scale).rounded() / scale }
                 func cell(_ x: CGFloat, _ y: CGFloat, _ tone: Color) {
