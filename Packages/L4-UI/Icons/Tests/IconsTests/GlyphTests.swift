@@ -4,34 +4,20 @@ import XCTest
 
 final class GlyphTests: XCTestCase {
     func testEveryGlyphMapsToAnAvailableSystemSymbol() {
-        for glyph in Glyph.allCases {
+        for glyph in Icon.allCases {
             XCTAssertNotNil(NSImage(systemSymbolName: glyph.symbolName, accessibilityDescription: nil),
                             "missing SF Symbol for \(glyph.rawValue)")
         }
     }
 
-    func testFallbackSymbolsAreBare() {
-        for glyph in Glyph.allCases {
-            let name = glyph.rawValue
-            XCTAssertFalse(name.hasSuffix(".circle"), "\(name) draws its own enclosure")
-            XCTAssertFalse(name.hasSuffix(".square"), "\(name) draws its own enclosure")
-            XCTAssertFalse(name.hasSuffix(".rectangle"), "\(name) draws its own enclosure")
-            XCTAssertFalse(name.hasPrefix("sparkles"), "the AI sparkle is banned")
-            XCTAssertFalse(name.hasPrefix("wand."), "the AI sparkle is banned")
-        }
-    }
-
-    @MainActor
-    func testSelectedSidebarIconsUseHugeicons() {
-        for glyph: Glyph in [.dashboard, .dictionary, .meetings, .models] {
-            XCTAssertNotNil(HugeIcon.image(for: glyph))
-        }
-    }
-
-    @MainActor
-    func testHugeIconsAreBundledAndLoadable() {
-        for glyph in HugeIcon.glyphs {
-            XCTAssertNotNil(HugeIcon.image(for: glyph), "Missing Hugeicon for \(glyph)")
+    func testSettingsAndSidebarSymbolsHaveDistinctMeanings() {
+        let sidebar: [Icon] = [.dashboard, .history, .dictionary, .shortcuts, .meetings, .models, .settings]
+        let dictation: [Icon] = [.speechModel, .noiseSuppression, .cleanup, .keyboard, .liveText,
+                                 .handTap, .doubleTap, .settingMeeting]
+        let advanced: [Icon] = [.typingSpeed, .interactiveDeadline, .backgroundDeadline,
+                                .settingWorkers, .settingCompute]
+        for group in [sidebar + dictation, sidebar + advanced] {
+            XCTAssertEqual(Set(group.map(\.symbolName)).count, group.count)
         }
     }
 

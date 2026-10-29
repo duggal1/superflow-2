@@ -22,7 +22,7 @@ struct PlayerBar: View {
         let playing = player.state == .playing
         HStack(spacing: 12) {
             if let id = entry.record.frontmostBundleID { AppIcon(bundleID: id, size: 16) }
-            else { Icon(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16) }
+            else { IconView(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16) }
 
             WaveTape(clip: clip, unavailable: failed, player: player, hover: $hover,
                      onTouch: { focused = true })

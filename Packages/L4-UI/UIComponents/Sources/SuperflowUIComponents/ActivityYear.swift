@@ -128,7 +128,7 @@ public struct ActivityYear: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Last 12 months").font(AppType.title.font).foregroundStyle(Tok.text)
+                Text("Last 12 months").font(Typography.sectionTitle).foregroundStyle(Tok.text)
                 readout.frame(height: 16, alignment: .leading)
             }
             Spacer(minLength: 16)

@@ -52,4 +52,21 @@ final class RecentDictationTests: XCTestCase {
         model.toast.performAction()
         XCTAssertEqual(model.entries.first?.id, record.id)
     }
+
+
+    func testZeroWordCompleteSessionsAreHiddenButFailedAndCancelledRemain() async throws {
+        let repository = InMemoryRepository()
+        let zero = SessionRecord(kind: .dictation, status: .complete, modelProfile: "test", wordCount: 0)
+        try await repository.createSession(zero)
+        let failed = SessionRecord(kind: .dictation, status: .failed, modelProfile: "test", wordCount: 0)
+        try await repository.createSession(failed)
+        let cancelled = SessionRecord(kind: .dictation, status: .cancelled, modelProfile: "test", wordCount: 0)
+        try await repository.createSession(cancelled)
+        let model = RecentDictationViewModel(repository: repository)
+        await model.load(settings: .default)
+        XCTAssertEqual(model.entries.count, 2)
+        XCTAssertTrue(model.entries.contains { $0.record.status == .failed })
+        XCTAssertTrue(model.entries.contains { $0.record.status == .cancelled })
+    }
+
 }

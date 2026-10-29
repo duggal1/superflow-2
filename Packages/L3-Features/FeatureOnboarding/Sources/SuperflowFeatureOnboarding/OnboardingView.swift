@@ -116,7 +116,7 @@ public struct OnboardingView: View {
                              detail: model.speechDetail,
                              state: model.speechReady ? .installed : (model.isDownloadingSpeech ? .downloading(model.speechProgress) : (model.speechError.map { .failed($0) } ?? .idle)),
                              totalBytes: model.speechTotalBytes) {
-                    NVIDIAIcon(size: 24)
+                    IconView(.speechModel, size: 14)
                 } trailing: {
                     speechStatus
                 }
@@ -125,7 +125,7 @@ public struct OnboardingView: View {
                                  detail: model.cleanupDetail,
                                  state: cleanupIsDownloading ? .downloading(model.cleanupProgress) : (model.cleanupWanted ? .idle : .idle),
                                  totalBytes: model.cleanupTotalBytes) {
-                        S1MiniMark(size: 24)
+                        IconView(.cleanup, size: 14)
                     } trailing: {
                         SettingToggle("Download S1-mini", isOn: Binding(
                             get: { model.cleanupWanted },

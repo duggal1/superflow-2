@@ -2,17 +2,12 @@ import Foundation
 import SuperflowDesignSystem
 import SwiftUI
 
-/// The Island's dictation meter: 11 x 7 cells of 2 pt on a 3 pt pitch, a
-/// 32 x 20 box.
-///
-/// The live column sits in the centre and the samples spread outward, so the
-/// shape is a symmetric envelope — the voice radiating from the notch, not a
-/// bar chart scrolling sideways. A column with no level is one blue cell on the
-/// midline: silence is a visible dotted line, never a slab of near-black cells.
+/// Voice samples travel outward from the center as a crisp, symmetric trace.
 struct IslandPixelMeter: View {
     let meter: IslandMeterModel
     var columns = 11
     @Environment(\.displayScale) private var scale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let cols = columns
@@ -21,28 +16,27 @@ struct IslandPixelMeter: View {
             let _ = meter.advance(timeline.date.timeIntervalSinceReferenceDate)
             let live = meter.shown
             let trail = meter.trail
+            let phase = reduceMotion ? 0 : meter.phase
             Canvas { context, _ in
-                let mid = 3
+                let mid = 2
                 for column in 0..<cols {
                     let distance = abs(column - cols / 2)
                     let value = distance == 0
                         ? live
                         : trail[min(distance - 1, trail.count - 1)]
-                    let half = islandHalf(value, max: 3)
-                    let x = CGFloat(column) * 3
+                    let half = islandHalf(value, max: 2)
+                    let direction: CGFloat = column == cols / 2 ? 0 : (column < cols / 2 ? -1 : 1)
+                    let x = CGFloat(column) * 3 + direction * phase * 3
                     guard half > 0 else {
-                        cell(&context, grid, x, mid, Ramp.blue[2])
+                        cell(&context, grid, x, mid, Tok.accent)
                         continue
                     }
-                    for row in (mid - half)...(mid + half) {
-                        let tip = abs(row - mid) == half
-                        let tone = tip ? (distance == 0 ? Tok.text : Ramp.blue[4]) : Ramp.blue[3]
-                        cell(&context, grid, x, row, tone)
-                    }
+                    cell(&context, grid, x, mid - half, Tok.accent)
+                    cell(&context, grid, x, mid + half, Tok.accent)
                 }
             }
         }
-        .frame(width: grid.length(CGFloat(cols) * 3 - 1), height: grid.length(20))
+        .frame(width: grid.length(CGFloat(cols) * 3 - 1), height: grid.length(14))
         .accessibilityHidden(true)
     }
 }

@@ -85,14 +85,14 @@ public extension ButtonStyle where Self == AppButtonStyle {
 
 public struct AppButton: View {
     private let title: String
-    private let glyph: Glyph?
+    private let glyph: Icon?
     private let kind: ButtonKind
     private let height: CGFloat
     private let enabled: Bool
     private let minimumWidth: CGFloat?
     private let action: () -> Void
 
-    public init(_ title: String, glyph: Glyph? = nil, kind: ButtonKind = .secondary,
+    public init(_ title: String, glyph: Icon? = nil, kind: ButtonKind = .secondary,
                 height: CGFloat = ControlHeight.regular, enabled: Bool = true, minimumWidth: CGFloat? = nil,
                 action: @escaping () -> Void) {
         self.title = title
@@ -110,7 +110,7 @@ public struct AppButton: View {
     public var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
-                if let glyph { Icon(glyph, size: 12, weight: .medium, tint: kind == .primary ? .white : nil) }
+                if let glyph { IconView(glyph, size: 12, weight: .medium, tint: kind == .primary ? .white : nil) }
                 Text(title).contentTransition(.opacity)
             }
         }
@@ -122,7 +122,7 @@ public struct AppButton: View {
 
 
 public struct IconButton: View {
-    private let glyph: Glyph
+    private let glyph: Icon
     private let label: String
     private let size: CGFloat
     private let tint: Color
@@ -131,7 +131,7 @@ public struct IconButton: View {
     @State private var hover = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(_ glyph: Glyph, label: String, size: CGFloat = 16, tint: Color = Tok.text2,
+    public init(_ glyph: Icon, label: String, size: CGFloat = 16, tint: Color = Tok.text2,
                 enabled: Bool = true, action: @escaping () -> Void) {
         self.glyph = glyph
         self.label = label
@@ -143,7 +143,7 @@ public struct IconButton: View {
 
     public var body: some View {
         Button(action: action) {
-            Icon(glyph, size: size, tint: tint)
+            IconView(glyph, size: size, tint: tint)
                 .frame(width: 24, height: 24)
                 .contentShape(.rect)
         }

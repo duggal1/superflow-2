@@ -76,13 +76,13 @@ private struct MenuRow: View {
         HStack(spacing: 8) {
             ZStack {
                 if let leading = item.leading { leading }
-                else if let glyph = item.glyph { Icon(glyph, size: 14, tint: tone) }
+                else if let glyph = item.glyph { IconView(glyph, size: 14, tint: tone) }
             }
             .frame(width: 20, height: 20)
             Text(item.title).appType(.label).foregroundStyle(tone).lineLimit(1)
             Spacer(minLength: 16)
             if item.checked {
-                Icon(.checkmark, size: 12, tint: Tok.accentText).frame(width: 20, height: 20)
+                IconView(.checkmark, size: 12, tint: Tok.accentText).frame(width: 20, height: 20)
             }
         }
         .padding(.horizontal, 12)

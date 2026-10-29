@@ -6,6 +6,20 @@ import XCTest
 
 @MainActor
 final class PastMeetingsGroupingTests: XCTestCase {
+    func testSelectingMissingMeetingClearsPreviousTranscriptAndReportsFailure() async throws {
+        let repository = InMemoryRepository()
+        let id = SessionID("existing")
+        try await repository.createSession(SessionRecord(id: id, kind: .meeting, modelProfile: "base"))
+        let model = PastMeetingsModel(repository: repository, inserter: RecordingInserter())
+        await model.select(id)
+        XCTAssertNotNil(model.selectedDocument)
+
+        await model.select(SessionID("missing"))
+        XCTAssertNil(model.selectedDocument)
+        XCTAssertEqual(model.documentError, "Could not load this meeting.")
+        XCTAssertFalse(model.isLoadingDocument)
+    }
+
     func testSearchGroupsAndUndoRestoreMeetingOrder() async throws {
         let repository = InMemoryRepository()
         let calendar = Calendar.current

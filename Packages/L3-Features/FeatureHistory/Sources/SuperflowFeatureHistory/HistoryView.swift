@@ -141,7 +141,7 @@ public struct HistoryView: View {
                 .frame(width: 20, height: 20)
                 .accessibilityHidden(true)
         } else {
-            Icon(.waveform, size: 14, tint: Tok.text2)
+            IconView(.waveform, size: 14, tint: Tok.text2)
                 .frame(width: 20, height: 20)
         }
     }
@@ -258,7 +258,7 @@ struct HistoryDetailHeader: View {
                         .frame(width: 20, height: 20)
                         .accessibilityHidden(true)
                 } else {
-                    Icon(.waveform, size: 14, tint: Tok.text2)
+                    IconView(.waveform, size: 14, tint: Tok.text2)
                         .frame(width: 20, height: 20)
                 }
                 Text(appName)

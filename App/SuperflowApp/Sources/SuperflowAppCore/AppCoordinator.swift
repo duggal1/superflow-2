@@ -136,12 +136,12 @@ public final class AppCoordinator: ObservableObject {
         }
     }()
 
-    public init() {
+    public init(applicationSupportDirectory: URL? = nil) {
         let mainWindow = MainWindowController()
         let environment: AppEnvironment?
         let startupError: String?
         do {
-            environment = try AppEnvironment()
+            environment = try AppEnvironment(applicationSupportDirectory: applicationSupportDirectory)
             startupError = nil
         } catch {
             environment = nil

@@ -35,12 +35,12 @@ public struct MenuTrigger<Label: View>: View {
 }
 
 struct RowIconFace: View {
-    let glyph: Glyph
+    let glyph: Icon
     var open = false
     @State private var hover = false
     @Environment(\.accessibilityReduceMotion) private var reduce
     var body: some View {
-        Icon(glyph, size: 12, tint: hover || open ? Tok.text : Tok.text2)
+        IconView(glyph, size: 12, tint: hover || open ? Tok.text : Tok.text2)
             .frame(width: 28, height: 28)
             .background(open ? Tok.controlPressed : hover ? Tok.controlHover : .clear,
                         in: .rect(cornerRadius: Radius.field))
@@ -51,10 +51,10 @@ struct RowIconFace: View {
 }
 
 public struct RowIconButton: View {
-    private let glyph: Glyph
+    private let glyph: Icon
     private let label: String
     private let action: () -> Void
-    public init(glyph: Glyph, label: String, action: @escaping () -> Void) {
+    public init(glyph: Icon, label: String, action: @escaping () -> Void) {
         self.glyph = glyph; self.label = label; self.action = action
     }
     public var body: some View {
@@ -94,6 +94,43 @@ public struct ActionMenu: View {
             RowIconFace(glyph: .more, open: open)
         }
         .accessibilityLabel("More")
+    }
+}
+
+public struct NativeActionMenu: View {
+    private let items: [MenuItem]
+
+    public init(items: [MenuItem]) { self.items = items }
+
+    private var groups: [[MenuItem]] {
+        items.reduce(into: [[MenuItem]]()) { groups, item in
+            if groups.isEmpty || item.gapBefore { groups.append([]) }
+            groups[groups.count - 1].append(item)
+        }
+    }
+
+    public var body: some View {
+        Menu {
+            ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                Section {
+                    ForEach(group) { item in
+                        Button(role: item.role == .destructive ? .destructive : nil, action: item.run) {
+                            if let icon = item.glyph {
+                                Label(item.title, systemImage: icon.symbolName)
+                            } else {
+                                Text(item.title)
+                            }
+                        }
+                        .disabled(!item.enabled)
+                    }
+                }
+            }
+        } label: {
+            IconView(.more, size: 14).frame(width: 32, height: 32)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Meeting actions")
     }
 }
 
@@ -138,7 +175,7 @@ private struct DropdownFace: View {
         HStack(spacing: 8) {
             if let leading { leading.frame(width: 20, height: 20) }
             Text(title).appType(.body).foregroundStyle(Tok.text).lineLimit(1).fixedSize()
-            Icon(.chevronUpDown, size: 9, tint: Tok.text2)
+            IconView(.chevronUpDown, size: 9, tint: Tok.text2)
         }
         .padding(.horizontal, 12).frame(height: 28)
         .background(open ? Tok.controlPressed : hover ? Tok.controlHover : Tok.control, in: .capsule)

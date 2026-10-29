@@ -1,4 +1,5 @@
 import AppKit
+import CoreText
 import SwiftUI
 import SuperflowKernel
 import SuperflowTestKit
@@ -27,6 +28,11 @@ final class DashboardNativeRenderTests: XCTestCase {
 
     private func render(_ model: DashboardViewModel, output: String) async throws {
         _ = NSApplication.shared
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        for name in ["SerifVinci.otf", "InstrumentSans-Variable.ttf"] {
+            _ = CTFontManagerRegisterFontsForURL(root.appendingPathComponent("App/Resources/Fonts/\(name)") as CFURL, .process, nil)
+        }
         let directory = URL(fileURLWithPath: output, isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         for (name, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {

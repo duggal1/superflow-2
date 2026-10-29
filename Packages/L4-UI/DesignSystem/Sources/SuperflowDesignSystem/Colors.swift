@@ -163,6 +163,7 @@ public enum Tok {
 
     // Accent.
     public static let accent = Color(hex: Hex.accent)
+    public static let accentBlue500 = Color(hex: 0x3B82F6)
     public static let accentHover = HexColor(light: Hex.accentHoverLight,
                                              dark: Hex.accentHoverDark).color
     public static let accentPressed = Color(hex: Hex.accentPressed)

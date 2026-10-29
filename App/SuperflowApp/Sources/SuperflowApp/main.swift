@@ -15,7 +15,6 @@ final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
         // the belt-and-braces path: one wrong plist value would otherwise drop the display
         // face silently and every title would fall back to the system serif. UI text is SF Pro
         // and never depends on a bundled file.
-        AppFont.registerBundledFonts()
         // One owner of "keyboard or pointer": the focus ring is drawn for keyboard
         // navigation only, so the monitor has to exist before the first window does.
         InputModality.shared.start()
@@ -56,15 +55,41 @@ final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct SuperflowApplication: App {
     @NSApplicationDelegateAdaptor(SuperflowAppDelegate.self) private var appDelegate
-    @StateObject private var coordinator: AppCoordinator
+    @StateObject private var owner: AppCoordinatorOwner
+    private var coordinator: AppCoordinator { owner.coordinator }
+    private let instanceLock: ApplicationInstanceLock
 
     init() {
+        AppFont.registerBundledFonts()
+        let arguments = ProcessInfo.processInfo.arguments
+        let supportDirectory: URL
+        if let index = arguments.firstIndex(of: "--application-support-directory"),
+           arguments.indices.contains(index + 1) {
+            supportDirectory = URL(fileURLWithPath: arguments[index + 1], isDirectory: true)
+        } else {
+            supportDirectory = FileManager.default.urls(for: .applicationSupportDirectory,
+                                                       in: .userDomainMask)[0]
+                .appendingPathComponent("Superflow", isDirectory: true)
+        }
+        do {
+            instanceLock = try ApplicationInstanceLock(directory: supportDirectory)
+        } catch let error as POSIXError where error.code == .EWOULDBLOCK {
+            if let identifier = Bundle.main.bundleIdentifier {
+                NSRunningApplication.runningApplications(withBundleIdentifier: identifier)
+                    .first { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }?
+                    .activate(options: [.activateAllWindows])
+            }
+            exit(0)
+        } catch {
+            NSLog("Superflow instance lock failed: %@", error.localizedDescription)
+            exit(1)
+        }
         // Do NOT force `.accessory` here. A menu-bar-only activation policy makes SwiftUI skip
         // presenting the main `Window` scene, which left the app with no visible UI and made
         // first-run onboarding (and its permission prompts) impossible to reach. The app starts
         // as a regular app so the window appears; MainWindowController.didClose() downgrades to
         // `.accessory` once the user closes it, and show() upgrades again.
-        _coordinator = StateObject(wrappedValue: AppCoordinator())
+        _owner = StateObject(wrappedValue: AppCoordinatorOwner(supportDirectory: supportDirectory))
     }
 
     var body: some Scene {
@@ -82,7 +107,8 @@ struct SuperflowApplication: App {
         // permission prompts inside it) was unreachable and macOS never registered Superflow
         // in Privacy & Security. Closing the window still drops back to menu-bar only.
         Window("Superflow", id: "main") {
-            MainWindowRootView(coordinator: coordinator)
+            MainWindowRootView(coordinator: coordinator, retryStartup: owner.retryStartup)
+                .id(ObjectIdentifier(coordinator))
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: Layout.windowDefaultWidth, height: Layout.windowDefaultHeight)

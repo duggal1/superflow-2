@@ -62,12 +62,12 @@ public struct SettingRow<Control: View>: View {
     /// The glyph column, identical on every row.
     public static var iconColumn: CGFloat { 20 }
 
-    private let glyph: Glyph
+    private let glyph: Icon
     private let title: String
     private let filter: String
     private let control: Control
 
-    public init(_ glyph: Glyph, _ title: String, filter: String = "",
+    public init(_ glyph: Icon, _ title: String, filter: String = "",
                 @ViewBuilder control: () -> Control) {
         self.glyph = glyph
         self.title = title
@@ -82,7 +82,7 @@ public struct SettingRow<Control: View>: View {
     public var body: some View {
         if visible {
             HStack(spacing: Space.sm) {
-                Icon(glyph, size: 14, tint: Tok.text)
+                IconView(glyph, size: 14, tint: Tok.text2)
                     .frame(width: Self.iconColumn, height: Self.iconColumn)
                 Text(title)
                     .appType(.label)
@@ -147,7 +147,7 @@ public struct EntryRow: View {
                     .foregroundStyle(Tok.text2)
                     .frame(minWidth: 96, maxWidth: 180, alignment: .leading)
                     .lineLimit(1)
-                Icon(.arrow, size: 12, tint: Tok.text2)
+                IconView(.arrow, size: 12, tint: Tok.text2)
                 Text(result)
                     .appType(.label)
                     .foregroundStyle(isDisabled ? Tok.text2 : Tok.text)

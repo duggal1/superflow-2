@@ -108,6 +108,11 @@ public actor SessionEngine {
             try await withDeadline(modelDeadline, label: "model warm-up") {
                 try await recognizer.warmUp(profile: profile)
             }
+            if settings.speechEnhancementEnabled, let enhancer {
+                try? await withDeadline(modelDeadline, label: "enhancement warm-up") {
+                    try await enhancer.prepare()
+                }
+            }
             transition(.idle)
             return true
         } catch {

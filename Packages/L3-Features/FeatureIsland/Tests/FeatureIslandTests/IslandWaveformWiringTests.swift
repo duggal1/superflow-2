@@ -77,6 +77,29 @@ final class IslandWaveformWiringTests: XCTestCase {
         XCTAssertGreaterThan(blue, 0, "silence drew nothing; the meter reads as dead")
     }
 
+    func testVoiceTraceAndSubmittingRender() throws {
+        let meter = IslandMeterModel()
+        let now = Date().timeIntervalSinceReferenceDate
+        for (index, level) in [0.1, 0.6, 0.25, 0.85, 0.3, 0.05].enumerated() {
+            meter.ingest(Float(level))
+            meter.advance(now + Double(index) / 30)
+        }
+        let view = VStack(spacing: 12) {
+            IslandPixelMeter(meter: meter)
+            PixelSweep()
+        }.padding(12).background(Color.black)
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 2
+        let image = try XCTUnwrap(renderer.nsImage)
+        let bitmap = try XCTUnwrap(image.tiffRepresentation.flatMap(NSBitmapImageRep.init(data:)))
+        XCTAssertGreaterThan(bluePixels(in: image, x: 0..<bitmap.pixelsWide, y: 0..<bitmap.pixelsHigh), 20)
+        if let directory = ProcessInfo.processInfo.environment["ISLAND_SNAPSHOT_DIR"] {
+            try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+            try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+                .write(to: URL(fileURLWithPath: directory).appendingPathComponent("voice-and-submitting.png"))
+        }
+    }
+
     func testARefusalNoticeReplacesTheMeterInsteadOfVanishing() {
         let model = IslandModel(feed: LevelFeed(), geometry: geometry())
         model.send(.holdBegan(IslandTarget(bundleID: "com.apple.TextEdit", name: "TextEdit")))

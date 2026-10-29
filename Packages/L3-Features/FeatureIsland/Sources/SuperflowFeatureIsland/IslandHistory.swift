@@ -135,7 +135,7 @@ struct HistoryRow: View {
                     .appType(.caption)
                     .foregroundStyle(Tok.text2)
                     .opacity(hover || selected || copied ? 0 : 1)
-                Icon(.copy, size: 14, tint: Tok.text2)
+                IconView(.copy, size: 14, tint: Tok.text2)
                     .opacity((hover || selected) && !copied ? 1 : 0)
                 PixelBitmap(rows: PixelBitmap.check, develop: 0.14)
                     .opacity(copied ? 1 : 0)

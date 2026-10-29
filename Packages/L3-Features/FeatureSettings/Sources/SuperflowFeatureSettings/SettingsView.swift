@@ -42,7 +42,7 @@ public struct SettingsView: View {
     }
 
     public var body: some View {
-        Page(title: "Settings", subtitle: "Everything stays on this Mac.", width: Layout.narrow) {
+        Page(title: "Settings", subtitle: "Everything stays on this Mac.", width: Layout.narrow, clipContent: true) {
             SearchField(text: $model.searchQuery, prompt: "Search settings", isFocused: $searchFocus)
         } trailing: {
             if model.hasChanges {

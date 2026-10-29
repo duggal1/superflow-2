@@ -132,8 +132,11 @@ public enum Typography {
 
     public static func displayFont(size: CGFloat) -> Font {
         let size = max(TypeScale.minimumDisplaySize, size)
-        return ui(size)
+        return .custom(AppFont.displayName, fixedSize: size)
     }
+
+    public static var sectionTitle: Font { .custom(AppFont.displayName, fixedSize: 17) }
+    public static var emptyTitle: Font { .custom(AppFont.displayName, fixedSize: 28) }
 
     public static func display(_ size: CGFloat) -> Font { displayFont(size: size) }
 

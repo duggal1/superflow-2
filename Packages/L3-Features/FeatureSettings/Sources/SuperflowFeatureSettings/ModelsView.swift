@@ -44,10 +44,10 @@ public struct ModelMark: View {
 
     @ViewBuilder public var body: some View {
         switch kind {
-        case .speech: NVIDIAIcon(size: 24)
-        case .enhancement: DeepFilterNetMark()
-        case .cleanup: S1MiniMark(size: 24)
-        case .meetings: Icon(.meetings, size: 14, tint: Tok.text2)
+        case .speech: IconView(.speechModel, size: 14)
+        case .enhancement: IconView(.noiseSuppression, size: 14)
+        case .cleanup: IconView(.cleanup, size: 14)
+        case .meetings: IconView(.speakerSeparation, size: 14)
         }
     }
 }

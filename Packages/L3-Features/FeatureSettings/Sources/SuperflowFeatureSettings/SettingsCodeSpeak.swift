@@ -82,7 +82,7 @@ struct CodeSpeakCommandsDialog: View {
                             Text(command.say)
                                 .foregroundStyle(Tok.text2)
                                 .frame(width: 180, alignment: .leading)
-                            Icon(.arrow, size: 12, tint: Tok.text2)
+                            IconView(.arrow, size: 12, tint: Tok.text2)
                             Text(command.types)
                                 .foregroundStyle(Tok.text)
                             Spacer(minLength: 0)

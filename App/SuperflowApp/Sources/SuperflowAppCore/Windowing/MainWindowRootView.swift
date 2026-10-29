@@ -19,10 +19,12 @@ public struct MainWindowRootView: View {
     @ObservedObject private var menuBar: MenuBarController
     @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let retryStartup: (() -> Void)?
     @State private var menuHost = MenuHost()
     @State private var dialogHost = DialogHost()
 
-    public init(coordinator: AppCoordinator) {
+    public init(coordinator: AppCoordinator, retryStartup: (() -> Void)? = nil) {
+        self.retryStartup = retryStartup
         self.coordinator = coordinator
         self.windowController = coordinator.mainWindowController
         self.menuBar = coordinator.menuBarController
@@ -34,7 +36,7 @@ public struct MainWindowRootView: View {
                 StartupStatusView(message: "Opening your local library…")
                     .frame(minWidth: Layout.windowMinWidth, minHeight: Layout.windowMinHeight)
             } else if let startupError = coordinator.startupError {
-                StartupStatusView(message: startupError)
+                StartupStatusView(message: startupError, retry: retryStartup)
                     .frame(minWidth: Layout.windowMinWidth, minHeight: Layout.windowMinHeight)
             } else if !coordinator.settings.onboardingComplete,
                       let model = coordinator.onboardingModel {
@@ -228,8 +230,8 @@ private struct SidebarRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                // Medium at 14 reads as a sidebar glyph rather than thin line art.
-                Icon(section.icon, size: 14, weight: .medium, tint: Tok.text)
+                IconView(section.icon, size: 15, tint: isSelected || hover ? Tok.text : Tok.text2,
+                         selected: isSelected)
                     .frame(width: 20, height: 20)
                 Text(section.title)
                     .appType(.body)
@@ -252,6 +254,7 @@ private struct SidebarRow: View {
         .buttonStyle(PressStyle())
         .onHover { hover = $0 }
         .animation(reduceMotion ? nil : (hover ? Motion.hoverIn : Motion.hoverOut), value: hover)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: isSelected)
         .focusStep(Capsule())
         .clickable()
         .accessibilityLabel(section.title)
@@ -359,6 +362,7 @@ private enum EngineStatus {
 
 private struct StartupStatusView: View {
     let message: String
+    var retry: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
@@ -370,6 +374,9 @@ private struct StartupStatusView: View {
                 .foregroundStyle(Tok.text2)
                 .textSelection(.enabled)
                 .frame(maxWidth: Space.proseMaxWidth, alignment: .leading)
+            if let retry {
+                AppButton("Try again", kind: .secondary, action: retry)
+            }
         }
         .padding(Space.pagePadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)

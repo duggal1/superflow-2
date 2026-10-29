@@ -58,7 +58,7 @@ struct CardContent: View {
                 if let bundleID = transcript?.bundleID {
                     AppIcon(bundleID: bundleID, size: 20)
                 } else {
-                    Icon(.mic, size: 14, tint: Tok.text2)
+                    IconView(.mic, size: 14, tint: Tok.text2)
                         .frame(width: 20, height: 20)
                 }
             }

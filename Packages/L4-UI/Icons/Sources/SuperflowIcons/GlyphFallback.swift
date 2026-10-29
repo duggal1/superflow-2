@@ -1,21 +1,18 @@
 import AppKit
 
-public extension Glyph {
+public extension Icon {
     var symbolName: String { Self.resolved[self] ?? rawValue }
 
-    private static let resolved: [Glyph: String] = {
-        let candidates: [Glyph: [String]] = [
-            .dashboard: ["circle.grid.3x3", "circle.grid.2x2", "square.grid.2x2"],
-            .history: ["clock", "clock.arrow.circlepath"],
-            .dictionary: ["textformat.abc", "textformat", "character.book.closed"],
-            .models: ["square.stack.3d.up", "cpu", "shippingbox"],
-            .settings: ["switch.2", "slider.horizontal.3", "gearshape"],
+    private static let resolved: [Icon: String] = {
+        let candidates: [Icon: [String]] = [
+            .history: ["clock.arrow.trianglehead.counterclockwise.rotate.90", "clock.arrow.circlepath"],
+            .capsuleShape: ["capsule.inset.filled", "capsule.fill"],
             .words: ["text.word.spacing", "text.alignleft"],
-            .timeSaved: ["timer", "stopwatch", "hourglass"],
-            .speed: ["speedometer", "bolt"],
-            .streak: ["calendar", "flame"],
+            .timeSaved: ["hourglass", "stopwatch"],
+            .speed: ["gauge.with.needle", "gauge"],
+            .streak: ["flame"],
         ]
-        var result: [Glyph: String] = [:]
+        var result: [Icon: String] = [:]
         for (glyph, names) in candidates {
             result[glyph] = names.first { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil }
         }

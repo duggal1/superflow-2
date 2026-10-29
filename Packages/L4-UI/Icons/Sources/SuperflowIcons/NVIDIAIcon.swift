@@ -20,13 +20,12 @@ public struct NVIDIAIcon: View {
 
     private static let image: NSImage? = resourceURL.flatMap { NSImage(contentsOf: $0) }
 
-    /// The mark's width. Height is `size / aspect`.
-    public var size: CGFloat
+    /// The mark's width. Height is `width / aspect`.
+    public var width: CGFloat
     public var tint: Color
 
-    public init(size: CGFloat = 20, tint: Color = Tok.brandNvidia) {
-        self.size = size
-        self.tint = tint
+    public init(width: CGFloat = 20, tint: Color = Tok.brandNvidia) {
+        self.width = width; self.tint = tint
     }
 
     public var body: some View {
@@ -42,7 +41,7 @@ public struct NVIDIAIcon: View {
                 Color.clear
             }
         }
-        .frame(width: size, height: size / Self.aspect)
+        .frame(width: width, height: width / Self.aspect)
         .accessibilityLabel("NVIDIA")
     }
 }

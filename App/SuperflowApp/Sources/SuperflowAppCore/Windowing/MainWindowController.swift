@@ -27,7 +27,7 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
     }
 
     /// Apple symbols only; the sidebar concept matches the page.
-    public var icon: Glyph {
+    public var icon: Icon {
         switch self {
         case .dashboard: .dashboard
         case .history: .history

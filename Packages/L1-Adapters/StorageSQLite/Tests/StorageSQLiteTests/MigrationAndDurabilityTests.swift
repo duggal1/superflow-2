@@ -69,7 +69,7 @@ final class MigrationAndDurabilityTests: XCTestCase {
         XCTAssertEqual(found.map(\.id), [SessionID("v1-session")])
 
         let connection = try SQLiteConnection(path: url.path)
-        XCTAssertEqual(connection.userVersion, 3)
+        XCTAssertEqual(try connection.userVersion, 3)
         let sessionIndexes = try indexNames(connection, table: "sessions")
         let segmentIndexes = try indexNames(connection, table: "segments")
         XCTAssertTrue(sessionIndexes.contains("sessions_status"))
@@ -88,10 +88,10 @@ final class MigrationAndDurabilityTests: XCTestCase {
         let count = try await second.sessionCount(kind: nil)
         XCTAssertEqual(count, 1)
         let connection = try SQLiteConnection(path: url.path)
-        XCTAssertEqual(connection.userVersion, 3)
+        XCTAssertEqual(try connection.userVersion, 3)
     }
 
-    func testFailedMigrationRollsBackAndFactoryQuarantines() async throws {
+    func testFailedMigrationRollsBackAndFactoryPreservesHistory() async throws {
         let url = databaseURL("blocked.sqlite")
         do {
             let connection = try SQLiteConnection(path: url.path)
@@ -102,16 +102,90 @@ final class MigrationAndDurabilityTests: XCTestCase {
 
         XCTAssertThrowsError(try SQLiteStore(path: url.path))
         let afterFailure = try SQLiteConnection(path: url.path)
-        XCTAssertEqual(afterFailure.userVersion, 1, "failed v2 migration must not advance user_version")
+        XCTAssertEqual(try afterFailure.userVersion, 1, "failed v2 migration must not advance user_version")
         let blocked = try afterFailure.scalarText(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='sessions_status'")
         XCTAssertEqual(blocked, "sessions_status")
 
-        let recovered = try SQLiteStoreFactory.open(url: url)
-        let count = try await recovered.sessionCount(kind: nil)
-        XCTAssertEqual(count, 0)
+        XCTAssertThrowsError(try SQLiteStoreFactory.open(url: url))
         let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
-        XCTAssertTrue(files.contains { $0.contains("Superflow-corrupt") })
+        XCTAssertFalse(files.contains { $0.contains("Superflow-corrupt") })
+        XCTAssertEqual(try afterFailure.scalarInt("SELECT COUNT(*) FROM sessions"), 0)
+
+    }
+
+    func testFactoryCreatesMissingParentDirectory() async throws {
+        let url = directory.appendingPathComponent("missing/nested/store.sqlite")
+        let store = try SQLiteStoreFactory.open(url: url)
+        let count = try await store.sessionCount(kind: nil)
+        XCTAssertEqual(count, 0)
+    }
+
+    func testBusyMigrationMustNeverQuarantineDatabase() throws {
+        let url = databaseURL()
+        try seedV1Database(at: url)
+        let writer = try SQLiteConnection(path: url.path)
+        try writer.execute("BEGIN IMMEDIATE")
+        defer { try? writer.execute("ROLLBACK") }
+        XCTAssertThrowsError(try SQLiteStoreFactory.open(url: url))
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        XCTAssertFalse(files.contains { $0.contains("Superflow-corrupt") })
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    private func seedCheckpointedHistory(at url: URL) throws {
+        let connection = try SQLiteConnection(path: url.path)
+        try Schema.migrate(connection)
+        try connection.execute("""
+        INSERT INTO sessions (id, kind, started_at, status, model_profile, local_day)
+        VALUES ('preserved', 'dictation', 1700000000, 'complete', 'test', '2023-11-14')
+        """)
+        try connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        try connection.execute("PRAGMA journal_mode=DELETE")
+        XCTAssertEqual(try connection.scalarText("PRAGMA journal_mode"), "delete")
+    }
+
+    func testStaleSidecarsPreserveCommittedHistory() async throws {
+        let url = databaseURL()
+        try seedCheckpointedHistory(at: url)
+        try Data(repeating: 0, count: 32768).write(to: URL(fileURLWithPath: url.path + "-shm"))
+        try Data().write(to: URL(fileURLWithPath: url.path + "-wal"))
+        let reopened = try SQLiteStoreFactory.open(url: url)
+        let session = try await reopened.session(SessionID("preserved"))
+        XCTAssertNotNil(session)
+    }
+
+    func testSQLiteReconstructsStaleSharedMemoryWithoutQuarantine() async throws {
+        let url = databaseURL()
+        try seedCheckpointedHistory(at: url)
+        let sharedMemory = URL(fileURLWithPath: url.path + "-shm")
+        if FileManager.default.fileExists(atPath: sharedMemory.path) {
+            try FileManager.default.removeItem(at: sharedMemory)
+        }
+        try FileManager.default.createDirectory(at: sharedMemory, withIntermediateDirectories: true)
+        let reopened = try SQLiteStoreFactory.open(url: url)
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        XCTAssertFalse(files.contains { $0.contains("Superflow-corrupt") })
+        let session = try await reopened.session(SessionID("preserved"))
+        XCTAssertNotNil(session)
+    }
+
+    func testConcurrentFactoryOpensShareCommittedHistory() async throws {
+        let url = databaseURL()
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for index in 0..<2 {
+                group.addTask {
+                    let store = try SQLiteStoreFactory.open(url: url)
+                    try await store.createSession(SessionRecord(id: SessionID("concurrent-\(index)"),
+                                                                kind: .dictation,
+                                                                modelProfile: ModelProfile.default.id))
+                }
+            }
+            try await group.waitForAll()
+        }
+        let reopened = try SQLiteStoreFactory.open(url: url)
+        let count = try await reopened.sessionCount(kind: nil)
+        XCTAssertEqual(count, 2)
     }
 
     func testWALAndRuntimePragmasAreEnabled() throws {
@@ -221,19 +295,18 @@ final class MigrationAndDurabilityTests: XCTestCase {
         XCTAssertNotNil(active)
     }
 
-    func testFactoryQuarantinesWALSidecarsWithTheDatabase() async throws {
+    func testFactoryPreservesCorruptDatabaseAndSidecars() throws {
         let url = databaseURL("corrupt.sqlite")
         try Data("not a sqlite database".utf8).write(to: url)
         try Data("not a wal".utf8).write(to: URL(fileURLWithPath: url.path + "-wal"))
         try Data("not a shm".utf8).write(to: URL(fileURLWithPath: url.path + "-shm"))
 
-        let store = try SQLiteStoreFactory.open(url: url)
-        let count = try await store.sessionCount(kind: nil)
-        XCTAssertEqual(count, 0)
+        XCTAssertThrowsError(try SQLiteStoreFactory.open(url: url))
+        XCTAssertEqual(try Data(contentsOf: url), Data("not a sqlite database".utf8))
+        XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: url.path + "-wal")), Data("not a wal".utf8))
+        XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: url.path + "-shm")), Data("not a shm".utf8))
         let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
-        XCTAssertTrue(files.contains { $0.contains("Superflow-corrupt") && $0.hasSuffix(".sqlite") })
-        XCTAssertTrue(files.contains { $0.contains("Superflow-corrupt") && $0.hasSuffix(".sqlite-wal") })
-        XCTAssertTrue(files.contains { $0.contains("Superflow-corrupt") && $0.hasSuffix(".sqlite-shm") })
+        XCTAssertFalse(files.contains { $0.contains("Superflow-corrupt") })
     }
 }
 

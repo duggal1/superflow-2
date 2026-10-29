@@ -20,6 +20,8 @@ public final class PastMeetingsModel: ObservableObject {
     @Published public private(set) var selectedDocument: MeetingDocument?
     @Published public private(set) var barcodes: [SessionID: [MeetingTurn]] = [:]
     @Published public private(set) var isLoading = false
+    @Published public private(set) var isLoadingDocument = false
+    @Published public private(set) var documentError: String?
     @Published public private(set) var error: String?
     public let toast: ToastCenter
     private let repository: any TranscriptRepository
@@ -73,15 +75,24 @@ public final class PastMeetingsModel: ObservableObject {
         selectionRequest += 1
         let token = selectionRequest
         selectedID = id
+        selectedDocument = nil
+        documentError = nil
+        isLoadingDocument = true
+        defer { if token == selectionRequest { isLoadingDocument = false } }
         do {
-            guard let record = try await repository.session(id) else { selectedDocument = nil; return }
+            guard let record = try await repository.session(id) else {
+                if token == selectionRequest { documentError = "Could not load this meeting." }
+                return
+            }
             let segments = try await repository.segments(session: id)
             let speakers = try await repository.speakers(session: id)
             guard token == selectionRequest, !hidden.contains(id) else { return }
             let document = MeetingProjection.document(record: record, segments: segments, speakers: speakers)
             selectedDocument = document
             barcodes[id] = document.turns
-        } catch { self.error = "Could not load this meeting." }
+        } catch {
+            if token == selectionRequest { documentError = "Could not load this meeting." }
+        }
     }
 
     public func loadBarcode(for id: SessionID) async {

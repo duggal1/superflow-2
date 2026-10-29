@@ -93,6 +93,7 @@ public struct Page<Leading: View, Trailing: View, Content: View>: View {
     private let title: String
     private let subtitle: String?
     private let width: CGFloat
+    private let clipContent: Bool
     private let leading: Leading
     private let trailing: Trailing
     private let content: Content
@@ -100,12 +101,14 @@ public struct Page<Leading: View, Trailing: View, Content: View>: View {
     public init(title: String,
                 subtitle: String? = nil,
                 width: CGFloat = Layout.page,
+                clipContent: Bool = false,
                 @ViewBuilder leading: () -> Leading,
                 @ViewBuilder trailing: () -> Trailing,
                 @ViewBuilder content: () -> Content) {
         self.title = title
         self.subtitle = subtitle
         self.width = width
+        self.clipContent = clipContent
         self.leading = leading()
         self.trailing = trailing()
         self.content = content()
@@ -120,6 +123,7 @@ public struct Page<Leading: View, Trailing: View, Content: View>: View {
             .pageWidth(width)
             .padding(.bottom, Space.xxl)
         }
+        .clipPageContent(clipContent)
         .scrollContentBackground(.hidden)
         // `safeAreaBar` would give the bar the scroll-edge treatment, but the app
         // still targets macOS 15. `safeAreaInset` keeps the bar opaque and the
@@ -128,7 +132,7 @@ public struct Page<Leading: View, Trailing: View, Content: View>: View {
             PageBar(width: width) { leading } trailing: { trailing }
                 .background(Tok.bg)
         }
-        .scrollEdgeSoft()
+        .scrollEdgeSoft(enabled: !clipContent)
         .background(Tok.bg)
     }
 }
@@ -194,12 +198,17 @@ public extension View {
 
     /// Content dissolves under the bar instead of cutting off.
     @ViewBuilder
-    func scrollEdgeSoft() -> some View {
-        if #available(macOS 26.0, *) {
+    func scrollEdgeSoft(enabled: Bool = true) -> some View {
+        if #available(macOS 26.0, *), enabled {
             scrollEdgeEffectStyle(.soft, for: .top)
         } else {
             self
         }
+    }
+
+    @ViewBuilder
+    func clipPageContent(_ enabled: Bool) -> some View {
+        if enabled { clipped() } else { self }
     }
 }
 
@@ -215,7 +224,7 @@ public struct SectionHeader: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .appType(.title)
+                .font(Typography.sectionTitle)
                 .foregroundStyle(Tok.text)
             if let note {
                 Text(note)

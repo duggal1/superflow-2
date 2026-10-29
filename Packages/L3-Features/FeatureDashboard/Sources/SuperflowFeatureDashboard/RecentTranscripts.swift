@@ -97,7 +97,7 @@ private struct TranscriptRow: View {
     private var label: some View {
         HStack(spacing: Space.sm) {
             if let bundle = entry.record.frontmostBundleID { AppIcon(bundleID: bundle, size: 16) }
-            else { Icon(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16) }
+            else { IconView(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16) }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .appType(.label)
@@ -181,7 +181,7 @@ private struct TranscriptRow: View {
 struct ExampleRow: View {
     var body: some View {
         HStack(spacing: Space.sm) {
-            Icon(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16)
+            IconView(.mic, size: 12, tint: Tok.text2).frame(width: 16, height: 16)
             VStack(alignment: .leading, spacing: 2) {
                 Text("The budget is $12,000, and we meet on Tuesday at 3 PM.")
                     .appType(.label)

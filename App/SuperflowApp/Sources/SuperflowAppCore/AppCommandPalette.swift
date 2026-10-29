@@ -24,7 +24,7 @@ enum AppCommandPalette {
         ])
     }
 
-    private static func icon(for section: AppSection) -> Glyph {
+    private static func icon(for section: AppSection) -> Icon {
         switch section {
         case .dashboard: .dashboard
         case .history: .history

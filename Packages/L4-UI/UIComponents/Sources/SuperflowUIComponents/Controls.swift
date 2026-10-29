@@ -73,23 +73,21 @@ public struct Segmented<Value: Hashable>: View {
     }
 }
 
-/// Track 40 x 24, knob 20 (26 pressed), inset 2, Blue 600 on. White knob in
-/// both modes: it always sits on the track, never on the card.
 public struct AppToggleStyle: ToggleStyle {
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
         Button {
             configuration.isOn.toggle()
-            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
         } label: {
-            Color.clear.frame(width: 40, height: 32)
+            Color.clear.frame(width: 35, height: 32)
         }
         .buttonStyle(SwitchFace(isOn: configuration.isOn))
         .focusEffectDisabled()
         .clickable()
-        .accessibilityAddTraits(.isToggle)
-        .accessibilityValue(configuration.isOn ? "On" : "Off")
+        .accessibilityRepresentation {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+        }
     }
 
     private struct SwitchFace: ButtonStyle {
@@ -103,30 +101,59 @@ public struct AppToggleStyle: ToggleStyle {
             let pressed: Bool
             @Environment(\.isEnabled) private var enabled
             @Environment(\.accessibilityReduceMotion) private var reduce
-            @State private var hover = false
-
             var body: some View {
-                let knob: CGFloat = pressed ? 26 : 20
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(isOn ? (hover ? Tok.accentHover : Tok.accent) : Tok.toggleOff)
-                        .frame(width: 40, height: 24)
-                    Capsule()
-                        .fill(.white)
-                        .frame(width: knob, height: 20)
-                        .offset(x: isOn ? 40 - 2 - knob : 2)
+                ZStack {
+                    PixelSwitchLayer(kind: .well, progress: isOn ? 1 : 0)
+                        .fill(Tok.text.opacity(0.08))
+                    PixelSwitchLayer(kind: .flood, progress: isOn ? 1 : 0)
+                        .fill(Tok.accent)
+                    PixelSwitchLayer(kind: .thumb(wide: pressed), progress: isOn ? 1 : 0)
+                        .fill(isOn ? Tok.onAccent : Tok.text.opacity(0.55))
                 }
-                .frame(width: 40, height: 32)
-                .contentShape(.rect)
-                .opacity(enabled ? 1 : Opacity.disabled)
-                .keyboardFocusRing(radius: 12)
-                .animation(reduce ? nil : .snappy(duration: 0.22), value: isOn)
-                .animation(reduce ? nil : .snappy(duration: 0.12), value: pressed)
-                .animation(.easeOut(duration: 0.10), value: hover)
-                .onHover { hover = $0 }
+                .frame(width: 35, height: 19)
+                .padding(.top, 6)
+                .frame(width: 35, height: 32, alignment: .top)
+                .contentShape(Rectangle().inset(by: -5))
+                .opacity(enabled ? 1 : 0.4)
+                .keyboardFocusRing(radius: Radius.field)
+                .animation(reduce ? nil : .timingCurve(0.3, 0, 0, 1, duration: 0.2), value: isOn)
                 .pixelAudit("Toggle")
             }
         }
+    }
+}
+
+private struct PixelSwitchLayer: Shape {
+    enum Kind { case well, flood, thumb(wide: Bool) }
+    let kind: Kind
+    var progress: CGFloat
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        func cell(_ column: Int, _ row: Int) {
+            path.addRect(CGRect(x: rect.minX + CGFloat(column) * 4,
+                                y: rect.minY + CGFloat(row) * 4, width: 3, height: 3))
+        }
+        switch kind {
+        case .well:
+            for column in 0..<9 { for row in 0..<5 { cell(column, row) } }
+        case .flood:
+            let reach = min(9, max(0, progress * 9))
+            let solid = Int(reach.rounded(.down))
+            for column in 0..<solid { for row in 0..<5 { cell(column, row) } }
+            if solid < 9, reach - CGFloat(solid) > 0.001 {
+                for row in 0..<5 where (solid + row).isMultiple(of: 2) { cell(solid, row) }
+            }
+        case .thumb(let wide):
+            let width = wide ? 3 : 2
+            let start = Int((min(1, max(0, progress)) * CGFloat(9 - width)).rounded())
+            for column in start..<(start + width) { for row in 0..<5 { cell(column, row) } }
+        }
+        return path
     }
 }
 
@@ -224,7 +251,7 @@ public struct AppStepper: View {
 }
 
 private struct StepChip: View {
-    let glyph: Glyph
+    let glyph: Icon
     let atBound: Bool
     let tick: () -> Void
 
@@ -234,7 +261,7 @@ private struct StepChip: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Icon(glyph, size: 12, weight: .medium)
+        IconView(glyph, size: 12, weight: .medium)
             .foregroundStyle(Tok.text)
             .frame(width: 24, height: 24)
             .background(down ? Tok.controlPressed : hover ? Tok.controlHover : Tok.control, in: .circle)

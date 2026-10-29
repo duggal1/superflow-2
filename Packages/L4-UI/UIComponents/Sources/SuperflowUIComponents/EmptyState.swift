@@ -22,10 +22,7 @@ public struct EmptyState: View {
         VStack(spacing: density == .page ? Space.md : Space.sm) {
             PixelStop(cells: 11, cell: density == .page ? 4 : 3)
             Text(title)
-                .font(density == .page
-                      ? Typography.displayFont(size: TypeScale.displaySSize)
-                      : AppType.title.font)
-                .tracking(density == .page ? TypeScale.displaySTracking : AppType.title.tracking)
+                .font(Typography.emptyTitle)
                 .foregroundStyle(Tok.text)
                 .multilineTextAlignment(.center)
             Text(message)

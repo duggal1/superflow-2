@@ -14,7 +14,7 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
     public init(path: String) throws {
         self.path = path
         let connection = try SQLiteConnection(path: path)
-        guard connection.quickCheck() else {
+        guard try connection.quickCheck() else {
             throw SQLiteError(code: SQLITE_CORRUPT, message: "database failed quick_check", sql: "PRAGMA quick_check")
         }
         try Schema.migrate(connection)

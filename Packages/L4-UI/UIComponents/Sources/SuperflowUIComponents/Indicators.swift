@@ -104,14 +104,14 @@ public struct KeyCap: View {
 /// One number, its label and its note. Exactly one bare symbol, left of the label:
 /// icon plus label plus value is already three signals, so there is no dot or box.
 public struct Metric: View {
-    private let glyph: Glyph?
+    private let glyph: Icon?
     private let label: String
     private let value: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Label and value only. A third line under the number was a caption for a
     /// number that already says what it is; the ledger reads faster without it.
-    public init(_ label: String, value: String, glyph: Glyph? = nil) {
+    public init(_ label: String, value: String, glyph: Icon? = nil) {
         self.label = label
         self.value = value
         self.glyph = glyph
@@ -121,7 +121,7 @@ public struct Metric: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 if let glyph {
-                    Icon(glyph, size: 14, tint: Tok.text2)
+                    IconView(glyph, size: 14, tint: Tok.text2)
                         .frame(width: 16, height: 16)
                 }
                 Text(label)

@@ -8,7 +8,7 @@ public struct MenuItem: Identifiable {
     public enum Role { case normal, destructive }
     public let id = UUID()
     public var title: String
-    public var glyph: Glyph?
+    public var glyph: Icon?
     public var leading: AnyView?
     public var role: Role
     public var enabled: Bool
@@ -16,7 +16,7 @@ public struct MenuItem: Identifiable {
     public var gapBefore: Bool
     public var run: () -> Void
 
-    public init(_ title: String, glyph: Glyph? = nil, leading: AnyView? = nil,
+    public init(_ title: String, glyph: Icon? = nil, leading: AnyView? = nil,
                 role: Role = .normal, enabled: Bool = true, checked: Bool = false,
                 gapBefore: Bool = false, run: @escaping () -> Void) {
         self.title = title

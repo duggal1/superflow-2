@@ -6,7 +6,7 @@ enum Schema {
     static let currentVersion: Int32 = 3
 
     static func migrate(_ connection: SQLiteConnection) throws {
-        let version = connection.userVersion
+        let version = try connection.userVersion
         guard version < currentVersion else { return }
         if version < 1 {
             try connection.transaction {

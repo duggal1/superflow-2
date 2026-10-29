@@ -5,16 +5,22 @@ public struct SQLiteError: Error, LocalizedError, Sendable {
     public let code: Int32
     public let message: String
     public let sql: String?
+    public let extendedCode: Int32
+    public let systemCode: Int32
 
-    public init(code: Int32, message: String, sql: String? = nil) {
+    public init(code: Int32, message: String, sql: String? = nil,
+                extendedCode: Int32? = nil, systemCode: Int32 = 0) {
         self.code = code
         self.message = message
         self.sql = sql
+        self.extendedCode = extendedCode ?? code
+        self.systemCode = systemCode
     }
 
     public var errorDescription: String? {
-        if let sql { return "SQLite \(code): \(message) [\(sql)]" }
-        return "SQLite \(code): \(message)"
+        let detail = "SQLite \(code) (extended \(extendedCode), system \(systemCode)): \(message)"
+        if let sql { return "\(detail) [\(sql)]" }
+        return detail
     }
 }
 
@@ -37,8 +43,11 @@ final class SQLiteConnection {
         let result = sqlite3_open_v2(path, &pointer, flags, nil)
         guard result == SQLITE_OK, let pointer else {
             let message = pointer.map { String(cString: sqlite3_errmsg($0)) } ?? "could not open database"
+            let extendedCode = pointer.map { sqlite3_extended_errcode($0) } ?? result
+            let systemCode = pointer.map { sqlite3_system_errno($0) } ?? 0
             if let pointer { sqlite3_close_v2(pointer) }
-            throw SQLiteError(code: result, message: message)
+            throw SQLiteError(code: result, message: message,
+                              extendedCode: extendedCode, systemCode: systemCode)
         }
         handle = pointer
         sqlite3_busy_timeout(handle, 5_000)
@@ -53,7 +62,9 @@ final class SQLiteConnection {
         guard result == SQLITE_OK else {
             let message = error.map { String(cString: $0) } ?? String(cString: sqlite3_errmsg(handle))
             sqlite3_free(error)
-            throw SQLiteError(code: result, message: message, sql: sql)
+            throw SQLiteError(code: result, message: message, sql: sql,
+                              extendedCode: sqlite3_extended_errcode(handle),
+                              systemCode: sqlite3_system_errno(handle))
         }
     }
 
@@ -90,15 +101,15 @@ final class SQLiteConnection {
     }
 
     var userVersion: Int32 {
-        Int32((try? scalarInt("PRAGMA user_version")) ?? 0)
+        get throws { Int32(try scalarInt("PRAGMA user_version")) }
     }
 
     func setUserVersion(_ version: Int32) throws {
         try execute("PRAGMA user_version = \(version)")
     }
 
-    func quickCheck() -> Bool {
-        (try? scalarText("PRAGMA quick_check")) == "ok"
+    func quickCheck() throws -> Bool {
+        try scalarText("PRAGMA quick_check") == "ok"
     }
 
     func configureForRuntime() throws {
@@ -120,7 +131,9 @@ final class SQLiteStatement {
         var pointer: OpaquePointer?
         let result = sqlite3_prepare_v2(connection.handle, sql, -1, &pointer, nil)
         guard result == SQLITE_OK, let pointer else {
-            throw SQLiteError(code: result, message: String(cString: sqlite3_errmsg(connection.handle)), sql: sql)
+            throw SQLiteError(code: result, message: String(cString: sqlite3_errmsg(connection.handle)), sql: sql,
+                              extendedCode: sqlite3_extended_errcode(connection.handle),
+                              systemCode: sqlite3_system_errno(connection.handle))
         }
         handle = pointer
     }
@@ -152,7 +165,9 @@ final class SQLiteStatement {
                 }
             }
             guard result == SQLITE_OK else {
-                throw SQLiteError(code: result, message: String(cString: sqlite3_errmsg(connection.handle)), sql: sql)
+                throw SQLiteError(code: result, message: String(cString: sqlite3_errmsg(connection.handle)), sql: sql,
+                                  extendedCode: sqlite3_extended_errcode(connection.handle),
+                                  systemCode: sqlite3_system_errno(connection.handle))
             }
         }
     }
@@ -164,7 +179,9 @@ final class SQLiteStatement {
         case SQLITE_ROW: return true
         case SQLITE_DONE: return false
         default:
-            throw SQLiteError(code: result, message: String(cString: sqlite3_errmsg(connection.handle)), sql: sql)
+            throw SQLiteError(code: result, message: String(cString: sqlite3_errmsg(connection.handle)), sql: sql,
+                              extendedCode: sqlite3_extended_errcode(connection.handle),
+                              systemCode: sqlite3_system_errno(connection.handle))
         }
     }
 

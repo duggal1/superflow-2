@@ -49,8 +49,7 @@ struct PixelDissolve: View {
     }
 }
 
-/// Submitting. One pulse of the meter's own shape sweeps left to right with a white head and a dithered wake.
-/// 1.1 s per pass, display-rate. This replaces the three-cell wait mark and stays the one looping mark.
+/// Submitting. A compact blue pulse travels along the meter's centerline.
 struct PixelSweep: View {
     @Environment(\.accessibilityReduceMotion) private var reduce
     @Environment(\.displayScale) private var scale
@@ -67,18 +66,18 @@ struct PixelSweep: View {
                     context.fill(Path(CGRect(x: snap(x), y: snap(y), width: 2, height: 2)),
                                  with: .color(tone), style: FillStyle(antialiased: false))
                 }
-                for column in 0..<11 { cell(CGFloat(column) * 3, 3, Ramp.blue[1]) }
+                for column in 0..<11 { cell(CGFloat(column) * 3, 3, Tok.accent.opacity(0.3)) }
                 let head = snap(CGFloat(progress) * 30)
-                let wake = [Ramp.blue[4], Ramp.blue[3], Ramp.blue[2], Ramp.blue[2]]
+                let wake = [0.75, 0.5, 0.3, 0.2]
                 for age in 1...4 {
                     let x = snap(head - direction * CGFloat(age) * 3)
                     guard x >= 0, x <= 30 else { continue }
-                    cell(x, 3, wake[age - 1])
+                    cell(x, 3, Tok.accent.opacity(wake[age - 1]))
                     if age <= 2, (Int(x / 3) + age) % 2 == 0 {
-                        cell(x, 0, wake[age]); cell(x, 6, wake[age])
+                        cell(x, 0, Tok.accent.opacity(wake[age])); cell(x, 6, Tok.accent.opacity(wake[age]))
                     }
                 }
-                for row in 0..<3 { cell(head, CGFloat(row) * 3, Tok.text) }
+                cell(head, 3, Tok.accent)
             }
         }
         .frame(width: 32, height: 8)
@@ -90,7 +89,7 @@ struct PixelSweep: View {
 struct NoSignalShelf: View {
     var body: some View {
         HStack(spacing: 8) {
-            Icon(.mic, size: 14, tint: Tok.statusBad)
+            IconView(.mic, size: 14, tint: Tok.statusBad)
             Text("No sound yet. Check your microphone.").appType(.caption).foregroundStyle(Tok.text2)
         }
         .frame(maxWidth: .infinity).frame(height: 32)

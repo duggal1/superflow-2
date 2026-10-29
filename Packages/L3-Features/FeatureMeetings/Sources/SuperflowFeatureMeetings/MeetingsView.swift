@@ -13,23 +13,23 @@ public struct MeetingsView: View {
     }
 
     public var body: some View {
-        Page(title: "Meetings", leading: {
-            HStack(spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: 0) {
+            PageBar {
                 Segmented(selection: $model.tab, items: [
                     Segmented.Item(MeetingsTab.live.label, value: MeetingsTab.live),
                     Segmented.Item(MeetingsTab.past.label, value: MeetingsTab.past),
                 ])
-            }
-        }, trailing: { EmptyView() }) {
-            VStack(alignment: .leading, spacing: Space.md) {
+            } trailing: { EmptyView() }
+            PageTitle("Meetings").pageWidth(Layout.page).padding(.bottom, Space.sectionGap)
+            Group {
                 switch model.tab {
-                case .live:
-                    live
-                case .past:
-                    PastMeetingsView(model: model.past)
+                case .live: ScrollView { live.pageWidth(Layout.page) }
+                case .past: PastMeetingsView(model: model.past).pageWidth(Layout.page)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .background(Tok.bg)
         .task {
             await model.observe()
             await model.past.reload()

@@ -47,7 +47,7 @@ struct DictationTab: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.lg) {
             SettingsCard(titles: Array(Self.titles.prefix(3)), query: query) {
-                SettingRow(.waveform, "Speech model", filter: query) {
+                SettingRow(.speechModel, "Speech model", filter: query) {
                     HStack(spacing: 8) {
                         if !model.asrReady {
                             AppButton("Get model", kind: .quiet, height: 28) { openModels() }
@@ -56,12 +56,12 @@ struct DictationTab: View {
                                     get: { model.settings.asrProfile },
                                     set: { model.setProfile($0) }),
                                  options: model.profileOptions.map {
-                                     .init(value: $0, title: model.profileName($0), leading: { AnyView(NVIDIAIcon(size: 16)) })
+                                     .init(value: $0, title: model.profileName($0), leading: { AnyView(IconView(.speechModel, size: 14)) })
                                  },
                                  label: "Speech model")
                     }
                 }
-                SettingRow(.waveform, "Noise suppression", filter: query) {
+                SettingRow(.noiseSuppression, "Noise suppression", filter: query) {
                     HStack(spacing: 12) {
                         if !model.enhancementReady {
                             AppButton("Get model", kind: .quiet, height: 28) { openModels() }
@@ -93,7 +93,7 @@ struct DictationTab: View {
                 SettingRow(.handTap, "Hold to talk", filter: query) {
                     ms(\.holdMs, in: SettingsValidation.holdRange)
                 }
-                SettingRow(.timer, "Double-tap window", filter: query) {
+                SettingRow(.doubleTap, "Double-tap window", filter: query) {
                     ms(\.doubleTapMs, in: SettingsValidation.doubleTapRange)
                 }
                 SettingRow(.settingMeeting, "Meeting hold", filter: query) {
@@ -124,7 +124,7 @@ struct MeetingsTab: View {
             SettingRow(.chart, "Meetings in stats", filter: query) {
                 AppToggle("Meetings in stats", isOn: $model.settings.meetingsInStats)
             }
-            SettingRow(.settingMeeting, "Speaker separation", filter: query) {
+            SettingRow(.speakerSeparation, "Speaker separation", filter: query) {
                 if model.diarizationReady {
                     Text("Installed")
                         .appType(.body)
@@ -155,7 +155,7 @@ struct PrivacyTab: View {
                     AppToggle("Don't store transcripts",
                               isOn: $model.settings.noTranscriptStorage)
                 }
-                SettingRow(.waveform, "Keep audio", filter: query) {
+                SettingRow(.keepAudio, "Keep audio", filter: query) {
                     AppToggle("Keep audio", isOn: $model.settings.keepAudio)
                         .disabled(model.settings.noTranscriptStorage)
                 }
@@ -205,18 +205,18 @@ struct AdvancedTab: View {
 
     var body: some View {
         SettingsCard(titles: Self.titles, query: query) {
-            SettingRow(.keyboard, "Typing speed", filter: query) {
+            SettingRow(.typingSpeed, "Typing speed", filter: query) {
                 AppStepper(value: $model.settings.typingWPM,
                            range: SettingsValidation.typingSpeedRange,
                            unit: "wpm", label: "Typing speed")
             }
-            SettingRow(.timeSaved, "Interactive deadline", filter: query) {
+            SettingRow(.interactiveDeadline, "Interactive deadline", filter: query) {
                 AppSlider(value: Binding(
                             get: { Double(model.settings.interactiveDeadlineMs) },
                             set: { model.settings.interactiveDeadlineMs = Int($0.rounded()) }),
                           in: 500...3_000, step: 100, unit: "ms")
             }
-            SettingRow(.timeSaved, "Background deadline", filter: query) {
+            SettingRow(.backgroundDeadline, "Background deadline", filter: query) {
                 AppSlider(value: Binding(
                             get: { Double(model.settings.backgroundDeadlineMs) / 1_000 },
                             set: { model.settings.backgroundDeadlineMs = Int(($0 * 1_000).rounded()) }),

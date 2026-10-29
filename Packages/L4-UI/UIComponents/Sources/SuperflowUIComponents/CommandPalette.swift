@@ -8,12 +8,12 @@ public struct CommandItem: Identifiable {
     public let id: String
     public let title: String
     public let subtitle: String?
-    public let icon: Glyph
+    public let icon: Icon
     public let shortcut: String?
     public let action: @MainActor () -> Void
 
     public init(id: String, title: String, subtitle: String? = nil,
-                icon: Glyph = .shortcuts, shortcut: String? = nil,
+                icon: Icon = .shortcuts, shortcut: String? = nil,
                 action: @escaping @MainActor () -> Void) {
         self.id = id
         self.title = title
@@ -146,7 +146,7 @@ public struct CommandPalette: View {
 
     private var search: some View {
         HStack(spacing: Space.xs) {
-            Icon(.search, size: 14)
+            IconView(.search, size: 14)
             TextField(placeholder, text: $model.query)
                 .textFieldStyle(.plain)
                 .appType(.reading)
@@ -185,7 +185,7 @@ public struct CommandPalette: View {
             runSelected()
         } label: {
             HStack(spacing: Space.sm) {
-                Icon(item.icon, size: 14)
+                IconView(item.icon, size: 14)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(item.title)
                         .appType(.body)

@@ -44,6 +44,7 @@ struct MeetingBarcode: View {
     var tickWidth: CGFloat = 2
     var tickHeight: CGFloat = 6
     var ghost: Int?
+    var active = true
     @Environment(\.displayScale) private var scale
 
     var body: some View {
@@ -58,9 +59,9 @@ struct MeetingBarcode: View {
             let y = (size.height - tickHeight) / 2
             for (column, speaker) in samples.enumerated() {
                 let x = CGFloat(column) * pitch
-                if let speaker, let index = speakers.firstIndex(where: { $0.id == speaker }) {
+                if speaker != nil {
                     fill(CGRect(x: x, y: y, width: tickWidth, height: tickHeight),
-                         meetingTone(speakers[index], index: index))
+                         active ? Tok.accent : Tok.text.opacity(0.18))
                 } else {
                     fill(CGRect(x: x + 1, y: size.height / 2, width: 1, height: 1), Tok.controlPressed)
                 }

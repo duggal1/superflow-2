@@ -81,7 +81,7 @@ public struct SearchField: View {
 
     public var body: some View {
         HStack(spacing: Space.xs) {
-            Icon(.search, size: 14, tint: Tok.text2)
+            IconView(.search, size: 14, tint: Tok.text2)
             TextField("", text: $text, prompt: Text(prompt).foregroundStyle(Tok.text2))
                 .textFieldStyle(.plain)
                 .appType(.body)
@@ -96,7 +96,7 @@ public struct SearchField: View {
                 Button {
                     text = ""
                 } label: {
-                    Icon(.close, size: 12, weight: .medium, tint: Tok.text2)
+                    IconView(.close, size: 12, weight: .medium, tint: Tok.text2)
                         .frame(width: 20, height: 20)
                         .contentShape(.circle)
                 }
@@ -126,13 +126,13 @@ public struct SearchField: View {
 
 /// Bare at rest. A fill appears on hover only. 32 x 32 hit target, 16pt icon.
 public struct BarIconButton: View {
-    private let glyph: Glyph
+    private let glyph: Icon
     private let label: String
     private let action: () -> Void
     @Environment(\.isEnabled) private var enabled
     @State private var hover = false
 
-    public init(glyph: Glyph, label: String, action: @escaping () -> Void) {
+    public init(glyph: Icon, label: String, action: @escaping () -> Void) {
         self.glyph = glyph
         self.label = label
         self.action = action
@@ -140,7 +140,7 @@ public struct BarIconButton: View {
 
     public var body: some View {
         Button(action: action) {
-            Icon(glyph, size: 16, tint: Tok.text)
+            IconView(glyph, size: 16, tint: Tok.text)
                 .frame(width: Layout.control, height: Layout.control)
                 .background(hover && enabled ? Tok.control : .clear, in: .circle)
                 .contentShape(.circle)
