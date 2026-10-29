@@ -19,6 +19,11 @@ final class LongFormSafetyTests: XCTestCase {
         XCTAssertEqual(ListPlanner.plan(text, protected: Protected(literals: ["first release"])), [.prose(text)])
     }
 
+    func testListRendererKeepsProtectedPunctuation() {
+        XCTAssertEqual(ListRenderer.render(lead: "Tools.", items: ["Use ACME!"], protected: Protected(literals: ["ACME!"])),
+                       "Tools:\n- Use ACME!")
+    }
+
     func testTwoItemsWithoutBulletMarkersStayProse() {
         XCTAssertEqual(ListPlanner.plan("first install second run"), [.prose("first install second run")])
         XCTAssertEqual(ListPlanner.plan("at first I waited a second then third place"), [.prose("at first I waited a second then third place")])

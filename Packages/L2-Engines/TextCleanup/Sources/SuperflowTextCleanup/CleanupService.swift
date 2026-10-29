@@ -81,7 +81,7 @@ public actor CleanupService {
                                                       styling: "semi-casual", structure: "prose")
                         cleaned.append(output.text); chunks.append(contentsOf: output.chunks)
                     }
-                    parts.append(ListRenderer.render(lead: heading.text, items: cleaned))
+                    parts.append(ListRenderer.render(lead: heading.text, items: cleaned, protected: protected))
                 }
             }
             for index in chunks.indices { chunks[index].index = index }
@@ -130,7 +130,12 @@ public actor CleanupService {
         let assembled = SeamSplicer.join(pieces)
         let check = CleanResult(text: assembled, tokensIn: 0, tokensOut: 0, hitTokenCap: false, latencyMs: 0)
         if CleanGuard.verify(input: text, protected: protected, result: check, cap: Int.max) != nil {
-            return (text, [ChunkOutcome(index: 0, text: text, state: .fallback, reason: "assembly content guard")])
+            for index in results.indices {
+                results[index].text = plans[index].ownedText
+                results[index].state = .fallback
+                results[index].reason = "assembly content guard"
+            }
+            return (text, results)
         }
         return (assembled, results)
     }
@@ -146,6 +151,8 @@ public actor CleanupService {
         let ceiling = context.interactive ? config.interactiveDeadlineMs : config.backgroundDeadlineMs
         let deadline = min(max(1, configured), max(1, ceiling))
         let cap = min(config.maxNewTokens, Int(1.3 * Double(await cleaner.countTokens(plan.text))) + 32)
+        var tokensIn = 0
+        var tokensOut = 0
         do {
             try Task.checkCancellation()
             try await semaphore.acquire(priority: CleanPriority.current)
@@ -160,6 +167,8 @@ public actor CleanupService {
                 }
                 await semaphore.release()
             } catch { await semaphore.release(); throw error }
+            tokensIn = result.tokensIn
+            tokensOut = result.tokensOut
             if let failure = CleanGuard.verify(input: plan.text, protected: protected, result: result, cap: cap) { throw failure }
             let elapsed = start.duration(to: .now)
             return ChunkOutcome(index: plan.index, text: result.text, state: .cleaned, tokensIn: result.tokensIn,
@@ -181,13 +190,17 @@ public actor CleanupService {
                                                  styling: styling, structure: structure, protected: protected, context: context)
                         return ChunkOutcome(index: plan.index, text: SeamSplicer.join([a.text, b.text]),
                                             state: a.state == .cleaned && b.state == .cleaned ? .cleaned : .fallback,
-                                            tokensIn: a.tokensIn + b.tokensIn, tokensOut: a.tokensOut + b.tokensOut,
+                                            tokensIn: tokensIn + a.tokensIn + b.tokensIn, tokensOut: tokensOut + a.tokensOut + b.tokensOut,
                                             latencyMs: a.latencyMs + b.latencyMs, attempts: a.attempts + b.attempts,
                                             reason: String(describing: error))
                     }
                 }
             }
-            return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback, attempts: depth + 1, reason: String(describing: error))
+            let elapsed = start.duration(to: .now)
+            return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
+                                tokensIn: tokensIn, tokensOut: tokensOut,
+                                latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000),
+                                attempts: depth + 1, reason: String(describing: error))
         }
     }
 
@@ -211,7 +224,7 @@ public struct CleanupStage: TextStage {
     public init(service: CleanupService) { self.service = service }
 
     public func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
-        guard !draft.shortCircuit else { return draft }
+        guard !draft.shortCircuit, !(draft.text.isEmpty && draft.cleanupState == .cleaned) else { return draft }
         let outcome = await service.clean(draft.text, protected: draft.protected, context: context)
         var output = draft
         output.text = outcome.text

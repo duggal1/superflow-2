@@ -64,12 +64,12 @@ public enum ListPlanner {
                     let closes = closers.contains { phrase in
                         cut + phrase.count <= end && phrase.enumerated().allSatisfy { keys[cut + $0.offset] == $0.element }
                     }
-                    if words[cut - 1].trail.contains(where: { ".?!".contains($0) }) || timed[cut - 1].pause || closes {
+                    if !timed[cut - 1].glue, words[cut - 1].trail.contains(where: { ".?!".contains($0) }) || timed[cut - 1].pause || closes {
                         tail = cut; end = cut; break
                     }
                 }
             }
-            while end > start, keys[end - 1] == "and" { end -= 1 }
+            while end > start, keys[end - 1] == "and", !timed[end - 1].protected, !timed[end - 1].glue { end -= 1 }
             guard start < end else { return [.prose(text)] }
             items.append(joined(start..<end))
         }
@@ -80,14 +80,18 @@ public enum ListPlanner {
 }
 
 public enum ListRenderer {
-    private static func stripEnd(_ text: String) -> String {
+    private static func stripEnd(_ text: String, protected: Protected) -> String {
         var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        while let last = result.last, ".,;:!?".contains(last) { result.removeLast() }
+        while let last = result.last, ".,;:!?".contains(last) {
+            let ending = result.index(before: result.endIndex)..<result.endIndex
+            if protected.overlaps(ending, in: result, detect: false) { break }
+            result.removeLast()
+        }
         return result
     }
-    public static func render(lead: String, items: [String]) -> String {
-        let body = items.map { "- " + stripEnd($0) }.joined(separator: "\n")
-        let heading = stripEnd(lead)
+    public static func render(lead: String, items: [String], protected: Protected = Protected()) -> String {
+        let body = items.map { "- " + stripEnd($0, protected: protected) }.joined(separator: "\n")
+        let heading = stripEnd(lead, protected: protected)
         return heading.isEmpty ? body : heading + ":\n" + body
     }
 }

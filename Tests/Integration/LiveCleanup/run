@@ -1,0 +1,30 @@
+#!/bin/sh
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repo_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd)
+package_dir=$(mktemp -d "${TMPDIR:-/tmp}/superflow-live-cleanup.XXXXXX")
+mkdir -p "$package_dir/Tests"
+cp "$script_dir/LiveServiceTests.swift" "$package_dir/Tests/LiveServiceTests.swift"
+cat > "$package_dir/Package.swift" <<EOF
+// swift-tools-version: 6.0
+import PackageDescription
+let package = Package(
+    name: "LiveCleanupVerification",
+    platforms: [.macOS(.v15)],
+    dependencies: [
+        .package(path: "$repo_dir/Packages/L0-Core/Kernel"),
+        .package(path: "$repo_dir/Packages/L0-Core/Ports"),
+        .package(path: "$repo_dir/Packages/L1-Adapters/LLMLlamaCpp"),
+        .package(path: "$repo_dir/Packages/L2-Engines/TextCleanup"),
+    ],
+    targets: [.testTarget(name: "LiveCleanupVerificationTests", dependencies: [
+        .product(name: "SuperflowKernel", package: "Kernel"),
+        .product(name: "SuperflowPorts", package: "Ports"),
+        .product(name: "SuperflowLLMCore", package: "LLMLlamaCpp"),
+        .product(name: "SuperflowLLMLlamaCpp", package: "LLMLlamaCpp"),
+        .product(name: "SuperflowTextCleanup", package: "TextCleanup"),
+    ], path: "Tests")],
+    swiftLanguageModes: [.v6]
+)
+EOF
+exec swift test --package-path "$package_dir" -c release --jobs 2 "$@"

@@ -59,7 +59,7 @@ public enum CleanGuard {
     ]
     private static func content(_ text: String) -> [String] {
         let words = text.split(whereSeparator: \.isWhitespace).map {
-            String($0.lowercased().filter { $0.isLetter || $0.isNumber || "$€£₹¥%@_/".contains($0) })
+            String($0.lowercased().filter { $0.isLetter || $0.isNumber || "$€£₹¥%@_/-".contains($0) })
         }.filter { !$0.isEmpty && !fillers.contains($0) }
         var result: [String] = []
         var index = 0

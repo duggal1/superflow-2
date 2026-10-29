@@ -48,7 +48,7 @@ public enum TextPipelineBuilder {
             stages.append(ShortcutsStage(entries: dependencies.shortcuts))
         }
         if settings.disfluency.enabled {
-            stages.append(DisfluencyStage(settings: settings.disfluency))
+            stages.append(MechanicalDisfluencyStage(settings: settings.disfluency))
         }
         stages.append(SpokenCodeStage())
         stages.append(NumberCleanupStage())

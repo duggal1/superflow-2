@@ -265,14 +265,20 @@ Reliability invariants and recovery
 9. Text pipeline: stage order and contracts
 Every stage implements one small TextStage protocol: it takes a draft plus context and returns text, protected spans, and diagnostics. A stage never throws into the pipeline. On any failure it returns its input unchanged plus a diagnostic. TextPipeline builds the stage list from configuration, and the order is covered by a test.
 Order for each committed segment or utterance
-1. TextCommands: spoken commands such as new line and new paragraph (an addition to the brief; setting, default on, whole-phrase matches only).
-2. TextShortcuts: if the utterance is a shortcut trigger, expand verbatim and short-circuit. Skip every later stage.
-3. TextNumbers: spoken numbers and currency to written form.
-4. TextLexicon: personal dictionary first, then the bundled tech dictionary.
-5. TextCleanup: S1-mini via llama.cpp (section 10).
-6. TextNumbers and TextLexicon again as an assertion pass. Deterministic stages run before the model so the model sees the user's preferred forms, and again after so the model cannot undo them.
-7. TextGrammarGate: Harper behind the acceptance gate (section 11).
-8. TextLineFormat (section 12).
+1. TextCommands handles spoken commands when enabled.
+2. TextShortcuts expands exact triggers verbatim and short-circuits all later stages.
+3. TextDisfluency removes mechanical repeats and pure fillers, respecting protected spans and repetition settings.
+4. SpokenCodeStage assembles explicit filenames, extensions, paths, and contextual email addresses. Optional Code Speak remains an explicit user feature.
+5. NumberCleanupStage formats cardinals, digit runs, versions, cents, clocks, dates, currency, and tech units. It honors small-number and large-number settings.
+6. TextLexicon applies dictionary forms and protects the canonical literals. CodeAwareStage may resolve project filenames using the existing approved scope.
+7. ListPlanner decides explicit lists before cleanup. Each item receives semi-casual styling and prose structure. Prose controls remain constant across overlapping chunks.
+8. CleanupService decorates the unchanged TextCleaner port. It validates protected literals and normalized content, retries rejected chunks, and returns Tier-0 words on failure.
+9. FinalPolish applies deterministic punctuation spacing, standalone I, date commas, and sentence casing outside protected content.
+10. TextGrammarGate applies Harper behind the acceptance gate.
+11. TextLineFormat formats prose and preserves planned list spacing.
+
+The pipeline no longer rewrites numbers or dictionary terms after model cleanup. It rejects damaged model output instead. TextNumbers.apply is the reference Word-based formatter. The earlier NumbersStage remains available for existing callers and its original golden contract.
+
 Property tests every deterministic stage must pass: idempotent (running it twice equals running it once), never edits protected spans, never throws, stable on empty and whitespace-only input, output length bounded relative to input.
 Numbers and currency (TextNumbers)
 • FluidAudio documents a text-processing component (a Rust port of NVIDIA NeMo text processing, English included) for post-processing ASR output. Evaluate it in Phase 0 before writing your own. If it covers cardinals, currency and percentages and binds cleanly, wrap it behind the stage. Otherwise write a table-driven Swift implementation.
@@ -307,16 +313,16 @@ Chunk planner
 • Split preference: ASR committed-segment and VAD pause boundaries first, then sentence boundaries, then clause boundaries. Never mid-word, never inside protected spans, never merge two speakers' words in one chunk.
 Scheduling
 • CleanupPool actor with N workers over a bounded queue with backpressure. Do not assume linear speedup: parallel contexts share one Apple GPU. Benchmark N = 1, 2, 3, 4, 6, 8 and keep the value that maximizes throughput without raising p95 chunk latency (likely 2 to 4).
-• Interactive requests (short dictation) jump ahead of background meeting chunks.
-• Deadlines: interactive 1.5 s total, background 30 s per chunk. Everything is cancellable.
+• Interactive requests jump ahead of queued background chunks. Both the service semaphore and the reusable llama context pool have bounded, cancellation-aware wait queues.
+• Deadlines start after a context lease: interactive 1.5 s and background 30 s per chunk. The llama adapter checks cancellation between every generated token and every bounded prefill batch. Alternative cleaners receive a service deadline after the service lease.
 Safety net (this is what makes it reliable)
 • TruncationDetector flags a result when: output is empty for content-bearing input (a filler/noise-only input legitimately returns an empty string and is stored as a successful `.cleaned` result); output-to-input word ratio is below a loose threshold (cleanup legitimately drops fillers, so start at 0.6 and tune on goldens); the last few input words are missing from the output; the output ends mid-sentence while the input did not; or generation hit the input-sized token cap.
 • Retry policy: on a flag, split the chunk at the best boundary and retry each half, up to depth 3. After that, use the Tier 0 text for that chunk and mark it fallback in the database. A failed chunk must never block the stitch.
 • Hallucination guard: output words must be explained by input words plus a small allowed set (digits, punctuation, contractions, spoken-form conversions like dot to a period or at to an at sign). Violations fall back to Tier 0. Tune the threshold on goldens.
 • Every chunk records latency, tokens in and out, and outcome.
 Stitching
-• OrderedStitcher emits chunk i only after chunks 0 through i-1 are resolved (cleaned or fallback) and publishes progress for the UI.
-• SeamRepair is deterministic: fix capitalization at seams, collapse double spaces, drop a duplicated word at the seam, add a missing sentence terminator when the next chunk starts a new sentence.
+• CleanupService assembles results in chunk order. SeamSplicer aligns bounded overlap windows. An unaligned seam triggers cleanup of only the next chunk's owned words, so overlap cannot be duplicated. A final content guard rejects a damaged assembly.
+• Retry halves join without deleting boundary words. FinalPolish handles spacing and sentence casing after assembly. Protected literal spans also glue the corresponding Word values during planning.
 • No LLM post-pass in v1. The brief's optional consistency pass costs latency and risks drift for little gain.
 Failure modes: if the model fails to load or crashes, the app runs Tier 0 only, shows a subtle basic-cleanup state in the Island, and logs it. The model stays resident while the app runs (setting to unload after idle).
 11. Harper grammar gate (TextGrammarGate, GrammarHarper)
