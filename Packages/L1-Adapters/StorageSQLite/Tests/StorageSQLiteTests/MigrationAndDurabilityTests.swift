@@ -4,6 +4,112 @@ import XCTest
 @testable import SuperflowStorageSQLite
 
 final class MigrationAndDurabilityTests: XCTestCase {
+    func testFullDiskErrorExplainsHowToRecover() {
+        // The reproduced failure: a missing -shm on a full volume makes
+        // SQLite report code 10 "disk I/O error" with IOERR_SHMOPEN (4618)
+        // and ENOSPC in the system code.
+        let error = SQLiteError(code: 10, message: "disk I/O error", sql: "PRAGMA journal_mode=WAL",
+                                extendedCode: 4618, systemCode: 28)
+        XCTAssertTrue(error.isDiskFull)
+        XCTAssertTrue(error.localizedDescription.contains("Not enough disk space"))
+        XCTAssertTrue(error.localizedDescription.contains("Free some space and try again"))
+        XCTAssertTrue(error.localizedDescription.contains("extended 4618, system 28"))
+    }
+
+    func testPreflightRefusesFullVolumeWithoutTouchingDatabase() throws {
+        let url = databaseURL()
+        try Data("existing database bytes".utf8).write(to: url)
+        let before = try Data(contentsOf: url)
+
+        XCTAssertThrowsError(try SQLiteStoreFactory.open(url: url, minimumFreeBytes: .max)) { error in
+            XCTAssertEqual((error as? SQLiteError)?.isDiskFull, true)
+            XCTAssertTrue(error.localizedDescription.contains("Not enough disk space"))
+        }
+        XCTAssertEqual(try Data(contentsOf: url), before, "a refused open must not rewrite the database")
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        XCTAssertEqual(files.filter { $0.hasPrefix(".superflow-space-probe") }, [],
+                       "the space probe must clean up after itself")
+        XCTAssertFalse(files.contains { $0.contains("corrupt") || $0.contains("recovered") })
+    }
+
+    func testFullVolumeReportsDiskSpaceInsteadOfSQLiteIOError() async throws {
+        try await withTinyVolume { mount in
+            let url = mount.appendingPathComponent("Superflow.sqlite")
+            do {
+                let store = try SQLiteStoreFactory.open(url: url)
+                try await store.createSession(SessionRecord(id: SessionID("kept"),
+                                                            kind: .dictation,
+                                                            modelProfile: ModelProfile.default.id))
+            }
+            let committed = try Data(contentsOf: url)
+            XCTAssertTrue(try fillVolume(mount), "the test image should reach ENOSPC")
+
+            XCTAssertThrowsError(try SQLiteStoreFactory.open(url: url)) { error in
+                XCTAssertEqual((error as? SQLiteError)?.isDiskFull, true)
+                XCTAssertFalse(error.localizedDescription.contains("SQLite 10:"),
+                               "a full volume must not surface as an opaque disk I/O error")
+            }
+            XCTAssertEqual(try Data(contentsOf: url), committed,
+                           "a refused open must leave the committed database intact")
+
+            for file in try FileManager.default.contentsOfDirectory(atPath: mount.path)
+            where file.hasPrefix("fill-") {
+                try FileManager.default.removeItem(at: mount.appendingPathComponent(file))
+            }
+            let reopened = try SQLiteStoreFactory.open(url: url)
+            let session = try await reopened.session(SessionID("kept"))
+            XCTAssertNotNil(session, "committed rows must survive the disk-space refusal")
+        }
+    }
+
+    private func withTinyVolume(_ body: (URL) async throws -> Void) async throws {
+        let image = directory.appendingPathComponent("tiny.dmg")
+        let mount = directory.appendingPathComponent("mnt", isDirectory: true)
+        try FileManager.default.createDirectory(at: mount, withIntermediateDirectories: true)
+        guard run("/usr/bin/hdiutil", ["create", "-size", "64m", "-fs", "APFS",
+                                       "-volname", "SuperflowTest", "-quiet", image.path]) else {
+            throw XCTSkip("hdiutil cannot create a test volume here")
+        }
+        guard run("/usr/bin/hdiutil", ["attach", image.path, "-nobrowse", "-quiet",
+                                       "-mountpoint", mount.path]) else {
+            throw XCTSkip("hdiutil cannot attach a test volume here")
+        }
+        defer { _ = run("/usr/bin/hdiutil", ["detach", mount.path, "-quiet", "-force"]) }
+        try await body(mount)
+    }
+
+    /// Fills the volume in 1 MiB steps and then in 4 KiB steps. False means it
+    /// never reached ENOSPC, so the caller's assertion would be meaningless.
+    private func fillVolume(_ root: URL) throws -> Bool {
+        for size in [1 << 20, 4 << 10] {
+            let chunk = Data(repeating: 0, count: size)
+            for index in 0..<4_000 {
+                do {
+                    try chunk.write(to: root.appendingPathComponent("fill-\(size)-\(index)"))
+                } catch {
+                    break
+                }
+            }
+        }
+        do {
+            try Data(repeating: 0, count: 4_096).write(to: root.appendingPathComponent("fill-final"))
+            return false
+        } catch {
+            return true
+        }
+    }
+
+    private func run(_ executable: String, _ arguments: [String]) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do { try process.run() } catch { return false }
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    }
+
     private var directory: URL!
 
     override func setUp() async throws {

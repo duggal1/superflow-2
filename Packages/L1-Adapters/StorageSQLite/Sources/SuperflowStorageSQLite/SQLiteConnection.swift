@@ -17,10 +17,19 @@ public struct SQLiteError: Error, LocalizedError, Sendable {
         self.systemCode = systemCode
     }
 
+    /// SQLite reports a full volume as `SQLITE_FULL`, but a failed `-shm`
+    /// allocation surfaces as `SQLITE_IOERR` with `ENOSPC` in the system code.
+    public var isDiskFull: Bool {
+        systemCode == Int32(ENOSPC) || systemCode == Int32(EDQUOT) || code & 0xff == SQLITE_FULL
+    }
+
     public var errorDescription: String? {
         let detail = "SQLite \(code) (extended \(extendedCode), system \(systemCode)): \(message)"
-        if let sql { return "\(detail) [\(sql)]" }
-        return detail
+        let context = sql.map { "\(detail) [\($0)]" } ?? detail
+        if isDiskFull {
+            return "Not enough disk space. Free some space and try again. \(context)"
+        }
+        return context
     }
 }
 

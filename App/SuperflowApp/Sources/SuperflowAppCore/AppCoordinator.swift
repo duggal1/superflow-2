@@ -15,6 +15,7 @@ import SuperflowMeetingEngine
 import SuperflowPorts
 import SuperflowRecoveryEngine
 import SuperflowSessionEngine
+import SuperflowStorageSQLite
 import SuperflowUIComponents
 import SwiftUI
 @MainActor
@@ -145,7 +146,14 @@ public final class AppCoordinator: ObservableObject {
             startupError = nil
         } catch {
             environment = nil
-            startupError = "Superflow could not open its local database. \(error.localizedDescription)"
+            if let storage = error as? SQLiteError, storage.isDiskFull {
+                startupError = """
+                Superflow needs free disk space before it can open your library. \
+                Free some space, then choose Try again. Your existing transcripts are untouched.
+                """
+            } else {
+                startupError = "Superflow could not open its local database. \(error.localizedDescription)"
+            }
         }
         self.environment = environment
         self.startupError = startupError
