@@ -88,12 +88,9 @@ public final class DashboardViewModel: ObservableObject {
         defer { isLoading = false }
         await recent.load(settings: settings)
         await loadUsage()
-        let today = calendar.startOfDay(for: now())
-        guard let start = calendar.date(byAdding: .day, value: -364, to: today) else { return }
-        let from = LocalDay.string(for: start, calendar: calendar)
-        let to = LocalDay.string(for: today, calendar: calendar)
         do {
-            let daily = try await repository.dailyStats(fromDay: from, toDay: to)
+            let daily = try await DashboardDictationStats.load(repository: repository,
+                                                               calendar: calendar, now: now())
             dailyCache = daily
             summary = StatsEngine.summary(daily: daily, typingWPM: settings.typingWPM,
                                           today: now(), calendar: calendar)
@@ -177,11 +174,6 @@ public final class DashboardViewModel: ObservableObject {
     public var todayLabel: String {
         summary.todayWords == 1 ? "1 word today" : "\(summary.todayWords.formatted()) words today"
     }
-    /// `daily_stats.sessions` is a running counter, and deleting a session writes
-    /// `sessions: -1` into the row for that day (HistoryViewModel.deleteSelected).
-    /// Deleting a session that predates the 365-day window — or deleting without a
-    /// matching increment — drives the column below zero, and StatsEngine sums it.
-    /// The count is clamped here, so the ledger can never read "-1 sessions".
     public var sessionsLabel: String {
         let n = max(summary.totalSessions, 0)
         return "\(n) \(n == 1 ? "session" : "sessions")"
