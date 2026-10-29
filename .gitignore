@@ -80,3 +80,9 @@ Package.resolved
 /fix my problem.md
 /issue.md
 /TODO.md
+
+# Local audio fixtures (heavy, not shipped)
+fixtures/audio/
+
+# GrammarHarper build stub (generated)
+**/.build-stub/
