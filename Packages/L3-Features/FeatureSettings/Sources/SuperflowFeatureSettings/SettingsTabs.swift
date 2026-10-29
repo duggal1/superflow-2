@@ -87,7 +87,7 @@ struct DictationTab: View {
                 SettingRow(.timer, "Double-tap window", filter: query) {
                     ms(\.doubleTapMs, in: SettingsValidation.doubleTapRange)
                 }
-                SettingRow(.meetings, "Meeting hold", filter: query) {
+                SettingRow(.settingMeeting, "Meeting hold", filter: query) {
                     ms(\.meetingHoldMs, in: SettingsValidation.meetingHoldRange)
                 }
             }
@@ -115,7 +115,7 @@ struct MeetingsTab: View {
             SettingRow(.chart, "Meetings in stats", filter: query) {
                 AppToggle("Meetings in stats", isOn: $model.settings.meetingsInStats)
             }
-            SettingRow(.meetings, "Speaker separation", filter: query) {
+            SettingRow(.settingMeeting, "Speaker separation", filter: query) {
                 if model.diarizationReady {
                     Text("Installed")
                         .appType(.body)
@@ -150,7 +150,7 @@ struct PrivacyTab: View {
                     AppToggle("Keep audio", isOn: $model.settings.keepAudio)
                         .disabled(model.settings.noTranscriptStorage)
                 }
-                SettingRow(.clock, "Delete audio after", filter: query) {
+                SettingRow(.settingClock, "Delete audio after", filter: query) {
                     Dropdown(selection: $model.settings.audioRetentionDays,
                              options: SettingsViewModel.audioRetentionOptions.map {
                                  .init(SettingsViewModel.audioRetentionLabel(for: $0), value: $0)
@@ -213,12 +213,12 @@ struct AdvancedTab: View {
                             set: { model.settings.backgroundDeadlineMs = Int(($0 * 1_000).rounded()) }),
                           in: 5...60, step: 1, unit: "s")
             }
-            SettingRow(.models, "Cleanup workers", filter: query) {
+            SettingRow(.settingWorkers, "Cleanup workers", filter: query) {
                 AppStepper(value: $model.settings.cleanupWorkers,
                            range: SettingsValidation.cleanupWorkersRange,
                            label: "Cleanup workers")
             }
-            SettingRow(.models, "Cleanup compute", filter: query) {
+            SettingRow(.settingCompute, "Cleanup compute", filter: query) {
                 Dropdown(selection: $model.settings.cleanupCompute,
                          options: ModelCompute.allCases.map { .init($0.label, value: $0) },
                          label: "Cleanup compute")

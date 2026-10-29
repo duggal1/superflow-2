@@ -5,13 +5,7 @@ enum HugeIcon {
     private static let names: [Glyph: String] = [
         .dashboard: "dashboard", .history: "history", .dictionary: "dictionary",
         .shortcuts: "shortcuts", .meetings: "meetings", .settings: "settings",
-        .models: "models", .mic: "mic", .keyboard: "keyboard", .waveform: "waveform",
-        .cleanup: "cleanup", .person: "person", .power: "power", .handTap: "handTap",
-        .eyeSlash: "eyeSlash", .diagnostics: "diagnostics", .licenses: "licenses",
-        .number: "number", .textSize: "textSize", .paragraph: "paragraph",
-        .blocks: "blocks", .code: "code", .chart: "chart", .timeSaved: "timeSaved",
-        .liveText: "liveText", .appearance: "appearance", .space: "space",
-        .textAppend: "textAppend", .folder: "folder", .delete: "delete",
+        .models: "models",
     ]
 
     private static let images: [Glyph: NSImage] = names.reduce(into: [:]) { result, entry in
