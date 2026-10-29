@@ -2,7 +2,7 @@ import AppKit
 import SuperflowDesignSystem
 import SwiftUI
 
-/// Native SF Symbols, resolved against the current macOS symbol set.
+/// Semantic icons backed by Hugeicons or native SF Symbols.
 public enum Glyph: String, CaseIterable, Sendable {
     // Sidebar.
     case dashboard = "circle.grid.3x3"
@@ -117,8 +117,18 @@ public struct Icon: View {
     }
 
     public var body: some View {
-        Image(systemName: glyph.symbolName)
-            .contentTransition(.symbolEffect(.replace))
+        Group {
+            if let image = HugeIcon.image(for: glyph) {
+                Image(nsImage: image)
+                    .resizable()
+                    .renderingMode(.template)
+                    .scaledToFit()
+                    .frame(width: size, height: size)
+            } else {
+                Image(systemName: glyph.symbolName)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+        }
             .font(.system(size: size, weight: weight.fontWeight))
             .symbolRenderingMode(.monochrome)
             .foregroundStyle(tint ?? Tok.text2)

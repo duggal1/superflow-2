@@ -10,7 +10,7 @@ final class GlyphTests: XCTestCase {
         }
     }
 
-    func testSymbolsAreBareAndNotFromAForeignFamily() {
+    func testFallbackSymbolsAreBare() {
         for glyph in Glyph.allCases {
             let name = glyph.rawValue
             XCTAssertFalse(name.hasSuffix(".circle"), "\(name) draws its own enclosure")
@@ -21,18 +21,18 @@ final class GlyphTests: XCTestCase {
         }
     }
 
-    /// The sidebar uses the specific Apple symbol for each page, not the stock
-    /// pick: a plotted trend line, a transcript with a play head, people plus
-    /// sound, a chip, and three tuning sliders. Pinned so a later edit cannot
-    /// quietly drift back to the generic set.
-    func testSidebarGlyphsMatchTheProductStructure() {
-        XCTAssertEqual(Glyph.dashboard.rawValue, "circle.grid.3x3")
-        XCTAssertEqual(Glyph.history.rawValue, "clock")
-        XCTAssertEqual(Glyph.dictionary.rawValue, "textformat.abc")
-        XCTAssertEqual(Glyph.shortcuts.rawValue, "command")
-        XCTAssertEqual(Glyph.meetings.rawValue, "person.2.wave.2")
-        XCTAssertEqual(Glyph.models.rawValue, "square.stack.3d.up")
-        XCTAssertEqual(Glyph.settings.rawValue, "switch.2")
+    @MainActor
+    func testSidebarIconsUseHugeicons() {
+        for glyph: Glyph in [.dashboard, .history, .dictionary, .shortcuts, .meetings, .models, .settings] {
+            XCTAssertNotNil(HugeIcon.image(for: glyph))
+        }
+    }
+
+    @MainActor
+    func testHugeIconsAreBundledAndLoadable() {
+        for glyph in HugeIcon.glyphs {
+            XCTAssertNotNil(HugeIcon.image(for: glyph), "Missing Hugeicon for \(glyph)")
+        }
     }
 
     func testWeightsStayWithinDesignLaw() {

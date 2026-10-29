@@ -93,8 +93,8 @@ done < <(rg -n -o "\.system\(size: [0-9]+" "${glob[@]}" "${ui_roots[@]}" || true
 report_matches '\.animation\(\.linear|\.easeInOut|\.spring\(|\.bouncy' \
     'Only the motion tokens (easeOut, settle, snappy, smooth) are allowed.' "${ui_roots[@]}"
 
-report_matches 'import .*(Hugeicons|Phosphor)|HugeIcon' \
-    'Third-party icon families are removed; use Glyph.' "${ui_roots[@]}"
+report_matches 'import .*Phosphor' \
+    'Use the shared Glyph catalog for icons.' "${ui_roots[@]}"
 
 # Pass 2 structure: the system chrome is deleted, not restyled.
 report_matches 'NavigationSplitView|NavigationStack|\.searchable\(|\.toolbar \{|\.toolbar\{|\.toolbar\(removing:|ToolbarItem|toolbarBackgroundVisibility' \
