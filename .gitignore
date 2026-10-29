@@ -72,7 +72,6 @@ Package.resolved
 
 # local design notes, plans and cookbook (not shipped)
 /cookbook/
-/DESIGN.md
 /DESIGN-RULES.MD
 /DESIGN-REBUILD-GUIDE.MD
 /fix my problem.md
