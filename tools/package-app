@@ -13,7 +13,7 @@
 #   SUPERFLOW_LLAMA_FRAMEWORK  llama.framework to embed
 #   SUPERFLOW_REQUIRE_MODELS=1 fail when llama.framework is missing
 #   SUPERFLOW_REQUIRE_HELPER=1 fail when the helper is missing
-#   SUPERFLOW_SIGN_IDENTITY    codesign identity (default ad-hoc "-")
+#   SUPERFLOW_SIGN_IDENTITY    codesign identity (local development certificate, else "-")
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -21,7 +21,12 @@ PACKAGE="$ROOT/App/SuperflowApp"
 HELPER_PACKAGE="$ROOT/App/InferenceHelper"
 CONFIGURATION="${CONFIGURATION:-debug}"
 OUTPUT="${SUPERFLOW_APP_OUTPUT:-$ROOT/dist/Superflow.app}"
-IDENTITY="${SUPERFLOW_SIGN_IDENTITY:--}"
+IDENTITY="${SUPERFLOW_SIGN_IDENTITY:-}"
+if [[ -z "$IDENTITY" ]]; then
+    IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+        | awk '/"Superflow Development"/ { print $2; exit }')"
+    IDENTITY="${IDENTITY:--}"
+fi
 INFO_PLIST="$ROOT/App/Resources/Info.plist"
 HELPER_INFO_PLIST="$ROOT/App/Resources/InferenceHelper-Info.plist"
 ENTITLEMENTS="$ROOT/App/Resources/Superflow.entitlements"

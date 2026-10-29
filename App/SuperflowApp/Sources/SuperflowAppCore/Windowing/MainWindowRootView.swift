@@ -157,8 +157,7 @@ public struct MainWindowRootView: View {
             let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
             if let url { NSWorkspace.shared.open(url) }
         case .keyboardAccess:
-            let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")
-            if let url { NSWorkspace.shared.open(url) }
+            Task { await coordinator.repairKeyboardAccess() }
         }
     }
 }

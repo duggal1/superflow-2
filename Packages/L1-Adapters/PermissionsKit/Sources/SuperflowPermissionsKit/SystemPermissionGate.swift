@@ -15,6 +15,7 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
     private let defaults: UserDefaults
     private var observers: [UUID: AsyncStream<(Permission, PermissionStatus)>.Continuation] = [:]
     private var activationObserver: NSObjectProtocol?
+    private var workspaceObserver: NSObjectProtocol?
     private var asked: Set<Permission>
 
     public init(defaults: UserDefaults = .standard) {
@@ -26,6 +27,9 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
     deinit {
         if let activationObserver {
             NotificationCenter.default.removeObserver(activationObserver)
+        }
+        if let workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
         }
     }
 
@@ -39,10 +43,7 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
             @unknown default: return .denied
             }
         case .accessibility:
-            // Trusting the boolean alone is not enough: a stale grant can survive a re-signed
-            // build while the tap no longer installs. Exercise it and prefer the tap result.
             if AXIsProcessTrusted() { return .granted }
-            if Self.listenTapInstalls() { return .granted }
             return PermissionDecision.resolve(probe: .notGranted, asked: hasAsked(permission))
         case .inputMonitoring:
             // `CGPreflightListenEventAccess` can report false while the app is missing from the
@@ -82,6 +83,10 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
     }
 
     public func openSystemSettings(_ permission: Permission) async {
+        if permission == .inputMonitoring || permission == .accessibility {
+            let current = await request(permission)
+            if current != .granted { await revealAppForManualGrant() }
+        }
         guard let url = PermissionLinks.url(for: permission) else { return }
         _ = await MainActor.run { NSWorkspace.shared.open(url) }
     }
@@ -102,6 +107,7 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
                 self?.lock.withLock { self?.observers[id] = nil }
             }
             installActivationObserverIfNeeded()
+            refresh()
         }
     }
 
@@ -167,6 +173,11 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
             guard activationObserver == nil else { return }
             activationObserver = NotificationCenter.default.addObserver(
                 forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+            ) { [weak self] _ in
+                self?.refresh()
+            }
+            workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
             ) { [weak self] _ in
                 self?.refresh()
             }
