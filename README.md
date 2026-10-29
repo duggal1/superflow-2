@@ -2,7 +2,6 @@
   <img src="docs/brand/superflow-banner.svg" alt="Superflow" width="340">
 </p>
 
-<h1 align="center">Superflow</h1>
 
 <p align="center">
   <strong>There are plenty of AI dictation tools. This one is yours.</strong>
