@@ -101,43 +101,48 @@ public final class MenuBarController: ObservableObject {
         }
     }
 
-    public func startDictation(mode: SessionMode = .dictation) async {
-        guard let session else { return }
+    @discardableResult
+    public func startDictation(mode: SessionMode = .dictation) async -> Bool {
+        guard let session else { return false }
         // A silent return here is why fn looked dead for the first seconds after
         // launch. Say what is happening instead.
         guard recoveryReady else {
             error = "Superflow is still loading the speech model. Hold fn again in a moment."
-            return
+            return false
         }
         let activeMeeting = await meeting?.currentState.isActive ?? false
         guard !activeMeeting else {
             error = "Stop the meeting before starting dictation."
-            return
+            return false
         }
         do {
             _ = try await session.start(mode: mode)
             sessionState = await session.currentState
             await hotkeys?.setActiveTap(true)
             error = nil
+            return true
         } catch {
             self.error = error.localizedDescription
+            return false
         }
     }
 
-    public func beginHandsFreeDictation() async {
-        guard let session else { return }
+    @discardableResult
+    public func beginHandsFreeDictation() async -> Bool {
+        guard let session else { return false }
         // A double-tap lands after the speculative start, but if that start
         // failed there is no session to latch. Start one rather than promise a
         // microphone that is not open.
         var state = await session.currentState
         if !state.isActive {
-            await startDictation()
+            guard await startDictation() else { return false }
             state = await session.currentState
         }
-        guard state.isActive else { return }
+        guard case .recording = state else { return false }
         await session.setMode(.handsFree)
         sessionState = await session.currentState
         await hotkeys?.setActiveTap(true)
+        return true
     }
 
     /// A latched meeting: the right-⌘ hold threshold, or the second tap. The
@@ -160,7 +165,7 @@ public final class MenuBarController: ObservableObject {
         if case .recording = state {
             _ = await session.stop()
         } else if state.isActive {
-            await session.cancel()
+            if await session.currentSession != nil { await session.cancel() }
         }
         sessionState = await session.currentState
         await hotkeys?.setActiveTap(false)
@@ -206,7 +211,7 @@ public final class MenuBarController: ObservableObject {
         // makes the same sound in both cases.
         if cue { Sounds.play(.transcriptionCancel) }
         if kind == .dictation {
-            await session?.cancel()
+            if let session, await session.currentSession != nil { await session.cancel() }
         } else {
             await meeting?.cancel()
         }

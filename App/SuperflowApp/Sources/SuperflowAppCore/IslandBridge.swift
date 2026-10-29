@@ -151,7 +151,10 @@ final class IslandBridge {
             box.partial(text)
         case .state(let state):
             if case .inserting = state { sawInserting = true }
-            if case .failed = state { box.send(.cancelled) }
+            switch state {
+            case .cancelled, .failed: box.send(.cancelled)
+            default: break
+            }
         case .inserted(let outcome):
             switch outcome {
             case .pasted, .accessibility:

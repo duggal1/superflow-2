@@ -100,11 +100,11 @@ extension AppCoordinator {
             switch action {
             case .startSpeculative(.dictation):
                 islandBridge?.holdBegan()
-                await menuBarController.startDictation()
+                let started = await menuBarController.startDictation()
                 // A refused start (model still loading, no recovery) emits no
                 // session event. Say why in the notch: silently retracting looks
                 // exactly like a dead fn key.
-                if !menuBarController.sessionState.isActive {
+                if !started {
                     islandBridge?.refused(menuBarController.error
                         ?? "The microphone did not open. Hold fn again.")
                 }
@@ -117,8 +117,7 @@ extension AppCoordinator {
                 if kind == .meeting { islandBridge?.meetingBegan() }
             case .beginHandsFree:
                 // Only promise hands-free once the session is actually open.
-                await menuBarController.beginHandsFreeDictation()
-                if menuBarController.sessionState.isActive {
+                if await menuBarController.beginHandsFreeDictation() {
                     islandBridge?.handsFreeBegan()
                 } else {
                     islandBridge?.refused(menuBarController.error

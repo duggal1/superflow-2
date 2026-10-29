@@ -18,6 +18,27 @@ private actor EventSink {
 
 @MainActor
 final class IslandBridgeTests: XCTestCase {
+    func testCancelledWarmupClosesTheListeningOverlay() async {
+        let bridge = IslandBridge(transcripts: InMemoryRepository())
+        let closed = expectation(description: "the overlay closes")
+        let reader = Task {
+            for await event in bridge.feed.events {
+                if case .cancelled = event {
+                    closed.fulfill()
+                    return
+                }
+            }
+        }
+        let input = AsyncStream<SessionEvent>.makeStream()
+        bridge.start(events: input.stream)
+        bridge.holdBegan()
+        input.continuation.yield(.state(.warming))
+        input.continuation.yield(.state(.cancelled(nil)))
+        await fulfillment(of: [closed], timeout: 1)
+        input.continuation.finish()
+        reader.cancel()
+    }
+
     private func session(in repository: InMemoryRepository,
                          wordCount: Int = 0) async throws -> SessionRecord {
         let record = SessionRecord(kind: .dictation, modelProfile: "test", wordCount: wordCount)
