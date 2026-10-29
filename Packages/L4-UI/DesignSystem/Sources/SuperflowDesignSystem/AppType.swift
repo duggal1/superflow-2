@@ -1,19 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Type roles. Two weights only: **350 for text you read, 500 for text you scan**.
-///
-/// Light text on a dark background reads heavier than it measures, so the reading
-/// roles sit between Light (-0.4) and Regular (0) on `NSFont`'s weight scale
-/// instead of at Regular. Numeric roles stay on SwiftUI's own font so
-/// `.monospacedDigit()` is guaranteed to tabularise; the 350 roles are measured
-/// for it in `DesignSystemTests`.
-///
-/// `metric` is the one big number on a card, drawn at **400**: at 28 pt, Medium
-/// made the value read as a headline competing with the page title, and the
-/// ledger's four numbers are a reading, not a shout.
-///
-/// Tracking is per role, never per view.
+/// Shared sans-serif roles with normal and medium variable weights.
 public enum AppType: Sendable, CaseIterable {
     /// 12 / 350 — meta lines, badges of text, field labels.
     case caption
@@ -46,28 +34,15 @@ public enum AppType: Sendable, CaseIterable {
         }
     }
 
-    /// Roles that take SwiftUI's own font, where `.monospacedDigit()` is
-    /// guaranteed to tabularise. Labels and titles scan; the metric reads.
-    public var usesSystemFont: Bool {
+    public var weight: CGFloat {
         switch self {
-        case .label, .title, .metric: true
-        case .caption, .body, .reading: false
+        case .caption, .body, .reading: AppFont.textWeight
+        case .label, .title, .metric: AppFont.emphasisWeight
         }
     }
 
-    /// Halfway between Light and Regular. One constant to revert on.
-    public static let readingWeight = NSFont.Weight(rawValue: -0.2)
+    public var font: Font { Typography.ui(size, weight: weight) }
 
-    private var systemWeight: Font.Weight {
-        self == .metric ? .regular : .medium
-    }
-
-    public var font: Font {
-        guard usesSystemFont else {
-            return Font(NSFont.systemFont(ofSize: size, weight: Self.readingWeight) as CTFont)
-        }
-        return .system(size: size, weight: systemWeight)
-    }
 }
 
 public extension View {

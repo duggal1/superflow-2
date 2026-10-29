@@ -28,9 +28,9 @@ public enum AppFont {
     public static let baseName = "AlbertSans-Regular"
 
     /// Both faces are variable, so weight is an axis value rather than a face
-    /// name. Text sits at 350; emphasis at 500. Nothing else is allowed (R5).
-    public static let textWeight: CGFloat = 350
-    public static let emphasisWeight: CGFloat = 500
+    /// name. Text sits at 325; emphasis at 350. Nothing else is allowed (R5).
+    public static let textWeight: CGFloat = 325
+    public static let emphasisWeight: CGFloat = 350
 
     /// The faces shipped in `Contents/Resources/Fonts`. Both are real font files:
     /// they arrived as WOFF2 with a `.ttf` extension, which CoreText refuses, so
@@ -76,9 +76,8 @@ public enum Typography {
     public static var italic: Font { .custom(AppFont.displayName, size: TypeScale.bodySize) }
 
     // One UI face: Albert Sans. Every label, control, row and line of body text
-    // uses one of these roles at weight 350, with 500 reserved for emphasis.
-    // Numbers stay on SF Pro so digits align in tables and counters. Titles keep
-    // the bundled display serif, which is the brand mark, not body text.
+    // uses one of these roles at weight 325, with 350 reserved for emphasis.
+    // Display titles keep the bundled serif. Code keeps its monospaced face.
     public static var title: Font { ui(TypeScale.titleSize, weight: AppFont.emphasisWeight) }
     public static var large: Font { ui(TypeScale.largeSize, weight: AppFont.textWeight) }
     public static var headline: Font { ui(TypeScale.headlineSize, weight: AppFont.emphasisWeight) }
@@ -86,17 +85,17 @@ public enum Typography {
     public static var bodyMedium: Font { ui(TypeScale.bodySize, weight: AppFont.emphasisWeight) }
     public static var secondary: Font { ui(TypeScale.secondarySize, weight: AppFont.textWeight) }
     public static var secondaryMedium: Font { ui(TypeScale.secondarySize, weight: AppFont.emphasisWeight) }
-    /// The one role that stays on the system face: 28 Medium, tabular figures.
-    public static var metric: Font { .system(size: TypeScale.metricSize, weight: .medium) }
+    /// Metric text uses the same sans-serif family.
+    public static var metric: Font { ui(TypeScale.metricSize, weight: AppFont.emphasisWeight) }
     /// Code, identifiers and flags. SF Mono 12, never below the secondary size.
     public static var mono: Font {
         .system(size: TypeScale.secondarySize, weight: .regular, design: .monospaced)
     }
 
-    /// Reading text. One step above body, Albert Sans 400, sized for a sentence
+    /// Reading text. One step above body, Albert Sans 325, sized for a sentence
     /// that has to be read once and understood.
-    public static var reading: Font { ui(15, weight: 400) }
-    public static var readingSmall: Font { ui(14, weight: 400) }
+    public static var reading: Font { ui(15, weight: AppFont.textWeight) }
+    public static var readingSmall: Font { ui(14, weight: AppFont.textWeight) }
     /// Larger sizes read loose on Albert Sans; this keeps them on the same rhythm.
     public static let readingTracking: CGFloat = -0.2
 
@@ -105,7 +104,7 @@ public enum Typography {
     /// rendering nothing.
     public static func ui(_ size: CGFloat, weight: CGFloat = AppFont.textWeight) -> Font {
         guard NSFont(name: AppFont.baseName, size: size) != nil else {
-            return .system(size: size, weight: weight >= 500 ? .medium : .regular)
+            return .system(size: size, weight: weight >= AppFont.emphasisWeight ? .medium : .regular)
         }
         return font(name: AppFont.baseName, size: size, weight: weight)
     }
@@ -118,7 +117,7 @@ public enum Typography {
             NSFontDescriptor.AttributeName.variation: [tag: weight],
         ])
         if let font = NSFont(descriptor: descriptor, size: size) { return font }
-        return .systemFont(ofSize: size, weight: weight >= 500 ? .medium : .regular)
+        return .systemFont(ofSize: size, weight: weight >= AppFont.emphasisWeight ? .medium : .regular)
     }
 
     public static func font(name: String, size: CGFloat, weight: CGFloat? = nil) -> Font {

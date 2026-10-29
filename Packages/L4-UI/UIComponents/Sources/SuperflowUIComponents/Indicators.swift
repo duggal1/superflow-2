@@ -125,7 +125,7 @@ public struct Metric: View {
                         .frame(width: 16, height: 16)
                 }
                 Text(label)
-                    .font(.system(size: 12))
+                    .font(AppType.caption.font)
                     .foregroundStyle(Tok.text2)
             }
             Text(value)

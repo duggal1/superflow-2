@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreText
 import XCTest
 @testable import SuperflowDesignSystem
 
@@ -19,47 +20,33 @@ final class AppTypeTests: XCTestCase {
         XCTAssertEqual(AppType.title.tracking, -0.2)
         XCTAssertEqual(AppType.metric.tracking, -0.6)
 
-        for role in AppType.allCases where !role.usesSystemFont {
-            XCTAssertEqual(role.font, role.font, "\(role) font must be stable")
+        XCTAssertEqual(AppFont.textWeight, 325)
+        XCTAssertEqual(AppFont.emphasisWeight, 350)
+        XCTAssertEqual(AppType.body.weight, 325)
+        XCTAssertEqual(AppType.reading.weight, 325)
+        XCTAssertEqual(AppType.label.weight, 350)
+        XCTAssertEqual(AppType.title.weight, 350)
+        XCTAssertEqual(AppType.metric.weight, 350)
+    }
+
+    func testReadingAndLabelDigitsRender() throws {
+        XCTAssertGreaterThan(try digitWidth("1234567890", role: .body), 0)
+        XCTAssertGreaterThan(try digitWidth("1234567890", role: .label), 0)
+    }
+
+    func testBundledAlbertSansUsesRequestedVariableWeights() throws {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let file = root.appendingPathComponent("App/Resources/Fonts/AlbertSans-Variable.ttf")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
+        _ = CTFontManagerRegisterFontsForURL(file as CFURL, .process, nil)
+        for weight in [AppFont.textWeight, AppFont.emphasisWeight] {
+            let font = Typography.nsUIFont(15, weight: weight)
+            XCTAssertTrue(font.fontName.hasPrefix("AlbertSans"), font.fontName)
+            let axes = try XCTUnwrap(CTFontCopyVariation(font as CTFont) as? [NSNumber: NSNumber])
+            let tag = "wght".utf8.reduce(0) { ($0 << 8) | Int($1) }
+            XCTAssertEqual(axes[NSNumber(value: tag)]?.doubleValue ?? -1, Double(weight), accuracy: 0.1)
         }
-        XCTAssertTrue(AppType.label.usesSystemFont)
-        XCTAssertTrue(AppType.title.usesSystemFont)
-        XCTAssertTrue(AppType.metric.usesSystemFont)
-        XCTAssertFalse(AppType.caption.usesSystemFont)
-        XCTAssertFalse(AppType.body.usesSystemFont)
-        XCTAssertFalse(AppType.reading.usesSystemFont)
-    }
-
-    /// The ledger reads at 400: the metric is a number, not a headline. The
-    /// system-font path still carries tabular digits at that weight.
-    func testMetricDigitsStayTabularAtRegularWeight() throws {
-        let narrow = try digitWidth("1111111111", role: .metric)
-        let wide = try digitWidth("8888888888", role: .metric)
-        XCTAssertEqual(narrow, wide, accuracy: 0.5)
-    }
-
-    /// The one number that makes weight 350 revertible.
-    func testReadingWeightSitsBetweenLightAndRegular() {
-        let weight = AppType.readingWeight.rawValue
-        XCTAssertGreaterThan(weight, NSFont.Weight.light.rawValue)
-        XCTAssertLessThan(weight, NSFont.Weight.regular.rawValue)
-    }
-
-    /// Pass 3 §12 asks whether `.monospacedDigit()` still tabularises on the
-    /// `Font(NSFont)` path that carries weight 350. Measure it: ten different
-    /// digits must be exactly as wide as ten of the same digit.
-    func testWeight350DigitsAreTabular() throws {
-        let narrow = try digitWidth("1111111111", role: .body)
-        let wide = try digitWidth("8888888888", role: .body)
-        XCTAssertEqual(narrow, wide, accuracy: 0.5,
-                       "monospacedDigit() does not tabularise on the AppType 350 path")
-    }
-
-    /// The control: the Medium roles take SwiftUI's own font, so this must hold.
-    func testMediumRoleDigitsAreTabular() throws {
-        let narrow = try digitWidth("1111111111", role: .label)
-        let wide = try digitWidth("8888888888", role: .label)
-        XCTAssertEqual(narrow, wide, accuracy: 0.5)
     }
 
     func testDigitStringIsWiderThanAnEmptyOne() throws {

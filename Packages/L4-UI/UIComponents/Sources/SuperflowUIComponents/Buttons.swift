@@ -49,7 +49,7 @@ public struct AppButtonStyle: ButtonStyle {
 
         var body: some View {
             configuration.label
-                .font(.system(size: font, weight: .medium))
+                .font(Typography.ui(font, weight: AppFont.emphasisWeight))
                 .foregroundStyle(label)
                 .padding(.horizontal, px)
                 .frame(height: height)

@@ -31,7 +31,7 @@ public struct Segmented<Value: Hashable>: View {
             ForEach(items, id: \.value) { item in
                 Button { selection = item.value } label: {
                     Text(item.title)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Typography.secondaryMedium)
                         .foregroundStyle(selection == item.value ? Tok.text : Tok.text2)
                         .padding(.horizontal, 12)
                         .frame(height: 24)
@@ -192,9 +192,9 @@ public struct AppStepper: View {
     private var readout: some View {
         HStack(spacing: 4) {
             Text("\(value)")
-                .font(.system(size: 13, weight: .medium)).monospacedDigit().foregroundStyle(Tok.text)
+                .font(AppType.label.font).monospacedDigit().foregroundStyle(Tok.text)
                 .contentTransition(.numericText(value: Double(value)))
-            if let unit { Text(unit).font(.system(size: 13)).foregroundStyle(Tok.text2) }
+            if let unit { Text(unit).font(AppType.body.font).foregroundStyle(Tok.text2) }
         }
         .frame(minWidth: 72, minHeight: 24)
         .contentShape(.rect)

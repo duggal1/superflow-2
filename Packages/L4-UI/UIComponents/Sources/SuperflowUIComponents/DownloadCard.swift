@@ -92,7 +92,7 @@ public struct DownloadCard<Leading: View, Trailing: View>: View {
             leading.frame(width: 24, height: 24)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(AppType.label.font)
                     .foregroundStyle(Tok.text)
                     .accessibilityValue(progress.map { "\(Int($0 * 100)) percent" } ?? "")
                 detailLine
@@ -108,15 +108,15 @@ public struct DownloadCard<Leading: View, Trailing: View>: View {
         switch state {
         case .downloading(let p) where p != nil && totalBytes != nil:
             Text(DownloadFormat.bytesLine(done: done, total: total))
-                .font(.system(size: 12)).monospacedDigit().foregroundStyle(Tok.text2)
+                .font(AppType.caption.font).monospacedDigit().foregroundStyle(Tok.text2)
                 .contentTransition(.numericText(value: done))
                 .animation(rollAnimation, value: done)
         case .verifying:
-            Text("Verifying").font(.system(size: 12)).foregroundStyle(Tok.text2)
+            Text("Verifying").font(AppType.caption.font).foregroundStyle(Tok.text2)
         case .failed(let message):
-            Text(message).font(.system(size: 12)).foregroundStyle(Tok.text2).lineLimit(1)
+            Text(message).font(AppType.caption.font).foregroundStyle(Tok.text2).lineLimit(1)
         default:
-            Text(detail).font(.system(size: 12)).foregroundStyle(Tok.text2).lineLimit(1)
+            Text(detail).font(AppType.caption.font).foregroundStyle(Tok.text2).lineLimit(1)
         }
     }
 
@@ -135,10 +135,10 @@ public struct DownloadCard<Leading: View, Trailing: View>: View {
                                 .contentTransition(.numericText(value: speed))
                                 .animation(rollAnimation, value: rate.value)
                         }
-                    Text(rate.unit).font(.system(size: 13)).foregroundStyle(Tok.text2)
+                    Text(rate.unit).font(AppType.body.font).foregroundStyle(Tok.text2)
                 }
                 Text(left)
-                    .font(.system(size: 12)).monospacedDigit().foregroundStyle(Tok.text2)
+                    .font(AppType.caption.font).monospacedDigit().foregroundStyle(Tok.text2)
                     .contentTransition(.numericText())
                     .animation(rollAnimation, value: left)
             }

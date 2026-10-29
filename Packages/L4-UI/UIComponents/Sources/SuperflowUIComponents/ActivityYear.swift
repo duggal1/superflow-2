@@ -128,7 +128,7 @@ public struct ActivityYear: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Last 12 months").font(.system(size: 15, weight: .medium)).foregroundStyle(Tok.text)
+                Text("Last 12 months").font(AppType.title.font).foregroundStyle(Tok.text)
                 readout.frame(height: 16, alignment: .leading)
             }
             Spacer(minLength: 16)
@@ -141,14 +141,14 @@ public struct ActivityYear: View {
             HStack(spacing: 8) {
                 Text(h.date, format: .dateTime.month(.abbreviated).day()).foregroundStyle(Tok.text2)
                 Text(h.words.formatted())
-                    .font(.system(size: 12, weight: .medium)).monospacedDigit().foregroundStyle(Tok.text)
+                    .font(Typography.secondaryMedium).monospacedDigit().foregroundStyle(Tok.text)
                     .contentTransition(.numericText(value: Double(h.words)))
                 Text(h.words == 1 ? "word" : "words").foregroundStyle(Tok.text2)
             }
-            .font(.system(size: 12))
+            .font(AppType.caption.font)
             .transition(.opacity)
         } else {
-            Text("Dictation words per day").font(.system(size: 12)).foregroundStyle(Tok.text2).transition(.opacity)
+            Text("Dictation words per day").font(AppType.caption.font).foregroundStyle(Tok.text2).transition(.opacity)
         }
     }
 
@@ -198,7 +198,7 @@ public struct ActivityYear: View {
             ForEach(Array(blocks.enumerated()), id: \.offset) { i, b in
                 if b.cols >= 3 {
                     Text(b.month, format: .dateTime.month(.abbreviated))
-                        .font(.system(size: 12)).foregroundStyle(Tok.text2)
+                        .font(AppType.caption.font).foregroundStyle(Tok.text2)
                         .fixedSize()
                         .offset(x: m.originX[i])
                 }
@@ -219,13 +219,13 @@ public struct ActivityYear: View {
 private struct Legend: View {
     var body: some View {
         HStack(spacing: 8) {
-            Text("Less").font(.system(size: 12)).foregroundStyle(Tok.text2)
+            Text("Less").font(AppType.caption.font).foregroundStyle(Tok.text2)
             HStack(spacing: 3) {
                 ForEach(0..<5, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 2, style: .continuous).fill(Ramp.blue[i]).frame(width: 8, height: 8)
                 }
             }
-            Text("More").font(.system(size: 12)).foregroundStyle(Tok.text2)
+            Text("More").font(AppType.caption.font).foregroundStyle(Tok.text2)
         }
         .accessibilityHidden(true)
     }

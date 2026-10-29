@@ -171,7 +171,7 @@ private struct MenuRow: View {
     var body: some View {
         HStack(spacing: 10) {
             if let g = item.glyph { Icon(g, size: 14).frame(width: 20) }
-            Text(item.title).font(.system(size: 13)).foregroundStyle(Tok.text).lineLimit(1)
+            Text(item.title).font(AppType.body.font).foregroundStyle(Tok.text).lineLimit(1)
             Spacer(minLength: 16)
             if isSelected { Icon(.checkmark, size: 12, weight: .medium, tint: Tok.text) }
         }
