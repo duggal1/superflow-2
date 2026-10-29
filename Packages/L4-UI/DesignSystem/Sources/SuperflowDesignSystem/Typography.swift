@@ -77,7 +77,7 @@ public enum Typography {
 
     // One UI face: Albert Sans. Every label, control, row and line of body text
     // uses one of these roles at weight 325, with 350 reserved for emphasis.
-    // Display titles keep the bundled serif. Code keeps its monospaced face.
+    // Display titles keep the bundled serif.
     public static var title: Font { ui(TypeScale.titleSize, weight: AppFont.emphasisWeight) }
     public static var large: Font { ui(TypeScale.largeSize, weight: AppFont.textWeight) }
     public static var headline: Font { ui(TypeScale.headlineSize, weight: AppFont.emphasisWeight) }
@@ -87,10 +87,7 @@ public enum Typography {
     public static var secondaryMedium: Font { ui(TypeScale.secondarySize, weight: AppFont.emphasisWeight) }
     /// Metric text uses the same sans-serif family.
     public static var metric: Font { ui(TypeScale.metricSize, weight: AppFont.emphasisWeight) }
-    /// Code, identifiers and flags. SF Mono 12, never below the secondary size.
-    public static var mono: Font {
-        .system(size: TypeScale.secondarySize, weight: .regular, design: .monospaced)
-    }
+    public static var mono: Font { ui(TypeScale.secondarySize, weight: AppFont.textWeight) }
 
     /// Reading text. One step above body, Albert Sans 325, sized for a sentence
     /// that has to be read once and understood.

@@ -61,7 +61,7 @@ struct CodeSpeakCard: View {
     private var result: some View {
         let typed = model.codeSpeakPreview(sample)
         return Text(typed.isEmpty ? " " : typed)
-            .font(.system(size: 13, design: .monospaced))
+            .font(AppType.body.font)
             .foregroundStyle(Tok.text)
             .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
             .id(typed)
@@ -87,7 +87,7 @@ struct CodeSpeakCommandsDialog: View {
                                 .foregroundStyle(Tok.text)
                             Spacer(minLength: 0)
                         }
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(AppType.body.font)
                         .frame(height: 32)
                     }
                 }

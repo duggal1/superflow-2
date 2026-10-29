@@ -81,7 +81,7 @@ public struct AppTextField: View {
     public var body: some View {
         TextField("", text: $text, prompt: Text(prompt).foregroundStyle(Tok.text2))
             .textFieldStyle(.plain)
-            .font(mono ? .system(size: 13, design: .monospaced) : AppType.body.font)
+            .font(AppType.body.font)
             .foregroundStyle(Tok.text)
             .tint(Tok.accent)
             .focused($focused)
