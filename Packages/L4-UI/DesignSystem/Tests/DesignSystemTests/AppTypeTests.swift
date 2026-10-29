@@ -29,20 +29,24 @@ final class AppTypeTests: XCTestCase {
         XCTAssertEqual(AppType.metric.weight, 400)
     }
 
-    func testIslandUsesSmallerTighterTypeAtWeight350() throws {
+    func testIslandUsesInstrumentSansAtRegularWeight() throws {
         var root = URL(fileURLWithPath: #filePath)
         for _ in 0..<6 { root.deleteLastPathComponent() }
-        let file = root.appendingPathComponent("App/Resources/Fonts/AlbertSans-Variable.ttf")
+        let file = root.appendingPathComponent("App/Resources/Fonts/InstrumentSans-Variable.ttf")
         _ = CTFontManagerRegisterFontsForURL(file as CFURL, .process, nil)
         let tag = "wght".utf8.reduce(0) { ($0 << 8) | Int($1) }
+        XCTAssertEqual(AppType.allCases.map { $0.size(in: .island) }, [12, 13, 13, 14, 14, 24])
         for role in AppType.allCases {
-            XCTAssertLessThan(role.size(in: .island), role.size)
             XCTAssertLessThanOrEqual(role.tracking(in: .island), role.tracking)
             let descriptor = NSFontDescriptor(fontAttributes: [.name: AppFont.islandName, .variation: [tag: role.weight(in: .island)]])
             let font = try XCTUnwrap(NSFont(descriptor: descriptor, size: role.size(in: .island)))
-            XCTAssertTrue(font.fontName.hasPrefix("AlbertSans"))
-            let variation = try XCTUnwrap(CTFontCopyVariation(font as CTFont) as? [NSNumber: NSNumber])
-            XCTAssertEqual(variation[NSNumber(value: tag)]?.doubleValue ?? -1, 350, accuracy: 0.1)
+            XCTAssertTrue(font.fontName.hasPrefix("InstrumentSans"))
+            XCTAssertEqual(role.weight(in: .island), 400)
+            let axes = try XCTUnwrap(CTFontCopyVariationAxes(font as CTFont) as? [[CFString: Any]])
+            let axis = try XCTUnwrap(axes.first { ($0[kCTFontVariationAxisIdentifierKey] as? NSNumber)?.intValue == tag })
+            let defaultWeight = try XCTUnwrap(axis[kCTFontVariationAxisDefaultValueKey] as? NSNumber)
+            let variation = CTFontCopyVariation(font as CTFont) as? [NSNumber: NSNumber]
+            XCTAssertEqual(variation?[NSNumber(value: tag)]?.doubleValue ?? defaultWeight.doubleValue, 400, accuracy: 0.1)
         }
     }
 

@@ -130,6 +130,7 @@ public struct BarIconButton: View {
     private let label: String
     private let action: () -> Void
     @Environment(\.isEnabled) private var enabled
+    @Environment(\.appTypeScope) private var typeScope
     @State private var hover = false
 
     public init(glyph: Icon, label: String, action: @escaping () -> Void) {
@@ -140,9 +141,9 @@ public struct BarIconButton: View {
 
     public var body: some View {
         Button(action: action) {
-            IconView(glyph, size: 16, tint: Tok.text)
+            IconView(glyph, size: typeScope == .island && glyph == .close ? 14 : 16, tint: Tok.text)
                 .frame(width: Layout.control, height: Layout.control)
-                .background(hover && enabled ? Tok.control : .clear, in: .circle)
+                .background(hover && enabled && !(typeScope == .island && glyph == .close) ? Tok.control : .clear, in: .circle)
                 .contentShape(.circle)
         }
         .buttonStyle(PressStyle())

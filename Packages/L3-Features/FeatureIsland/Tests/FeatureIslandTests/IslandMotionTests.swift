@@ -47,6 +47,16 @@ final class IslandMotionTests: XCTestCase {
         XCTAssertGreaterThan(spring.x, position)
     }
 
+    func testDelayedFrameCatchesUpToElapsedTime() {
+        let start = IslandBox(body: CGSize(width: 200, height: 32), top: 6, bottom: 14, opacity: 1)
+        let end = IslandBox(body: CGSize(width: 312, height: 32), top: 6, bottom: 14, opacity: 1)
+        let motion = IslandKinematics(startingAt: start)
+        motion.retarget(end, band: 32, instant: false)
+        _ = motion.step(1, scale: 2)
+        let frame = motion.step(1.5, scale: 2)
+        XCTAssertGreaterThan(frame.width, 310)
+    }
+
     func testNoSignalShelfReservesSpaceAndHistoryFitsItsRows() {
         let geometry = NotchGeometry(frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
                                      safeTop: 32, leftWidth: 620, rightWidth: 620, scale: 2)

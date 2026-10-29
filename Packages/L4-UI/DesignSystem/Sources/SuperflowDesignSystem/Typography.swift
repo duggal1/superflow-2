@@ -25,7 +25,7 @@ public enum AppFont {
     /// PostScript name of the bundled UI face, `Fonts/InstrumentSans-Variable.ttf`.
     /// Every paragraph, label, row and control uses it.
     public static let baseName = "InstrumentSans-Regular"
-    public static let islandName = "AlbertSans-Regular"
+    public static let islandName = baseName
 
     /// Both faces are variable, so weight is an axis value rather than a face
     /// name. Text and emphasis use weight 400.

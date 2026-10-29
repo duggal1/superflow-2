@@ -97,7 +97,7 @@ final class IslandKinematics {
     }
 
     func step(_ now: TimeInterval, scale: CGFloat) -> Frame {
-        let dt = last.map { min(1.0 / 20, max(0, now - $0)) } ?? 0
+        let dt = last.map { max(0, now - $0) } ?? 0
         last = now
         if dt > 0 {
             w.step(dt, omega: om.w)

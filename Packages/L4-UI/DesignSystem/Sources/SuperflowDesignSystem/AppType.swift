@@ -57,10 +57,10 @@ public extension AppType {
     func size(in scope: AppTypeScope) -> CGFloat {
         guard scope == .island else { return size }
         return switch self {
-        case .caption: 11
-        case .body, .label: 12
-        case .reading, .title: 13
-        case .metric: 22
+        case .caption: 12
+        case .body, .label: 13
+        case .reading, .title: 14
+        case .metric: 24
         }
     }
 
@@ -75,7 +75,7 @@ public extension AppType {
     }
 
     func weight(in scope: AppTypeScope) -> CGFloat {
-        scope == .island ? 350 : weight
+        scope == .island ? 400 : weight
     }
 }
 

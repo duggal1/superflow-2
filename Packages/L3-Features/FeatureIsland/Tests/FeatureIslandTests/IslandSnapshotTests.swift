@@ -255,7 +255,7 @@ final class IslandSnapshotTests: XCTestCase {
     private func hostedBitmap(_ model: IslandModel) throws -> NSBitmapImageRep {
         var root = URL(fileURLWithPath: #filePath)
         for _ in 0..<6 { root.deleteLastPathComponent() }
-        let font = root.appendingPathComponent("App/Resources/Fonts/AlbertSans-Variable.ttf")
+        let font = root.appendingPathComponent("App/Resources/Fonts/InstrumentSans-Variable.ttf")
         _ = CTFontManagerRegisterFontsForURL(font as CFURL, .process, nil)
         _ = NSApplication.shared
         let host = NSHostingView(rootView: IslandRoot(model: model)
