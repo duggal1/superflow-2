@@ -4,6 +4,31 @@ import XCTest
 @testable import SuperflowDiarizationFluidAudio
 
 final class SpeakerDiarizerTests: XCTestCase {
+    func testInstalledModelIsReportedWithoutLoadingAndPartialDownloadIsMissing() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let bundle = try XCTUnwrap(ModelNames.Sortformer.bundle(for: FluidAudioDiarizer.configuration))
+        let model = root.appendingPathComponent(Repo.sortformer.folderName).appendingPathComponent(bundle)
+        let diarizer = FluidAudioDiarizer(cacheDirectory: root)
+        for path in ["coremldata.bin", "model0/coremldata.bin", "model0/model.mil", "model0/weights/0-weight.bin",
+                     "model1/coremldata.bin", "model1/model.mil"] {
+            let file = model.appendingPathComponent(path)
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+            try Data([1]).write(to: file)
+        }
+        let partialInstalled = await diarizer.isInstalled()
+        XCTAssertFalse(partialInstalled)
+        let weights = model.appendingPathComponent("model1/weights/1-weight.bin")
+        try FileManager.default.createDirectory(at: weights.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        try Data([1]).write(to: weights)
+        let installed = await diarizer.isInstalled()
+        let ready = await diarizer.isReady()
+        XCTAssertTrue(installed)
+        XCTAssertFalse(ready)
+    }
+
     func testSingleSpeakerIsSilentUntilAudioArrives() async {
         let diarizer = SingleSpeakerDiarizer()
         let before = await diarizer.speaker(atMs: 0)

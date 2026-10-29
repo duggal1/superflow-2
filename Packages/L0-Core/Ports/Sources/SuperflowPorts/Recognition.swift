@@ -41,6 +41,7 @@ public extension SpeechRecognizer {
 
 public protocol SpeakerDiarizer: Sendable {
     func isReady() async -> Bool
+    func isInstalled() async -> Bool
     func prepare(progress: @escaping @Sendable (Double) -> Void) async throws
     func beginSession() async
     func feed(_ chunk: AudioChunk) async
@@ -50,6 +51,7 @@ public protocol SpeakerDiarizer: Sendable {
 
 public extension SpeakerDiarizer {
     func isReady() async -> Bool { true }
+    func isInstalled() async -> Bool { await isReady() }
     func prepare(progress: @escaping @Sendable (Double) -> Void) async throws {}
     func beginSession() async {}
 }

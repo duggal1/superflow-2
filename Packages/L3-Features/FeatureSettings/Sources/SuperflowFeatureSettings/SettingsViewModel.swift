@@ -223,7 +223,7 @@ public final class SettingsViewModel: ObservableObject {
             asrReady = false
         }
         cleanupReady = await models?.llmModelURL() != nil
-        diarizationReady = await diarizer?.isReady() ?? false
+        diarizationReady = await diarizer?.isInstalled() ?? false
     }
 
     public func downloadASRModel() async {

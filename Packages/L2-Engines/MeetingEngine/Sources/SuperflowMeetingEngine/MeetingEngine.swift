@@ -114,10 +114,20 @@ public actor MeetingEngine {
             try await withDeadline(Self.modelDeadline, label: "model warm-up") {
                 try await recognizer.warmUp(profile: profile)
             }
-            await diarizer?.beginSession()
             if let diarizer, await !diarizer.isReady() {
-                emit(.notice("Speaker separation is not installed. Download the meeting model in Settings; recording can continue with one remote speaker label."))
+                if await diarizer.isInstalled() {
+                    do {
+                        try await withDeadline(Self.modelDeadline, label: "speaker model warm-up") {
+                            try await diarizer.prepare { _ in }
+                        }
+                    } catch {
+                        emit(.notice("Speaker separation could not be loaded: \(error.localizedDescription). Recording will use one remote speaker label."))
+                    }
+                } else {
+                    emit(.notice("Speaker separation is not installed. Download the meeting model in Settings; recording can continue with one remote speaker label."))
+                }
             }
+            await diarizer?.beginSession()
             micOriginNs = clock.monotonicNs()
             try await startSource(.mic, audio: mic, session: newRecord.id)
             if let system {

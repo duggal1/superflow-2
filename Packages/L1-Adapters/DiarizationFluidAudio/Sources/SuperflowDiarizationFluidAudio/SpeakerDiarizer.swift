@@ -149,6 +149,34 @@ public actor FluidAudioDiarizer: SpeakerDiarizer {
 
     public func isReady() async -> Bool { manager?.isAvailable == true }
 
+    public func isInstalled() async -> Bool {
+        if manager?.isAvailable == true { return true }
+        guard let bundle = ModelNames.Sortformer.bundle(for: Self.configuration) else { return false }
+        let root = cacheDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory,
+                                                                in: .userDomainMask)[0]
+            .appendingPathComponent("FluidAudio/Models", isDirectory: true)
+        let repo = root.appendingPathComponent(Repo.sortformer.folderName, isDirectory: true)
+        let marker = repo.appendingPathComponent(".fluidaudio-revision")
+        if FileManager.default.fileExists(atPath: marker.path) {
+            guard let revision = try? String(contentsOf: marker, encoding: .utf8),
+                  revision.trimmingCharacters(in: .whitespacesAndNewlines) == Repo.sortformer.revision else {
+                return false
+            }
+        } else if Repo.sortformer.revision != "main" {
+            return false
+        }
+        let model = repo.appendingPathComponent(bundle, isDirectory: true)
+        // These files belong to the pinned fastV2_1 compiled bundle. A directory
+        // alone also exists during a partial download and cannot prove installation.
+        return ["coremldata.bin", "model0/coremldata.bin", "model0/model.mil", "model0/weights/0-weight.bin",
+                "model1/coremldata.bin", "model1/model.mil", "model1/weights/1-weight.bin"].allSatisfy {
+            let path = model.appendingPathComponent($0).path
+            guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+                  let size = attributes[.size] as? NSNumber else { return false }
+            return size.int64Value > 0
+        }
+    }
+
     public func prepare(progress: @escaping @Sendable (Double) -> Void) async throws {
         if manager?.isAvailable == true { progress(1); return }
         progress(0)

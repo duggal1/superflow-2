@@ -143,7 +143,7 @@ public final class ModelsViewModel {
         let speech = await asrModels?.isAvailable(profileID: asrProfile) ?? false
         let enhancement = await enhancer?.isAvailable() ?? false
         let cleanup = await models.llmModelURL() != nil
-        let meetings = (await diarizer?.isReady()) ?? false
+        let meetings = (await diarizer?.isInstalled()) ?? false
         set(.installed, for: asrProfile, whenIdle: speech)
         set(.installed, for: Self.enhancementID, whenIdle: enhancement)
         set(.installed, for: Self.cleanupID, whenIdle: cleanup)

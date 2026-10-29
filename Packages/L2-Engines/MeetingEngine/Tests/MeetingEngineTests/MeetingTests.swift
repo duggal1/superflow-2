@@ -6,7 +6,29 @@ import SuperflowTextCleanup
 import SuperflowTextPipeline
 @testable import SuperflowMeetingEngine
 
+private actor InstalledMeetingDiarizer: SpeakerDiarizer {
+    private(set) var prepared = false
+    func isReady() async -> Bool { prepared }
+    func isInstalled() async -> Bool { true }
+    func prepare(progress: @escaping @Sendable (Double) -> Void) async throws { prepared = true }
+    func feed(_ chunk: AudioChunk) async {}
+    func speaker(atMs: Int) async -> String? { nil }
+    func finish() async {}
+}
+
 final class MeetingTests: XCTestCase {
+    func testInstalledSpeakerModelLoadsWhenMeetingStarts() async throws {
+        let diarizer = InstalledMeetingDiarizer()
+        let engine = MeetingEngine(mic: audio(.mic), system: audio(.system),
+                                   recognizer: FakeSpeechRecognizer(), diarizer: diarizer,
+                                   pipeline: pipeline(), repository: InMemoryRepository(),
+                                   journals: FakeJournalStore())
+        _ = try await engine.start()
+        let prepared = await diarizer.prepared
+        XCTAssertTrue(prepared)
+        _ = await engine.stop()
+    }
+
     private func pipeline() -> TextPipeline {
         var settings = AppSettings.default
         settings.cleanupEnabled = true

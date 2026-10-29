@@ -16,10 +16,26 @@ private actor InstalledASRProvider: ASRModelProvider {
     }
 }
 
+private actor InstalledUnloadedDiarizer: SpeakerDiarizer {
+    func isReady() async -> Bool { false }
+    func isInstalled() async -> Bool { true }
+    func feed(_ chunk: AudioChunk) async {}
+    func speaker(atMs: Int) async -> String? { nil }
+    func finish() async {}
+}
+
 /// S1-mini is part of every transcript by default, so the Models page has to show
 /// it as installed and running, not as an optional extra.
 @MainActor
 final class ModelsViewTests: XCTestCase {
+    func testInstalledSpeakerModelDoesNotNeedToBeLoadedToAppearInstalled() async throws {
+        let vm = ModelsViewModel(models: FakeModelProvider(asrURL: nil, llmURL: nil),
+                                 diarizer: InstalledUnloadedDiarizer())
+        await vm.refresh()
+        let speaker = try XCTUnwrap(vm.items.first { $0.kind == .meetings })
+        XCTAssertEqual(speaker.state, .installed)
+    }
+
     private func makeModel(llm: URL? = URL(fileURLWithPath: "/tmp/s1-mini.gguf"),
                            cleanupEnabled: @escaping @MainActor () -> Bool = { true })
         -> (ModelsViewModel, FakeModelProvider) {
