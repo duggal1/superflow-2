@@ -209,7 +209,8 @@ public final class AppEnvironment {
     /// Swallowing an event needs an active tap, so Fn suppression depends on Accessibility.
     /// Called before the hotkeys start and again whenever that grant changes.
     public func refreshFunctionKeySuppression() async {
-        let canSwallow = await permissionGate.status(.accessibility) == .granted
+        let accessibility = await permissionGate.status(.accessibility)
+        let canSwallow = accessibility == .granted
         await hotkeySource.setFnSuppression(canSwallow)
     }
 
