@@ -10,6 +10,8 @@ struct PasteFailedCard: View {
     let model: IslandModel
     let transcript: IslandTranscript
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var pad: CGFloat { IslandLayout.cardPad }
 
     var body: some View {
@@ -37,40 +39,40 @@ struct PasteFailedCard: View {
                     .foregroundStyle(Tok.text)
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60,
+                    .frame(maxWidth: .infinity, minHeight: 52, maxHeight: 52,
                            alignment: .topLeading)
                     .modifier(FadeIf(active: transcript.text.count > 120))
                     .padding(12)
-                    .background(Tok.control,
+                    .textSelection(.enabled)
+                    .background(Tok.well,
                                 in: .rect(cornerRadius: Radius.nested, style: .continuous))
 
                 HStack(spacing: 12) {
-                    TargetIcon(bundleID: transcript.bundleID)
-                    if let appName = transcript.appName {
-                        Text(appName)
-                            .appType(.caption)
-                            .foregroundStyle(Tok.text2)
-                            .lineLimit(1)
+                    HStack(spacing: 8) {
+                        TargetIcon(bundleID: transcript.bundleID)
+                        if let appName = transcript.appName {
+                            Text(appName).lineLimit(1)
+                        }
+                        Text(Humanize.words(transcript.words)).monospacedDigit().fixedSize()
                     }
-                    Text(Humanize.words(transcript.words))
-                        .appType(.caption)
-                        .monospacedDigit()
-                        .foregroundStyle(Tok.text2)
-                    Spacer(minLength: 0)
-                    AppButton("Paste again", glyph: nil, kind: .secondary, height: 28) {
-                        model.retryPaste(transcript)
+                    .appType(.caption)
+                    .foregroundStyle(Tok.text2)
+                    Spacer(minLength: 8)
+                    HStack(spacing: IslandLayout.actionGap) {
+                        AppButton("Paste again", kind: .secondary, height: IslandLayout.actionHeight) {
+                            model.retryPaste(transcript)
+                        }
+                        AppButton(model.copied ? "Copied" : "Copy",
+                                  glyph: model.copied ? .checkmark : nil,
+                                  kind: model.copied ? .secondary : .sapphire,
+                                  height: IslandLayout.actionHeight, minimumWidth: 80) {
+                            model.copy(transcript)
+                        }
                     }
-                    .frame(width: 104)
-                    AppButton(model.copied ? "Copied" : "Copy",
-                              glyph: model.copied ? .checkmark : nil,
-                              kind: model.copied ? .secondary : .primary,
-                              height: 28) {
-                        model.copy(transcript)
-                    }
-                    .frame(width: 88)
+                    .fixedSize()
                 }
-                .frame(height: 28)
-                .animation(.snappy(duration: 0.20), value: model.copied)
+                .frame(height: IslandLayout.actionHeight)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.20), value: model.copied)
             }
             .padding(.top, IslandLayout.cardGap)
             .padding(.horizontal, pad)

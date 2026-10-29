@@ -37,7 +37,10 @@ struct WingsContent: View {
             }
             .frame(height: geometry.band)
 
-            if model.hint, let hints {
+            if model.noSignal {
+                NoSignalShelf()
+                    .transition(.opacity)
+            } else if model.hint, let hints {
                 HintShelf(items: hints)
                     .frame(height: model.prefs.liveText ? IslandLayout.liveShelf : IslandLayout.hintShelf)
                     .transition(.opacity)
@@ -51,6 +54,7 @@ struct WingsContent: View {
             Spacer(minLength: 0)
         }
         .animation(reduceMotion ? nil : .smooth(duration: 0.30), value: model.hint)
+        .animation(reduceMotion ? nil : .smooth(duration: 0.30), value: model.noSignal)
     }
 
     private var showsLiveShelf: Bool {
@@ -89,22 +93,30 @@ struct WingsContent: View {
     @ViewBuilder private var trailing: some View {
         switch phase {
         case .listening:
-            IslandPixelMeter(trail: model.waveform.trail)
+            IslandPixelMeter(meter: model.meter)
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .handsFree:
             // A latched session is wider than a held one: there is no key to
             // release, so the meter has more history to show.
-            IslandPixelMeter(trail: model.waveform.trail, columns: 15)
+            IslandPixelMeter(meter: model.meter, columns: 15)
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .meeting:
-            IslandPixelBarcode(trail: model.waveform.trail)
+            IslandPixelBarcode(meter: model.meter)
                 .transition(.islandContent(reduceMotion: reduceMotion))
         case .processing:
-            IslandWait()
+            PixelSweep()
                 .transition(.islandContent(reduceMotion: reduceMotion))
-        case .landed:
-            PixelBitmap(rows: PixelBitmap.check, develop: 0.16)
-                .transition(.islandContent(reduceMotion: reduceMotion))
+        case .landed(let words):
+            HStack(spacing: 6) {
+                PixelBitmap(rows: PixelBitmap.check, develop: 0.16)
+                if words > 0 {
+                    Text("+\(words)")
+                        .appType(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(Tok.text2)
+                }
+            }
+            .transition(.islandContent(reduceMotion: reduceMotion))
         case .idle, .hover, .meetingPanel, .failed, .recent, .history, .undo, .notice:
             EmptyView()
         }

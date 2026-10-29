@@ -45,8 +45,60 @@ public enum AppType: Sendable, CaseIterable {
 
 }
 
+public enum AppTypeScope: Sendable {
+    case standard, island
+}
+
+private struct AppTypeScopeKey: EnvironmentKey {
+    static let defaultValue = AppTypeScope.standard
+}
+
+public extension EnvironmentValues {
+    var appTypeScope: AppTypeScope {
+        get { self[AppTypeScopeKey.self] }
+        set { self[AppTypeScopeKey.self] = newValue }
+    }
+}
+
+public extension AppType {
+    func size(in scope: AppTypeScope) -> CGFloat {
+        guard scope == .island else { return size }
+        return switch self {
+        case .caption: 11
+        case .body, .label: 12
+        case .reading, .title: 13
+        case .metric: 22
+        }
+    }
+
+    func tracking(in scope: AppTypeScope) -> CGFloat {
+        guard scope == .island else { return tracking }
+        return switch self {
+        case .caption: -0.2
+        case .body, .label: -0.3
+        case .reading, .title: -0.4
+        case .metric: -0.6
+        }
+    }
+
+    func weight(in scope: AppTypeScope) -> CGFloat {
+        scope == .island ? 350 : weight
+    }
+}
+
+private struct AppTypeModifier: ViewModifier {
+    let role: AppType
+    @Environment(\.appTypeScope) private var scope
+
+    func body(content: Content) -> some View {
+        content
+            .font(Typography.ui(role.size(in: scope), weight: role.weight(in: scope)))
+            .tracking(role.tracking(in: scope))
+    }
+}
+
 public extension View {
     func appType(_ role: AppType) -> some View {
-        font(role.font).tracking(role.tracking)
+        modifier(AppTypeModifier(role: role))
     }
 }

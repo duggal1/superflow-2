@@ -17,6 +17,8 @@ struct PixelBitmap: View {
     var develop: TimeInterval = 0
 
     @State private var born = Date()
+    @State private var finished = false
+    @Environment(\.displayScale) private var scale
     @Environment(\.accessibilityReduceMotion) private var reduce
 
     static let check = [
@@ -74,10 +76,11 @@ struct PixelBitmap: View {
     ]
 
     var body: some View {
+        let grid = IslandPixelGrid(scale: scale)
         let columns = rows.map(\.count).max() ?? 0
         let rows = rows, cell = cell, gap = gap, tone = tone
-        let animate = develop > 0 && !reduce
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !animate)) { timeline in
+        let animate = develop > 0 && !reduce && !finished
+        TimelineView(.animation(paused: !animate)) { timeline in
             let progress = animate
                 ? min(1, timeline.date.timeIntervalSince(born) / develop)
                 : 1
@@ -86,17 +89,22 @@ struct PixelBitmap: View {
                 for (row, line) in rows.enumerated() {
                     for (column, character) in line.enumerated()
                     where character == "#" && column < visible {
-                        let rect = CGRect(x: CGFloat(column) * (cell + gap),
+                        let rect = grid.rect(CGRect(x: CGFloat(column) * (cell + gap),
                                           y: CGFloat(row) * (cell + gap),
-                                          width: cell, height: cell)
+                                          width: cell, height: cell))
                         context.fill(Path(rect), with: .color(tone),
                                      style: FillStyle(antialiased: false))
                     }
                 }
             }
         }
-        .frame(width: CGFloat(columns) * (cell + gap) - gap,
-               height: CGFloat(rows.count) * (cell + gap) - gap)
+        .frame(width: grid.length(CGFloat(columns) * (cell + gap) - gap),
+               height: grid.length(CGFloat(rows.count) * (cell + gap) - gap))
+        .task(id: develop) {
+            guard develop > 0, !reduce else { finished = true; return }
+            do { try await Task.sleep(for: .seconds(develop)) } catch { return }
+            finished = true
+        }
         .accessibilityHidden(true)
     }
 }
@@ -110,7 +118,10 @@ struct PixelCountdown: View {
     let total: TimeInterval
     var cells = 18
 
+    @Environment(\.displayScale) private var scale
+
     var body: some View {
+        let grid = IslandPixelGrid(scale: scale)
         let cells = cells
         let total = max(total, 0.001)
         let deadline = deadline
@@ -121,18 +132,18 @@ struct PixelCountdown: View {
                 for index in 0..<cells {
                     let x = CGFloat(index) * 4
                     if index < lit {
-                        context.fill(Path(CGRect(x: x, y: 0, width: 3, height: 3)),
+                        context.fill(Path(grid.rect(CGRect(x: x, y: 0, width: 3, height: 3))),
                                      with: .color(index == lit - 1 ? Ramp.blue[4] : Ramp.blue[3]),
                                      style: FillStyle(antialiased: false))
                     } else {
-                        context.fill(Path(CGRect(x: x + 1, y: 1, width: 1, height: 1)),
+                        context.fill(Path(grid.rect(CGRect(x: x + 1, y: 1, width: 1, height: 1))),
                                      with: .color(Tok.controlPressed),
                                      style: FillStyle(antialiased: false))
                     }
                 }
             }
         }
-        .frame(width: CGFloat(cells) * 4 - 1, height: 3)
+        .frame(width: grid.length(CGFloat(cells) * 4 - 1), height: grid.length(3))
         .accessibilityHidden(true)
     }
 }
@@ -143,9 +154,12 @@ struct PixelCountdown: View {
 struct PixelBurst: View {
     @State private var born = Date()
     @Environment(\.accessibilityReduceMotion) private var reduce
-    private let grid = 14
+    private let burstCells = 14
+
+    @Environment(\.displayScale) private var scale
 
     var body: some View {
+        let grid = IslandPixelGrid(scale: scale)
         if reduce {
             Color.clear
         } else {
@@ -154,9 +168,9 @@ struct PixelBurst: View {
                 let step = (progress * 14).rounded(.up) / 14
                 Canvas { context, _ in
                     guard step < 1 else { return }
-                    let centre = CGFloat(grid - 1) / 2
-                    for row in 0..<grid {
-                        for column in 0..<grid {
+                    let centre = CGFloat(burstCells - 1) / 2
+                    for row in 0..<burstCells {
+                        for column in 0..<burstCells {
                             let distance = hypot(CGFloat(column) - centre,
                                                  CGFloat(row) - centre)
                             guard abs(distance - step * 8) < 1.2,
@@ -166,13 +180,13 @@ struct PixelBurst: View {
                                               width: 3, height: 3)
                             let tone = abs(distance - step * 8) < 0.6
                                 ? Ramp.blue[4] : Ramp.blue[3]
-                            context.fill(Path(rect), with: .color(tone),
+                            context.fill(Path(grid.rect(rect)), with: .color(tone),
                                          style: FillStyle(antialiased: false))
                         }
                     }
                 }
             }
-            .frame(width: 55, height: 55)
+            .frame(width: grid.length(55), height: grid.length(55))
             .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
@@ -194,7 +208,10 @@ struct PixelBurst: View {
 struct IslandWait: View {
     @Environment(\.accessibilityReduceMotion) private var reduce
 
+    @Environment(\.displayScale) private var scale
+
     var body: some View {
+        let grid = IslandPixelGrid(scale: scale)
         let reduce = reduce
         TimelineView(.periodic(from: .now, by: 0.16)) { timeline in
             let active = reduce
@@ -204,12 +221,12 @@ struct IslandWait: View {
                 for index in 0..<3 {
                     let tone = index == active ? Ramp.blue[4]
                         : reduce ? Ramp.blue[3] : Ramp.blue[2]
-                    context.fill(Path(CGRect(x: CGFloat(index) * 6, y: 0, width: 2, height: 2)),
+                    context.fill(Path(grid.rect(CGRect(x: CGFloat(index) * 6, y: 0, width: 2, height: 2))),
                                  with: .color(tone), style: FillStyle(antialiased: false))
                 }
             }
         }
-        .frame(width: 14, height: 2)
+        .frame(width: grid.length(14), height: grid.length(2))
         .accessibilityHidden(true)
     }
 }
@@ -217,8 +234,11 @@ struct IslandWait: View {
 /// The brand pixel disc at glyph scale. A meeting's record mark is the product,
 /// not an alarm: it stays blue instead of turning the Island into a red light.
 struct RecordDisc: View {
+    @Environment(\.displayScale) private var scale
+
     var body: some View {
+        let grid = IslandPixelGrid(scale: scale)
         PixelBitmap(rows: PixelBitmap.disc, develop: 0.14)
-            .frame(width: 14, height: 14)
+            .frame(width: grid.length(14), height: grid.length(14))
     }
 }

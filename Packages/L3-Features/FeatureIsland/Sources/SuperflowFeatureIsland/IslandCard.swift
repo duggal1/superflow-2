@@ -17,6 +17,8 @@ struct CardContent: View {
     let kind: Kind
     let transcript: IslandTranscript?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var pad: CGFloat { IslandLayout.cardPad }
 
     var body: some View {
@@ -83,6 +85,8 @@ struct CardContent: View {
                 Text(Humanize.when(transcript.date))
                     .appType(.caption)
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
                     .foregroundStyle(Tok.text2)
             }
         }
@@ -90,27 +94,28 @@ struct CardContent: View {
 
     @ViewBuilder private var row: some View {
         if let transcript {
-            HStack(spacing: 12) {
+            HStack(spacing: IslandLayout.actionGap) {
                 Text(transcript.text.replacingOccurrences(of: "\n", with: " "))
                     .appType(.reading)
                     .foregroundStyle(Tok.text)
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     .clipped()
                     .modifier(EdgeFade(length: 32))
+                    .padding(.horizontal, 12)
+                    .frame(height: IslandLayout.transcriptRow)
+                    .background(Tok.well, in: .rect(cornerRadius: Radius.field))
 
                 AppButton(model.copied ? "Copied" : "Copy",
                           glyph: model.copied ? .checkmark : nil,
-                          kind: kind == .failed && !model.copied ? .primary : .secondary,
-                          height: 28) {
+                          kind: model.copied ? .secondary : .sapphire,
+                          height: IslandLayout.actionHeight, minimumWidth: 80) {
                     model.copy(transcript)
                 }
-                // Fixed width: the label changes, the transcript's line does not.
-                .frame(width: 88)
             }
-            .frame(height: IslandLayout.cardRow)
-            .animation(.snappy(duration: 0.20), value: model.copied)
+            .frame(height: IslandLayout.transcriptRow)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.20), value: model.copied)
         } else {
             Text("Hold fn and speak.")
                 .appType(.reading)

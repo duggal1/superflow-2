@@ -1,5 +1,6 @@
 import AppKit
 import SuperflowFeatureIsland
+import SuperflowUIComponents
 import SwiftUI
 
 /// The Island's window: borderless, non-activating, above the menu bar, and
@@ -54,6 +55,11 @@ final class IslandHostingView: NSHostingView<IslandRoot> {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
+    override func draw(_ dirtyRect: NSRect) {
+        FontSmoothing.applyToCurrentContext()
+        super.draw(dirtyRect)
+    }
+
     /// A notch screen reports a top safe-area inset. It would push the content down.
     override var safeAreaInsets: NSEdgeInsets { NSEdgeInsets() }
 
@@ -81,7 +87,9 @@ public final class IslandController {
         self.model = model
         host = IslandHostingView(rootView: IslandRoot(model: model))
         host.containsPoint = { [unowned model] point in
-            IslandLayout.contains(point, box: model.box)
+            guard model.box.opacity > 0 else { return false }
+            let slop: CGFloat = model.phase == .idle && model.geometry.hasNotch ? 0 : 4
+            return model.hitRect.insetBy(dx: -slop, dy: -slop).contains(point)
         }
         panel.contentView = host
         panel.onCancel = { [unowned model] in model.send(.dismissed) }

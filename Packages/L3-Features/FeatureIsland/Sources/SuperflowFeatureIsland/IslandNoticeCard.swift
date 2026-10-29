@@ -14,6 +14,8 @@ struct UndoContent: View {
     let model: IslandModel
     let undo: IslandUndo
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var pad: CGFloat { IslandLayout.cardPad }
 
     /// How much was nearly lost, in the card's own words.
@@ -26,23 +28,21 @@ struct UndoContent: View {
 
     var body: some View {
         let geometry = model.geometry
+        let side = (model.box.body.width - (geometry.hasNotch ? geometry.notch.width : 0)) / 2
 
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    if let bundleID = undo.bundleID {
-                        AppIcon(bundleID: bundleID, size: 20)
-                    } else {
-                        Icon(.undo, size: 14, weight: .medium, tint: Ramp.blue[4])
-                            .frame(width: 20, height: 20)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        PixelDissolve(trail: model.frozenTrail)
+                        Text("Cancelled.").appType(.label).foregroundStyle(Tok.text)
                     }
-                    Text("Was that a mistake?")
-                        .appType(.label)
-                        .foregroundStyle(Tok.text)
-                        .lineLimit(1)
+                    .fixedSize()
+                    PixelDissolve(trail: model.frozenTrail)
                 }
+                .accessibilityLabel("Cancelled")
                 .padding(.leading, pad)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: side, alignment: .leading)
 
                 if geometry.hasNotch {
                     Color.clear.frame(width: geometry.notch.width)
@@ -53,7 +53,7 @@ struct UndoContent: View {
                     BarIconButton(glyph: .close, label: "Dismiss") { model.send(.dismissed) }
                 }
                 .padding(.trailing, pad - 8)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                .frame(width: side, alignment: .trailing)
             }
             .frame(height: geometry.band)
 
@@ -62,38 +62,41 @@ struct UndoContent: View {
                     Text("No words were captured.")
                         .appType(.reading)
                         .foregroundStyle(Tok.text2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 } else {
                     Text(undo.text.replacingOccurrences(of: "\n", with: " "))
                         .appType(.reading)
                         .foregroundStyle(Tok.text)
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                         .clipped()
                         .modifier(EdgeFade(length: 32))
                 }
 
                 AppButton(model.copied ? "Copied" : "Undo",
                           glyph: model.copied ? .checkmark : .undo,
-                          kind: .primary,
-                          height: 28,
-                          enabled: !undo.isEmpty) {
+                          kind: .sapphire,
+                          height: IslandLayout.actionHeight,
+                          enabled: !undo.isEmpty, minimumWidth: 80) {
                     model.keepUndo(undo)
                 }
-                .frame(width: 88)
+                .fixedSize(horizontal: true, vertical: false)
             }
             .padding(.top, IslandLayout.cardGap)
             .padding(.horizontal, pad)
             .frame(height: IslandLayout.cardRow)
-            .animation(.snappy(duration: 0.20), value: model.copied)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.20), value: model.copied)
 
             HStack(spacing: 12) {
                 Text(undo.isEmpty
                      ? "Nothing to keep. Press fn and try again."
                      : held.map { "You were \($0) in. Undo copies the words back." }
                         ?? "Escape stopped it. Undo copies the words back.")
-                Spacer(minLength: 0)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .clipped()
+                    .modifier(EdgeFade(length: 24))
                 if let deadline = model.undoDeadline {
                     PixelCountdown(deadline: deadline, total: TimeInterval(IslandModel.undoWindow))
                         .accessibilityLabel("\(model.undoRemaining) seconds left to undo")
@@ -101,6 +104,7 @@ struct UndoContent: View {
                 if !undo.isEmpty {
                     Text("⌘V")
                         .monospacedDigit()
+                        .fixedSize()
                 }
             }
             .appType(.caption)
@@ -173,7 +177,7 @@ struct NoticeContent: View {
                 Spacer(minLength: 12)
 
                 if let action = notice.action {
-                    AppButton(action, glyph: nil, kind: .secondary, height: 28) {
+                    AppButton(action, glyph: nil, kind: .secondary, height: IslandLayout.actionHeight) {
                         model.openNotice(notice)
                     }
                     .fixedSize()

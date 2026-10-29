@@ -10,9 +10,21 @@ public struct FontSmoothing: NSViewRepresentable {
 
     public func makeNSView(context: Context) -> NSView { SmoothingView() }
     public func updateNSView(_ nsView: NSView, context: Context) {}
+    public static func applyToCurrentContext() {
+        guard let context = NSGraphicsContext.current else { return }
+        let cg = context.cgContext
+        cg.setShouldSmoothFonts(true)
+        cg.setAllowsFontSmoothing(true)
+        cg.setAllowsAntialiasing(true)
+        cg.setShouldAntialias(true)
+        cg.setAllowsFontSubpixelPositioning(true)
+        cg.setAllowsFontSubpixelQuantization(true)
+    }
+
 }
 
 final class SmoothingView: NSView {
+    override var isOpaque: Bool { false }
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         guard let window else { return }
@@ -27,20 +39,17 @@ final class SmoothingView: NSView {
     }
 
     private func enable() {
-        guard let context = NSGraphicsContext.current else { return }
-        let cg = context.cgContext
-        cg.setShouldSmoothFonts(true)
-        cg.setAllowsFontSmoothing(true)
-        cg.setAllowsAntialiasing(true)
-        cg.setShouldAntialias(true)
-        cg.setAllowsFontSubpixelPositioning(true)
-        cg.setAllowsFontSubpixelQuantization(true)
+        FontSmoothing.applyToCurrentContext()
     }
 }
 
 public extension View {
     /// Opts this view's window into smoothed glyph rendering.
     func fontSmoothing() -> some View {
-        background(FontSmoothing().allowsHitTesting(false))
+        background(alignment: .topLeading) {
+            FontSmoothing()
+                .frame(width: 0, height: 0)
+                .allowsHitTesting(false)
+        }
     }
 }

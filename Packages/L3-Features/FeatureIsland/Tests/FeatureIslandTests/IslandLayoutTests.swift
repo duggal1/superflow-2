@@ -101,15 +101,15 @@ final class IslandLayoutTests: XCTestCase {
             // panel is five rows plus a footer, and the meeting panel carries a
             // metric, a share bar and a legend.
             XCTAssertEqual(IslandLayout.box(.failed(transcript), geometry).body.height,
-                           IslandLayout.cardHeight(geometry.band, below: 148))
+                           IslandLayout.cardHeight(geometry.band, below: 132))
             XCTAssertEqual(IslandLayout.box(.history, geometry).body.height,
-                           IslandLayout.cardHeight(geometry.band, below: 296))
+                           IslandLayout.cardHeight(geometry.band, below: 248))
             XCTAssertEqual(IslandLayout.box(.meetingPanel, geometry).body.height,
-                           IslandLayout.cardHeight(geometry.band, below: 168))
+                           IslandLayout.cardHeight(geometry.band, below: 176))
             XCTAssertEqual(IslandLayout.box(.notice(notice), geometry).body.height,
                            IslandLayout.cardHeight(geometry.band, below: 76))
             XCTAssertEqual(IslandLayout.box(.recent(nil), geometry).body.height,
-                           IslandLayout.cardHeight(geometry.band))
+                           IslandLayout.cardHeight(geometry.band, below: 88))
             XCTAssertEqual(IslandLayout.box(.undo(undo), geometry).body.height,
                            IslandLayout.cardHeight(geometry.band))
         }

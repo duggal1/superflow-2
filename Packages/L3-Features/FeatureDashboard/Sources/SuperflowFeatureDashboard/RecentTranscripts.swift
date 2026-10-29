@@ -104,7 +104,7 @@ private struct TranscriptRow: View {
                     .foregroundStyle(failed ? Tok.text2 : Tok.text)
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     .clipped()
                     .modifier(TextFade(length: 32))
                 HStack(spacing: Space.sm) {

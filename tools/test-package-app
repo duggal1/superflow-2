@@ -47,10 +47,23 @@ cat > "$FRAMEWORK/Versions/A/Resources/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
+# SwiftPM's configuration directory is a symlink to its actual products.
+ln -s "$WORK/app-bin" "$WORK/app-bin-link"
+mkdir -p "$WORK/app-bin/Fixture.bundle/Contents/Resources"
+printf 'fixture resource\n' > "$WORK/app-bin/Fixture.bundle/Contents/Resources/marker.txt"
+cat > "$WORK/app-bin/Fixture.bundle/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.superflow.test.fixture</string>
+<key>CFBundlePackageType</key><string>BNDL</string>
+</dict></plist>
+PLIST
+
 # 1. Minimal bundle: no helper, no framework.
 MINIMAL="$WORK/minimal.app"
 SUPERFLOW_APP_BINARY="$WORK/app-bin/SuperflowApp" \
-SUPERFLOW_BIN_DIR="$WORK/app-bin" \
+SUPERFLOW_BIN_DIR="$WORK/app-bin-link" \
 SUPERFLOW_LLAMA_FRAMEWORK="$WORK/no-such.framework" \
 SUPERFLOW_APP_OUTPUT="$MINIMAL" \
     "$PACKAGER" --smoke >/dev/null
@@ -60,7 +73,9 @@ test ! -d "$MINIMAL/Contents/Frameworks" || fail "minimal bundle unexpectedly em
 codesign --verify --deep --strict "$MINIMAL" 2>/dev/null || fail "minimal bundle signature is invalid"
 codesign -d --entitlements :- "$MINIMAL" 2>/dev/null | grep -q 'com.apple.security.device.audio-input' \
     || fail "minimal bundle is missing the audio-input entitlement"
-pass "minimal bundle assembles, signs, and carries entitlements"
+test -f "$MINIMAL/Contents/Resources/Fixture.bundle/Contents/Resources/marker.txt" \
+    || fail "resource bundle was lost through SwiftPM's symlinked product directory"
+pass "minimal bundle assembles, signs, carries entitlements and copies resources through symlinks"
 
 # 2. Full bundle: helper plus framework, including the runtime search path.
 FULL="$WORK/full.app"

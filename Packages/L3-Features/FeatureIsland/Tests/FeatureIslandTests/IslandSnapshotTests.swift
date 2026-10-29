@@ -1,4 +1,6 @@
 import AppKit
+import CoreText
+import SuperflowDesignSystem
 import SwiftUI
 import XCTest
 @testable import SuperflowFeatureIsland
@@ -197,16 +199,69 @@ final class IslandSnapshotTests: XCTestCase {
                     let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
                     try data.write(to: directory.appendingPathComponent("\(name)-\(state).png"))
                 }
+                RunLoop.current.run(until: Date().addingTimeInterval(3.0))
+            }
+        }
+    }
+
+    func testLongCancelledTranscriptKeepsUndoInsideTheContentGutter() throws {
+        let geometry = geometry(notch: true)
+        let model = model(geometry)
+        model.go(.undo(IslandUndo(text: String(repeating: "A long cancelled transcript ", count: 40),
+                                  bundleID: nil, appName: nil, seconds: 45)))
+        let bitmap = try hostedBitmap(model)
+        var blueX: [Int] = []
+        let scale = 2
+        for y in Int((geometry.band + 4) * 2)..<Int((geometry.band + 36) * 2) {
+            for x in 0..<bitmap.pixelsWide {
+                guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
+                if color.blueComponent > 0.5, color.blueComponent > color.redComponent + 0.2 {
+                    blueX.append(x)
+                }
+            }
+        }
+        let left = try XCTUnwrap(blueX.min())
+        let right = try XCTUnwrap(blueX.max())
+        let contentRight = (IslandLayout.canvas.width + IslandLayout.cardWidth) / 2 - IslandLayout.cardPad
+        XCTAssertLessThanOrEqual(right, Int(contentRight) * scale)
+        XCTAssertGreaterThan(right - left, 70 * scale, "Undo must remain fully visible")
+    }
+
+    func testCopyPanelStatesRenderAtTwoTimesScale() throws {
+        guard let output = ProcessInfo.processInfo.environment["ISLAND_SNAPSHOT_DIR"] else { return }
+        let directory = URL(fileURLWithPath: output, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let notch = NotchGeometry(frame: CGRect(x: 0, y: 0, width: 1728, height: 1117),
+                                   safeTop: 38, leftWidth: 704, rightWidth: 704, scale: 2)
+        for (display, geometry) in [("notch", notch), ("external", geometry(notch: false))] {
+            let model = model(geometry, last: transcript)
+            let states: [(String, IslandPhase)] = [
+                ("copy-failed", .failed(transcript)),
+                ("copy-recent", .recent(transcript)),
+                ("copy-copied", .failed(transcript)),
+                ("copy-cancelled", .undo(IslandUndo(text: transcript.text,
+                    bundleID: transcript.bundleID, appName: transcript.appName, seconds: 45))),
+            ]
+            for (name, phase) in states {
+                model.go(phase)
+                if name == "copy-copied" { model.copiedID = transcript.id }
+                let bitmap = try hostedBitmap(model)
+                let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+                try data.write(to: directory.appendingPathComponent("\(display)-\(name).png"))
             }
         }
     }
 
     private func hostedBitmap(_ model: IslandModel) throws -> NSBitmapImageRep {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let font = root.appendingPathComponent("App/Resources/Fonts/AlbertSans-Variable.ttf")
+        _ = CTFontManagerRegisterFontsForURL(font as CFURL, .process, nil)
         _ = NSApplication.shared
         let host = NSHostingView(rootView: IslandRoot(model: model)
             .transaction { $0.animation = nil; $0.disablesAnimations = true })
         host.sizingOptions = []
-        let window = NSWindow(contentRect: CGRect(origin: .zero, size: IslandLayout.canvas),
+        let window = NSWindow(contentRect: CGRect(origin: CGPoint(x: -10_000, y: -10_000), size: IslandLayout.canvas),
                               styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.backgroundColor = .clear
@@ -215,7 +270,7 @@ final class IslandSnapshotTests: XCTestCase {
         window.contentView = host
         window.orderFront(nil)
         defer { window.close() }
-        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        RunLoop.current.run(until: Date().addingTimeInterval(3.0))
         host.layoutSubtreeIfNeeded()
         let bitmap = try XCTUnwrap(NSBitmapImageRep(bitmapDataPlanes: nil,
             pixelsWide: Int(IslandLayout.canvas.width * 2), pixelsHigh: Int(IslandLayout.canvas.height * 2),

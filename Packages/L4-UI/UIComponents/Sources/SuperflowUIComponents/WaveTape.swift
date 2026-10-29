@@ -77,8 +77,8 @@ enum TapePeaks {
         var out = [UInt8](repeating: 0, count: columns)
         samples.withUnsafeBufferPointer { p in
             for c in 0..<columns {
-                let lo = c * p.count / columns
-                let hi = max(lo + 1, (c + 1) * p.count / columns)
+                let lo = min(p.count - 1, c * p.count / columns)
+                let hi = min(p.count, max(lo + 1, (c + 1) * p.count / columns))
                 var peak: Float = 0
                 vDSP_maxmgv(p.baseAddress! + lo, 1, &peak, vDSP_Length(hi - lo))
                 let level = min(1, max(0, (20 * log10(max(peak, 0.000001)) + 54) / 48))

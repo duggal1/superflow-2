@@ -55,6 +55,7 @@ final class IslandPanelControllerTests: XCTestCase {
         let host = try XCTUnwrap(panel.contentView as? IslandHostingView)
         XCTAssertTrue(host.containsPoint(CGPoint(x: IslandLayout.canvas.width / 2, y: 10)))
         model.send(.holdBegan(nil))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.8))
         XCTAssertTrue(host.containsPoint(CGPoint(x: IslandLayout.canvas.width / 2,
                                                  y: model.geometry.band + 20)))
         model.send(.pasteFailed(Feed().transcript))

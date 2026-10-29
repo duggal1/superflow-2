@@ -31,8 +31,6 @@ public final class DashboardViewModel: ObservableObject {
     @Published public private(set) var insights: DashboardInsights = .empty
     @Published public private(set) var isLoading = false
     @Published public private(set) var error: String?
-    /// The physical fn key. The cleanup keycap goes down with it.
-    @Published public private(set) var isFnHeld = false
 
     public let recent: RecentDictationViewModel
     @Published public var usageRange: UsageRange = .week
@@ -50,11 +48,6 @@ public final class DashboardViewModel: ObservableObject {
         self.settings = settings
         self.calendar = calendar
         self.now = now
-    }
-
-    public func setFnHeld(_ held: Bool) {
-        guard isFnHeld != held else { return }
-        isFnHeld = held
     }
 
     public func update(settings: AppSettings) {

@@ -4,12 +4,12 @@ import SuperflowUIComponents
 import SwiftUI
 
 /// Click the always-visible Island and it grows downward into your last five
-/// dictations. Up/down move, Return copies, Space expands, Escape closes.
+/// dictations. Up/down move, Return copies, Escape or a click on the notch
+/// closes. There are no per-row controls: the row itself is the button.
 struct HistoryPanel: View {
     let model: IslandModel
 
     @State private var cursor = 0
-    @State private var open: String?
     @FocusState private var focused: Bool
 
     private var pad: CGFloat { IslandLayout.cardPad }
@@ -31,58 +31,43 @@ struct HistoryPanel: View {
                     Color.clear.frame(width: geometry.notch.width)
                 }
 
-                BarIconButton(glyph: .close, label: "Close") { model.send(.dismissed) }
-                    .padding(.trailing, pad - 8)
-                    .frame(width: side, alignment: .trailing)
+                ViewThatFits(in: .horizontal) {
+                    todayLabel("words today").fixedSize()
+                    todayLabel("today").fixedSize()
+                }
+                .accessibilityLabel("\(model.today) words today")
+                .padding(.trailing, pad)
+                .frame(width: side, alignment: .trailing)
             }
             .frame(height: geometry.band)
 
-            Group {
+            VStack(spacing: 0) {
                 if rows.isEmpty {
-                    EmptyState("Nothing dictated yet.",
-                               message: "Hold fn and speak.",
-                               density: .pane)
+                    Text("Nothing dictated yet.")
+                        .appType(.reading)
+                        .foregroundStyle(Tok.text2)
+                        .frame(maxWidth: .infinity, minHeight: 80)
                 } else {
-                    ScrollViewReader { proxy in
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 2) {
-                                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                                    HistoryRow(model: model, transcript: row,
-                                               selected: index == cursor,
-                                               expanded: open == row.id) {
-                                        cursor = index
-                                        open = open == row.id ? nil : row.id
-                                    }
-                                    .id(row.id)
-                                }
-                            }
-                        }
-                        .onChange(of: cursor) {
-                            if rows.indices.contains(cursor) {
-                                proxy.scrollTo(rows[cursor].id)
-                            }
-                        }
-                        .onChange(of: open) {
-                            if let open { proxy.scrollTo(open, anchor: .top) }
-                        }
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, transcript in
+                        HistoryRow(model: model, transcript: transcript, selected: index == cursor)
+                            .modifier(RowReveal(index: index))
                     }
                 }
             }
-            .frame(height: 240)
-            .padding(.top, 12)
-            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .padding(.horizontal, 8)
 
-            HStack(spacing: 16) {
-                keyHint("↑↓", "Move")
-                keyHint("⏎", "Copy")
-                keyHint("esc", "Close")
+            HStack {
+                Text("Click a line to copy it")
+                    .appType(.caption)
+                    .foregroundStyle(Tok.text2)
                 Spacer(minLength: 0)
                 AppButton("Open History", glyph: nil, kind: .quiet, height: 24) {
                     model.openHistory()
                 }
             }
             .padding(.horizontal, pad)
-            .frame(height: 44)
+            .frame(height: 40)
 
             Spacer(minLength: 0)
         }
@@ -92,7 +77,6 @@ struct HistoryPanel: View {
         .onAppear {
             focused = true
             cursor = 0
-            open = nil
         }
         .onKeyPress(.upArrow) {
             cursor = max(0, cursor - 1)
@@ -106,85 +90,35 @@ struct HistoryPanel: View {
             if rows.indices.contains(cursor) { model.copy(rows[cursor]) }
             return .handled
         }
-        .onKeyPress(.space) {
-            if rows.indices.contains(cursor) {
-                open = open == rows[cursor].id ? nil : rows[cursor].id
-            }
-            return .handled
-        }
         .onKeyPress(.escape) {
             model.send(.dismissed)
             return .handled
         }
     }
-
-    private func keyHint(_ key: String, _ label: String) -> some View {
+    private func todayLabel(_ label: String) -> some View {
         HStack(spacing: 6) {
-            HintKey(label: key)
-            Text(label)
-                .appType(.caption)
-                .foregroundStyle(Tok.text2)
+            Text(model.today.formatted()).monospacedDigit().foregroundStyle(Tok.text)
+            Text(label).foregroundStyle(Tok.text2)
         }
+        .appType(.caption)
     }
+
 }
 
-/// One dictation. The whole row toggles the expansion; the copy button is always
-/// visible, because a hover-only control is invisible to keyboard and VoiceOver.
+/// One dictation. The whole row copies its cleaned text; hover and selection
+/// swap the time for a copy glyph in the same fixed column, so nothing reflows.
 struct HistoryRow: View {
     let model: IslandModel
     let transcript: IslandTranscript
     let selected: Bool
-    let expanded: Bool
-    let onToggle: () -> Void
+
+    @State private var hover = false
 
     var body: some View {
         let copied = model.copiedID == transcript.id
-        HStack(spacing: 4) {
-            RowButton("\(transcript.appName ?? "Dictation"), \(Humanize.when(transcript.date))",
-                      selected: selected, action: onToggle) {
-                HStack(spacing: 12) {
-                    TargetIcon(bundleID: transcript.bundleID)
-                    VStack(alignment: .leading, spacing: 2) {
-                        preview
-                        HStack(spacing: 12) {
-                            Text(Humanize.when(transcript.date))
-                            Text(Humanize.words(transcript.words)).monospacedDigit()
-                        }
-                        .appType(.caption)
-                        .foregroundStyle(Tok.text2)
-                    }
-                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.leading, 12)
-            }
+        HStack(spacing: 12) {
+            TargetIcon(bundleID: transcript.bundleID)
 
-            BarIconButton(glyph: copied ? .checkmark : .copy,
-                          label: "Copy cleaned transcript") {
-                model.copy(transcript)
-            }
-        }
-        .padding(.trailing, 4)
-        .padding(.vertical, 8)
-        .frame(minHeight: 48)
-        .overlay(alignment: .leading) {
-            // A pixel caret, not a stroke.
-            if selected {
-                Rectangle()
-                    .fill(Ramp.blue[4])
-                    .frame(width: 2, height: 16)
-            }
-        }
-        .animation(.snappy(duration: 0.20), value: copied)
-    }
-
-    @ViewBuilder private var preview: some View {
-        if expanded {
-            Text(transcript.text)
-                .appType(.label)
-                .foregroundStyle(Tok.text)
-                .lineLimit(8)
-                .fixedSize(horizontal: false, vertical: true)
-        } else {
             Text(transcript.text.replacingOccurrences(of: "\n", with: " "))
                 .appType(.label)
                 .foregroundStyle(Tok.text)
@@ -193,6 +127,65 @@ struct HistoryRow: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .clipped()
                 .modifier(EdgeFade(length: 32))
+
+            ZStack(alignment: .trailing) {
+                Text(Humanize.when(transcript.date))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .appType(.caption)
+                    .foregroundStyle(Tok.text2)
+                    .opacity(hover || selected || copied ? 0 : 1)
+                Icon(.copy, size: 14, tint: Tok.text2)
+                    .opacity((hover || selected) && !copied ? 1 : 0)
+                PixelBitmap(rows: PixelBitmap.check, develop: 0.14)
+                    .opacity(copied ? 1 : 0)
+            }
+            .frame(width: 64, alignment: .trailing)
         }
+        .padding(.horizontal, 12)
+        .frame(height: 40)
+        .background(fill(copied: copied),
+                    in: .rect(cornerRadius: Radius.nested, style: .continuous))
+        .overlay(alignment: .leading) {
+            // A pixel caret, not a stroke.
+            if selected {
+                Rectangle()
+                    .fill(Ramp.blue[4])
+                    .frame(width: 2, height: 16)
+            }
+        }
+        .contentShape(.rect)
+        .accessibilityHidden(true)
+        .overlay {
+            SurfaceButton("Copy: \(transcript.text)") { model.copy(transcript) }
+        }
+        .onHover { hover = $0 }
+        .animation(hover ? Motion.hoverIn : Motion.hoverOut, value: hover)
+        .animation(.snappy(duration: 0.20), value: copied)
+    }
+
+    private func fill(copied: Bool) -> Color {
+        if copied { return Tok.accentSoft }
+        return selected || hover ? Tok.control : .clear
+    }
+}
+
+/// Rows rise 6 pt and fade in, 35 ms apart. Reduce Motion shows them whole.
+struct RowReveal: ViewModifier {
+    let index: Int
+
+    @State private var shown = false
+    @Environment(\.accessibilityReduceMotion) private var reduce
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown || reduce ? 1 : 0)
+            .offset(y: shown || reduce ? 0 : 6)
+            .onAppear {
+                guard !reduce else { return }
+                withAnimation(.smooth(duration: 0.30).delay(Double(index) * 0.035)) {
+                    shown = true
+                }
+            }
     }
 }

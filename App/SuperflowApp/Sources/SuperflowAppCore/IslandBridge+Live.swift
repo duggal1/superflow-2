@@ -1,6 +1,7 @@
 import Foundation
 import SuperflowFeatureIsland
 import SuperflowKernel
+import SuperflowMeetingEngine
 
 /// The Island's slower half: stored history, today's total, the meeting pulse and
 /// the two notifications that are worth interrupting for. Everything here reads
@@ -34,22 +35,35 @@ extension IslandBridge {
 
     // MARK: meeting pulse
 
-    /// About 1 Hz while a meeting records. Words come from the live partial; the
-    /// talk share is the local microphone, because the diarizer port exposes a
-    /// speaker at a timestamp, not a live per-speaker tally. The bar still fills
-    /// honestly: one speaker for the whole meeting is a real answer.
+    func startMeetingEvents(_ events: AsyncStream<MeetingEvent>, engine: MeetingEngine) {
+        meetingEngine = engine
+        meetingTask = Task { [weak self] in
+            for await event in events {
+                guard let self else { return }
+                switch event {
+                case .level(_, let level): self.box.level(Self.meter(level))
+                case .partial(_, let text):
+                    self.box.partial(text)
+                    self.latestText = text
+                case .state(.finalizing): self.holdEnded()
+                case .finished, .state(.cancelled), .state(.failed): self.cancelled()
+                default: break
+                }
+            }
+        }
+    }
+
     func startPulses() {
         pulseTask?.cancel()
         meetingStarted = Date()
+        meetingMeter = MeetingPulseTracker()
         pulseTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self, let started = self.meetingStarted else { return }
-                let seconds = Date().timeIntervalSince(started)
-                self.box.pulse(MeetingPulse(
-                    words: Self.words(self.latestText),
-                    speakers: [SpeakerShare(id: "you", name: "You",
-                                            seconds: seconds, isYou: true)],
-                    current: "You"))
+                if let document = await self.meetingEngine?.currentDocument {
+                    let seconds = max(1, Date().timeIntervalSince(started))
+                    self.box.pulse(self.meetingMeter.update(document, seconds: seconds))
+                }
                 try? await Task.sleep(for: .seconds(1))
             }
         }

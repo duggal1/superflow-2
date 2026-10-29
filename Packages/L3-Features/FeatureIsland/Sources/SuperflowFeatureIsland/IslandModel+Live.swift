@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 /// Everything the Island mirrors from outside itself: the two settings, the live
@@ -27,6 +28,7 @@ public extension IslandModel {
         case .meetingPanel:
             go(.meeting)
         case .idle, .hover:
+            today = feed.wordsToday()
             history = feed.history(limit: 5)
             go(prefs.alwaysOn ? .history : .recent(feed.lastTranscript()))
         case .recent, .history:
@@ -35,6 +37,31 @@ public extension IslandModel {
             break
         }
     }
+
+    func mark() {
+        guard phase == .meeting || phase == .meetingPanel, let start = meetingStart else { return }
+        markedMoments.append(max(0, Date().timeIntervalSince(start)))
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+    }
+
+    func endMeeting() {
+        guard phase == .meeting || phase == .meetingPanel else { return }
+        send(.holdEnded)
+        finishMeeting()
+    }
+
+    func discardMeeting() {
+        guard phase == .meeting || phase == .meetingPanel else { return }
+        confirmingDiscard = true
+    }
+
+    func confirmDiscard() {
+        guard confirmingDiscard else { return }
+        confirmingDiscard = false
+        cancelMeeting()
+    }
+
+    func keepMeeting() { confirmingDiscard = false }
 
     /// The history card is a preview. The full list lives in the History window.
     func openHistory() {

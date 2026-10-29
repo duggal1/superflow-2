@@ -29,6 +29,22 @@ final class AppTypeTests: XCTestCase {
         XCTAssertEqual(AppType.metric.weight, 350)
     }
 
+    func testIslandUsesSmallerTighterTypeAtWeight350() throws {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let file = root.appendingPathComponent("App/Resources/Fonts/AlbertSans-Variable.ttf")
+        _ = CTFontManagerRegisterFontsForURL(file as CFURL, .process, nil)
+        let tag = "wght".utf8.reduce(0) { ($0 << 8) | Int($1) }
+        for role in AppType.allCases {
+            XCTAssertLessThan(role.size(in: .island), role.size)
+            XCTAssertLessThanOrEqual(role.tracking(in: .island), role.tracking)
+            let font = Typography.nsUIFont(role.size(in: .island), weight: role.weight(in: .island))
+            XCTAssertTrue(font.fontName.hasPrefix("AlbertSans"))
+            let variation = try XCTUnwrap(CTFontCopyVariation(font as CTFont) as? [NSNumber: NSNumber])
+            XCTAssertEqual(variation[NSNumber(value: tag)]?.doubleValue ?? -1, 350, accuracy: 0.1)
+        }
+    }
+
     func testReadingAndLabelDigitsRender() throws {
         XCTAssertGreaterThan(try digitWidth("1234567890", role: .body), 0)
         XCTAssertGreaterThan(try digitWidth("1234567890", role: .label), 0)

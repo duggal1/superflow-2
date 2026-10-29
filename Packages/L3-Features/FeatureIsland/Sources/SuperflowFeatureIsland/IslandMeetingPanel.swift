@@ -3,6 +3,17 @@ import SuperflowIcons
 import SuperflowUIComponents
 import SwiftUI
 
+/// One tone per speaker, in a fixed order. You are always the bright blue;
+/// everyone else steps through the ramp so no two neighbours match.
+func speakerTone(_ share: SpeakerShare, index: Int) -> Color {
+    if share.isYou { return Ramp.blue[4] }
+    switch index % 3 {
+    case 0: return Tok.text2
+    case 1: return Ramp.blue[2]
+    default: return Ramp.blue[3]
+    }
+}
+
 /// The live meeting clock: "4:12", or "1:04:12" once a meeting passes the hour.
 struct ClockMetric: View {
     let since: Date
@@ -10,89 +21,87 @@ struct ClockMetric: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { timeline in
             let total = max(0, Int(timeline.date.timeIntervalSince(since)))
-            Text(Self.clock(total))
+            Text(total >= 3600
+                 ? String(format: "%d:%02d:%02d", total / 3600, (total / 60) % 60, total % 60)
+                 : String(format: "%d:%02d", total / 60, total % 60))
                 .appType(.metric)
                 .monospacedDigit()
                 .foregroundStyle(Tok.text)
                 .contentTransition(.numericText())
         }
-        .frame(minWidth: 96, alignment: .leading)
+        .frame(minWidth: 104, alignment: .leading)
         .accessibilityLabel("Meeting running")
-    }
-
-    static func clock(_ total: Int) -> String {
-        total >= 3600
-            ? String(format: "%d:%02d:%02d", total / 3600, (total / 60) % 60, total % 60)
-            : String(format: "%d:%02d", total / 60, total % 60)
     }
 }
 
-/// Talk time as 88 pixel cells, one per ~1.1% of the meeting. Largest-remainder
-/// allocation, so the bar always fills exactly and the last cell never lies.
-struct PixelShareBar: View {
-    let shares: [SpeakerShare]
-    let cells = 88
-
-    /// One tone per speaker, in a fixed order. You are always the bright blue;
-    /// everyone else steps through the ramp so no two neighbours match.
-    static func tone(_ share: SpeakerShare, index: Int) -> Color {
-        if share.isYou { return Ramp.blue[4] }
-        return [Tok.text2, Ramp.blue[2], Ramp.blue[3], Tok.controlPressed][index % 4]
-    }
-
-    func allocation() -> [Int] {
-        let total = shares.reduce(0) { $0 + $1.seconds }
-        guard total > 0 else { return shares.map { _ in 0 } }
-        let raw = shares.map { $0.seconds / total * Double(cells) }
-        var out = raw.map { Int($0) }
-        let rest = cells - out.reduce(0, +)
-        let order = raw.indices.sorted { raw[$0] - Double(out[$0]) > raw[$1] - Double(out[$1]) }
-        for index in order.prefix(max(0, rest)) { out[index] += 1 }
-        return out
-    }
+/// 110 ticks of 3 x 8 on a 4 pt pitch: each tick is a stretch of the meeting,
+/// coloured by who held the floor. A white head marks now, and each marked
+/// moment is one white dot above the strip.
+struct MeetingTimeline: View {
+    let pulse: MeetingPulse
+    let marks: [TimeInterval]
 
     var body: some View {
-        let alloc = allocation()
-        let shares = shares
-        let cells = cells
+        let slices = pulse.slices
+        let speakers = pulse.speakers
+        let slice = pulse.slice
+        let marks = marks
+
         Canvas { context, _ in
-            guard alloc.reduce(0, +) > 0 else {
-                // Nothing said yet: dust.
-                for column in 0..<cells {
-                    context.fill(Path(CGRect(x: CGFloat(column) * 5 + 1.5, y: 1.5,
-                                             width: 1, height: 1)),
-                                 with: .color(Tok.controlPressed),
-                                 style: FillStyle(antialiased: false))
+            let columns = 110
+            let count = slices.count
+
+            func fill(_ rect: CGRect, _ tone: Color) {
+                context.fill(Path(rect), with: .color(tone),
+                             style: FillStyle(antialiased: false))
+            }
+
+            guard count > 0 else {
+                for column in 0..<columns {
+                    fill(CGRect(x: CGFloat(column) * 4 + 1, y: 9, width: 1, height: 1),
+                         Tok.controlPressed)
                 }
                 return
             }
-            var column = 0
-            for (index, count) in alloc.enumerated() {
-                for _ in 0..<count {
-                    context.fill(Path(CGRect(x: CGFloat(column) * 5, y: 0,
-                                             width: 4, height: 4)),
-                                 with: .color(Self.tone(shares[index], index: index)),
-                                 style: FillStyle(antialiased: false))
-                    column += 1
+
+            let group = max(1, Int(ceil(Double(count) / Double(columns))))
+            let used = Int(ceil(Double(count) / Double(group)))
+            for column in 0..<columns {
+                let x = CGFloat(column) * 4
+                guard column < used else {
+                    fill(CGRect(x: x + 1, y: 9, width: 1, height: 1), Tok.controlPressed)
+                    continue
                 }
+                var counts: [Int8: Int] = [:]
+                for value in slices[(column * group)..<min(count, (column + 1) * group)] {
+                    counts[value, default: 0] += 1
+                }
+                let top = counts.max { $0.value < $1.value }?.key ?? -1
+                guard top >= 0, Int(top) < speakers.count else {
+                    fill(CGRect(x: x + 1, y: 9, width: 1, height: 1), Ramp.blue[1])
+                    continue
+                }
+                let tone = column == used - 1
+                    ? Tok.text
+                    : speakerTone(speakers[Int(top)], index: Int(top))
+                fill(CGRect(x: x, y: 6, width: 3, height: 8), tone)
+            }
+
+            guard slice > 0 else { return }
+            for mark in marks {
+                let column = min(used - 1, max(0, Int(mark / (slice * Double(group)))))
+                fill(CGRect(x: CGFloat(column) * 4, y: 0, width: 3, height: 3), Tok.text)
             }
         }
-        .frame(width: CGFloat(cells) * 5 - 1, height: 4)
-        .animation(.snappy(duration: 0.20), value: alloc)
-        .accessibilityLabel("Talk time")
-        .accessibilityValue(accessibilityValue(shares))
-    }
-
-    private func accessibilityValue(_ shares: [SpeakerShare]) -> String {
-        let total = max(1, shares.reduce(0) { $0 + $1.seconds })
-        return shares.map {
-            "\($0.name) \(Int(($0.seconds / total * 100).rounded())) percent"
-        }.joined(separator: ", ")
+        .frame(width: 439, height: 14)
+        .animation(.snappy(duration: 0.20), value: slices.count)
+        .accessibilityHidden(true)
     }
 }
 
-/// The meeting wings clicked open: timer, words, who is talking, and the share
-/// bar. It is a card, so it gets the card's band and padding, not a new anatomy.
+/// The meeting wings clicked open: clock and pace, the whole meeting as a
+/// timeline, the talk share as a legend, and the three actions. The share bar is
+/// gone because the legend carries the same percentages.
 struct MeetingPanel: View {
     let model: IslandModel
 
@@ -102,6 +111,7 @@ struct MeetingPanel: View {
         let geometry = model.geometry
         let pulse = model.pulse
         let total = max(1, pulse.speakers.reduce(0) { $0 + $1.seconds })
+        let marks = (pulse.marks + model.markedMoments).sorted()
         let side = (model.box.body.width - geometry.notch.width) / 2
 
         VStack(spacing: 0) {
@@ -133,16 +143,8 @@ struct MeetingPanel: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .lastTextBaseline, spacing: 24) {
                     ClockMetric(since: model.meetingStart ?? .now)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(pulse.words.formatted())
-                            .appType(.title)
-                            .monospacedDigit()
-                            .foregroundStyle(Tok.text)
-                            .contentTransition(.numericText())
-                        Text("words")
-                            .appType(.caption)
-                            .foregroundStyle(Tok.text2)
-                    }
+                    stat(pulse.words.formatted(), "words")
+                    stat(pulse.wpm == 0 ? "—" : "\(pulse.wpm)", "per minute")
                     Spacer(minLength: 0)
                     if let current = pulse.current {
                         HStack(spacing: 6) {
@@ -157,14 +159,14 @@ struct MeetingPanel: View {
                     }
                 }
 
-                PixelShareBar(shares: pulse.speakers)
+                MeetingTimeline(pulse: pulse, marks: marks)
 
                 HStack(spacing: 16) {
                     ForEach(Array(pulse.speakers.prefix(4).enumerated()),
                             id: \.element.id) { index, share in
                         HStack(spacing: 6) {
                             Rectangle()
-                                .fill(PixelShareBar.tone(share, index: index))
+                                .fill(speakerTone(share, index: index))
                                 .frame(width: 4, height: 4)
                             Text(share.name)
                                 .appType(.caption)
@@ -176,11 +178,32 @@ struct MeetingPanel: View {
                                 .foregroundStyle(Tok.text2)
                         }
                     }
+                    Spacer(minLength: 0)
                 }
+                .frame(height: 16)
 
                 if model.prefs.liveText {
                     LiveLine(live: model.live)
                         .frame(height: 20)
+                }
+
+                HStack(spacing: 8) {
+                    AppButton("Mark", glyph: nil, kind: .secondary, height: IslandLayout.actionHeight) {
+                        model.mark()
+                    }
+                    if !marks.isEmpty {
+                        Text("\(marks.count) marked")
+                            .appType(.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(Tok.text2)
+                    }
+                    Spacer(minLength: 0)
+                    AppButton("Discard", glyph: nil, kind: .quiet, height: 24) {
+                        model.discardMeeting()
+                    }
+                    AppButton("End meeting", glyph: nil, kind: .sapphire, height: IslandLayout.actionHeight) {
+                        model.endMeeting()
+                    }
                 }
             }
             .padding(.top, IslandLayout.cardGap)
@@ -188,6 +211,19 @@ struct MeetingPanel: View {
             .padding(.bottom, pad)
 
             Spacer(minLength: 0)
+        }
+    }
+
+    private func stat(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(value)
+                .appType(.title)
+                .monospacedDigit()
+                .foregroundStyle(Tok.text)
+                .contentTransition(.numericText())
+            Text(label)
+                .appType(.caption)
+                .foregroundStyle(Tok.text2)
         }
     }
 }

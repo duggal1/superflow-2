@@ -30,9 +30,7 @@ public extension AnyTransition {
             insertion: .modifier(active: BlurFade(active: true, reduceMotion: reduceMotion),
                                  identity: BlurFade(active: false, reduceMotion: reduceMotion))
                 .animation(animation),
-            removal: .modifier(active: BlurFade(active: true, reduceMotion: reduceMotion),
-                               identity: BlurFade(active: false, reduceMotion: reduceMotion))
-                .animation(removal)
+            removal: .opacity.animation(removal)
         )
     }
 }

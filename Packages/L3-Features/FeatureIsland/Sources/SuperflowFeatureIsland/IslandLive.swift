@@ -51,10 +51,19 @@ public struct SpeakerShare: Equatable, Sendable, Identifiable {
 /// transcript; the speaker split comes from the diarizer timeline.
 public struct MeetingPulse: Equatable, Sendable {
     public var words: Int
+    public var wpm: Int
+    public var slices: [Int8]
+    public var slice: Double
+    public var marks: [TimeInterval]
     public var speakers: [SpeakerShare]
     public var current: String?
 
-    public init(words: Int, speakers: [SpeakerShare], current: String?) {
+    public init(words: Int, speakers: [SpeakerShare], current: String?, wpm: Int = 0,
+                slices: [Int8] = [], slice: Double = 2, marks: [TimeInterval] = []) {
+        self.wpm = wpm
+        self.slices = slices
+        self.slice = slice
+        self.marks = marks
         self.words = words
         self.speakers = speakers
         self.current = current

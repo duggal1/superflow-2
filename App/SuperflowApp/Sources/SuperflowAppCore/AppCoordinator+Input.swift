@@ -92,9 +92,6 @@ extension AppCoordinator {
     }
 
     func handleKeyEvent(_ event: KeyEvent) async {
-        // The dashboard's fn keycap follows the physical key, not the demo timer.
-        if case .fnDown = event.kind { menuBarController.setFnHeld(true); dashboardModel?.setFnHeld(true) }
-        if case .fnUp = event.kind { menuBarController.setFnHeld(false); dashboardModel?.setFnHeld(false) }
         await applyGestureActions(gesture.handle(event))
     }
 

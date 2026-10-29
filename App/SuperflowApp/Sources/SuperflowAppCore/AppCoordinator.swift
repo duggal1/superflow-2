@@ -66,14 +66,7 @@ public final class AppCoordinator: ObservableObject {
         return DashboardViewModel(repository: environment.transcripts, settings: settings)
     }()
 
-    public lazy var historyModel: HistoryViewModel? = {
-        guard let environment else { return nil }
-        return HistoryViewModel(
-            repository: environment.transcripts,
-            inserter: environment.textInserter,
-            onDeleteAudio: { session in await environment.audioArchive.delete(session: session) }
-        )
-    }()
+    public lazy var historyModel: HistoryViewModel? = makeHistoryModel()
 
     public lazy var dictionaryModel: DictionaryViewModel? = {
         guard let environment else { return nil }
@@ -168,6 +161,7 @@ public final class AppCoordinator: ObservableObject {
             let islandModel = IslandModel(feed: bridge.feed, geometry: Self.initialGeometry())
             islandBridge = bridge
             islandController = IslandController(model: islandModel)
+            configureIslandActions(islandModel, environment: environment)
         } else {
             islandBridge = nil
             islandController = nil
@@ -215,6 +209,7 @@ public final class AppCoordinator: ObservableObject {
         gesture.update(config: settings.gesture)
         await refreshPipeline()
         islandBridge?.start(events: sessionEventRelay.subscribe())
+        islandBridge?.startMeetingEvents(meetingEventRelay.subscribe(), engine: environment.meetingEngine)
         startEventRelays()
         menuBarController.observe()
         islandController?.start()

@@ -99,6 +99,9 @@ public enum IslandLayout {
     public static let cardGap: CGFloat = 12
     public static let cardRowGap: CGFloat = 8
     public static let cardRow: CGFloat = 28
+    public static let actionHeight: CGFloat = 24
+    public static let actionGap: CGFloat = 8
+    public static let transcriptRow: CGFloat = 36
     public static let cardMeta: CGFloat = 16
     public static let restBottom: CGFloat = 12
     /// Cards taller than band + 60 grow by whole rows at this step.
@@ -121,7 +124,8 @@ public enum IslandLayout {
 
     public static func box(_ phase: IslandPhase, _ geometry: NotchGeometry,
                            hint: Bool = false, live: Bool = false,
-                           prefs: IslandPrefs = IslandPrefs()) -> IslandBox {
+                           prefs: IslandPrefs = IslandPrefs(), historyRows: Int = 5,
+                           noSignal: Bool = false) -> IslandBox {
         let gap = geometry.hasNotch ? geometry.notch.width : nonNotchGap
         let wing = wingWidth(phase, gap: gap)
 
@@ -164,12 +168,13 @@ public enum IslandLayout {
                                         height: geometry.notch.height + 4),
                             top: 6, bottom: restBottom, opacity: 1)
         case .listening:
+            if noSignal && !live { return wings(112, below: hintShelf, top: 8, bottom: 18) }
             if live { return wide(112, below: liveShelf) }
             return wings(2 * wing)
         case .handsFree:
             if live { return wide(168, below: liveShelf) }
-            return wings(2 * wing, below: hint ? hintShelf : 0,
-                         top: hint ? 8 : 6, bottom: hint ? 18 : 14)
+            return wings(2 * wing, below: (hint || noSignal) ? hintShelf : 0,
+                         top: (hint || noSignal) ? 8 : 6, bottom: (hint || noSignal) ? 18 : 14)
         case .meeting:
             if live { return wide(232, below: liveShelf) }
             return wings(2 * wing, below: hint ? hintShelf : 0,
@@ -177,12 +182,14 @@ public enum IslandLayout {
         case .processing, .landed:
             return wings(2 * wingWidth(.processing, gap: gap))
         case .meetingPanel:
-            return card(168)
+            return card(live ? 208 : 176)
         case .failed:
-            return card(148)
+            return card(132)
         case .history:
-            return card(296)
-        case .recent, .undo:
+            return card(CGFloat(8 + max(2, min(5, historyRows)) * 40 + 40))
+        case .recent:
+            return card(88)
+        case .undo:
             return card()
         case .notice:
             return card(76)

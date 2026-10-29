@@ -49,10 +49,27 @@ public final class IslandModel {
 
     public var geometry: NotchGeometry
     public var box: IslandBox {
-        IslandLayout.box(phase, geometry, hint: hint, live: prefs.liveText, prefs: prefs)
+        if phase == .processing, meetingStart != nil {
+            return IslandLayout.box(.meeting, geometry)
+        }
+        if confirmingDiscard {
+            return IslandBox(body: .init(width: IslandLayout.cardWidth, height: geometry.band + 60),
+                             top: 12, bottom: 24, opacity: 1)
+        }
+        return IslandLayout.box(phase, geometry, hint: hint, live: prefs.liveText,
+                                prefs: prefs, historyRows: history.count, noSignal: noSignal)
     }
     public internal(set) var target: IslandTarget?
-    public let waveform = WaveformModel()
+    let meter = IslandMeterModel()
+    public internal(set) var frozenTrail = [Float](repeating: 0, count: 26)
+    public internal(set) var noSignal = false
+    public internal(set) var confirmingDiscard = false
+    public internal(set) var markedMoments: [TimeInterval] = []
+    @ObservationIgnored public var hitRect = CGRect.zero
+    @ObservationIgnored public var finishMeeting: () -> Void = {}
+    @ObservationIgnored public var cancelMeeting: () -> Void = {}
+    @ObservationIgnored private var silenceWatch: Task<Void, Never>?
+
 
     /// Escape only earns an undo card after this many seconds of recording.
     public static let undoMinimumSeconds: TimeInterval = 30
@@ -64,7 +81,6 @@ public final class IslandModel {
     @ObservationIgnored public var feed: any IslandFeed
     @ObservationIgnored public var placement: (IslandPlacement) -> Void = { _ in }
     @ObservationIgnored public var phaseDidChange: (IslandPhase) -> Void = { _ in }
-    @ObservationIgnored private var latestLevel: Float = 0
     @ObservationIgnored var timer: Task<Void, Never>?
     @ObservationIgnored var hoverTask: Task<Void, Never>?
     @ObservationIgnored private var ticker: Task<Void, Never>?
@@ -78,6 +94,7 @@ public final class IslandModel {
     public init(feed: any IslandFeed, geometry: NotchGeometry) {
         self.feed = feed
         self.geometry = geometry
+        hitRect = IslandLayout.hitRect(.idle, geometry)
         consumers = [
             Task { [weak self] in
                 guard let events = self?.feed.events else { return }
@@ -85,7 +102,11 @@ public final class IslandModel {
             },
             Task { [weak self] in
                 guard let levels = self?.feed.levels else { return }
-                for await level in levels { self?.latestLevel = level }
+                for await level in levels {
+                    guard let self else { return }
+                    self.meter.ingest(level)
+                    if self.noSignal, level > 0.06 { self.noSignal = false }
+                }
             },
             // Streaming always runs. The model only keeps the text when the
             // setting is on, so the engine does the same work either way.
@@ -111,6 +132,7 @@ public final class IslandModel {
         undoTask?.cancel()
         noticeTask?.cancel()
         hintTask?.cancel()
+        silenceWatch?.cancel()
     }
 
     // MARK: transitions
@@ -118,6 +140,7 @@ public final class IslandModel {
     func go(_ next: IslandPhase) {
         guard next != phase else { return }
         let prev = phase
+        confirmingDiscard = false
         timer?.cancel()
         copiedID = nil
         if case .undo = next {
@@ -145,22 +168,16 @@ public final class IslandModel {
         // The meter runs from the first frame of the session until cleanup ends.
         switch next {
         case .listening, .handsFree, .meeting, .meetingPanel:
-            if !prev.isBusy { waveform.reset() }
-            waveform.setLive(true)
             startTicker()
         case .processing:
-            waveform.setLive(false)
             startTicker()
         case .idle, .hover, .landed, .undo, .failed, .recent, .history, .notice:
-            waveform.setLive(false)
             stopTicker()
             elapsed = 0
         }
 
-        let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        withAnimation(IslandLayout.animation(from: prev, to: next, reduceMotion: reduce)) {
-            phase = next
-        }
+        syncMeter(from: prev, to: next)
+        phase = next
 
         sideEffects(next)
         updateHint(next, from: prev)
@@ -272,19 +289,42 @@ public final class IslandModel {
         }
     }
 
-    // MARK: waveform clock
+    private func syncMeter(from previous: IslandPhase, to next: IslandPhase) {
+        let listening = next == .listening || next == .handsFree
+        let active = listening || next == .meeting || next == .meetingPanel
+        let wasActive = previous == .listening || previous == .handsFree || previous == .meeting || previous == .meetingPanel
+        if active && !wasActive {
+            meter.reset()
+            noSignal = false
+            silenceWatch?.cancel()
+            if listening {
+                silenceWatch = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(2))
+                    guard !Task.isCancelled, let self,
+                          self.phase == .listening || self.phase == .handsFree,
+                          !self.meter.heard else { return }
+                    self.noSignal = true
+                }
+            }
+        }
+        if !active {
+            silenceWatch?.cancel()
+            noSignal = false
+        }
+    }
+
+    // MARK: elapsed clock
 
     private func startTicker() {
         guard ticker == nil else { return }
         ticker = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
-                self.waveform.tick(level: self.latestLevel)
                 if let started = self.recordedAt {
                     let seconds = Int(Date().timeIntervalSince(started))
                     if seconds != self.elapsed { self.elapsed = seconds }
                 }
-                try? await Task.sleep(for: .milliseconds(33))
+                try? await Task.sleep(for: .seconds(1))
             }
         }
     }

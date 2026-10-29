@@ -5,10 +5,19 @@ import Foundation
 /// `IslandModel` rather than inside it so the state machine stays readable.
 extension IslandModel {
     public func send(_ event: IslandEvent) {
+        if event == .dismissed, confirmingDiscard {
+            keepMeeting()
+            return
+        }
+        switch event {
+        case .escapeCancelled, .cancelled:
+            frozenTrail = [meter.shown] + meter.trail
+        default: break
+        }
         // A new capture starts with no carried-over text, so the live shelf can
         // never show the tail of the previous sentence.
         if case .holdBegan = event { live = .empty }
-        if case .meetingBegan = event { live = .empty; pulse = .empty; meetingStart = .now }
+        if case .meetingBegan = event { live = .empty; pulse = .empty; markedMoments = []; meetingStart = .now }
         switch event {
         case .holdBegan(let target):
             begin(target)
