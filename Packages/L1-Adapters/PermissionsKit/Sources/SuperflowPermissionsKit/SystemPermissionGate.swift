@@ -2,12 +2,13 @@ import AppKit
 import ApplicationServices
 import AVFoundation
 import Foundation
+import IOKit.hid
 import SuperflowKernel
 import SuperflowPorts
 
 /// Real permission state, read from the frameworks that enforce it. Every check is an actual
-/// probe (an event tap or an authorization status), never a stored flag, so revoked permissions
-/// surface on the next app activation.
+/// probe (a TCC-backed access check or an authorization status), never a stored flag, so revoked
+/// permissions surface on the next app activation.
 public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
     private static let askedKey = "superflow.permissions.asked"
 
@@ -46,12 +47,16 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
             if AXIsProcessTrusted() { return .granted }
             return PermissionDecision.resolve(probe: .notGranted, asked: hasAsked(permission))
         case .inputMonitoring:
-            // `CGPreflightListenEventAccess` can report false while the app is missing from the
-            // Input Monitoring pane entirely. Creating a listen-only tap is what actually asks
-            // TCC to register the app, so probe by exercising it.
-            if CGPreflightListenEventAccess() { return .granted }
-            if Self.listenTapInstalls() { return .granted }
-            return PermissionDecision.resolve(probe: .notGranted, asked: hasAsked(permission))
+            // The pane and the event tap are driven by the same HID access record, so ask the
+            // HID layer directly. Never treat a successfully created tap as proof of a grant:
+            // `CGEvent.tapCreate` can hand back a port for a process TCC has never registered,
+            // which made the app believe it was approved, skip the request, and stay absent
+            // from the Input Monitoring pane.
+            return InputMonitoringProbe.resolve(
+                preflight: CGPreflightListenEventAccess(),
+                hidGranted: IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted,
+                asked: hasAsked(permission)
+            )
         case .systemAudio:
             if CGPreflightScreenCaptureAccess() { return .granted }
             return PermissionDecision.resolve(probe: .notGranted, asked: hasAsked(permission))
@@ -66,13 +71,12 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
             let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
             _ = AXIsProcessTrustedWithOptions(options)
         case .inputMonitoring:
-            // Order matters. `CGRequestListenEventAccess()` only shows a prompt the first time
-            // TCC sees this code identity; when a stale record already exists it returns false
-            // and never adds the app to the Input Monitoring list. Creating a real listen-only
-            // tap after the request is what makes TCC register the bundle, which is the only way
-            // the row can appear in that pane and be toggled by hand.
+            // Both calls are needed. `CGRequestListenEventAccess` raises the prompt, and
+            // `IOHIDRequestAccess` is the HID-level request that the Input Monitoring pane
+            // reads. Either one alone can no-op for an existing record, leaving the bundle
+            // missing from the list; together they guarantee TCC writes the row.
             _ = CGRequestListenEventAccess()
-            _ = Self.listenTapInstalls()
+            _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
         case .systemAudio:
             _ = CGRequestScreenCaptureAccess()
         }
@@ -123,30 +127,6 @@ public final class SystemPermissionGate: PermissionGate, @unchecked Sendable {
                 for continuation in continuations { continuation.yield((permission, current)) }
             }
         }
-    }
-
-    // MARK: - TCC probing
-
-    /// Creates and immediately invalidates a listen-only event tap. A non-nil tap means TCC
-    /// considers this code identity permitted for Input Monitoring; nil means it is not (and the
-    /// attempt itself is what asks TCC to record the app).
-    static func listenTapInstalls() -> Bool {
-        let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
-        let callback: CGEventTapCallBack = { _, _, event, _ in
-            Unmanaged.passUnretained(event)
-        }
-        guard let tap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
-            options: .listenOnly,
-            eventsOfInterest: mask,
-            callback: callback,
-            userInfo: nil
-        ) else {
-            return false
-        }
-        CFMachPortInvalidate(tap)
-        return true
     }
 
     // MARK: - Asked tracking

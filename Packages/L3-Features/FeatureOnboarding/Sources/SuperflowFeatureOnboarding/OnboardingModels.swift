@@ -1,11 +1,14 @@
 import Foundation
 
-/// Four steps, one backdrop. Meetings are requested lazily on the first meeting,
-/// the summary screen is gone, and the display name lives in Settings.
+/// Five steps, one backdrop. Meetings are requested lazily on the first meeting,
+/// the summary screen is gone, and the display name lives in Settings. The last
+/// choice before the sandbox is the dictation key, because the sandbox and the app
+/// both have to use the same key.
 public enum OnboardingStep: String, CaseIterable, Sendable, Identifiable {
     case welcome
     case permissions
     case models
+    case key
     case done
 
     public var id: String { rawValue }
@@ -23,6 +26,7 @@ public enum OnboardingStep: String, CaseIterable, Sendable, Identifiable {
         case .welcome: "Speak. It types."
         case .permissions: "Four permissions."
         case .models: "Download the models."
+        case .key: "Pick your key."
         case .done: "You're set."
         }
     }
@@ -32,6 +36,8 @@ public enum OnboardingStep: String, CaseIterable, Sendable, Identifiable {
         switch self {
         case .welcome, .permissions, .models:
             nil
+        case .key:
+            "Hold to talk. Double-tap for hands-free."
         case .done:
             "Hold fn anywhere to dictate."
         }
@@ -45,7 +51,8 @@ public enum OnboardingStep: String, CaseIterable, Sendable, Identifiable {
         switch self {
         case .welcome: .permissions
         case .permissions: .models
-        case .models: .done
+        case .models: .key
+        case .key: .done
         case .done: nil
         }
     }
@@ -55,7 +62,8 @@ public enum OnboardingStep: String, CaseIterable, Sendable, Identifiable {
         case .welcome: nil
         case .permissions: .welcome
         case .models: .permissions
-        case .done: .models
+        case .key: .models
+        case .done: .key
         }
     }
 }
@@ -71,9 +79,12 @@ public enum PracticeState: Equatable, Sendable {
 /// onboarding sandbox field. Tests supply a scripted transcript.
 public protocol PracticeDictation: Sendable {
     func transcribe() async throws -> String
+    /// Ends the take early, flushing whatever was said. `transcribe()` then returns.
+    func finish() async
     func cancel() async
 }
 
 public extension PracticeDictation {
+    func finish() async {}
     func cancel() async {}
 }

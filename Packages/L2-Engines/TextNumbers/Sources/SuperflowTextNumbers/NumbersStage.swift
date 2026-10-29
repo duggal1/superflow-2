@@ -113,6 +113,33 @@ public struct NumbersStage: TextStage {
                 continue
             }
 
+            // Spoken ranges keep their endpoints as digits even under the
+            // spell-out setting: "update the constant MAX_RETRY_COUNT from
+            // three to five" is a value change, not a count of apples.
+            if token.core.lowercased() == "from", ti + 3 < tokens.count,
+               tokens[ti + 2].core.lowercased() == "to",
+               tokens[ti + 1].trail.isEmpty, tokens[ti + 2].trail.isEmpty,
+               !(ti + 1...ti + 3).contains(where: { protectedFlags[$0] || explicitFlags[$0] }),
+               let left = spokenDigit(tokens[ti + 1].core.lowercased()),
+               let right = spokenDigit(tokens[ti + 3].core.lowercased()) {
+                result += token.lead + "from \(left) to \(right)" + tokens[ti + 3].trail
+                cursor = tokens[ti + 3].range.upperBound
+                ti = ti + 4
+                continue
+            }
+
+            // A digit run the number parser cannot join ("four two nine") is
+            // an identifier when a code-context keyword sits nearby: status
+            // codes, ports, error codes. Counting speech ("one two three")
+            // has no such context and stays words.
+            if let run = digitRun(at: ti, tokens: tokens,
+                                  protectedFlags: protectedFlags, explicitFlags: explicitFlags) {
+                result += token.lead + run.text + tokens[run.last].trail
+                cursor = tokens[run.last].range.upperBound
+                ti = run.last + 1
+                continue
+            }
+
             guard let phrase = NumberParser.parse(atoms, from: ai) else {
                 result += token.full
                 cursor = token.range.upperBound
@@ -193,6 +220,56 @@ public struct NumbersStage: TextStage {
     private static func isAmount(_ word: String) -> Bool {
         NumberTables.scales[word] != nil || word == "hundred"
             || NumberTables.currencies[word] != nil || word == "percent"
+    }
+
+    // MARK: Spoken digit runs and small ranges
+
+    /// Words that independently render as 0-9. "oh" is 0 inside a run; "ten"
+    /// onward is not (it is a word, and the phrase parser owns it).
+    private static func spokenDigit(_ word: String) -> Int? {
+        if word == "oh" { return 0 }
+        guard let value = NumberTables.units[word] else { return nil }
+        return (0...9).contains(value) ? Int(value) : nil
+    }
+
+    /// Keywords whose neighbourhood makes an unparseable spoken digit run an
+    /// identifier: status codes, ports, error codes. Without one, counting
+    /// speech ("one two three") is left as words.
+    private static let codeContextWords: Set<String> = [
+        "status", "code", "error", "http", "exit", "port", "response", "version",
+    ]
+
+    private static func hasCodeContext(_ tokens: [Token], before index: Int) -> Bool {
+        let from = max(0, index - 6)
+        return (from..<index).contains { codeContextWords.contains(tokens[$0].core.lowercased()) }
+    }
+
+    /// Collects the longest run of spoken single-digit words starting at
+    /// `start` and renders it as one identifier ("four two nine" → "429").
+    /// Conversion requires a code-context keyword within six tokens back —
+    /// without one, a digit run is counting speech or an enumeration, the
+    /// phrase parser's per-word ownership applies, and the words stay words.
+    /// Interior punctuation breaks the run ("four, two nine" is a list, not
+    /// an identifier); trailing punctuation closes it and is preserved.
+    private static func digitRun(at start: Int, tokens: [Token],
+                                 protectedFlags: [Bool], explicitFlags: [Bool]) -> (text: String, last: Int)? {
+        guard start < tokens.count, hasCodeContext(tokens, before: start) else { return nil }
+        var digits = ""
+        var last = start
+        var index = start
+        let limit = min(tokens.count, start + 12)
+        while index < limit {
+            let token = tokens[index]
+            guard !protectedFlags[index], !explicitFlags[index],
+                  let digit = spokenDigit(token.core.lowercased()) else { break }
+            if index > start, !token.trail.isEmpty { break }
+            digits += String(digit)
+            last = index
+            index += 1
+            if !tokens[last].trail.isEmpty { break }
+        }
+        guard digits.count >= 2, digits.count <= 8, last >= start else { return nil }
+        return (digits, last)
     }
 
     private static func isOrdinalContext(_ tokens: [Token], at first: Int, lastToken: Int) -> Bool {

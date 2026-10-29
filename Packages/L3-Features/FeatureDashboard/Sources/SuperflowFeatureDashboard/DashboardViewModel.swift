@@ -34,6 +34,10 @@ public final class DashboardViewModel: ObservableObject {
     /// The physical fn key. The cleanup keycap goes down with it.
     @Published public private(set) var isFnHeld = false
 
+    public let recent: RecentDictationViewModel
+    @Published public var usageRange: UsageRange = .week
+    @Published public private(set) var usage: [AppUsage] = []
+
     private let repository: any TranscriptRepository
     private let calendar: Calendar
     private let now: () -> Date
@@ -42,6 +46,7 @@ public final class DashboardViewModel: ObservableObject {
     public init(repository: any TranscriptRepository, settings: AppSettings = .default,
                 calendar: Calendar = .current, now: @escaping () -> Date = { Date() }) {
         self.repository = repository
+        self.recent = RecentDictationViewModel(repository: repository)
         self.settings = settings
         self.calendar = calendar
         self.now = now
@@ -63,6 +68,8 @@ public final class DashboardViewModel: ObservableObject {
     public func load() async {
         isLoading = true
         error = nil
+        await recent.load(settings: settings)
+        await loadUsage()
         defer { isLoading = false }
         let today = calendar.startOfDay(for: now())
         guard let start = calendar.date(byAdding: .day, value: -364, to: today) else { return }
@@ -93,6 +100,16 @@ public final class DashboardViewModel: ObservableObject {
                                                           calendar: calendar)
         } catch {
             self.error = "Could not load your stats. \(error.localizedDescription)"
+        }
+    }
+
+    public func loadUsage() async {
+        guard !settings.noTranscriptStorage else { usage = []; return }
+        do {
+            usage = try await DashboardUsageLoader.load(repository: repository, range: usageRange, now: now(), calendar: calendar)
+        } catch {
+            usage = []
+            self.error = "Could not load app usage."
         }
     }
 

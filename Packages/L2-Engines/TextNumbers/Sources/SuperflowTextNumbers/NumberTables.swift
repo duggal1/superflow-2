@@ -23,12 +23,14 @@ enum NumberTables {
     ]
     static let scales: [String: Int64] = [
         "thousand": 1_000, "million": 1_000_000, "billion": 1_000_000_000,
+        "trillion": 1_000_000_000_000, "quadrillion": 1_000_000_000_000_000,
         "lakh": 100_000, "crore": 10_000_000,
     ]
     /// Only a phrase that ends on the scale word abbreviates, so
     /// "one thousand two hundred fifty" stays "$1,250".
     static let abbrevSuffix: [String: String] = [
-        "thousand": "k", "million": "M", "billion": "B", "lakh": "L", "crore": "Cr",
+        "thousand": "k", "million": "M", "billion": "B", "trillion": "T",
+        "quadrillion": "Qa", "lakh": "L", "crore": "Cr",
     ]
 
     /// Data-driven currency table. Add words here, not in the parser.

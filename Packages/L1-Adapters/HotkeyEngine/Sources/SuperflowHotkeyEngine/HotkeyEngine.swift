@@ -20,6 +20,9 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     /// When true the passive tap is installed as an active tap so the lone Fn press can be
     /// swallowed before macOS runs its Globe action. Requires Accessibility.
     private var suppressFn = false
+    /// The physical modifier that counts as the dictation key. Read on the tap
+    /// thread, so it lives under the same lock as the taps.
+    private var dictationKey: DictationKey = .fn
     private var lifecycle = HotkeyLifecycle()
     private var wakeObserver: NSObjectProtocol?
     private var healthTimer: DispatchSourceTimer?
@@ -86,6 +89,12 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         removeTaps()
         _ = installPassiveTap()
         if lock.withLock({ wantsActive }) { installActiveTap() }
+    }
+
+    /// The tap callback reads this on every event, so switching the key does not
+    /// need to rebuild the taps. Fn suppression only ever applies to Fn.
+    public func setDictationKey(_ key: DictationKey) async {
+        lock.withLock { dictationKey = key }
     }
 
     // MARK: taps
@@ -210,14 +219,15 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         switch type {
         case .flagsChanged:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            let key = lock.withLock { dictationKey }
             if let mapped = KeyEventMapper.flagsChanged(keyCode: keyCode, flags: event.flags,
-                                                         timestampNs: timestamp) {
+                                                         timestampNs: timestamp, dictationKey: key) {
                 continuation.yield(mapped)
                 // Drop only the Fn modifier change so macOS cannot run its Globe action (Show
                 // Emoji & Symbols) underneath us. Key events are untouched, so Fn plus a function
                 // key or an arrow still delivers the real key: the system is not hijacked, only
                 // the emoji binding is suppressed while Superflow runs.
-                if mapped.kind == .fnDown || mapped.kind == .fnUp {
+                if key == .fn, mapped.kind == .fnDown || mapped.kind == .fnUp {
                     if lock.withLock({ suppressFn }) { return nil }
                 }
             }

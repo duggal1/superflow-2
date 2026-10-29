@@ -28,6 +28,35 @@ final class KeyEventMapperTests: XCTestCase {
                                                  timestampNs: 1))
     }
 
+    /// Every offered key maps onto the same pair the gesture engine already knows,
+    /// and Fn falls silent once another key owns dictation.
+    func testDictationKeyModifiersMapToDictationEvents() {
+        let cases: [(DictationKey, Int64, CGEventFlags)] = [
+            (.rightOption, KeyCode.rightOption, .maskAlternate),
+            (.rightShift, KeyCode.rightShift, .maskShift),
+            (.rightControl, KeyCode.rightControl, .maskControl),
+            (.leftOption, KeyCode.leftOption, .maskAlternate),
+        ]
+        for (key, code, flag) in cases {
+            XCTAssertEqual(KeyEventMapper.flagsChanged(keyCode: code, flags: flag,
+                                                       timestampNs: 5, dictationKey: key),
+                           KeyEvent(kind: .fnDown, timestampNs: 5), "\(key)")
+            XCTAssertEqual(KeyEventMapper.flagsChanged(keyCode: code, flags: [],
+                                                       timestampNs: 6, dictationKey: key),
+                           KeyEvent(kind: .fnUp, timestampNs: 6), "\(key)")
+        }
+
+        XCTAssertNil(KeyEventMapper.flagsChanged(keyCode: KeyCode.fn, flags: [.maskSecondaryFn],
+                                                 timestampNs: 7, dictationKey: .rightOption))
+        XCTAssertNil(KeyEventMapper.flagsChanged(keyCode: KeyCode.rightOption, flags: [.maskAlternate],
+                                                 timestampNs: 8, dictationKey: .fn))
+        // Right Command stays the meeting key whatever the dictation key is.
+        XCTAssertEqual(KeyEventMapper.flagsChanged(keyCode: KeyCode.rightCommand,
+                                                   flags: [.maskCommand], timestampNs: 9,
+                                                   dictationKey: .rightOption),
+                       KeyEvent(kind: .rightCmdDown, timestampNs: 9))
+    }
+
     func testEnterEscapeAndOtherKeys() {
         XCTAssertEqual(KeyEventMapper.keyDown(keyCode: KeyCode.enter, timestampNs: 1),
                        KeyEvent(kind: .enter, timestampNs: 1))

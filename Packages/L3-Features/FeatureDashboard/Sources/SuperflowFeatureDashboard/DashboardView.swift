@@ -4,9 +4,11 @@ import SwiftUI
 
 public struct DashboardView: View {
     @ObservedObject private var model: DashboardViewModel
+    private let openHistory: () -> Void
 
-    public init(model: DashboardViewModel) {
+    public init(model: DashboardViewModel, openHistory: @escaping () -> Void = {}) {
         self.model = model
+        self.openHistory = openHistory
     }
 
     public var body: some View {
@@ -26,16 +28,15 @@ public struct DashboardView: View {
                     .revealOnce(0, seen: model.hasAppeared)
                 graph
                     .revealOnce(1, seen: model.hasAppeared)
-                latest
+                RecentTranscripts(model: model.recent, openHistory: openHistory)
                     .revealOnce(2, seen: model.hasAppeared)
-                if model.insights.hasData {
-                    lowerHalf
-                        .revealOnce(3, seen: model.hasAppeared)
-                }
+                lowerHalf
+                    .revealOnce(3, seen: model.hasAppeared)
             }
         }
         .task { await model.load() }
-        .onDisappear { model.markAppeared() }
+        .onChange(of: model.usageRange) { _, _ in Task { await model.loadUsage() } }
+        .onDisappear { model.recent.stopPlayback(); model.markAppeared() }
     }
 
     /// Four equal columns that fill the card. Label and number only: the note
@@ -62,26 +63,27 @@ public struct DashboardView: View {
         ActivityYear(days: model.activity, animatesIn: !model.hasAppeared)
     }
 
-    /// The newest dictation, with the archived clip and the cleanup line. This is
-    /// the component directly under the 12-month graph.
-    private var latest: some View {
-        LatestDictationCard(sample: model.insights.latest ?? .example,
-                            audio: model.latestAudioURL,
-                            isExample: model.insights.latest == nil,
-                            fnHeld: model.isFnHeld)
-    }
-
     /// Both cards take the taller one's height, which comes from their content: no
     /// fixed row height, and no dead third of either card.
-    private var lowerHalf: some View {
-        HStack(alignment: .top, spacing: Space.md) {
-            AppsCard(apps: model.insights.topApps)
-                .frame(maxWidth: .infinity)
-            HoursCard(hours: model.insights.hourly)
-                .frame(width: 320)
-        }
-        .fixedSize(horizontal: false, vertical: true)
+    private var usageCard: some View {
+        UsageCard(usage: model.usage.isEmpty ? AppUsage.examples : model.usage,
+                  range: $model.usageRange, isExample: model.usage.isEmpty,
+                  animatesIn: !model.hasAppeared)
     }
+
+    private var lowerHalf: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: Space.md) {
+                usageCard.frame(minWidth: 420)
+                HoursCard(hours: model.insights.hourly).frame(width: 320)
+            }
+            VStack(alignment: .leading, spacing: Space.md) {
+                usageCard
+                HoursCard(hours: model.insights.hourly)
+            }
+        }
+    }
+
 }
 
 private extension View {

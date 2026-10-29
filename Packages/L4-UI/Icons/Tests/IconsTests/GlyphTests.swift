@@ -5,7 +5,7 @@ import XCTest
 final class GlyphTests: XCTestCase {
     func testEveryGlyphMapsToAnAvailableSystemSymbol() {
         for glyph in Glyph.allCases {
-            XCTAssertNotNil(NSImage(systemSymbolName: glyph.rawValue, accessibilityDescription: nil),
+            XCTAssertNotNil(NSImage(systemSymbolName: glyph.symbolName, accessibilityDescription: nil),
                             "missing SF Symbol for \(glyph.rawValue)")
         }
     }
@@ -26,13 +26,13 @@ final class GlyphTests: XCTestCase {
     /// sound, a chip, and three tuning sliders. Pinned so a later edit cannot
     /// quietly drift back to the generic set.
     func testSidebarGlyphsMatchTheProductStructure() {
-        XCTAssertEqual(Glyph.dashboard.rawValue, "chart.xyaxis.line")
-        XCTAssertEqual(Glyph.history.rawValue, "text.line.first.and.arrowtriangle.forward")
-        XCTAssertEqual(Glyph.dictionary.rawValue, "character.book.closed")
+        XCTAssertEqual(Glyph.dashboard.rawValue, "circle.grid.3x3")
+        XCTAssertEqual(Glyph.history.rawValue, "clock")
+        XCTAssertEqual(Glyph.dictionary.rawValue, "textformat.abc")
         XCTAssertEqual(Glyph.shortcuts.rawValue, "command")
         XCTAssertEqual(Glyph.meetings.rawValue, "person.2.wave.2")
-        XCTAssertEqual(Glyph.models.rawValue, "memorychip")
-        XCTAssertEqual(Glyph.settings.rawValue, "slider.horizontal.3")
+        XCTAssertEqual(Glyph.models.rawValue, "square.stack.3d.up")
+        XCTAssertEqual(Glyph.settings.rawValue, "switch.2")
     }
 
     func testWeightsStayWithinDesignLaw() {

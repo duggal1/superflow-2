@@ -68,17 +68,18 @@ final class OnboardingViewModelTests: XCTestCase {
 
     func testStepOrderAndProgress() {
         XCTAssertEqual(OnboardingStep.allCases.map(\.rawValue),
-                       ["welcome", "permissions", "models", "done"])
+                       ["welcome", "permissions", "models", "key", "done"])
         XCTAssertEqual(OnboardingStep.welcome.index, 0)
         XCTAssertNil(OnboardingStep.welcome.previous)
         XCTAssertEqual(OnboardingStep.welcome.next, .permissions)
         XCTAssertEqual(OnboardingStep.permissions.next, .models)
-        XCTAssertEqual(OnboardingStep.models.next, .done)
-        XCTAssertEqual(OnboardingStep.done.previous, .models)
-        XCTAssertEqual(OnboardingStep.done.index, 3)
+        XCTAssertEqual(OnboardingStep.models.next, .key)
+        XCTAssertEqual(OnboardingStep.key.next, .done)
+        XCTAssertEqual(OnboardingStep.done.previous, .key)
+        XCTAssertEqual(OnboardingStep.done.index, 4)
         XCTAssertNil(OnboardingStep.done.next)
         XCTAssertEqual(OnboardingStep.done.progress, 1, accuracy: 0.0001)
-        XCTAssertEqual(OnboardingStep.models.progress, 2.0 / 3.0, accuracy: 0.0001)
+        XCTAssertEqual(OnboardingStep.models.progress, 2.0 / 4.0, accuracy: 0.0001)
     }
 
     func testPermissionsBlockAdvanceUntilGranted() async {

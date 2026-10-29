@@ -63,6 +63,42 @@ final class KernelSupportTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: encoded), settings)
     }
 
+    /// The dictation key is a stored setting, so an old row without the key must
+    /// keep Fn and the choice must survive a save/load cycle.
+    func testDictationKeyDefaultsToFnAndRoundTrips() throws {
+        let missing = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
+        XCTAssertEqual(missing.dictationKey, .fn)
+        XCTAssertEqual(DictationKey.allCases.map(\.label),
+                       ["fn", "right ⌥", "right ⇧", "right ⌃", "left ⌥"])
+
+        let stored = try JSONDecoder().decode(AppSettings.self,
+                                             from: Data(#"{"dictationKey":"rightOption"}"#.utf8))
+        XCTAssertEqual(stored.dictationKey, .rightOption)
+
+        let encoded = try JSONEncoder().encode(stored)
+        XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: encoded).dictationKey, .rightOption)
+    }
+
+    /// Both Island switches are stored settings. An old row without them keeps the
+    /// Island off, and each choice survives a save/load cycle.
+    func testIslandPrefsDefaultOffAndRoundTrip() throws {
+        let missing = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
+        XCTAssertFalse(missing.islandAlwaysOn)
+        XCTAssertFalse(missing.islandLiveText)
+
+        let stored = try JSONDecoder().decode(
+            AppSettings.self,
+            from: Data(#"{"islandAlwaysOn":true,"islandLiveText":true}"#.utf8)
+        )
+        XCTAssertTrue(stored.islandAlwaysOn)
+        XCTAssertTrue(stored.islandLiveText)
+
+        let encoded = try JSONEncoder().encode(stored)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: encoded)
+        XCTAssertTrue(decoded.islandAlwaysOn)
+        XCTAssertTrue(decoded.islandLiveText)
+    }
+
     /// The compute choice is a stored setting, so an old row without the key
     /// must keep the pre-existing GPU behaviour and the choice must survive
     /// a save/load cycle.

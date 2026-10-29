@@ -123,6 +123,63 @@ public struct CodeAwareSettings: Codable, Sendable, Equatable {
     }
 }
 
+/// The physical key that starts a dictation. Only modifiers are offered: a letter
+/// key cannot be held down without also typing, so it can never be a push-to-talk
+/// key. Right ⌘ is not on the list because it starts meetings.
+public enum DictationKey: String, Codable, Sendable, CaseIterable, Identifiable, Hashable {
+    case fn
+    case rightOption
+    case rightShift
+    case rightControl
+    case leftOption
+
+    public var id: String { rawValue }
+
+    /// The hardware key code of the modifier. Left and right share a flag, so the
+    /// onboarding monitor has to match the exact key, not just the flag.
+    public var keyCode: UInt16 {
+        switch self {
+        case .fn: 0x3F
+        case .rightShift: 0x3C
+        case .rightOption: 0x3D
+        case .rightControl: 0x3E
+        case .leftOption: 0x3A
+        }
+    }
+
+    /// The glyph printed on the keycap.
+    public var cap: String {
+        switch self {
+        case .fn: "fn"
+        case .rightOption, .leftOption: "⌥"
+        case .rightShift: "⇧"
+        case .rightControl: "⌃"
+        }
+    }
+
+    /// How it reads inside a sentence: "Hold right ⌥ anywhere to dictate."
+    public var label: String {
+        switch self {
+        case .fn: "fn"
+        case .rightOption: "right ⌥"
+        case .rightShift: "right ⇧"
+        case .rightControl: "right ⌃"
+        case .leftOption: "left ⌥"
+        }
+    }
+
+    /// The caption under the cap in the picker.
+    public var caption: String {
+        switch self {
+        case .fn: "Globe key"
+        case .rightOption: "Right option"
+        case .rightShift: "Right shift"
+        case .rightControl: "Right control"
+        case .leftOption: "Left option"
+        }
+    }
+}
+
 public struct GestureConfig: Codable, Sendable, Equatable {
     public var holdMs: Int = 200
     public var doubleTapMs: Int = 350
@@ -152,6 +209,10 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var spellOutSmallNumbers = true
     public var lineFormat = LineFormatSettings()
     public var gesture = GestureConfig()
+    /// The key that starts a dictation. Onboarding and Settings write it, and the
+    /// hotkey adapter maps it onto the same down/up pair the gesture engine already
+    /// understands, so hold, double-tap and hands-free behave identically.
+    public var dictationKey: DictationKey = .fn
     public var typingWPM = 40
     public var displayName = "You"
     public var launchAtLogin = false
@@ -174,6 +235,12 @@ public struct AppSettings: Codable, Sendable, Equatable {
     /// unsupported, or the machine is better spent elsewhere.
     public var cleanupCompute: ModelCompute = .gpu
     public var meetingsInStats = false
+    /// The Island is visible at rest, and a click opens its recent list. Off keeps
+    /// it out of the way until there is something to say.
+    public var islandAlwaysOn = false
+    /// Draw streaming words in the Island while dictating. The recognizer streams
+    /// either way; this only decides whether the shelf is shown.
+    public var islandLiveText = false
     public var onboardingComplete = false
     public init() {}
     public static let `default` = AppSettings()
@@ -199,6 +266,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         spellOutSmallNumbers = try c.decodeIfPresent(Bool.self, forKey: .spellOutSmallNumbers) ?? d.spellOutSmallNumbers
         lineFormat = try c.decodeIfPresent(LineFormatSettings.self, forKey: .lineFormat) ?? d.lineFormat
         gesture = try c.decodeIfPresent(GestureConfig.self, forKey: .gesture) ?? d.gesture
+        dictationKey = try c.decodeIfPresent(DictationKey.self, forKey: .dictationKey) ?? d.dictationKey
         typingWPM = try c.decodeIfPresent(Int.self, forKey: .typingWPM) ?? d.typingWPM
         displayName = try c.decodeIfPresent(String.self, forKey: .displayName) ?? d.displayName
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
@@ -218,6 +286,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
         cleanupWorkers = try c.decodeIfPresent(Int.self, forKey: .cleanupWorkers) ?? d.cleanupWorkers
         cleanupCompute = try c.decodeIfPresent(ModelCompute.self, forKey: .cleanupCompute) ?? d.cleanupCompute
         meetingsInStats = try c.decodeIfPresent(Bool.self, forKey: .meetingsInStats) ?? d.meetingsInStats
+        islandAlwaysOn = try c.decodeIfPresent(Bool.self, forKey: .islandAlwaysOn) ?? d.islandAlwaysOn
+        islandLiveText = try c.decodeIfPresent(Bool.self, forKey: .islandLiveText) ?? d.islandLiveText
         onboardingComplete = try c.decodeIfPresent(Bool.self, forKey: .onboardingComplete) ?? d.onboardingComplete
     }
 }

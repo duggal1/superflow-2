@@ -17,13 +17,16 @@ extension AppCoordinator {
         // Without the tap the fn key silently does nothing, so the status footer has
         // to say why instead of leaving the owner pressing a key that cannot arrive.
         guard await environment.permissionGate.status(.inputMonitoring) == .granted else {
-            menuBarController.publishError("Fn is off. Input Monitoring is not granted.")
+            menuBarController.publishError("Dictation is off. Input Monitoring is not granted.")
             return
         }
+        // The chosen key is applied before `start()` builds the taps, so the very
+        // first press is already the right one.
+        await environment.hotkeySource.setDictationKey(settings.dictationKey)
         // Fn suppression is what keeps macOS from running its Globe action (Show Emoji & Symbols)
         // over dictation. Swallowing an event needs an active tap, so apply it before `start()`
         // creates the taps, otherwise the first tap is built listen-only.
-        await environment.refreshFunctionKeySuppression()
+        await environment.refreshFunctionKeySuppression(for: settings.dictationKey)
         do {
             try await environment.hotkeySource.start()
             // The tap is live, so any earlier permission message is stale.
@@ -78,7 +81,8 @@ extension AppCoordinator {
                     // Gaining or losing Accessibility changes whether the lone Fn press can be
                     // swallowed at all, so re-apply it without needing a relaunch.
                     if self.hotkeyTask != nil {
-                        await self.environment?.refreshFunctionKeySuppression()
+                        await self.environment?.refreshFunctionKeySuppression(
+                            for: self.settings.dictationKey)
                     }
                 default:
                     break

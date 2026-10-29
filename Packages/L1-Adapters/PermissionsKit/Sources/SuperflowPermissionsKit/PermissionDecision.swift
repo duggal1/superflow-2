@@ -37,6 +37,17 @@ public enum PermissionDecision {
     }
 }
 
+/// Input Monitoring needs its own mapping because the only trustworthy signals are the two
+/// TCC-backed access checks. A listen-only event tap that installs is *not* proof of a grant:
+/// it can succeed for a process TCC never registered, which makes the app skip the request and
+/// stay missing from the Input Monitoring pane.
+public enum InputMonitoringProbe {
+    public static func resolve(preflight: Bool, hidGranted: Bool, asked: Bool) -> PermissionStatus {
+        if preflight || hidGranted { return .granted }
+        return PermissionDecision.resolve(probe: .notGranted, asked: asked)
+    }
+}
+
 public enum MicrophoneAuthorization: Sendable, Equatable {
     case granted
     case denied

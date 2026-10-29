@@ -56,7 +56,12 @@ public struct MainWindowRootView: View {
             coordinator.mainWindowController.didOpen()
         }
         .onDisappear { coordinator.mainWindowController.didClose() }
-        .task { await coordinator.launch() }
+        .task {
+            if let environment = coordinator.environment {
+                await environment.audioArchive.setRetentionRepository(environment.transcripts)
+            }
+            await coordinator.launch()
+        }
     }
 
     private var selection: AppSection {
@@ -108,7 +113,16 @@ public struct MainWindowRootView: View {
     private var sectionContent: some View {
         switch selection {
         case .dashboard:
-            if let model = coordinator.dashboardModel { DashboardView(model: model) }
+            if let model = coordinator.dashboardModel {
+                DashboardView(model: model, openHistory: { windowController.selection = .history })
+                    .task {
+                        if let environment = coordinator.environment {
+                            model.recent.configureRetry { url in
+                                try await DashboardRetranscription.transcribe(url, environment: environment)
+                            }
+                        }
+                    }
+            }
         case .history:
             if let model = coordinator.historyModel { HistoryView(model: model) }
         case .dictionary:
@@ -305,7 +319,7 @@ private enum EngineStatus {
         case .warming: "Loading model"
         case .listening: "Listening"
         case .noMicrophone: "No microphone access"
-        case .noKeyboardAccess: "Fn needs Input Monitoring"
+        case .noKeyboardAccess: "Input Monitoring off"
         }
     }
 

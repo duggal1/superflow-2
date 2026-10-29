@@ -315,12 +315,23 @@ public actor SessionEngine {
         await audio.stop()
         await recognitionStream?.finish()
         _ = await writer?.close()
-        await archiveWriter?.discard()
+        let duration = record.map { max(lastEndMs, Int(clock.now().timeIntervalSince($0.startedAt) * 1000)) } ?? 0
+        let keep = settings.keepAudio && !settings.noTranscriptStorage && duration > 30_000
+        let archived = keep ? await archiveWriter?.finish() : nil
+        if !keep { await archiveWriter?.discard() }
         archiveWriter = nil
         if let id {
-            await archive?.delete(session: id)
+            if let archived {
+                if let metadata = repository as? any AudioMetadataStore {
+                    try? await metadata.setAudio(session: id, duration: archived.duration, peaks: Data(archived.peaks))
+                }
+                try? await repository.finalizeSession(id, endedAt: clock.now(), status: .cancelled,
+                                                     durationMs: duration, wordCount: 0, cleanupState: .skipped)
+            } else {
+                await archive?.delete(session: id)
+                try? await repository.deleteSession(id)
+            }
             await journals.delete(session: id)
-            try? await repository.deleteSession(id)
             emit(.finished(id, .cancelled))
         }
         sampleTask = nil

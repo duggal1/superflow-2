@@ -2,21 +2,16 @@ import AppKit
 import SuperflowDesignSystem
 import SwiftUI
 
-/// The only icon family in the app: Apple's SF Symbols, unenclosed, regular or
-/// medium weight. Three cases (sparkles, wand, any `*.circle` / `*.square`
-/// enclosure) are deliberately absent.
+/// Native SF Symbols, resolved against the current macOS symbol set.
 public enum Glyph: String, CaseIterable, Sendable {
-    // Sidebar. Specific, open Apple symbols rather than the stock pick for each
-    // concept: a plotted trend for the stats page, a transcript with a play head
-    // for the recordings you can replay, and three tuning sliders for Settings,
-    // because the gear is the most drawn glyph in software.
-    case dashboard = "chart.xyaxis.line"
-    case history = "text.line.first.and.arrowtriangle.forward"
-    case dictionary = "character.book.closed"
+    // Sidebar.
+    case dashboard = "circle.grid.3x3"
+    case history = "clock"
+    case dictionary = "textformat.abc"
     case shortcuts = "command"
     case meetings = "person.2.wave.2"
-    case settings = "slider.horizontal.3"
-    case models = "memorychip"
+    case settings = "switch.2"
+    case models = "square.stack.3d.up"
 
     // Actions and state
     case search = "magnifyingglass"
@@ -54,26 +49,24 @@ public enum Glyph: String, CaseIterable, Sendable {
     case speaker = "speaker.wave.2"
     case waveform = "waveform"
     case cleanup = "textformat"
-    case calendar = "calendar"
     case folder = "folder"
     case sun = "sun.max"
     case moon = "moon"
 
     // Dashboard metrics (pass 3).
-    case words = "text.cursor"
-    case timeSaved = "hourglass"
-    case speed = "gauge.with.dots.needle.33percent"
-    case streak = "flame"
+    case words = "text.word.spacing"
+    case timeSaved = "timer"
+    case speed = "speedometer"
+    case streak = "calendar"
 
     // Settings rows (pass 3). Bare symbols only, never an enclosing variant.
     case person = "person"
     case appearance = "circle.lefthalf.filled"
+    case liveText = "captions.bubble"
     case power = "power"
     case capsuleShape = "capsule"
     case handTap = "hand.tap"
-    case timer = "timer"
     case eyeSlash = "eye.slash"
-    case clock = "clock"
     case diagnostics = "doc.text.magnifyingglass"
     case licenses = "doc.text"
     case number = "number"
@@ -84,6 +77,12 @@ public enum Glyph: String, CaseIterable, Sendable {
     case blocks = "text.alignleft"
     case code = "chevron.left.forwardslash.chevron.right"
     case chart = "chart.bar"
+}
+
+public extension Glyph {
+    static var calendar: Glyph { .streak }
+    static var timer: Glyph { .timeSaved }
+    static var clock: Glyph { .history }
 }
 
 public enum IconWeight: Sendable {
@@ -118,7 +117,7 @@ public struct Icon: View {
     }
 
     public var body: some View {
-        Image(systemName: glyph.rawValue)
+        Image(systemName: glyph.symbolName)
             .contentTransition(.symbolEffect(.replace))
             .font(.system(size: size, weight: weight.fontWeight))
             .symbolRenderingMode(.monochrome)
@@ -131,8 +130,8 @@ public struct Icon: View {
 /// Call once at launch. A missing name fails loudly instead of rendering nothing.
 public func validateGlyphs() {
     for glyph in Glyph.allCases {
-        assert(NSImage(systemSymbolName: glyph.rawValue, accessibilityDescription: nil) != nil,
-               "Missing SF Symbol: \(glyph.rawValue)")
+        assert(NSImage(systemSymbolName: glyph.symbolName, accessibilityDescription: nil) != nil,
+               "Missing SF Symbol: \(glyph.symbolName)")
     }
 }
 #endif

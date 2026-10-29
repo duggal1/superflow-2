@@ -76,4 +76,62 @@ final class NumbersTests: XCTestCase {
         XCTAssertEqual(empty, "")
         XCTAssertEqual(spaces, "   ")
     }
+
+    // MARK: Large scales
+
+    func testTrillionAbbreviatesAndFullExpands() async {
+        let actual = await run("three trillion dollars")
+        XCTAssertEqual(actual, "$3T")
+        let full = await run("three trillion dollars") { $0.numberStyle = .full }
+        XCTAssertEqual(full, "$3,000,000,000,000")
+        let round = await run("two trillion") { $0.numberStyle = .full }
+        XCTAssertEqual(round, "2,000,000,000,000")
+    }
+
+    func testQuadrillionAbbreviatesAndFullExpands() async {
+        let full = await run("two point five quadrillion") { $0.numberStyle = .full }
+        XCTAssertEqual(full, "2,500,000,000,000,000")
+        let abbrev = await run("one quadrillion")
+        XCTAssertEqual(abbrev, "1Qa")
+    }
+
+    func testFullBillion() async {
+        let actual = await run("two billion dollars") { $0.numberStyle = .full }
+        XCTAssertEqual(actual, "$2,000,000,000")
+    }
+
+    // MARK: Spoken identifier runs
+
+    func testSpokenCodeRunNeedsCodeContext() async {
+        let status = await run("the status code is four two nine")
+        XCTAssertEqual(status, "the status code is 429")
+        let exit = await run("the exit code was five nine")
+        XCTAssertEqual(exit, "the exit code was 59")
+        // Counting and enumeration speech has no code context and stays words.
+        XCTAssertEqual(await run("one two three"), "one two three")
+        let prose = await run("the answer four two nine nobody knows")
+        XCTAssertEqual(prose, "the answer four two nine nobody knows")
+        // Interior punctuation breaks the run: it is a list, not an identifier.
+        let listed = await run("the error code values are four, two nine")
+        XCTAssertEqual(listed, "the error code values are four, two nine")
+    }
+
+    // MARK: Spoken small ranges
+
+    func testSpokenFromToRangeStaysDigitsUnderSpellOut() async {
+        let range = await run("set the retry count from three to five")
+        XCTAssertEqual(range, "set the retry count from 3 to 5")
+        // Not a range shape: "three to five" without "from" keeps the words.
+        let words = await run("three to five options")
+        XCTAssertEqual(words, "three to five options")
+    }
+
+    // MARK: Euro currency
+
+    func testEuroCurrency() async {
+        let cost = await run("it costs twenty five euros")
+        XCTAssertEqual(cost, "it costs €25")
+        let bare = await run("ten euros")
+        XCTAssertEqual(bare, "€10")
+    }
 }

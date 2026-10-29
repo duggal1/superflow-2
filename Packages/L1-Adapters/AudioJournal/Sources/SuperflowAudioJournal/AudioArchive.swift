@@ -100,7 +100,10 @@ public final class M4AArchiveWriter: AudioArchiveWriter, @unchecked Sendable {
 }
 
 /// Files live in Application Support, excluded from backup, and never leave the Mac.
-public struct AudioArchiveAdapter: AudioArchiveStore {
+public actor AudioArchiveAdapter: AudioArchiveStore {
+    private var retentionRepository: (any TranscriptRepository)?
+
+    public func setRetentionRepository(_ repository: any TranscriptRepository) { retentionRepository = repository }
     private let directory: URL
     public init(directory: URL = AudioArchiveLocation.directory()) {
         self.directory = directory
@@ -131,6 +134,12 @@ public struct AudioArchiveAdapter: AudioArchiveStore {
             guard let values = try? file.resourceValues(forKeys: [.contentModificationDateKey]),
                   let modified = values.contentModificationDate,
                   modified < cutoff else { continue }
+            if let retentionRepository {
+                let id = SessionID(file.deletingPathExtension().lastPathComponent)
+                if let session = try? await retentionRepository.session(id),
+                   session.status == .cancelled || session.status == .failed,
+                   Date().timeIntervalSince(session.startedAt) < 30 * 86_400 { continue }
+            }
             try? FileManager.default.removeItem(at: file)
         }
     }

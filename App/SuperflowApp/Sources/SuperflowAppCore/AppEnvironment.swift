@@ -207,10 +207,11 @@ public final class AppEnvironment {
     }
 
     /// Swallowing an event needs an active tap, so Fn suppression depends on Accessibility.
-    /// Called before the hotkeys start and again whenever that grant changes.
-    public func refreshFunctionKeySuppression() async {
+    /// Called before the hotkeys start and again whenever that grant changes. A different
+    /// dictation key must leave the Globe action alone, so only Fn turns suppression on.
+    public func refreshFunctionKeySuppression(for key: DictationKey = .fn) async {
         let accessibility = await permissionGate.status(.accessibility)
-        let canSwallow = accessibility == .granted
+        let canSwallow = key == .fn && accessibility == .granted
         await hotkeySource.setFnSuppression(canSwallow)
     }
 

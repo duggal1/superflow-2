@@ -34,6 +34,9 @@ public final class OnboardingViewModel: ObservableObject {
     @Published public private(set) var practiceState: PracticeState = .idle
     @Published public var practiceText = ""
     @Published public private(set) var isFinishing = false
+    /// The key that starts a dictation. Written straight into `settings` on finish,
+    /// so the app and the sandbox cannot disagree about the gesture.
+    @Published public var dictationKey: DictationKey = .fn
 
     public let toast: ToastCenter
 
@@ -70,6 +73,7 @@ public final class OnboardingViewModel: ObservableObject {
         self.practice = practice
         self.toast = toast
         self.settings = initial
+        self.dictationKey = initial.dictationKey
         // Setup always installs the streaming Nemotron 3.5 profile. Dictation has
         // no batch path, and the owner asked for this to be the forced default.
         self.settings.asrProfile = ModelProfile.default.id
@@ -83,6 +87,13 @@ public final class OnboardingViewModel: ObservableObject {
     public var isListening: Bool { practiceState == .listening }
     public var globeConflict: Bool { globeAction.isConflict }
     public var globeChecked: Bool { globeAction != .unknown }
+
+    /// The done step promises the exact key the owner picked, not always fn.
+    public var subtitle: String? {
+        step == .done
+            ? "Hold \(dictationKey.label) anywhere to dictate."
+            : step.subtitle
+    }
 
     public var grantedCount: Int {
         Self.requiredPermissions.filter { statuses[$0]?.isGranted == true }.count
@@ -108,7 +119,7 @@ public final class OnboardingViewModel: ObservableObject {
 
     public var primaryEnabled: Bool {
         switch step {
-        case .welcome, .done:
+        case .welcome, .key, .done:
             true
         case .permissions:
             permissionsGranted
@@ -119,7 +130,7 @@ public final class OnboardingViewModel: ObservableObject {
 
     public var canAdvance: Bool {
         switch step {
-        case .welcome, .done:
+        case .welcome, .key, .done:
             true
         case .permissions:
             permissionsGranted
@@ -157,6 +168,7 @@ public final class OnboardingViewModel: ObservableObject {
 
     public func load() async {
         settings = await settingsStore.load()
+        dictationKey = settings.dictationKey
         await refreshPermissions()
         await refreshGlobeAction()
         await checkModels()
@@ -205,7 +217,7 @@ public final class OnboardingViewModel: ObservableObject {
             await refreshGlobeAction()
         case .models:
             await checkModels()
-        case .done:
+        case .key, .done:
             await checkModels()
         case .welcome:
             break
@@ -373,6 +385,13 @@ public final class OnboardingViewModel: ObservableObject {
         }
     }
 
+    /// Releasing the key ends the take: capture stops, the recognizer flushes, and
+    /// `startPractice` returns the text. Harmless when nothing is recording.
+    public func finishPractice() async {
+        guard isListening else { return }
+        await practice?.finish()
+    }
+
     public func cancelPractice() {
         practiceToken = UUID()
         practiceState = .idle
@@ -388,6 +407,7 @@ public final class OnboardingViewModel: ObservableObject {
         defer { isFinishing = false }
 
         settings.onboardingComplete = true
+        settings.dictationKey = dictationKey
         await settingsStore.save(settings)
         onFinish(settings)
         toast.show("Superflow is ready.", style: .success)

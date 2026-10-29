@@ -22,15 +22,17 @@ public struct AudioPreview: View {
 
     private let url: URL
     private let chrome: Chrome
+    private let autoplay: Bool
     @State private var player = ClipPlayer()
     @State private var clip: ClipData?
     @State private var failed = false
     @State private var hover: TimeInterval?
     @FocusState private var focused: Bool
 
-    public init(url: URL, chrome: Chrome = .card) {
+    public init(url: URL, chrome: Chrome = .card, autoplay: Bool = false) {
         self.url = url
         self.chrome = chrome
+        self.autoplay = autoplay
     }
 
     public var body: some View {
@@ -96,6 +98,7 @@ public struct AudioPreview: View {
         guard !Task.isCancelled else { return }
         player.load(loaded)
         clip = loaded
+        if autoplay { player.play() }
     }
 }
 
@@ -122,13 +125,15 @@ private struct Readout: View {
 /// Sample-accurate playback over the decoded clip, with 90 ms Hann grains under
 /// the pointer while scrubbing. One clock: the player node's own sample time.
 @MainActor @Observable
-final class ClipPlayer {
-    enum State { case idle, playing, paused }
+public final class ClipPlayer {
+    public enum State { case idle, playing, paused }
 
-    private(set) var state: State = .idle
-    private(set) var duration: TimeInterval = 0
+    public init() {}
+
+    public private(set) var state: State = .idle
+    public private(set) var duration: TimeInterval = 0
     /// Bumps on every seek and scrub, so a paused scrubber redraws.
-    private(set) var moves = 0
+    public private(set) var moves = 0
 
     @ObservationIgnored private let engine = AVAudioEngine()
     @ObservationIgnored private let node = AVAudioPlayerNode()
@@ -143,15 +148,19 @@ final class ClipPlayer {
     @ObservationIgnored private var resumeAfterScrub = false
     @ObservationIgnored private var lastGrain: TimeInterval = -1
 
+    public var outputLatency: TimeInterval { engine.outputNode.presentationLatency }
+
+    public func prewarm() { if !engine.isRunning { engine.prepare() } }
+
     /// Position in seconds. Read once per frame by the views; deliberately not observed.
-    var time: TimeInterval {
+    public var time: TimeInterval {
         guard state == .playing, let clip, let render = node.lastRenderTime,
               let played = node.playerTime(forNodeTime: render) else { return parked }
-        return min(clip.duration,
-                   Double(startSample) / clip.sampleRate + Double(played.sampleTime) / played.sampleRate)
+        return min(clip.duration, max(0,
+                   Double(startSample) / clip.sampleRate + Double(played.sampleTime) / played.sampleRate - outputLatency))
     }
 
-    func load(_ clip: ClipData) {
+    public func load(_ clip: ClipData) {
         stop()
         self.clip = clip
         duration = clip.duration
@@ -169,12 +178,12 @@ final class ClipPlayer {
         vDSP_hann_window(&grainWindow, vDSP_Length(count), Int32(vDSP_HANN_DENORM))
     }
 
-    func play() {
+    public func play() {
         guard let clip else { return }
         start(at: parked >= clip.duration - 0.02 ? 0 : parked)
     }
 
-    func pause() {
+    public func pause() {
         guard state == .playing else { return }
         parked = time
         generation += 1
@@ -183,11 +192,11 @@ final class ClipPlayer {
         moves += 1
     }
 
-    func toggle() {
+    public func toggle() {
         if state == .playing { pause() } else { play() }
     }
 
-    func seek(_ t: TimeInterval) {
+    public func seek(_ t: TimeInterval) {
         let target = min(max(t, 0), duration)
         if state == .playing {
             start(at: target)
@@ -197,7 +206,7 @@ final class ClipPlayer {
         }
     }
 
-    func stop() {
+    public func stop() {
         generation += 1
         node.stop()
         engine.stop()
@@ -208,7 +217,7 @@ final class ClipPlayer {
 
     // MARK: tape-head scrub
 
-    func beginScrub() {
+    public func beginScrub() {
         resumeAfterScrub = state == .playing
         if state == .playing {
             parked = time
@@ -222,7 +231,7 @@ final class ClipPlayer {
         node.play()
     }
 
-    func scrub(to t: TimeInterval) {
+    public func scrub(to t: TimeInterval) {
         guard scrubbing, let clip, let format else { return }
         let target = min(max(t, 0), clip.duration)
         parked = target
@@ -239,7 +248,7 @@ final class ClipPlayer {
         node.scheduleBuffer(buffer, at: nil, options: .interrupts, completionHandler: nil)
     }
 
-    func endScrub() {
+    public func endScrub() {
         guard scrubbing else { return }
         scrubbing = false
         if resumeAfterScrub { start(at: parked) }

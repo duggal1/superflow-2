@@ -1,93 +1,494 @@
 {
   "cases": [
-    { "name": "currency two hundred", "input": "two hundred dollars", "expected": "$200" },
-    { "name": "currency five", "input": "five dollars", "expected": "$5" },
-    { "name": "currency one", "input": "one dollar", "expected": "$1" },
-    { "name": "currency a hundred", "input": "a hundred dollars", "expected": "$100" },
-    { "name": "currency with cents", "input": "ten dollars and fifty cents", "expected": "$10 and 50 cents" },
-    { "name": "currency thousand two hundred fifty", "input": "one thousand two hundred fifty dollars", "expected": "$1,250" },
-    { "name": "currency two hundred fifty thousand", "input": "two hundred and fifty thousand dollars", "expected": "$250k" },
-    { "name": "currency two million", "input": "two million dollars", "expected": "$2M" },
-    { "name": "currency five hundred thousand", "input": "five hundred thousand dollars", "expected": "$500k" },
-    { "name": "percent fifty", "input": "fifty percent", "expected": "50%" },
-    { "name": "percent forty two", "input": "forty two percent", "expected": "42%" },
-    { "name": "percent decimal", "input": "twelve point five percent", "expected": "12.5%" },
-    { "name": "percent a hundred", "input": "a hundred percent", "expected": "100%" },
-    { "name": "year twenty twenty four", "input": "twenty twenty four", "expected": "2024" },
-    { "name": "year twenty twenty six", "input": "twenty twenty six", "expected": "2026" },
-    { "name": "year nineteen ninety nine", "input": "nineteen ninety nine", "expected": "1999" },
-    { "name": "year twenty ten", "input": "twenty ten", "expected": "2010" },
-    { "name": "year twenty oh five", "input": "twenty oh five", "expected": "2005" },
-    { "name": "year two thousand and one", "input": "two thousand and one", "expected": "2001" },
-    { "name": "date month ordinal", "input": "january fifth", "expected": "january 5th" },
-    { "name": "date month ordinal twenty second", "input": "january twenty second", "expected": "january 22nd" },
-    { "name": "date ordinal of month", "input": "the third of march", "expected": "the 3rd of march" },
-    { "name": "date first of january", "input": "the first of january", "expected": "the 1st of january" },
-    { "name": "date full", "input": "february twenty second twenty twenty six", "expected": "february 22nd 2026" },
-    { "name": "decimal three point five", "input": "three point five", "expected": "3.5" },
-    { "name": "decimal pi", "input": "three point one four", "expected": "3.14" },
-    { "name": "decimal leading zero", "input": "zero point five", "expected": "0.5" },
-    { "name": "decimal small", "input": "one point two three", "expected": "1.23" },
-    { "name": "grouped thousand", "input": "one thousand two hundred", "expected": "1,200" },
-    { "name": "grouped twelve thousand", "input": "twelve thousand three hundred and forty five", "expected": "12,345" },
-    { "name": "grouped one thousand one", "input": "one thousand one", "expected": "1,001" },
-    { "name": "grouped ten thousand five", "input": "ten thousand and five", "expected": "10,005" },
-    { "name": "grouped one thousand two hundred fifty", "input": "one thousand two hundred and fifty", "expected": "1,250" },
-    { "name": "abbreviated thousand", "input": "one thousand", "expected": "1k" },
-    { "name": "abbreviated ten thousand", "input": "ten thousand", "expected": "10k" },
-    { "name": "abbreviated hundred thousand", "input": "one hundred thousand", "expected": "100k" },
-    { "name": "abbreviated two hundred thousand", "input": "two hundred thousand", "expected": "200k" },
-    { "name": "abbreviated twenty five thousand", "input": "twenty five thousand", "expected": "25k" },
-    { "name": "abbreviated three hundred twenty five thousand", "input": "three hundred and twenty five thousand", "expected": "325k" },
-    { "name": "abbreviated million", "input": "one million", "expected": "1M" },
-    { "name": "abbreviated five million", "input": "five million", "expected": "5M" },
-    { "name": "abbreviated hundred million", "input": "one hundred million", "expected": "100M" },
-    { "name": "abbreviated billion", "input": "one billion", "expected": "1B" },
-    { "name": "abbreviated a thousand", "input": "a thousand", "expected": "1k" },
-    { "name": "abbreviated a million", "input": "a million", "expected": "1M" },
-    { "name": "full style thousand", "input": "one thousand", "expected": "1,000", "settings": { "numberStyle": "full" } },
-    { "name": "full style two hundred thousand", "input": "two hundred thousand", "expected": "200,000", "settings": { "numberStyle": "full" } },
-    { "name": "small number stays word", "input": "seven apples", "expected": "seven apples" },
-    { "name": "small number zero stays word", "input": "zero", "expected": "zero" },
-    { "name": "small number setting off", "input": "seven apples", "expected": "7 apples", "settings": { "spellOutSmallNumbers": false } },
-    { "name": "ten becomes digits", "input": "ten", "expected": "10" },
-    { "name": "twenty one", "input": "twenty one", "expected": "21" },
-    { "name": "ninety nine bottles", "input": "ninety nine bottles", "expected": "99 bottles" },
-    { "name": "one hundred and five", "input": "one hundred and five", "expected": "105" },
-    { "name": "one hundred one", "input": "one hundred one", "expected": "101" },
-    { "name": "nine hundred ninety nine", "input": "nine hundred ninety nine", "expected": "999" },
-    { "name": "unit degrees", "input": "twenty five degrees", "expected": "25 degrees" },
-    { "name": "unit minutes", "input": "fifteen minutes", "expected": "15 minutes" },
-    { "name": "unit days", "input": "fourteen days", "expected": "14 days" },
-    { "name": "unit hours", "input": "twenty four hours", "expected": "24 hours" },
-    { "name": "unit weeks", "input": "three weeks", "expected": "3 weeks" },
-    { "name": "unit years", "input": "two years", "expected": "2 years" },
-    { "name": "unit gigabytes", "input": "three gigabytes", "expected": "3 gigabytes" },
-    { "name": "unit milliseconds", "input": "two hundred milliseconds", "expected": "200 milliseconds" },
-    { "name": "unit inches", "input": "twelve inches", "expected": "12 inches" },
-    { "name": "unit feet", "input": "five foot ten", "expected": "5 foot 10" },
-    { "name": "unit feet two", "input": "six feet two", "expected": "6 feet two" },
-    { "name": "unit fahrenheit", "input": "seventy two degrees fahrenheit", "expected": "72 degrees fahrenheit" },
-    { "name": "chapter number", "input": "chapter twelve", "expected": "chapter 12" },
-    { "name": "range twenty thirty", "input": "between twenty and thirty", "expected": "between 20 and 30" },
-    { "name": "over hundred", "input": "over one hundred", "expected": "over 100" },
-    { "name": "under fifty", "input": "under fifty", "expected": "under 50" },
-    { "name": "about a thousand", "input": "about a thousand", "expected": "about 1k" },
-    { "name": "roughly two million", "input": "roughly two million", "expected": "roughly 2M" },
-    { "name": "up to ten thousand", "input": "up to ten thousand", "expected": "up to 10k" },
-    { "name": "version untouched", "input": "version 1.2.3", "expected": "version 1.2.3" },
-    { "name": "clock untouched", "input": "10:30", "expected": "10:30" },
-    { "name": "grouped input untouched", "input": "1,200", "expected": "1,200" },
-    { "name": "zip untouched", "input": "zip 94107", "expected": "zip 94107" },
-    { "name": "error code untouched", "input": "error 404", "expected": "error 404" },
-    { "name": "bare 10-digit phone stays ungrouped", "input": "my number is 1234567890", "expected": "my number is 1234567890" },
-    { "name": "url untouched", "input": "https://example.com/v2", "expected": "https://example.com/v2" },
-    { "name": "email untouched", "input": "dev@example.com", "expected": "dev@example.com" },
-    { "name": "spoken clock", "input": "twelve o'clock", "expected": "12 o'clock" },
-    { "name": "empty", "input": "", "expected": "" },
-    { "name": "whitespace only", "input": "   ", "expected": "   " },
-    { "name": "abbreviated two million five hundred thousand", "input": "two million five hundred thousand", "expected": "2.5M" },
-    { "name": "abbreviated one million two hundred thousand", "input": "one million two hundred thousand", "expected": "1.2M" },
-    { "name": "ordinal with hyphen", "input": "twenty-first century", "expected": "21st century" }
+    {
+      "name": "currency two hundred",
+      "input": "two hundred dollars",
+      "expected": "$200"
+    },
+    {
+      "name": "currency five",
+      "input": "five dollars",
+      "expected": "$5"
+    },
+    {
+      "name": "currency one",
+      "input": "one dollar",
+      "expected": "$1"
+    },
+    {
+      "name": "currency a hundred",
+      "input": "a hundred dollars",
+      "expected": "$100"
+    },
+    {
+      "name": "currency with cents",
+      "input": "ten dollars and fifty cents",
+      "expected": "$10 and 50 cents"
+    },
+    {
+      "name": "currency thousand two hundred fifty",
+      "input": "one thousand two hundred fifty dollars",
+      "expected": "$1,250"
+    },
+    {
+      "name": "currency two hundred fifty thousand",
+      "input": "two hundred and fifty thousand dollars",
+      "expected": "$250k"
+    },
+    {
+      "name": "currency two million",
+      "input": "two million dollars",
+      "expected": "$2M"
+    },
+    {
+      "name": "currency five hundred thousand",
+      "input": "five hundred thousand dollars",
+      "expected": "$500k"
+    },
+    {
+      "name": "percent fifty",
+      "input": "fifty percent",
+      "expected": "50%"
+    },
+    {
+      "name": "percent forty two",
+      "input": "forty two percent",
+      "expected": "42%"
+    },
+    {
+      "name": "percent decimal",
+      "input": "twelve point five percent",
+      "expected": "12.5%"
+    },
+    {
+      "name": "percent a hundred",
+      "input": "a hundred percent",
+      "expected": "100%"
+    },
+    {
+      "name": "year twenty twenty four",
+      "input": "twenty twenty four",
+      "expected": "2024"
+    },
+    {
+      "name": "year twenty twenty six",
+      "input": "twenty twenty six",
+      "expected": "2026"
+    },
+    {
+      "name": "year nineteen ninety nine",
+      "input": "nineteen ninety nine",
+      "expected": "1999"
+    },
+    {
+      "name": "year twenty ten",
+      "input": "twenty ten",
+      "expected": "2010"
+    },
+    {
+      "name": "year twenty oh five",
+      "input": "twenty oh five",
+      "expected": "2005"
+    },
+    {
+      "name": "year two thousand and one",
+      "input": "two thousand and one",
+      "expected": "2001"
+    },
+    {
+      "name": "date month ordinal",
+      "input": "january fifth",
+      "expected": "january 5th"
+    },
+    {
+      "name": "date month ordinal twenty second",
+      "input": "january twenty second",
+      "expected": "january 22nd"
+    },
+    {
+      "name": "date ordinal of month",
+      "input": "the third of march",
+      "expected": "the 3rd of march"
+    },
+    {
+      "name": "date first of january",
+      "input": "the first of january",
+      "expected": "the 1st of january"
+    },
+    {
+      "name": "date full",
+      "input": "february twenty second twenty twenty six",
+      "expected": "february 22nd 2026"
+    },
+    {
+      "name": "decimal three point five",
+      "input": "three point five",
+      "expected": "3.5"
+    },
+    {
+      "name": "decimal pi",
+      "input": "three point one four",
+      "expected": "3.14"
+    },
+    {
+      "name": "decimal leading zero",
+      "input": "zero point five",
+      "expected": "0.5"
+    },
+    {
+      "name": "decimal small",
+      "input": "one point two three",
+      "expected": "1.23"
+    },
+    {
+      "name": "grouped thousand",
+      "input": "one thousand two hundred",
+      "expected": "1,200"
+    },
+    {
+      "name": "grouped twelve thousand",
+      "input": "twelve thousand three hundred and forty five",
+      "expected": "12,345"
+    },
+    {
+      "name": "grouped one thousand one",
+      "input": "one thousand one",
+      "expected": "1,001"
+    },
+    {
+      "name": "grouped ten thousand five",
+      "input": "ten thousand and five",
+      "expected": "10,005"
+    },
+    {
+      "name": "grouped one thousand two hundred fifty",
+      "input": "one thousand two hundred and fifty",
+      "expected": "1,250"
+    },
+    {
+      "name": "abbreviated thousand",
+      "input": "one thousand",
+      "expected": "1k"
+    },
+    {
+      "name": "abbreviated ten thousand",
+      "input": "ten thousand",
+      "expected": "10k"
+    },
+    {
+      "name": "abbreviated hundred thousand",
+      "input": "one hundred thousand",
+      "expected": "100k"
+    },
+    {
+      "name": "abbreviated two hundred thousand",
+      "input": "two hundred thousand",
+      "expected": "200k"
+    },
+    {
+      "name": "abbreviated twenty five thousand",
+      "input": "twenty five thousand",
+      "expected": "25k"
+    },
+    {
+      "name": "abbreviated three hundred twenty five thousand",
+      "input": "three hundred and twenty five thousand",
+      "expected": "325k"
+    },
+    {
+      "name": "abbreviated million",
+      "input": "one million",
+      "expected": "1M"
+    },
+    {
+      "name": "abbreviated five million",
+      "input": "five million",
+      "expected": "5M"
+    },
+    {
+      "name": "abbreviated hundred million",
+      "input": "one hundred million",
+      "expected": "100M"
+    },
+    {
+      "name": "abbreviated billion",
+      "input": "one billion",
+      "expected": "1B"
+    },
+    {
+      "name": "abbreviated a thousand",
+      "input": "a thousand",
+      "expected": "1k"
+    },
+    {
+      "name": "abbreviated a million",
+      "input": "a million",
+      "expected": "1M"
+    },
+    {
+      "name": "full style thousand",
+      "input": "one thousand",
+      "expected": "1,000",
+      "settings": {
+        "numberStyle": "full"
+      }
+    },
+    {
+      "name": "full style two hundred thousand",
+      "input": "two hundred thousand",
+      "expected": "200,000",
+      "settings": {
+        "numberStyle": "full"
+      }
+    },
+    {
+      "name": "small number stays word",
+      "input": "seven apples",
+      "expected": "seven apples"
+    },
+    {
+      "name": "small number zero stays word",
+      "input": "zero",
+      "expected": "zero"
+    },
+    {
+      "name": "small number setting off",
+      "input": "seven apples",
+      "expected": "7 apples",
+      "settings": {
+        "spellOutSmallNumbers": false
+      }
+    },
+    {
+      "name": "ten becomes digits",
+      "input": "ten",
+      "expected": "10"
+    },
+    {
+      "name": "twenty one",
+      "input": "twenty one",
+      "expected": "21"
+    },
+    {
+      "name": "ninety nine bottles",
+      "input": "ninety nine bottles",
+      "expected": "99 bottles"
+    },
+    {
+      "name": "one hundred and five",
+      "input": "one hundred and five",
+      "expected": "105"
+    },
+    {
+      "name": "one hundred one",
+      "input": "one hundred one",
+      "expected": "101"
+    },
+    {
+      "name": "nine hundred ninety nine",
+      "input": "nine hundred ninety nine",
+      "expected": "999"
+    },
+    {
+      "name": "unit degrees",
+      "input": "twenty five degrees",
+      "expected": "25 degrees"
+    },
+    {
+      "name": "unit minutes",
+      "input": "fifteen minutes",
+      "expected": "15 minutes"
+    },
+    {
+      "name": "unit days",
+      "input": "fourteen days",
+      "expected": "14 days"
+    },
+    {
+      "name": "unit hours",
+      "input": "twenty four hours",
+      "expected": "24 hours"
+    },
+    {
+      "name": "unit weeks",
+      "input": "three weeks",
+      "expected": "3 weeks"
+    },
+    {
+      "name": "unit years",
+      "input": "two years",
+      "expected": "2 years"
+    },
+    {
+      "name": "unit gigabytes",
+      "input": "three gigabytes",
+      "expected": "3 gigabytes"
+    },
+    {
+      "name": "unit milliseconds",
+      "input": "two hundred milliseconds",
+      "expected": "200 milliseconds"
+    },
+    {
+      "name": "unit inches",
+      "input": "twelve inches",
+      "expected": "12 inches"
+    },
+    {
+      "name": "unit feet",
+      "input": "five foot ten",
+      "expected": "5 foot 10"
+    },
+    {
+      "name": "unit feet two",
+      "input": "six feet two",
+      "expected": "6 feet two"
+    },
+    {
+      "name": "unit fahrenheit",
+      "input": "seventy two degrees fahrenheit",
+      "expected": "72 degrees fahrenheit"
+    },
+    {
+      "name": "chapter number",
+      "input": "chapter twelve",
+      "expected": "chapter 12"
+    },
+    {
+      "name": "range twenty thirty",
+      "input": "between twenty and thirty",
+      "expected": "between 20 and 30"
+    },
+    {
+      "name": "over hundred",
+      "input": "over one hundred",
+      "expected": "over 100"
+    },
+    {
+      "name": "under fifty",
+      "input": "under fifty",
+      "expected": "under 50"
+    },
+    {
+      "name": "about a thousand",
+      "input": "about a thousand",
+      "expected": "about 1k"
+    },
+    {
+      "name": "roughly two million",
+      "input": "roughly two million",
+      "expected": "roughly 2M"
+    },
+    {
+      "name": "up to ten thousand",
+      "input": "up to ten thousand",
+      "expected": "up to 10k"
+    },
+    {
+      "name": "version untouched",
+      "input": "version 1.2.3",
+      "expected": "version 1.2.3"
+    },
+    {
+      "name": "clock untouched",
+      "input": "10:30",
+      "expected": "10:30"
+    },
+    {
+      "name": "grouped input untouched",
+      "input": "1,200",
+      "expected": "1,200"
+    },
+    {
+      "name": "zip untouched",
+      "input": "zip 94107",
+      "expected": "zip 94107"
+    },
+    {
+      "name": "error code untouched",
+      "input": "error 404",
+      "expected": "error 404"
+    },
+    {
+      "name": "bare 10-digit phone stays ungrouped",
+      "input": "my number is 1234567890",
+      "expected": "my number is 1234567890"
+    },
+    {
+      "name": "url untouched",
+      "input": "https://example.com/v2",
+      "expected": "https://example.com/v2"
+    },
+    {
+      "name": "email untouched",
+      "input": "dev@example.com",
+      "expected": "dev@example.com"
+    },
+    {
+      "name": "spoken clock",
+      "input": "twelve o'clock",
+      "expected": "12 o'clock"
+    },
+    {
+      "name": "empty",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "name": "whitespace only",
+      "input": "   ",
+      "expected": "   "
+    },
+    {
+      "name": "abbreviated two million five hundred thousand",
+      "input": "two million five hundred thousand",
+      "expected": "2.5M"
+    },
+    {
+      "name": "abbreviated one million two hundred thousand",
+      "input": "one million two hundred thousand",
+      "expected": "1.2M"
+    },
+    {
+      "name": "ordinal with hyphen",
+      "input": "twenty-first century",
+      "expected": "21st century"
+    },
+    {
+      "name": "abbrev trillion",
+      "input": "three trillion dollars",
+      "expected": "$3T"
+    },
+    {
+      "name": "full trillion",
+      "input": "three trillion",
+      "expected": "3,000,000,000,000",
+      "settings": {
+        "numberStyle": "full"
+      }
+    },
+    {
+      "name": "full billion dollars",
+      "input": "two billion dollars",
+      "expected": "$2,000,000,000",
+      "settings": {
+        "numberStyle": "full"
+      }
+    },
+    {
+      "name": "spoken status code run",
+      "input": "the status code goes from five hundred to four two nine",
+      "expected": "the status code goes from 500 to 429"
+    },
+    {
+      "name": "spoken from to range",
+      "input": "set the retry count from three to five",
+      "expected": "set the retry count from 3 to 5"
+    },
+    {
+      "name": "euro twenty five",
+      "input": "it costs twenty five euros",
+      "expected": "it costs €25"
+    }
   ]
 }

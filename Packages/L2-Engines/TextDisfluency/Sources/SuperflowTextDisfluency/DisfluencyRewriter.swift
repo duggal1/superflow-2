@@ -57,7 +57,7 @@ public enum DisfluencyRewriter {
         "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
         "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty",
         "forty", "fifty", "sixty", "seventy", "eighty", "ninety", "hundred",
-        "thousand", "million", "billion", "trillion", "dozen",
+        "thousand", "million", "billion", "trillion", "quadrillion", "dozen",
     ]
 
     /// Pure fillers. Elongations are recognized by `fillerBase` below.

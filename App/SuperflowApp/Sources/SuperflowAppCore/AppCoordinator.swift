@@ -201,10 +201,12 @@ public final class AppCoordinator: ObservableObject {
             settings.onboardingComplete = true
             await environment.settingsStore.save(settings)
         }
-        // Fn is Superflow's dictation key, so put the Globe binding in the Do Nothing state first.
-        environment.claimFunctionKey()
+        // Fn is Superflow's dictation key only while it owns dictation, so put the Globe
+        // binding in the Do Nothing state first. A different key leaves the Globe alone.
+        if settings.dictationKey == .fn { environment.claimFunctionKey() }
         themeStore.mode = settings.theme
         islandBridge?.setStoresTranscripts(!settings.noTranscriptStorage)
+        applyIslandPrefs(settings)
         await environment.transcripts.setNoTranscriptStorage(settings.noTranscriptStorage)
         await purgeExpiredTranscripts()
         await sweepAudioArchive()
@@ -257,10 +259,14 @@ public final class AppCoordinator: ObservableObject {
         settings = updated
         themeStore.mode = updated.theme
         islandBridge?.setStoresTranscripts(!updated.noTranscriptStorage)
+        applyIslandPrefs(updated)
         guard let environment else { return }
         if retentionChanged { await purgeExpiredTranscripts() }
         await environment.transcripts.setNoTranscriptStorage(updated.noTranscriptStorage)
         await environment.practiceRunner.update(profile: updated.asrProfile)
+        // A key change has to reach the live tap even when it is already running.
+        await environment.hotkeySource.setDictationKey(updated.dictationKey)
+        await environment.refreshFunctionKeySuppression(for: updated.dictationKey)
         gesture.update(config: updated.gesture)
         dashboardModel?.update(settings: updated)
         await refreshPipeline()
@@ -277,6 +283,14 @@ public final class AppCoordinator: ObservableObject {
         OnboardingCheckpoint.markComplete()
         await applySettings(updated)
         mainWindowController.show(.dashboard)
+    }
+
+    /// The two Island switches are mirrored, not stored, in the model. Settings
+    /// pushes them on load and on every save, so the notch and the window agree.
+    private func applyIslandPrefs(_ settings: AppSettings) {
+        islandController?.model.configure(
+            IslandPrefs(alwaysOn: settings.islandAlwaysOn, liveText: settings.islandLiveText)
+        )
     }
 
     private func prepareCleanupModel() async {

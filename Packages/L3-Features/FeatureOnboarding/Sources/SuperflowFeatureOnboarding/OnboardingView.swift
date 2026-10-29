@@ -10,12 +10,10 @@ public struct OnboardingView: View {
     @ObservedObject private var model: OnboardingViewModel
     /// Field progress, in whole steps, run once at launch.
     @State private var fieldReveal: CGFloat = 0
-    @State private var bloom = BloomModel()
     /// The last step closes the ring, grows the disc, then flies it to the slot.
     @State private var collapse: CGFloat = 0
     @State private var discGrow: Double = 0
     @State private var discTravel: Double = 0
-    @State private var keyDown = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(model: OnboardingViewModel) {
@@ -36,7 +34,6 @@ public struct OnboardingView: View {
             stepContent
         }
         .overlay { ToastHost(center: model.toast) }
-        .environment(bloom)
         .focusEffectDisabled()
         .task {
             await model.load()
@@ -52,17 +49,12 @@ public struct OnboardingView: View {
             }
         }
         .onChange(of: model.step) { _, step in
-            switch step {
-            case .done:
+            if step == .done {
                 Task { await closeField() }
-            case .welcome:
-                resetField()
-                pressKeyOnce()
-            default:
+            } else {
                 resetField()
             }
         }
-        .onAppear { pressKeyOnce() }
     }
 
     // MARK: steps
@@ -73,6 +65,7 @@ public struct OnboardingView: View {
         case .welcome: welcome
         case .permissions: permissions
         case .models: models
+        case .key: key
         case .done: done
         }
     }
@@ -81,7 +74,7 @@ public struct OnboardingView: View {
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 24) {
             Text("Speak. It types.").displayStyle(size: TypeScale.displaySize).clearsPixels()
-            FnDemo()
+            FnDemo(key: model.dictationKey)
             Text("Everything runs on this Mac. No account, no cloud, no telemetry.")
                 .appType(.body).foregroundStyle(Tok.text2).clearsPixels()
         }
@@ -162,8 +155,24 @@ public struct OnboardingView: View {
         model.cleanupWanted && (model.cleanupProgress ?? 1) < 1
     }
 
-    /// 4 — the title ends in the pixel disc, the ring has closed, and the sandbox
-    /// field appears only when it can actually work.
+    /// 4 — five caps, one choice. The step subtitle already explains the gesture,
+    /// so the picker only adds the restriction that matters: right ⌘ is meetings.
+    private var key: some View {
+        VStack(alignment: .leading, spacing: Space.xl) {
+            heading
+                .clearsPixels()
+                .reveal(0)
+            DictationKeyPicker(selection: $model.dictationKey)
+                .reveal(1)
+            Text("Right ⌘ stays reserved for meetings.")
+                .appType(.caption)
+                .foregroundStyle(Tok.text2)
+                .reveal(2)
+        }
+    }
+
+    /// 5 — the title ends in the pixel disc, the ring has closed, and the sandbox
+    /// field appears only when it can actually work. The chosen key drives it.
     private var done: some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             heading(stop: true)
@@ -171,7 +180,17 @@ public struct OnboardingView: View {
                 .reveal(0)
             VStack(alignment: .leading, spacing: Space.md) {
                 if model.practiceReady {
-                    PracticeField("Hold fn and say something", text: $model.practiceText)
+                    HStack(spacing: Space.sm) {
+                        KeyCap(model.dictationKey.cap, down: model.isListening)
+                        Text("Hold \(model.dictationKey.label) and say something.")
+                            .appType(.body)
+                            .foregroundStyle(Tok.text2)
+                        if model.isListening {
+                            Badge("Listening", variant: .blue, size: .sm)
+                        }
+                    }
+                    PracticeField("Hold \(model.dictationKey.label) and say something",
+                                  text: $model.practiceText)
                     // One mic test for the whole app: the same component Settings uses.
                     MicTestView()
                 } else {
@@ -185,6 +204,15 @@ public struct OnboardingView: View {
             if case .failed(let message) = model.practiceState {
                 NoticeBanner("The test recording failed: \(message)", tone: .rose)
                     .reveal(2)
+            }
+        }
+        .onKeyChange(model.dictationKey) { down in
+            Task {
+                if down {
+                    await model.startPractice()
+                } else {
+                    await model.finishPractice()
+                }
             }
         }
     }
@@ -209,7 +237,7 @@ public struct OnboardingView: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
-            if let subtitle = model.step.subtitle {
+            if let subtitle = model.subtitle {
                 Text(subtitle)
                     .appType(.reading)
                     .foregroundStyle(Tok.text2)
@@ -278,18 +306,5 @@ public struct OnboardingView: View {
         collapse = 0
         discGrow = 0
         discTravel = 0
-    }
-
-    private func pressKeyOnce() {
-        guard !reduceMotion else {
-            keyDown = false
-            return
-        }
-        Task {
-            try? await Task.sleep(for: .milliseconds(600))
-            keyDown = true
-            try? await Task.sleep(for: .milliseconds(260))
-            keyDown = false
-        }
     }
 }

@@ -23,15 +23,15 @@ enum Spectro {
     static let gateDB: Float = -62
 }
 
-struct ClipData: Sendable {
-    let url: URL
+public struct ClipData: Sendable {
+    public let url: URL
     /// Mono samples, kept so playback and grains never touch the disk again.
-    let samples: [Float]
-    let sampleRate: Double
-    let duration: TimeInterval
-    let frames: Int
+    public let samples: [Float]
+    public let sampleRate: Double
+    public let duration: TimeInterval
+    public let frames: Int
     /// `frames` × 8, row-major by frame, 0...255. Index `frame * bands + band`.
-    let cells: [UInt8]
+    public let cells: [UInt8]
 }
 
 enum ClipLoader {

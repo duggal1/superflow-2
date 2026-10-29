@@ -13,7 +13,6 @@ struct OnboardingShell<Content: View>: View {
     var skipAction: (() -> Void)?
     let primaryAction: () -> Void
     @ViewBuilder var content: Content
-    @Environment(BloomModel.self) private var bloom
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private func fieldConfig(_ reveal: CGFloat) -> PixelFieldConfig {
@@ -43,11 +42,7 @@ struct OnboardingShell<Content: View>: View {
         .background(Tok.bg)
         .backgroundPreferenceValue(ShellKey.self) { a in
             GeometryReader { geo in
-                let holes = a.clear.map { geo[$0] }
-                ZStack {
-                    PixelField(clear: holes, config: fieldConfig(reveal))
-                    PixelBloom(model: bloom, source: a.bloom.map { geo[$0] }, clear: holes)
-                }
+                PixelField(clear: a.clear.map { geo[$0] }, config: fieldConfig(reveal))
             }
         }
         .containerBackground(Tok.bg, for: .window)

@@ -11,12 +11,18 @@ import SuperflowSessionEngine
 final class IslandFeedBox: @unchecked Sendable {
     let events: AsyncStream<IslandEvent>
     let levels: AsyncStream<Float>
+    let live: AsyncStream<LiveText>
+    let pulses: AsyncStream<MeetingPulse>
 
     private let lock = NSLock()
     private var transcript: IslandTranscript?
+    private var recent: [IslandTranscript] = []
+    private var todayWords = 0
     private var stores = true
     private let eventContinuation: AsyncStream<IslandEvent>.Continuation
     private let levelContinuation: AsyncStream<Float>.Continuation
+    private let liveContinuation: AsyncStream<LiveText>.Continuation
+    private let pulseContinuation: AsyncStream<MeetingPulse>.Continuation
 
     init() {
         let eventPair = AsyncStream<IslandEvent>.makeStream(bufferingPolicy: .bufferingNewest(64))
@@ -26,6 +32,15 @@ final class IslandFeedBox: @unchecked Sendable {
         let levelPair = AsyncStream<Float>.makeStream(bufferingPolicy: .bufferingNewest(8))
         levels = levelPair.stream
         levelContinuation = levelPair.continuation
+
+        // Partials are worthless once a newer one lands; the newest is the truth.
+        let livePair = AsyncStream<LiveText>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        live = livePair.stream
+        liveContinuation = livePair.continuation
+
+        let pulsePair = AsyncStream<MeetingPulse>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        pulses = pulsePair.stream
+        pulseContinuation = pulsePair.continuation
     }
 
     func send(_ event: IslandEvent) {
@@ -34,6 +49,19 @@ final class IslandFeedBox: @unchecked Sendable {
 
     func level(_ value: Float) {
         levelContinuation.yield(value)
+    }
+
+    func partial(_ text: String, isFinal: Bool = false) {
+        liveContinuation.yield(LiveText(text: text, isFinal: isFinal))
+    }
+
+    /// The capture ended, so the shelf must not keep the last sentence.
+    func clearLive() {
+        liveContinuation.yield(.empty)
+    }
+
+    func pulse(_ pulse: MeetingPulse) {
+        pulseContinuation.yield(pulse)
     }
 
     var lastTranscript: IslandTranscript? {
@@ -49,6 +77,32 @@ final class IslandFeedBox: @unchecked Sendable {
         }
     }
 
+    var history: [IslandTranscript] {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return recent
+        }
+        set {
+            lock.lock()
+            recent = newValue
+            lock.unlock()
+        }
+    }
+
+    var today: Int {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return todayWords
+        }
+        set {
+            lock.lock()
+            todayWords = newValue
+            lock.unlock()
+        }
+    }
+
     var storesTranscripts: Bool {
         get {
             lock.lock()
@@ -58,7 +112,10 @@ final class IslandFeedBox: @unchecked Sendable {
         set {
             lock.lock()
             stores = newValue
-            if !newValue { transcript = nil }
+            if !newValue {
+                transcript = nil
+                recent = []
+            }
             lock.unlock()
         }
     }
@@ -71,7 +128,11 @@ struct IslandFeedAdapter: IslandFeed {
 
     var events: AsyncStream<IslandEvent> { box.events }
     var levels: AsyncStream<Float> { box.levels }
+    var live: AsyncStream<LiveText> { box.live }
+    var pulses: AsyncStream<MeetingPulse> { box.pulses }
     func lastTranscript() -> IslandTranscript? { box.lastTranscript }
+    func history(limit: Int) -> [IslandTranscript] { Array(box.history.prefix(limit)) }
+    func wordsToday() -> Int { box.today }
     var storesTranscripts: Bool { box.storesTranscripts }
 }
 
@@ -88,14 +149,16 @@ struct IslandFeedAdapter: IslandFeed {
 final class IslandBridge {
     let feed: IslandFeedAdapter
 
-    private let box: IslandFeedBox
-    private let transcripts: any TranscriptRepository
+    let box: IslandFeedBox
+    let transcripts: any TranscriptRepository
 
     private var task: Task<Void, Never>?
     private var sawInserting = false
     private var didLand = false
-    private var latestText = ""
+    var latestText = ""
     private var target: IslandTarget?
+    var pulseTask: Task<Void, Never>?
+    var meetingStarted: Date?
 
     init(transcripts: any TranscriptRepository) {
         box = IslandFeedBox()
@@ -123,8 +186,11 @@ final class IslandBridge {
     func refreshLastTranscript() async {
         guard box.storesTranscripts else {
             box.lastTranscript = nil
+            box.history = []
             return
         }
+        await refreshHistory()
+        await refreshToday()
         guard let record = try? await transcripts.sessions(kind: .dictation, query: nil,
                                                            limit: 1, offset: 0).first else {
             box.lastTranscript = nil
@@ -150,6 +216,7 @@ final class IslandBridge {
     /// A latched meeting. Same rule: presentation only.
     func meetingBegan() {
         begin { .meetingBegan($0) }
+        startPulses()
     }
 
     private func begin(_ make: (IslandTarget?) -> IslandEvent) {
@@ -208,6 +275,7 @@ final class IslandBridge {
             box.level(Self.meter(level))
         case .partial(let text):
             latestText = text
+            box.partial(text)
         case .state(let state):
             if case .inserting = state { sawInserting = true }
             if case .failed = state { box.send(.cancelled) }
@@ -232,6 +300,7 @@ final class IslandBridge {
                         box.send(.cancelled)
                     }
                 }
+                box.partial(latestText, isFinal: true)
                 await cacheLastTranscript(id)
             case .cancelled, .failed:
                 box.send(.cancelled)
@@ -267,7 +336,7 @@ final class IslandBridge {
                                 words: Self.words(text))
     }
 
-    private func makeTranscript(_ record: SessionRecord) async -> IslandTranscript? {
+    func makeTranscript(_ record: SessionRecord) async -> IslandTranscript? {
         let segments = (try? await transcripts.segments(session: record.id)) ?? []
         let text = segments.map(\.bestText).joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -285,11 +354,16 @@ final class IslandBridge {
         if let transcript = await makeTranscript(record) {
             box.lastTranscript = transcript
         }
+        await refreshHistory()
+        await refreshToday()
+        await announceProgress()
     }
 
     private func reset() {
         sawInserting = false
         didLand = false
+        stopPulses()
+        box.clearLive()
     }
 
     // MARK: helpers

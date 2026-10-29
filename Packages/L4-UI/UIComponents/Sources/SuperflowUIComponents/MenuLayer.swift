@@ -271,12 +271,14 @@ public struct ActionMenu: View {
     }
 
     private let actions: [Action]
+    @Binding private var isOpen: Bool
     private let label: String
     @Environment(MenuHost.self) private var host
     @State private var token = UUID()
     @State private var frame: CGRect = .zero
 
-    public init(actions: [Action], label: String = "More") {
+    public init(actions: [Action], label: String = "More", isOpen: Binding<Bool> = .constant(false)) {
+        _isOpen = isOpen
         self.actions = actions
         self.label = label
     }
@@ -297,5 +299,7 @@ public struct ActionMenu: View {
         }
         .reportFrame($frame)
         .onChange(of: frame) { _, value in host.reanchor(token, value) }
+        .onChange(of: host.isOpen(token)) { _, open in isOpen = open }
+        .onDisappear { if host.isOpen(token) { host.dismiss() }; isOpen = false }
     }
 }

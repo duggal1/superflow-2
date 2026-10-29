@@ -5,7 +5,8 @@ import SuperflowUIComponents
 import SwiftUI
 
 struct GeneralTab: View {
-    nonisolated static let titles = ["Name", "Appearance", "Launch at login"]
+    nonisolated static let titles = ["Name", "Appearance", "Launch at login",
+                                     "Always show Island"]
 
     @ObservedObject var model: SettingsViewModel
     let query: String
@@ -25,14 +26,19 @@ struct GeneralTab: View {
                           isOn: $model.settings.launchAtLogin,
                           enabled: model.launchAtLoginAvailable)
             }
+            SettingRow(.capsuleShape, "Always show Island", filter: query) {
+                AppToggle("Always show Island",
+                          isOn: $model.settings.islandAlwaysOn)
+            }
         }
     }
 }
 
 struct DictationTab: View {
     @Environment(\.openModels) private var openModels
-    nonisolated static let titles = ["Speech model", "Clean up with S1-mini",
-                                     "Hold to talk", "Double-tap window", "Meeting hold"]
+    nonisolated static let titles = ["Speech model", "Clean up with S1-mini", "Dictation key",
+                                     "Show live text", "Hold to talk", "Double-tap window",
+                                     "Meeting hold"]
 
     @ObservedObject var model: SettingsViewModel
     let query: String
@@ -64,7 +70,17 @@ struct DictationTab: View {
                     }
                 }
             }
-            SettingsCard(titles: Array(Self.titles.suffix(3)), query: query) {
+            SettingsCard(titles: Array(Self.titles.suffix(5)), query: query) {
+                SettingRow(.keyboard, "Dictation key", filter: query) {
+                    Dropdown(selection: $model.settings.dictationKey,
+                             options: DictationKey.allCases.map {
+                                 .init($0.caption, value: $0)
+                             },
+                             label: "Dictation key")
+                }
+                SettingRow(.liveText, "Show live text", filter: query) {
+                    AppToggle("Show live text", isOn: $model.settings.islandLiveText)
+                }
                 SettingRow(.handTap, "Hold to talk", filter: query) {
                     ms(\.holdMs, in: SettingsValidation.holdRange)
                 }

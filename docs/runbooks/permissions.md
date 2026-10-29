@@ -17,11 +17,32 @@ For release acceptance, test both first-time requests and revocation while the a
 
 ## Input Monitoring does not list Superflow
 
-This is the most common failure, and it has two causes.
+The Input Monitoring pane renders the `kTCCServiceListenEvent` row that TCC writes when the app
+*calls a request API*. Opening the pane alone never creates that row, so a button that only
+navigates leaves the app invisible.
 
-**1. The app was never registered with TCC.** `CGRequestListenEventAccess()` only raises a prompt the first time TCC sees a given code identity. When a stale record already exists it returns `false`, does nothing, and the bundle never appears in the Input Monitoring list — even though Accessibility lists it. The gate therefore requests *and then exercises* a listen-only event tap (`CGEvent.tapCreate`), which is what makes TCC record the app. If the entry still does not appear, call `revealAppForManualGrant()` (or find `dist/Superflow.app` yourself) and drag it onto the `+` button in that pane.
+**1. The app never requested access.** The gate must call both `CGRequestListenEventAccess()` and
+`IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)`; the second is the HID-level request the pane
+reads. Both are idempotent and safe to call on every repair. Do **not** use a listen-only
+`CGEvent.tapCreate` as a permission probe: the tap can install for a process TCC never
+registered, so the app concludes it is approved, skips the request, and never appears in the list.
+Status must come from `CGPreflightListenEventAccess()` / `IOHIDCheckAccess()` only.
 
-**2. The code identity changed.** TCC keys every grant to the signature. An ad-hoc signed build (`make app` with the default `-`) has a different cdhash on every rebuild, so each rebuild is a new app and old grants are orphaned. Fix it once:
+**2. The TCC row is stale.** A row written by an earlier ad-hoc build carries a code requirement
+that no longer matches the current signature. tccd logs `Failed to match existing code
+requirement for subject com.superflow.app and service kTCCServiceListenEvent` and refuses to
+reuse the row, so the app can be missing from the pane even after requesting. Clear the stale
+records once:
+
+```bash
+tccutil reset ListenEvent com.superflow.app
+tccutil reset Accessibility com.superflow.app
+tccutil reset Microphone com.superflow.app
+```
+
+**3. The code identity changed.** TCC keys every grant to the signature. An ad-hoc signed build
+(`make app` with the default `-`) has a different cdhash on every rebuild, so each rebuild is a
+new app and old grants are orphaned. Fix it once:
 
 ```bash
 ./tools/dev-signing                                  # creates a stable local identity
@@ -29,9 +50,18 @@ export SUPERFLOW_SIGN_IDENTITY="Superflow Development"
 make app
 ```
 
-Grant permissions once after that and they survive rebuilds. For distribution, use Developer ID (ADR 0012) so end users never see this.
+Grant permissions once after that and they survive rebuilds. For distribution, use Developer ID
+(ADR 0012) so end users never see this.
 
-**Why the two panes disagree.** Accessibility and Input Monitoring are separate TCC services (`kTCCServiceAccessibility` vs `kTCCServiceListenEvent`). A grant in one says nothing about the other, and an app can legitimately appear in only one of them until the corresponding API call is made.
+**Verifying registration.** After the app requests access, `log show --last 1m --predicate 'process
+== "tccd"'` must contain a `Modify` or `Add` event for `kTCCServiceListenEvent` with identifier
+`com.superflow.app`. A `Failed to match existing code requirement` line instead means the row is
+stale (case 2).
+
+**Why the two panes disagree.** Accessibility and Input Monitoring are separate TCC services
+(`kTCCServiceAccessibility` vs `kTCCServiceListenEvent`). A grant in one says nothing about the
+other, and an app can legitimately appear in only one of them until the corresponding API call
+is made.
 
 ## Accessibility looks granted but insertion still fails
 
