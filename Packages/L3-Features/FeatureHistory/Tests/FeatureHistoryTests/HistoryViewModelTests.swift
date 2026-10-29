@@ -1,11 +1,29 @@
 import Foundation
 import SuperflowKernel
+import SuperflowPorts
 import SuperflowTestKit
 import XCTest
 @testable import SuperflowFeatureHistory
 
 @MainActor
 final class HistoryViewModelTests: XCTestCase {
+    func testNewDictationAppearsWithoutReload() async throws {
+        let repository = InMemoryRepository()
+        let model = HistoryViewModel(repository: repository, inserter: RecordingInserter())
+        await model.load()
+        let session = SessionRecord(id: SessionID("live"), kind: .dictation,
+                                    status: .complete, modelProfile: "test")
+        try await repository.createSession(session)
+        // The store posts this after every write; the double stays passive.
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
+        var waited = 0
+        while model.sessions.isEmpty && waited < 100 {
+            try await Task.sleep(for: .milliseconds(10))
+            waited += 1
+        }
+        XCTAssertEqual(model.sessions.map(\.id), [session.id])
+    }
+
     private var repository: InMemoryRepository!
     private var inserter: RecordingInserter!
     private var model: HistoryViewModel!

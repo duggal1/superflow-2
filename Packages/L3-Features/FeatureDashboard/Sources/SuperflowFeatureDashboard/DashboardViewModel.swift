@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SuperflowKernel
 import SuperflowPorts
@@ -40,6 +41,10 @@ public final class DashboardViewModel: ObservableObject {
     private let calendar: Calendar
     private let now: () -> Date
     public private(set) var settings: AppSettings
+    /// The dashboard is open while a dictation finishes, so it follows the same
+    /// change signal History does instead of waiting for the next page visit.
+    private var changes: AnyCancellable?
+    private var loadChain: Task<Void, Never>?
 
     public init(repository: any TranscriptRepository, settings: AppSettings = .default,
                 calendar: Calendar = .current, now: @escaping () -> Date = { Date() }) {
@@ -48,6 +53,11 @@ public final class DashboardViewModel: ObservableObject {
         self.settings = settings
         self.calendar = calendar
         self.now = now
+        changes = NotificationCenter.default.publisher(for: .superflowTranscriptsChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in await self?.load() }
+            }
     }
 
     public func update(settings: AppSettings) {
@@ -59,11 +69,25 @@ public final class DashboardViewModel: ObservableObject {
     private var dailyCache: [DailyStat] = []
 
     public func load() async {
+        // The page is open while a dictation finishes. Chain reloads so an
+        // awaiting caller sees the change that woke it, never a fetch that was
+        // already in flight before the change landed.
+        let previous = loadChain
+        let task = Task { @MainActor [weak self] in
+            await previous?.value
+            await self?.performLoad()
+        }
+        loadChain = task
+        await task.value
+        if loadChain == task { loadChain = nil }
+    }
+
+    private func performLoad() async {
         isLoading = true
         error = nil
+        defer { isLoading = false }
         await recent.load(settings: settings)
         await loadUsage()
-        defer { isLoading = false }
         let today = calendar.startOfDay(for: now())
         guard let start = calendar.date(byAdding: .day, value: -364, to: today) else { return }
         let from = LocalDay.string(for: start, calendar: calendar)

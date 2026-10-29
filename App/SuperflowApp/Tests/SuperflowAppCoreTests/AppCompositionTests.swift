@@ -1,6 +1,7 @@
 import Foundation
 import SuperflowAppCore
 import SuperflowKernel
+import SuperflowPorts
 import SuperflowStorageSQLite
 import XCTest
 
@@ -63,6 +64,33 @@ final class AppCompositionTests: XCTestCase {
 
         let stored = try await repository.segments(session: session.id)
         XCTAssertEqual(stored.map(\.rawText), ["retained transcript"])
+    }
+
+    /// The session engine only writes the archived clip's duration and peaks when
+    /// the repository it holds conforms to `AudioMetadataStore`. The privacy
+    /// wrapper is that repository, so it has to forward instead of swallowing.
+    func testPrivacyWrapperForwardsAudioMetadataToTheStore() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SuperflowAudioMetadata-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let database = try SQLiteStore(path: directory.appendingPathComponent("test.sqlite").path)
+        let repository = PrivacyRepository(base: database)
+        let session = SessionRecord(kind: .dictation, modelProfile: "integration")
+        try await repository.createSession(session)
+
+        let store: any AudioMetadataStore = repository
+        try await store.setAudio(session: session.id, duration: 12.5, peaks: Data([1, 2, 3]))
+        var withAudio = try await store.sessionsWithAudio()
+        XCTAssertEqual(withAudio, [session.id])
+        let stored = try await database.session(session.id)
+        XCTAssertEqual(stored?.audioDuration, 12.5)
+        XCTAssertEqual(stored?.audioPeaks, Data([1, 2, 3]))
+
+        try await store.clearAudio(session: session.id)
+        withAudio = try await store.sessionsWithAudio()
+        XCTAssertTrue(withAudio.isEmpty)
     }
 
     @MainActor

@@ -1,5 +1,6 @@
 import Foundation
 import SuperflowKernel
+import SuperflowPorts
 import SuperflowTestKit
 import XCTest
 @testable import SuperflowFeatureDashboard
@@ -96,6 +97,28 @@ final class DashboardViewModelTests: XCTestCase {
         XCTAssertEqual(model.streakLabel, "0 days")
         XCTAssertEqual(model.activity.count, 365)
         XCTAssertTrue(model.activity.allSatisfy { $0.words == 0 && $0.level == 0 })
+    }
+
+    /// The dashboard is open while a dictation finishes; it must follow the
+    /// repository's change signal instead of waiting for the next visit.
+    func testLedgerChangeRefreshesAnOpenDashboard() async throws {
+        let repository = InMemoryRepository()
+        let model = DashboardViewModel(repository: repository, calendar: calendar,
+                                       now: { self.now })
+        await model.load()
+        XCTAssertEqual(model.summary.totalWords, 0)
+
+        try await repository.addDailyStat(DailyStat(day: "2026-03-15", words: 42,
+                                                    audioMs: 1_000, sessions: 1))
+        // The store posts this after every write; the double stays passive.
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
+        var waited = 0
+        while model.summary.totalWords == 0 && waited < 100 {
+            try await Task.sleep(for: .milliseconds(10))
+            waited += 1
+        }
+        XCTAssertEqual(model.summary.totalWords, 42)
+        XCTAssertEqual(model.summary.totalSessions, 1)
     }
 
     func testUpdateSettingsRecomputesSummaryWithoutReloading() async throws {

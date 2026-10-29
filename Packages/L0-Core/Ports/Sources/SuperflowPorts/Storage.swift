@@ -1,6 +1,10 @@
 import Foundation
 import SuperflowKernel
 
+public extension Notification.Name {
+    static let superflowTranscriptsChanged = Notification.Name("SuperflowTranscriptsChanged")
+}
+
 /// The two nullable audio columns, kept out of `TranscriptRepository` so a test
 /// double can save transcripts without pretending to archive audio.
 public protocol AudioMetadataStore: Sendable {

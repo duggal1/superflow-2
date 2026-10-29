@@ -10,6 +10,7 @@ extension SQLiteStore {
             "UPDATE sessions SET audio_duration = ?, audio_peaks = ? WHERE id = ?")
         try statement.bind([.real(duration), .blob(peaks), .text(session.value)])
         try statement.step()
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     public func clearAudio(session: SessionID) async throws {
@@ -17,6 +18,7 @@ extension SQLiteStore {
             "UPDATE sessions SET audio_duration = NULL, audio_peaks = NULL WHERE id = ?")
         try statement.bind([.text(session.value)])
         try statement.step()
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     public func sessionsWithAudio() async throws -> [SessionID] {

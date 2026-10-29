@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SuperflowKernel
 import SuperflowPorts
@@ -46,6 +47,8 @@ public final class HistoryViewModel: ObservableObject {
     private var deleted: DeletedSession?
     /// The file outlives the row until the undo toast expires.
     private var pendingAudioDeletion: Task<Void, Never>?
+    private var changes: AnyCancellable?
+    private var loadChain: Task<Void, Never>?
 
     private struct DeletedSession {
         var record: SessionRecord
@@ -61,6 +64,11 @@ public final class HistoryViewModel: ObservableObject {
         self.toast = toast
         self.pageSize = max(1, pageSize)
         self.onDeleteAudio = onDeleteAudio
+        changes = NotificationCenter.default.publisher(for: .superflowTranscriptsChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in await self?.load() }
+            }
     }
 
     public var selectedSession: SessionRecord? {
@@ -86,7 +94,21 @@ public final class HistoryViewModel: ObservableObject {
     public var isEmpty: Bool { !isLoading && sessions.isEmpty }
 
     public func load(reset: Bool = true) async {
-        guard !isLoading else { return }
+        // A finished dictation posts a change while the page may already be
+        // loading. Chain instead of dropping: an awaiting caller has to see the
+        // state that includes the change, not whichever fetch happened to be in
+        // flight when it asked.
+        let previous = loadChain
+        let task = Task { @MainActor [weak self] in
+            await previous?.value
+            await self?.performLoad(reset: reset)
+        }
+        loadChain = task
+        await task.value
+        if loadChain == task { loadChain = nil }
+    }
+
+    private func performLoad(reset: Bool) async {
         isLoading = true
         error = nil
         if reset { offset = 0 }

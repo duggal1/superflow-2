@@ -50,7 +50,11 @@ public final class RecentDictationViewModel: ObservableObject {
         do {
             let records = try await repository.sessions(kind: .dictation, query: nil, limit: 24, offset: 0)
             var loaded: [RecentDictationEntry] = []
+            // A take still being recorded has no text yet; listing it would show
+            // "No speech found." while the user is speaking, because the
+            // dashboard now reloads on every change instead of on page visits.
             for record in records where !hidden.contains(record.id)
+                && record.status != .recording && record.status != .finalizing
                 && (record.wordCount > 0 || record.status != .complete) {
                 guard loaded.count < 5 else { break }
                 let segments = try await repository.segments(session: record.id).sorted { $0.index < $1.index }
@@ -117,10 +121,9 @@ public final class RecentDictationViewModel: ObservableObject {
                 record.wordCount = result.cleaned.split(whereSeparator: \.isWhitespace).count
                 record.status = .complete
                 record.cleanupState = .cleaned
+                // Finalize moves the day's ledger by the word delta itself.
                 try await repository.finalizeSession(entry.id, endedAt: record.endedAt ?? Date(), status: .complete,
                     durationMs: record.durationMs, wordCount: record.wordCount, cleanupState: .cleaned)
-                try? await repository.addDailyStat(DailyStat(day: record.localDay,
-                    words: record.wordCount - entry.record.wordCount, audioMs: 0, sessions: 0))
                 edit(entry.id) { $0.record = record; $0.raw = result.raw; $0.cleaned = result.cleaned }
             } catch is CancellationError {} catch { await failRetry(entry, message: "Transcription failed.") }
         }

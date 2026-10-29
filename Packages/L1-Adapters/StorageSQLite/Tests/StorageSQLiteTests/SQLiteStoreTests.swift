@@ -153,6 +153,56 @@ final class SQLiteStoreTests: XCTestCase {
         XCTAssertEqual(stats[1].words, 10)
     }
 
+    /// The dashboard reads only this ledger. Finalizing is where a take becomes
+    /// finished, so it must move the day's words, audio and session count.
+    func testFinalizeMovesTheDailyLedger() async throws {
+        let session = makeSession(SessionID("ledger"))
+        try await store.createSession(session)
+        try await store.finalizeSession(session.id, endedAt: Date(timeIntervalSince1970: 1_700_000_100),
+                                        status: .complete, durationMs: 100_000, wordCount: 240,
+                                        cleanupState: .cleaned)
+        let stored = try await store.session(session.id)
+        let day = try XCTUnwrap(stored?.localDay)
+        var stats = try await store.dailyStats(fromDay: day, toDay: day)
+        XCTAssertEqual(stats, [DailyStat(day: day, words: 240, audioMs: 100_000, sessions: 1)])
+
+        // A retry rewrites the same take: words move by the difference and the
+        // session is not counted a second time.
+        try await store.finalizeSession(session.id, endedAt: Date(timeIntervalSince1970: 1_700_000_100),
+                                        status: .complete, durationMs: 100_000, wordCount: 260,
+                                        cleanupState: .cleaned)
+        stats = try await store.dailyStats(fromDay: day, toDay: day)
+        XCTAssertEqual(stats, [DailyStat(day: day, words: 260, audioMs: 100_000, sessions: 1)])
+    }
+
+    func testMeetingsStayOutOfTheDailyLedger() async throws {
+        let meeting = makeSession(SessionID("meeting-ledger"), kind: .meeting)
+        try await store.createSession(meeting)
+        try await store.finalizeSession(meeting.id, endedAt: Date(timeIntervalSince1970: 1_700_000_100),
+                                        status: .complete, durationMs: 600_000, wordCount: 900,
+                                        cleanupState: .cleaned)
+        let stored = try await store.session(meeting.id)
+        let day = try XCTUnwrap(stored?.localDay)
+        let stats = try await store.dailyStats(fromDay: day, toDay: day)
+        XCTAssertTrue(stats.isEmpty)
+    }
+
+    func testPurgeSubtractsFromTheDailyLedger() async throws {
+        let session = makeSession(SessionID("purge-ledger"),
+                                  startedAt: Date(timeIntervalSince1970: 100))
+        try await store.createSession(session)
+        try await store.finalizeSession(session.id, endedAt: Date(timeIntervalSince1970: 200),
+                                        status: .complete, durationMs: 60_000, wordCount: 120,
+                                        cleanupState: .cleaned)
+        let stored = try await store.session(session.id)
+        let day = try XCTUnwrap(stored?.localDay)
+
+        let purged = try await store.purge(olderThan: Date(timeIntervalSince1970: 500))
+        XCTAssertEqual(purged, 1)
+        let stats = try await store.dailyStats(fromDay: day, toDay: day)
+        XCTAssertEqual(stats, [DailyStat(day: day, words: 0, audioMs: 0, sessions: 0)])
+    }
+
     func testUnfinishedAndPurge() async throws {
         let active = makeSession(SessionID("active"), startedAt: Date(timeIntervalSince1970: 100),
                                  status: .recording)

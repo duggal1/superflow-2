@@ -3,7 +3,7 @@ import Foundation
 /// Versioned migrations. Each version is applied inside its own transaction so
 /// a failed upgrade leaves the previous schema intact.
 enum Schema {
-    static let currentVersion: Int32 = 3
+    static let currentVersion: Int32 = 4
 
     static func migrate(_ connection: SQLiteConnection) throws {
         let version = try connection.userVersion
@@ -24,6 +24,12 @@ enum Schema {
             try connection.transaction {
                 try connection.execute(v3)
                 try connection.setUserVersion(3)
+            }
+        }
+        if version < 4 {
+            try connection.transaction {
+                try connection.execute(v4)
+                try connection.setUserVersion(4)
             }
         }
     }
@@ -119,5 +125,18 @@ enum Schema {
     static let v3 = """
     ALTER TABLE sessions ADD COLUMN audio_duration REAL;
     ALTER TABLE sessions ADD COLUMN audio_peaks BLOB;
+    """
+
+    /// v4 rebuilds the daily ledger from the sessions it is supposed to describe.
+    /// Nothing ever incremented it before finalize learned to, so every dashboard
+    /// metric read zero on a library full of dictations; a delete had even driven
+    /// one day negative. Sessions are the source of truth, so recompute from them.
+    static let v4 = """
+    DELETE FROM daily_stats;
+    INSERT INTO daily_stats (day, words, audio_ms, sessions)
+    SELECT local_day, SUM(word_count), SUM(duration_ms), COUNT(*)
+    FROM sessions
+    WHERE kind = 'dictation' AND status NOT IN ('recording', 'finalizing')
+    GROUP BY local_day;
     """
 }

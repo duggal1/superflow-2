@@ -26,7 +26,8 @@ final class RecentDictationTests: XCTestCase {
 
     func testPrivacyRemovesRealRowsAndPlayback() async throws {
         let repository = InMemoryRepository()
-        let record = SessionRecord(kind: .dictation, modelProfile: "test")
+        let record = SessionRecord(kind: .dictation, status: .complete,
+                                   modelProfile: "test", wordCount: 2)
         try await repository.createSession(record)
         let model = RecentDictationViewModel(repository: repository)
         await model.load(settings: .default)
@@ -40,7 +41,8 @@ final class RecentDictationTests: XCTestCase {
 
     func testUndoKeepsRepositoryRecordAndRestoresRow() async throws {
         let repository = InMemoryRepository()
-        let record = SessionRecord(kind: .dictation, modelProfile: "test")
+        let record = SessionRecord(kind: .dictation, status: .complete,
+                                   modelProfile: "test", wordCount: 2)
         try await repository.createSession(record)
         let model = RecentDictationViewModel(repository: repository)
         await model.load(settings: .default)
@@ -53,6 +55,16 @@ final class RecentDictationTests: XCTestCase {
         XCTAssertEqual(model.entries.first?.id, record.id)
     }
 
+
+    func testInProgressTakesAreNotListedWhileRecording() async throws {
+        let repository = InMemoryRepository()
+        let recording = SessionRecord(kind: .dictation, status: .recording,
+                                      modelProfile: "test", wordCount: 0)
+        try await repository.createSession(recording)
+        let model = RecentDictationViewModel(repository: repository)
+        await model.load(settings: .default)
+        XCTAssertTrue(model.entries.isEmpty)
+    }
 
     func testZeroWordCompleteSessionsAreHiddenButFailedAndCancelledRemain() async throws {
         let repository = InMemoryRepository()

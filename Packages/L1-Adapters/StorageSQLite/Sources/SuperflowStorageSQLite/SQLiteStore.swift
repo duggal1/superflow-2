@@ -40,6 +40,7 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
         let statement = try db.prepare(sql)
         try statement.bind(Self.values(for: s))
         try statement.step()
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     public func appendSegment(_ s: Segment) async throws {
@@ -64,6 +65,7 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
             try statement.step()
             try replaceSearchRow(session: s.sessionID, index: s.index, text: s.bestText)
         }
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     public func updateCleaned(session: SessionID, index: Int, cleaned: String?,
@@ -80,18 +82,52 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
             guard try raw.step(), let rawText = raw.text(0) else { return }
             try replaceSearchRow(session: session, index: index, text: cleaned ?? rawText)
         }
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     public func finalizeSession(_ id: SessionID, endedAt: Date, status: SessionStatus, durationMs: Int,
                                 wordCount: Int, cleanupState: CleanupState) async throws {
-        let statement = try db.prepare("""
-        UPDATE sessions SET ended_at = ?, status = ?, duration_ms = ?, word_count = ?, cleanup_state = ?
-        WHERE id = ?
-        """)
-        try statement.bind([.real(endedAt.timeIntervalSince1970), .text(status.rawValue),
-                            .integer(Int64(durationMs)), .integer(Int64(wordCount)),
-                            .text(cleanupState.rawValue), .text(id.value)])
-        try statement.step()
+        try db.transaction {
+            // The dashboard reads daily_stats. Finalize is the only place a
+            // dictation becomes a finished take, so the ledger moves by the
+            // difference between what was stored and what is being stored; a
+            // retry that rewrites a word count must not count the take twice.
+            let previous = try db.prepare("""
+            SELECT kind, local_day, status, word_count, duration_ms FROM sessions WHERE id = ?
+            """)
+            try previous.bind([.text(id.value)])
+            var kind: String?
+            var day = ""
+            var wasOpen = false
+            var previousWords = 0
+            var previousMs = 0
+            if try previous.step() {
+                kind = previous.text(0)
+                day = previous.text(1) ?? ""
+                let previousStatus = previous.text(2) ?? ""
+                wasOpen = previousStatus == SessionStatus.recording.rawValue
+                    || previousStatus == SessionStatus.finalizing.rawValue
+                previousWords = Int(previous.int(3))
+                previousMs = Int(previous.int(4))
+            }
+
+            let statement = try db.prepare("""
+            UPDATE sessions SET ended_at = ?, status = ?, duration_ms = ?, word_count = ?, cleanup_state = ?
+            WHERE id = ?
+            """)
+            try statement.bind([.real(endedAt.timeIntervalSince1970), .text(status.rawValue),
+                                .integer(Int64(durationMs)), .integer(Int64(wordCount)),
+                                .text(cleanupState.rawValue), .text(id.value)])
+            try statement.step()
+
+            if kind == SessionKind.dictation.rawValue, !day.isEmpty {
+                try Self.applyDailyDelta(db, day: day,
+                                         words: wordCount - previousWords,
+                                         audioMs: durationMs - previousMs,
+                                         sessions: wasOpen ? 1 : 0)
+            }
+        }
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     public func sessions(kind: SessionKind?, query: String?, limit: Int, offset: Int) async throws -> [SessionRecord] {
@@ -189,6 +225,7 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
             try statement.bind([.text(id.value)])
             try statement.step()
         }
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     // MARK: speakers
@@ -201,6 +238,7 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
         try statement.bind([.text(s.sessionID.value), .text(s.id), .text(s.label),
                             .integer(s.isSelf ? 1 : 0)])
         try statement.step()
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     public func speakers(session: SessionID) async throws -> [SpeakerRecord] {
@@ -221,12 +259,14 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
         let statement = try db.prepare("UPDATE sessions SET title = ? WHERE id = ?")
         try statement.bind([.text(title), .text(id.value)])
         try statement.step()
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     public func renameSpeaker(session: SessionID, id: String, label: String) async throws {
         let statement = try db.prepare("UPDATE speakers SET label = ? WHERE session_id = ? AND id = ?")
         try statement.bind([.text(label), .text(session.value), .text(id)])
         try statement.step()
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
     }
 
     // MARK: stats and maintenance
@@ -248,6 +288,16 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
     }
 
     public func addDailyStat(_ s: DailyStat) async throws {
+        try Self.applyDailyDelta(db, day: s.day, words: s.words,
+                                 audioMs: s.audioMs, sessions: s.sessions)
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
+    }
+
+    /// Moves one day's ledger row by a delta. Shared by `addDailyStat` and the
+    /// finalize path so both write the same row shape.
+    static func applyDailyDelta(_ db: SQLiteConnection, day: String,
+                                words: Int, audioMs: Int, sessions: Int) throws {
+        guard words != 0 || audioMs != 0 || sessions != 0 else { return }
         let statement = try db.prepare("""
         INSERT INTO daily_stats (day, words, audio_ms, sessions) VALUES (?, ?, ?, ?)
         ON CONFLICT(day) DO UPDATE SET
@@ -255,8 +305,8 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
             audio_ms = audio_ms + excluded.audio_ms,
             sessions = sessions + excluded.sessions
         """)
-        try statement.bind([.text(s.day), .integer(Int64(s.words)),
-                            .integer(Int64(s.audioMs)), .integer(Int64(s.sessions))])
+        try statement.bind([.text(day), .integer(Int64(words)),
+                            .integer(Int64(audioMs)), .integer(Int64(sessions))])
         try statement.step()
     }
 
@@ -274,25 +324,33 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
 
     public func purge(olderThan: Date) async throws -> Int {
         let select = try db.prepare("""
-        SELECT id FROM sessions WHERE started_at < ? AND status NOT IN ('recording', 'finalizing')
+        SELECT id, kind, local_day, word_count, duration_ms FROM sessions
+        WHERE started_at < ? AND status NOT IN ('recording', 'finalizing')
         """)
         try select.bind([.real(olderThan.timeIntervalSince1970)])
-        var ids: [SessionID] = []
+        var purged: [(id: SessionID, kind: String, day: String, words: Int, audioMs: Int)] = []
         while try select.step() {
-            if let id = select.text(0) { ids.append(SessionID(id)) }
+            guard let id = select.text(0) else { continue }
+            purged.append((SessionID(id), select.text(1) ?? "", select.text(2) ?? "",
+                           Int(select.int(3)), Int(select.int(4))))
         }
-        guard !ids.isEmpty else { return 0 }
+        guard !purged.isEmpty else { return 0 }
         try db.transaction {
-            for id in ids {
+            for entry in purged {
                 let search = try db.prepare("DELETE FROM segment_search WHERE session_id = ?")
-                try search.bind([.text(id.value)])
+                try search.bind([.text(entry.id.value)])
                 try search.step()
                 let delete = try db.prepare("DELETE FROM sessions WHERE id = ?")
-                try delete.bind([.text(id.value)])
+                try delete.bind([.text(entry.id.value)])
                 try delete.step()
+                if entry.kind == SessionKind.dictation.rawValue, !entry.day.isEmpty {
+                    try Self.applyDailyDelta(db, day: entry.day, words: -entry.words,
+                                             audioMs: -entry.audioMs, sessions: -1)
+                }
             }
         }
-        return ids.count
+        NotificationCenter.default.post(name: .superflowTranscriptsChanged, object: nil)
+        return purged.count
     }
 
     public func sessionCount(kind: SessionKind?) async throws -> Int {

@@ -175,11 +175,43 @@ final class MigrationAndDurabilityTests: XCTestCase {
         XCTAssertEqual(found.map(\.id), [SessionID("v1-session")])
 
         let connection = try SQLiteConnection(path: url.path)
-        XCTAssertEqual(try connection.userVersion, 3)
+        XCTAssertEqual(try connection.userVersion, Schema.currentVersion)
         let sessionIndexes = try indexNames(connection, table: "sessions")
         let segmentIndexes = try indexNames(connection, table: "segments")
         XCTAssertTrue(sessionIndexes.contains("sessions_status"))
         XCTAssertTrue(segmentIndexes.contains("segments_source"))
+    }
+
+    /// v4 rebuilds a ledger that was never maintained: an old library has all its
+    /// words in `sessions` while `daily_stats` says zero (or worse, negative).
+    func testV3LedgerIsRebuiltFromSessions() async throws {
+        let url = databaseURL("ledger.sqlite")
+        do {
+            let connection = try SQLiteConnection(path: url.path)
+            try connection.execute(try fixtureSQL())
+            try connection.setUserVersion(1)
+            try connection.execute(Schema.v2)
+            try connection.setUserVersion(2)
+            try connection.execute(Schema.v3)
+            try connection.setUserVersion(3)
+            try connection.execute("""
+            INSERT INTO sessions (id, kind, started_at, status, model_profile, local_day,
+                                  word_count, duration_ms)
+            VALUES ('d1', 'dictation', 1700000000, 'complete', 'p', '2023-11-14', 100, 60000),
+                   ('d2', 'dictation', 1700000100, 'complete', 'p', '2023-11-14', 50, 30000),
+                   ('d3', 'dictation', 1700000200, 'recording', 'p', '2023-11-14', 7, 5000),
+                   ('m1', 'meeting', 1700000300, 'complete', 'p', '2023-11-14', 900, 600000);
+            INSERT INTO daily_stats (day, words, audio_ms, sessions)
+            VALUES ('2023-11-14', 0, 0, -1);
+            """)
+        }
+
+        let store = try SQLiteStore(path: url.path)
+        let stats = try await store.dailyStats(fromDay: "2023-11-14", toDay: "2023-11-14")
+        XCTAssertEqual(stats, [DailyStat(day: "2023-11-14", words: 150,
+                                         audioMs: 90_000, sessions: 2)])
+        let connection = try SQLiteConnection(path: url.path)
+        XCTAssertEqual(try connection.userVersion, Schema.currentVersion)
     }
 
     func testMigrationIsIdempotentAcrossReopen() async throws {
@@ -194,7 +226,7 @@ final class MigrationAndDurabilityTests: XCTestCase {
         let count = try await second.sessionCount(kind: nil)
         XCTAssertEqual(count, 1)
         let connection = try SQLiteConnection(path: url.path)
-        XCTAssertEqual(try connection.userVersion, 3)
+        XCTAssertEqual(try connection.userVersion, Schema.currentVersion)
     }
 
     func testFailedMigrationRollsBackAndFactoryPreservesHistory() async throws {

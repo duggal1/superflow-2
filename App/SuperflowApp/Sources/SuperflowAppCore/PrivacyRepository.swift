@@ -136,3 +136,24 @@ public actor PrivacyRepository: TranscriptRepository {
         try await base.sessionCount(kind: kind)
     }
 }
+
+/// The session engine only writes audio metadata when the repository it holds
+/// can store it. Wrapping the database in this actor hid that conformance, so
+/// every archived clip lost its duration and peaks; forward the three methods
+/// to the store that actually has the columns.
+extension PrivacyRepository: AudioMetadataStore {
+    public func setAudio(session: SessionID, duration: TimeInterval, peaks: Data) async throws {
+        guard let store = base as? any AudioMetadataStore else { return }
+        try await store.setAudio(session: session, duration: duration, peaks: peaks)
+    }
+
+    public func clearAudio(session: SessionID) async throws {
+        guard let store = base as? any AudioMetadataStore else { return }
+        try await store.clearAudio(session: session)
+    }
+
+    public func sessionsWithAudio() async throws -> [SessionID] {
+        guard let store = base as? any AudioMetadataStore else { return [] }
+        return try await store.sessionsWithAudio()
+    }
+}
