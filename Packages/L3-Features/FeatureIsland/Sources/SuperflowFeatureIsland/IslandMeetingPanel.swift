@@ -12,6 +12,7 @@ struct ClockMetric: View {
             let total = max(0, Int(timeline.date.timeIntervalSince(since)))
             Text(Self.clock(total))
                 .appType(.metric)
+                .monospacedDigit()
                 .foregroundStyle(Tok.text)
                 .contentTransition(.numericText())
         }

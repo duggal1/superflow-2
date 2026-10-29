@@ -22,7 +22,10 @@ extension IslandModel {
         case .notchClicked:
             clicked()
             return
-        case .holdEnded, .cancelled, .landed, .pasteFailed, .notice, .dismissed:
+        case .notice(let notice):
+            receiveNotice(notice)
+            return
+        case .holdEnded, .cancelled, .landed, .pasteFailed, .dismissed:
             break
         }
         go(IslandReducer.reduce(phase, event))
@@ -92,7 +95,7 @@ extension IslandModel {
     /// An OS-style notice, drawn in the Island. The notifier below is the first
     /// caller; the app can post any other with the same API.
     public func notify(_ notice: IslandNotice) {
-        go(.notice(notice))
+        send(.notice(notice))
     }
 
     /// Copies the cleaned text. A failed paste closes itself 0.9 s after the

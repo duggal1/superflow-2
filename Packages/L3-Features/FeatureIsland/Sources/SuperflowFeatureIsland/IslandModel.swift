@@ -73,9 +73,7 @@ public final class IslandModel {
     @ObservationIgnored private var hintTask: Task<Void, Never>?
     @ObservationIgnored private var consumers: [Task<Void, Never>] = []
     @ObservationIgnored var recordedAt: Date?
-    @ObservationIgnored private var pendingNotice: IslandNotice?
-    @ObservationIgnored private var totalWords = 0
-    @ObservationIgnored private var nextMilestone = 1_000
+    @ObservationIgnored var pendingNotices: [IslandNotice] = []
 
     public init(feed: any IslandFeed, geometry: NotchGeometry) {
         self.feed = feed
@@ -159,28 +157,18 @@ public final class IslandModel {
             elapsed = 0
         }
 
-        if case .landed(let words) = next { accumulate(words) }
-
         let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         withAnimation(IslandLayout.animation(from: prev, to: next, reduceMotion: reduce)) {
             phase = next
         }
 
         sideEffects(next)
-        updateHint(next)
+        updateHint(next, from: prev)
         phaseDidChange(next)
 
         switch next {
         case .landed:
-            after(900) { [weak self] in
-                guard let self else { return }
-                if let notice = self.pendingNotice {
-                    self.pendingNotice = nil
-                    self.go(.notice(notice))
-                } else {
-                    self.go(.idle)
-                }
-            }
+            after(900) { [weak self] in self?.go(.idle) }
         case .undo(let undo):
             undoRemaining = Self.undoWindow
             undoDeadline = Date().addingTimeInterval(TimeInterval(Self.undoWindow))
@@ -198,24 +186,13 @@ public final class IslandModel {
             if !prev.isRest {
                 after(420) { [weak self] in self?.placement(.home) }
             }
-        case .hover, .listening, .handsFree, .meeting, .meetingPanel, .processing,
+            schedulePendingNotice()
+        case .hover:
+            schedulePendingNotice()
+        case .listening, .handsFree, .meeting, .meetingPanel, .processing,
              .recent, .history:
             break
         }
-    }
-
-    /// One thousand words is worth saying out loud. The card is queued behind the
-    /// "Pasted" tick so the two never fight for the same 900 ms.
-    private func accumulate(_ words: Int) {
-        totalWords += words
-        guard totalWords >= nextMilestone else { return }
-        pendingNotice = IslandNotice(
-            kind: .milestone,
-            title: "\(nextMilestone.formatted()) words.",
-            detail: "\(totalWords.formatted()) words dictated with Superflow.",
-            value: nextMilestone
-        )
-        nextMilestone *= 2
     }
 
     func scheduleFailureTimeout(ms: Int) {
@@ -258,10 +235,12 @@ public final class IslandModel {
     /// The key hints belong to a live mode, not to a card. They arrive with the
     /// mode and leave after 2.4 s: long enough to read once, short enough that a
     /// long meeting is not permanently wearing a keyboard tutorial.
-    private func updateHint(_ next: IslandPhase) {
+    private func updateHint(_ next: IslandPhase, from previous: IslandPhase) {
         hintTask?.cancel()
         hintTask = nil
         switch next {
+        case .meeting where previous == .meetingPanel:
+            setHint(false)
         case .handsFree, .meeting:
             setHint(true)
             hintTask = Task { @MainActor [weak self] in

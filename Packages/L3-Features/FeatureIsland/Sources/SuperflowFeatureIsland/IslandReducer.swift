@@ -26,9 +26,13 @@ public enum IslandReducer {
                 // A failure, a live undo or a card the owner opened owns the
                 // Island. A notification never covers it.
                 return phase
-            case .idle, .hover, .listening, .handsFree, .meeting, .meetingPanel,
-                 .processing, .landed, .notice:
+            case .idle, .hover:
                 return .notice(notice)
+            case .listening, .handsFree, .meeting, .meetingPanel, .processing, .landed, .notice:
+                switch notice.kind {
+                case .milestone, .streak, .modelReady, .update: return phase
+                case .clipboard, .info: return .notice(notice)
+                }
             }
         case .notchClicked:
             // The model resolves the target, because it is the only thing that

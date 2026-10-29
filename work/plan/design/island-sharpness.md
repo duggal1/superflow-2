@@ -10,3 +10,7 @@ Integrate the supplied SwiftUI design with the existing Island. Preserve the wor
 - Run `python3 tools/verify-island`, the normal feature test command where possible, and forbidden-pattern lint. Record unrelated failures without changing those files.
 
 The temporary verification package symlinks the real Island and host sources and uses their production UI dependencies. It excludes unused speech-engine package dependencies; it does not substitute application data or verify the full engine integration.
+
+Completed: shell geometry, live shelf, history bounds and scrolling, focus, visible lamp, genuine notification queue and expiry. Updated the local ignored DESIGN.md §0.11 and §8.18.
+
+Verification: normal FeatureIsland package passed 68 tests; the isolated package also passed those tests plus three real NSPanel keyboard/focus tests. Native previews cover nine states on wide-notch and external geometries, exported at 2× using ISLAND_SNAPSHOT_DIR. Repository lint reported four existing onboarding violations; none came from Island files.

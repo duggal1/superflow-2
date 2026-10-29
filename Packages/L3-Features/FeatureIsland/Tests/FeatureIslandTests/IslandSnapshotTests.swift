@@ -187,8 +187,9 @@ final class IslandSnapshotTests: XCTestCase {
             for (state, phase) in phases {
                 model.go(phase)
                 let bitmap = try hostedBitmap(model)
-                let image = try render(model)
-                XCTAssertEqual(image.size, IslandLayout.canvas)
+                let image = NSImage(cgImage: try XCTUnwrap(bitmap.cgImage), size: IslandLayout.canvas)
+                XCTAssertEqual(bitmap.pixelsWide, Int(IslandLayout.canvas.width * 2))
+                XCTAssertEqual(bitmap.pixelsHigh, Int(IslandLayout.canvas.height * 2))
                 XCTAssertGreaterThan(try opaquePixels(image), 0)
                 if let output = ProcessInfo.processInfo.environment["ISLAND_SNAPSHOT_DIR"] {
                     let directory = URL(fileURLWithPath: output, isDirectory: true)
@@ -216,7 +217,11 @@ final class IslandSnapshotTests: XCTestCase {
         defer { window.close() }
         RunLoop.current.run(until: Date().addingTimeInterval(0.3))
         host.layoutSubtreeIfNeeded()
-        let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+        let bitmap = try XCTUnwrap(NSBitmapImageRep(bitmapDataPlanes: nil,
+            pixelsWide: Int(IslandLayout.canvas.width * 2), pixelsHigh: Int(IslandLayout.canvas.height * 2),
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0))
+        bitmap.size = IslandLayout.canvas
         host.cacheDisplay(in: host.bounds, to: bitmap)
         return bitmap
     }

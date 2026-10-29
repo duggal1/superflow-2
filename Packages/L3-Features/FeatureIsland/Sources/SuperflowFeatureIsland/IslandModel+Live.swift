@@ -9,6 +9,7 @@ public extension IslandModel {
     func configure(_ prefs: IslandPrefs) {
         guard prefs != self.prefs else { return }
         self.prefs = prefs
+        if !prefs.liveText { live = .empty }
         if prefs.alwaysOn {
             today = feed.wordsToday()
         } else {
