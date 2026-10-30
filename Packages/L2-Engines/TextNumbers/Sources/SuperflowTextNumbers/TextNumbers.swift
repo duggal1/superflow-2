@@ -12,6 +12,23 @@ public enum TextNumbers {
         }
         while i < words.count {
             guard NumberLex.editable(words, i) else { output.append(words[i]); i += 1; continue }
+            if options.largeNumberStyle == .abbreviated, words[i].key == "half", !words[i].hardBreak {
+                let scaleIndex = i + (i + 1 < words.count && ["a", "an"].contains(words[i + 1].key) ? 2 : 1)
+                if NumberLex.editable(words, scaleIndex),
+                   let suffix = NumberTables.abbrevSuffix[words[scaleIndex].key],
+                   (i..<scaleIndex).allSatisfy({ NumberLex.editable(words, $0) && !words[$0].hardBreak }) {
+                    var core = "0.5" + suffix
+                    var used = scaleIndex - i + 1
+                    let next = scaleIndex + 1
+                    if !words[scaleIndex].hardBreak, NumberLex.editable(words, next),
+                       let currency = NumberPieces.currency[words[next].key] {
+                        core = currency + core
+                        used += 1
+                    }
+                    emit(core, used)
+                    continue
+                }
+            }
             if isListMarker(words, at: i) { output.append(words[i]); i += 1; continue }
             if let (clock, used) = NumberPieces.clock(words, i) { emit(clock, used); continue }
             if NumberPieces.yearContext(output), let (year, used) = NumberPieces.year(words, i) {
@@ -54,7 +71,12 @@ public enum TextNumbers {
                 core = NumberPieces.group(parsed.value, options.grouping) + "." + decimals.joined(separator: ".")
                 if decimals.count == 1, NumberLex.editable(words, j), !words[j - 1].hardBreak,
                    NumberLex.scales[words[j].key] != nil {
-                    core += " " + words[j].key
+                    if options.largeNumberStyle == .abbreviated,
+                       let suffix = NumberTables.abbrevSuffix[words[j].key] {
+                        core += suffix
+                    } else {
+                        core += " " + words[j].key
+                    }
                     j += 1
                 }
             }

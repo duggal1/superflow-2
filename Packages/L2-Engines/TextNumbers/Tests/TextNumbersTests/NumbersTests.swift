@@ -108,7 +108,8 @@ final class NumbersTests: XCTestCase {
         let exit = await run("the exit code was five nine")
         XCTAssertEqual(exit, "the exit code was 59")
         // Counting and enumeration speech has no code context and stays words.
-        XCTAssertEqual(await run("one two three"), "one two three")
+        let counting = await run("one two three")
+        XCTAssertEqual(counting, "one two three")
         let prose = await run("the answer four two nine nobody knows")
         XCTAssertEqual(prose, "the answer four two nine nobody knows")
         // Interior punctuation breaks the run: it is a list, not an identifier.

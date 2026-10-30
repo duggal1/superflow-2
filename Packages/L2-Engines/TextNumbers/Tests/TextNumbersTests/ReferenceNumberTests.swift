@@ -3,6 +3,30 @@ import SuperflowKernel
 @testable import SuperflowTextNumbers
 
 final class ReferenceNumberTests: XCTestCase {
+    func testNumericScalesAndProtectedValues() async {
+        var settings = AppSettings.default
+        settings.numberStyle = .abbreviated
+        let stage = NumberCleanupStage()
+        for (input, expected) in [("0.6 billion", "0.6B"), ("2.2 trillion", "2.2T"),
+                                  ("half 1M", "0.5M")] {
+            let output = await stage.apply(TranscriptDraft(text: input), context: TextContext(settings: settings))
+            XCTAssertEqual(output.text, expected, input)
+        }
+        let input = "0.6 billion"
+        let output = await stage.apply(TranscriptDraft(text: input, protected: Protected(literals: [input])),
+                                       context: TextContext(settings: settings))
+        XCTAssertEqual(output.text, input)
+    }
+    func testCompactTechnicalQuantities() {
+        var options = NumberOptions()
+        options.largeNumberStyle = .abbreviated
+        for (input, expected) in [("zero point six billion", "0.6B"),
+                                  ("half a million", "0.5M"),
+                                  ("half a million dollars", "$0.5M"),
+                                  ("six hundred million parameter model", "600M parameter model")] {
+            XCTAssertEqual(render(input, options: options), expected, input)
+        }
+    }
     private func render(_ input: String, options: NumberOptions = .init()) -> String {
         Tokenizer.join(TextNumbers.apply(Tokenizer.words(input), options))
     }

@@ -241,7 +241,11 @@ public struct NumbersStage: TextStage {
 
     private static func hasCodeContext(_ tokens: [Token], before index: Int) -> Bool {
         let from = max(0, index - 6)
-        return (from..<index).contains { codeContextWords.contains(tokens[$0].core.lowercased()) }
+        for position in (from..<index).reversed() {
+            if !tokens[position].trail.isEmpty { return false }
+            if codeContextWords.contains(tokens[position].core.lowercased()) { return true }
+        }
+        return false
     }
 
     /// Collects the longest run of spoken single-digit words starting at

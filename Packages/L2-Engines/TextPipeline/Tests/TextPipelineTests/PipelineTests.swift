@@ -17,6 +17,17 @@ private struct EraserStage: TextStage {
 }
 
 final class PipelineTests: XCTestCase {
+    func testCompactModelSizeSurvivesCleanerDeletingIt() async {
+        var settings = AppSettings.default
+        settings.cleanupEnabled = true
+        settings.harperEnabled = false
+        let pipeline = TextPipelineBuilder.make(settings: settings,
+            dependencies: TextPipelineDependencies(cleaner: CleanupService(cleaner: FakeTextCleaner(.dropLast))))
+        let result = await pipeline.run("I need an extremely extremely fast model with zero point six billion",
+                                        context: TextContext(settings: settings))
+        XCTAssertTrue(result.text.contains("0.6B"), result.text)
+        XCTAssertFalse(result.text.lowercased().contains("extremely extremely"), result.text)
+    }
     private func dependencies(cleaner: FakeTextCleaner = FakeTextCleaner(.identity),
                               grammar: FakeGrammarChecker? = nil,
                               policy: GrammarGatePolicy = GrammarGatePolicy(maxEditRatio: 1.0, timeCapMs: 500))
