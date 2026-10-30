@@ -12,10 +12,11 @@ import SwiftUI
 /// the silhouette rather than an overlay, so the shape grows to hold them.
 struct WingsContent: View {
     let model: IslandModel
+    /// The scene being drawn. The outgoing layer passes the previous phase so a
+    /// crossfade cannot repaint the wings with the incoming marks.
+    let phase: IslandPhase
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var phase: IslandPhase { model.phase }
 
     var body: some View {
         let geometry = model.geometry
@@ -37,7 +38,26 @@ struct WingsContent: View {
             }
             .frame(height: geometry.band)
 
-            if model.noSignal {
+            if phase == .handsFree {
+                ZStack {
+                    HintShelf(items: hints ?? [])
+                        .opacity(model.noSignal ? 0 : (model.hint ? 1 : 0))
+                    if model.prefs.liveText {
+                        LiveLine(live: model.live)
+                            .padding(.horizontal, 20)
+                            .opacity(model.noSignal || model.hint ? 0 : 1)
+                    }
+                    if model.noSignal {
+                        NoSignalShelf()
+                    }
+                }
+                // Kept in the tree while the silhouette shrinks, so the shelf is
+                // revealed by the moving shape instead of popping out of it.
+                .frame(height: model.prefs.liveText ? IslandLayout.liveShelf : IslandLayout.hintShelf)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: model.hint)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: model.noSignal)
+                .modifier(Entrance(delay: 0.10, dy: 4))
+            } else if model.noSignal {
                 NoSignalShelf()
                     .transition(.opacity)
             } else if model.hint, let hints {
@@ -70,18 +90,15 @@ struct WingsContent: View {
         case .handsFree:
             HStack(spacing: 8) {
                 TargetIcon(bundleID: model.target?.bundleID)
-                PixelBitmap(rows: PixelBitmap.lock, develop: 0.12)
+                RollingClock(since: model.sessionStart ?? .now)
+                    .modifier(Entrance(dx: -8, dy: 0))
             }
             .accessibilityLabel("Hands-free dictation")
         case .meeting:
             HStack(spacing: 8) {
                 RecordDisc()
-                Text(Self.clock(model.elapsed))
-                    .appType(.caption)
-                    .monospacedDigit()
-                    .foregroundStyle(Tok.text)
-                    .contentTransition(.numericText(value: Double(model.elapsed)))
-                    .accessibilityLabel("Meeting running for \(Self.spoken(model.elapsed))")
+                RollingClock(since: model.meetingStart ?? model.sessionStart ?? .now)
+                    .accessibilityLabel("Meeting running")
             }
         case .listening, .processing, .landed:
             TargetIcon(bundleID: model.target?.bundleID)
@@ -128,21 +145,6 @@ struct WingsContent: View {
         case .meeting: [(key: "⌘ ×2", label: "Save"), (key: "esc", label: "Discard")]
         default: nil
         }
-    }
-
-    /// "4:12", or "1:04:12" once a meeting passes the hour. No leading zero on
-    /// the minutes: the readout is a duration, not a clock.
-    private static func clock(_ seconds: Int) -> String {
-        let total = max(0, seconds)
-        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
-        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s)
-                     : String(format: "%d:%02d", m, s)
-    }
-
-    private static func spoken(_ seconds: Int) -> String {
-        let total = max(0, seconds), m = total / 60, s = total % 60
-        guard m > 0 else { return "\(s) seconds" }
-        return "\(m) minutes \(s) seconds"
     }
 }
 

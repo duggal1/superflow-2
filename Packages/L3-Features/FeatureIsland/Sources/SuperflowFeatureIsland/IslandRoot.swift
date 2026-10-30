@@ -12,19 +12,19 @@ public struct IslandRoot: View {
     }
 
     public var body: some View {
-        IslandStage(model: model) { content }
+        IslandStage(model: model) { scene in content(scene) }
             .environment(\.appTypeScope, .island)
             .fontSmoothing()
             .ignoresSafeArea()
             .environment(\.colorScheme, .dark)
     }
 
-    @ViewBuilder private var content: some View {
-        switch model.phase {
+    @ViewBuilder private func content(_ scene: IslandScene) -> some View {
+        switch scene.phase {
         case .listening, .handsFree, .meeting, .processing, .landed:
-            WingsContent(model: model)
+            WingsContent(model: model, phase: scene.phase)
         case .meetingPanel:
-            if model.confirmingDiscard {
+            if scene.confirmingDiscard {
                 MeetingDiscardCard(model: model)
             } else {
                 MeetingPanel(model: model)

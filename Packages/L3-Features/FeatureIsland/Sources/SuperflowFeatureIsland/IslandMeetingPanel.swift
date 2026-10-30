@@ -14,23 +14,15 @@ func speakerTone(_ share: SpeakerShare, index: Int) -> Color {
     }
 }
 
-/// The live meeting clock: "4:12", or "1:04:12" once a meeting passes the hour.
+/// The live meeting clock at metric scale. The rolling clock is shared with the
+/// wings, so the digits roll identically in both places.
 struct ClockMetric: View {
     let since: Date
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { timeline in
-            let total = max(0, Int(timeline.date.timeIntervalSince(since)))
-            Text(total >= 3600
-                 ? String(format: "%d:%02d:%02d", total / 3600, (total / 60) % 60, total % 60)
-                 : String(format: "%d:%02d", total / 60, total % 60))
-                .appType(.metric)
-                .monospacedDigit()
-                .foregroundStyle(Tok.text)
-                .contentTransition(.numericText())
-        }
-        .frame(minWidth: 104, alignment: .leading)
-        .accessibilityLabel("Meeting running")
+        RollingClock(since: since, role: .metric)
+            .frame(minWidth: 104, alignment: .leading)
+            .accessibilityLabel("Meeting running")
     }
 }
 
@@ -158,8 +150,10 @@ struct MeetingPanel: View {
                         }
                     }
                 }
+                .islandReveal(0)
 
                 MeetingTimeline(pulse: pulse, marks: marks)
+                    .islandReveal(1)
 
                 HStack(spacing: 16) {
                     ForEach(Array(pulse.speakers.prefix(4).enumerated()),
@@ -181,10 +175,12 @@ struct MeetingPanel: View {
                     Spacer(minLength: 0)
                 }
                 .frame(height: 16)
+                .islandReveal(2)
 
                 if model.prefs.liveText {
                     LiveLine(live: model.live)
                         .frame(height: 20)
+                        .islandReveal(3)
                 }
 
                 HStack(spacing: 8) {
@@ -205,6 +201,7 @@ struct MeetingPanel: View {
                         model.endMeeting()
                     }
                 }
+                .islandReveal(4)
             }
             .padding(.top, IslandLayout.cardGap)
             .padding(.horizontal, pad)

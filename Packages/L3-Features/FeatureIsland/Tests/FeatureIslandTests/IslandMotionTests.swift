@@ -57,6 +57,50 @@ final class IslandMotionTests: XCTestCase {
         XCTAssertGreaterThan(frame.width, 310)
     }
 
+    /// The opening preset is deliberately underdamped, like iOS: a barely
+    /// visible overshoot, then an exact landing. Closing stays at z = 1.
+    func testOpeningPresetOvershootsSlightlyAndStillSettles() {
+        var spring = Spring1(0)
+        spring.target = 480
+        var peak = 0.0
+        for _ in 0..<360 {
+            spring.step(1.0 / 120, omega: IslandMotion.open.width.w, zeta: IslandMotion.open.width.z)
+            peak = max(peak, spring.x)
+        }
+        XCTAssertGreaterThan(peak, 480)
+        XCTAssertLessThan(peak, 480 * 1.03)
+        XCTAssertEqual(spring.x, 480, accuracy: 0.01)
+    }
+
+    /// The fade belongs to the scene, not the silhouette: a stage change resets
+    /// it, a same-stage retarget leaves it at one.
+    func testOnlyANewStageRestartsTheContentFade() {
+        let start = IslandBox(body: CGSize(width: 200, height: 32), top: 6, bottom: 14, opacity: 1)
+        let sameStage = IslandBox(body: CGSize(width: 240, height: 32), top: 6, bottom: 14, opacity: 1)
+        let newStage = IslandBox(body: CGSize(width: 480, height: 120), top: 12, bottom: 24, opacity: 1)
+
+        let continuing = IslandKinematics(startingAt: start)
+        continuing.retarget(sameStage, band: 32, instant: false, newStage: false)
+        XCTAssertEqual(continuing.step(1, scale: 2).fade, 1, accuracy: 0.0001)
+
+        let changing = IslandKinematics(startingAt: start)
+        changing.retarget(newStage, band: 32, instant: false, newStage: true)
+        XCTAssertLessThan(changing.step(1, scale: 2).fade, 0.01)
+    }
+
+    /// A success kick adds velocity to both silhouette channels without moving
+    /// them on the spot; the next frame carries the impulse.
+    func testSuccessBumpAddsAnImpulseWithoutJumpingTheShape() {
+        let box = IslandBox(body: CGSize(width: 200, height: 32), top: 6, bottom: 14, opacity: 1)
+        let motion = IslandKinematics(startingAt: box)
+        motion.bump(width: 3, height: 1.5)
+        let first = motion.step(1, scale: 2)
+        let second = motion.step(1.05, scale: 2)
+        XCTAssertEqual(first.width, 200)
+        XCTAssertGreaterThan(second.width, 200)
+        XCTAssertGreaterThan(second.height, 32)
+    }
+
     func testNoSignalShelfReservesSpaceAndHistoryFitsItsRows() {
         let geometry = NotchGeometry(frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
                                      safeTop: 32, leftWidth: 620, rightWidth: 620, scale: 2)

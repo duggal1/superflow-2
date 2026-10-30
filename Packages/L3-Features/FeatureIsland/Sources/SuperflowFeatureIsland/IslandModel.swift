@@ -40,6 +40,12 @@ public final class IslandModel {
     public internal(set) var pulse = MeetingPulse.empty
     /// When the current meeting started. The panel's clock reads it.
     public internal(set) var meetingStart: Date?
+    /// When the current capture started, including a latched hands-free session.
+    /// The wings clock reads it and keeps it through the exit crossfade.
+    public internal(set) var sessionStart: Date?
+    /// Increments on a small success moment (latched, landed) so the stage can
+    /// give the silhouette a tiny impulse.
+    public internal(set) var bump = 0
     /// Opens the History window from the Island's history card. Set by the app.
     @ObservationIgnored public var showHistory: () -> Void = {}
     /// Re-inserts a transcript that never landed. Set by the app.

@@ -5,6 +5,7 @@ import Foundation
 /// `IslandModel` rather than inside it so the state machine stays readable.
 extension IslandModel {
     public func send(_ event: IslandEvent) {
+        let before = phase
         if event == .dismissed, confirmingDiscard {
             keepMeeting()
             return
@@ -38,13 +39,27 @@ extension IslandModel {
             break
         }
         go(IslandReducer.reduce(phase, event))
+        if (isLatched(phase) && !isLatched(before)) || (isLanded(phase) && !isLanded(before)) {
+            bump &+= 1
+        }
     }
 
     private func begin(_ target: IslandTarget?) {
         self.target = target
         recordedAt = Date()
+        sessionStart = recordedAt
         elapsed = 0
         hoverTask?.cancel()
+    }
+
+    private func isLatched(_ phase: IslandPhase) -> Bool {
+        if case .handsFree = phase { return true }
+        return false
+    }
+
+    private func isLanded(_ phase: IslandPhase) -> Bool {
+        if case .landed = phase { return true }
+        return false
     }
 
     /// Fully dynamic: only a recording that ran long enough to be worth keeping
