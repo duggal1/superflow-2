@@ -123,22 +123,30 @@ actor FakePoster: PasteEventPosting {
     private let box: Box<Int?>?
     private let valueBox: Box<String?>?
     private let pasteValue: String
+    private var noChangePosts: Int
     private(set) var posts = 0
+    private(set) var taps: [CGEventTapLocation?] = []
 
     init(result: Bool = true, increments: Bool = true, box: Box<Int?>? = nil,
-         valueBox: Box<String?>? = nil, pasteValue: String = "") {
+         valueBox: Box<String?>? = nil, pasteValue: String = "", noChangePosts: Int = 0) {
         self.result = result
         self.increments = increments
         self.box = box
         self.valueBox = valueBox
         self.pasteValue = pasteValue
+        self.noChangePosts = noChangePosts
     }
 
     func setResult(_ value: Bool) { result = value }
 
-    func postPaste(keyCode: CGKeyCode) async -> Bool {
+    func postPaste(keyCode: CGKeyCode, tap: CGEventTapLocation?) async -> Bool {
+        taps.append(tap)
         guard result else { return false }
         posts += 1
+        if noChangePosts > 0 {
+            noChangePosts -= 1
+            return true
+        }
         if increments, let box, let current = box.value {
             box.value = current + 1
         }

@@ -68,7 +68,7 @@ public struct TextInsertionOptions: Sendable {
                 preferAccessibilityForEditable: Bool = true,
                 allowAccessibilityFallback: Bool = true,
                 writeClipboardOnFailure: Bool = true,
-                postTap: CGEventTapLocation = .cghidEventTap) {
+                postTap: CGEventTapLocation = .cgSessionEventTap) {
         self.targetPID = targetPID
         self.restoreClipboard = restoreClipboard
         self.clipboardRestoreDelay = clipboardRestoreDelay

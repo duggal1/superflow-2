@@ -27,10 +27,24 @@ final class AXRoleClassifierTests: XCTestCase {
     }
 
     func testUnambiguousNonEditableControls() {
-        for role in ["AXButton", "AXStaticText", "AXMenuItem", "AXList", "AXTable"] {
+        for role in ["AXButton", "AXStaticText", "AXMenuItem", "AXImage", "AXToolbar"] {
             XCTAssertEqual(AXRoleClassifier.classify(role: role, subrole: "", valueSettable: false,
                                                      hasEditableAncestor: false),
                            .notEditable(reason: "role-\(role)"), role)
+        }
+    }
+
+    /// Applications, lists, tables, rows and cells are containers. A real text
+    /// field can sit underneath them, so bailing out before the paste attempt
+    /// makes dictation silently do nothing in those hosts.
+    func testContainersStayUnknownSoPasteIsAttempted() {
+        for role in ["AXApplication", "AXList", "AXOutline", "AXTable", "AXRow",
+                     "AXCell", "AXColumn"] {
+            guard case .unknown = AXRoleClassifier.classify(role: role, subrole: "",
+                                                            valueSettable: false,
+                                                            hasEditableAncestor: false) else {
+                return XCTFail("\(role) should stay unknown so a paste is still attempted")
+            }
         }
     }
 

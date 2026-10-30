@@ -24,6 +24,7 @@ private func makeHarness(focus: InsertionFocus = .editable(role: "AXTextArea"),
                          secureInput: Bool = false,
                          posterResult: Bool = true,
                          posterIncrements: Bool = true,
+                          noChangePosts: Int = 0,
                          frontmost: pid_t? = 77,
                          ownPID: pid_t = 999,
                          ttl: Duration = TextInsertionService.defaultPreparedTargetTTL) -> Harness {
@@ -33,7 +34,8 @@ private func makeHarness(focus: InsertionFocus = .editable(role: "AXTextArea"),
     let focusInspector = FakeFocusInspector(focus: focus, target: target)
     let clipboard = FakeClipboard()
     let poster = FakePoster(result: posterResult, increments: posterIncrements, box: countBox,
-                            valueBox: valueBox, pasteValue: pasteValue)
+                            valueBox: valueBox, pasteValue: pasteValue,
+                            noChangePosts: noChangePosts)
     let apps = FakeApps(frontmost: frontmost, ownPID: ownPID)
     let scheduler = InlineRestoreScheduler()
     let secure = Box(secureInput)
@@ -110,6 +112,30 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
         let posts = await harness.poster.posts
         XCTAssertEqual(posts, 1)
+    }
+
+    /// A host that only reads the HID stream ignores the session-level chord.
+    /// The second post goes to the other tap and the same AX verification runs.
+    func testUnobservedPasteRetriesAtTheAlternateTap() async {
+        let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"),
+                                  noChangePosts: 1)
+        let report = await harness.service.insert("hello", options: TextInsertionOptions())
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
+        XCTAssertEqual(report.steps, [InsertionStep.focusUnknown, InsertionStep.pbWritten,
+                                      InsertionStep.cmdvPosted, InsertionStep.cmdvRetried,
+                                      InsertionStep.verified])
+        let taps = await harness.poster.taps
+        XCTAssertEqual(taps, [.cgSessionEventTap, .cghidEventTap])
+    }
+
+    /// Without a usable baseline a second chord could paste twice, so the retry
+    /// must stay disabled even when the first chord is unobservable.
+    func testUnverifiablePasteDoesNotRetry() async {
+        let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"), count: nil)
+        let report = await harness.service.insert("hello", options: TextInsertionOptions())
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
+        let taps = await harness.poster.taps
+        XCTAssertEqual(taps, [.cgSessionEventTap])
     }
 
     func testVerifiedPasteReportsRestore() async {

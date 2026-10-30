@@ -14,6 +14,7 @@ public enum InsertionStep {
     public static let secureInput = "secure-input"
     public static let cmdvPosted = "cmdv-posted"
     public static let cmdvFailed = "cmdv-failed"
+    public static let cmdvRetried = "cmdv-retried"
     public static let verified = "verified"
     public static let valueVerified = "value-verified"
     public static let pasteNotObserved = "paste-not-observed"

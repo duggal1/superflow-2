@@ -7,15 +7,15 @@ public enum AXRoleClassifier {
         "AXTextField", "AXTextArea", "AXComboBox", "AXSearchField",
     ]
 
-    /// Controls that unambiguously never accept typed text. `AXWindow`,
-    /// `AXGroup` and `AXScrollArea` are deliberately absent: Electron and some
-    /// native apps report the focused element as a container while a real field
-    /// sits underneath, so those stay `.unknown` and still get a paste attempt.
+    /// Controls that unambiguously never accept typed text. Containers are
+    /// deliberately absent: Electron, web views, spreadsheet cells and some
+    /// native apps report the focused element as the application, window, list,
+    /// table, row or cell while a real field sits underneath. Those stay
+    /// `.unknown` so the paste attempt decides instead of bailing out early.
     public static let nonEditableRoles: Set<String> = [
         "AXButton", "AXStaticText", "AXMenuItem", "AXMenu", "AXMenuBar", "AXToolbar",
         "AXRadioButton", "AXCheckBox", "AXPopUpButton", "AXSlider", "AXDockItem",
-        "AXImage", "AXList", "AXOutline", "AXTable", "AXRow", "AXCell", "AXColumn",
-        "AXApplication",
+        "AXImage",
     ]
 
     public static func classify(role: String, subrole: String,

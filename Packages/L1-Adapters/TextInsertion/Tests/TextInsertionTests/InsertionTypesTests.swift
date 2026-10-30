@@ -17,7 +17,7 @@ final class InsertionTypesTests: XCTestCase {
         XCTAssertTrue(options.preferAccessibilityForEditable)
         XCTAssertTrue(options.allowAccessibilityFallback)
         XCTAssertTrue(options.writeClipboardOnFailure)
-        XCTAssertEqual(options.postTap, .cghidEventTap)
+        XCTAssertEqual(options.postTap, .cgSessionEventTap)
     }
 
     func testOnlyEditableFocusIsConfident() {

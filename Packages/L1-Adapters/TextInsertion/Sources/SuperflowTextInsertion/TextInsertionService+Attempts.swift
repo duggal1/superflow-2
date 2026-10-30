@@ -25,7 +25,8 @@ extension TextInsertionService {
                       options: TextInsertionOptions) async -> (attempt: InsertionAttempt, keyCode: UInt16) {
         let keyCode = await keyResolver.pasteKeyCode()
         let baseline = await captureBaseline(target)
-        let posted = await poster.postPaste(keyCode: keyCode)
+        let primary = options.postTap
+        let posted = await poster.postPaste(keyCode: keyCode, tap: primary)
         var steps = [posted ? InsertionStep.cmdvPosted : InsertionStep.cmdvFailed]
         guard posted else {
             return (InsertionAttempt(inserted: false, verified: false, posted: false, steps: steps),
@@ -33,27 +34,50 @@ extension TextInsertionService {
         }
         guard let baseline, baseline.isUsable else {
             // No safe baseline: the chord was posted, so accept the paste but do
-            // not claim verification.
+            // not claim verification. Never retry here, because a second chord
+            // could paste twice with no way to observe either one.
             steps.append(InsertionStep.unverifiable)
             return (InsertionAttempt(inserted: true, verified: false, posted: true, steps: steps),
                     UInt16(keyCode))
         }
-        let observation = await awaitContent(target: target, baseline: baseline,
-                                             expected: baseline.expectedValue(afterInserting: text),
-                                             timeout: options.verifyTimeout)
+        let expected = baseline.expectedValue(afterInserting: text)
+        let first = await awaitContent(target: target, baseline: baseline,
+                                       expected: expected, timeout: options.verifyTimeout)
+        if let result = confirmed(first, steps: &steps) {
+            return (result, UInt16(keyCode))
+        }
+
+        // Session-level and HID-level chords are read by different hosts. When the
+        // first one produced no observable change, try the other location once.
+        let alternate: CGEventTapLocation = primary == .cghidEventTap
+            ? .cgSessionEventTap : .cghidEventTap
+        guard await poster.postPaste(keyCode: keyCode, tap: alternate) else {
+            steps.append(InsertionStep.cmdvFailed)
+            return (InsertionAttempt(inserted: false, verified: false, posted: true, steps: steps),
+                    UInt16(keyCode))
+        }
+        steps.append(InsertionStep.cmdvRetried)
+        let second = await awaitContent(target: target, baseline: baseline,
+                                        expected: expected, timeout: options.verifyTimeout)
+        if let result = confirmed(second, steps: &steps) {
+            return (result, UInt16(keyCode))
+        }
+        steps.append(InsertionStep.pasteNotObserved)
+        return (InsertionAttempt(inserted: false, verified: false, posted: true, steps: steps),
+                UInt16(keyCode))
+    }
+
+    private func confirmed(_ observation: ContentObservation,
+                           steps: inout [String]) -> InsertionAttempt? {
         switch observation {
         case .exact:
             steps.append(InsertionStep.valueVerified)
-            return (InsertionAttempt(inserted: true, verified: true, posted: true, steps: steps),
-                    UInt16(keyCode))
+            return InsertionAttempt(inserted: true, verified: true, posted: true, steps: steps)
         case .changed, .countChanged:
             steps.append(InsertionStep.verified)
-            return (InsertionAttempt(inserted: true, verified: true, posted: true, steps: steps),
-                    UInt16(keyCode))
+            return InsertionAttempt(inserted: true, verified: true, posted: true, steps: steps)
         case .nothing:
-            steps.append(InsertionStep.pasteNotObserved)
-            return (InsertionAttempt(inserted: false, verified: false, posted: true, steps: steps),
-                    UInt16(keyCode))
+            return nil
         }
     }
 
