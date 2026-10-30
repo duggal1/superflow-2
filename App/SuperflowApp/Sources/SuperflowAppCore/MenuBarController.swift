@@ -110,6 +110,12 @@ public final class MenuBarController: ObservableObject {
             error = "Superflow is still loading the speech model. Hold fn again in a moment."
             return false
         }
+        // The launch gate now opens before the background warm-up, so the engine
+        // can be mid-load here. Say that instead of leaking its invalid-state text.
+        if await session.currentState == .warming {
+            error = "Superflow is still loading the speech model. Hold fn again in a moment."
+            return false
+        }
         let activeMeeting = await meeting?.currentState.isActive ?? false
         guard !activeMeeting else {
             error = "Stop the meeting before starting dictation."
