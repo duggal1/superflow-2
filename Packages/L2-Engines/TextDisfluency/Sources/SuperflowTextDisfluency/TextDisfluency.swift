@@ -3,6 +3,7 @@ import SuperflowKernel
 
 public struct DisfluencyOptions: Sendable {
     public var removeFillers = true
+    public var allowedFillers: Set<String>?
     public var keepCopies = 1
     public var keepDoubles: Set<String> = ["had had", "bye bye", "ha ha", "blah blah"]
     public var collapseDuplicates = true
@@ -24,7 +25,7 @@ public enum TextDisfluency {
     ]
 
     public static func apply(_ words: [Word], _ options: DisfluencyOptions = .init()) -> [Word] {
-        var result = options.removeFillers ? dropFillers(words) : words
+        var result = options.removeFillers ? dropFillers(words, allowed: options.allowedFillers) : words
         guard options.collapseDuplicates else { return result }
         while true {
             let before = result.count
@@ -34,14 +35,14 @@ public enum TextDisfluency {
         }
     }
 
-    private static func dropFillers(_ words: [Word]) -> [Word] {
+    private static func dropFillers(_ words: [Word], allowed: Set<String>?) -> [Word] {
         var output: [Word] = []
         var pendingLead = ""
         for (index, word) in words.enumerated() {
             let attached = word.glue || (index > 0 && words[index - 1].glue)
             let next = index + 1 < words.count ? words[index + 1].key : ""
             let contentAh = word.key == "ah" && ["ha", "yes"].contains(next)
-            guard !word.protected, !attached, isFiller(word.key), !contentAh else {
+            guard !word.protected, !attached, (allowed?.contains(word.key) ?? isFiller(word.key)), !contentAh else {
                 var kept = word
                 kept.lead = pendingLead + kept.lead
                 pendingLead = ""

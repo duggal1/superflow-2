@@ -3,6 +3,20 @@ import SuperflowKernel
 @testable import SuperflowTextDisfluency
 
 final class MechanicalDisfluencyTests: XCTestCase {
+    func testDefaultStageCollapsesRepeatedContentWords() async {
+        let stage = MechanicalDisfluencyStage()
+        for (input, expected) in [("extremely Extremely extremely slow", "extremely slow"),
+                                  ("really really bad", "really bad"),
+                                  ("I I I need the the file", "I need the file")] {
+            let result = await stage.apply(TranscriptDraft(text: input), context: TextContext())
+            XCTAssertEqual(result.text, expected)
+        }
+        let protected = TranscriptDraft(text: "Go Go really really", protected: Protected(literals: ["Go Go"]))
+        let result = await stage.apply(protected, context: TextContext())
+        XCTAssertEqual(result.text, "Go Go really")
+        let filler = await stage.apply(TranscriptDraft(text: "hmm ah um uh uhm er yes"), context: TextContext())
+        XCTAssertEqual(filler.text, "hmm ah yes")
+    }
     private func clean(_ text: String) -> String {
         Tokenizer.join(TextDisfluency.apply(Tokenizer.words(text)))
     }

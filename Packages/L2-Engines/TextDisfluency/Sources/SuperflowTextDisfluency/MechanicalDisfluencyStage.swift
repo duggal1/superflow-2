@@ -15,13 +15,15 @@ public struct MechanicalDisfluencyStage: TextStage {
         guard settings.enabled, !draft.shortCircuit else { return draft }
         var options = DisfluencyOptions()
         options.removeFillers = settings.fillerPrepass
+        options.allowedFillers = ["um", "uh", "uhm", "er"]
         options.collapseDuplicates = settings.collapseDuplicates
         options.collapseRepeatedPhrases = settings.collapseRepeatedPhrases
+        options.keepDoubles = []
         let lines = draft.text.components(separatedBy: "\n")
         let output = lines.map { line in
             let words = Tokenizer.words(line, protected: draft.protected)
             for word in words {
-                options.thresholds[word.key] = DisfluencyRewriter.threshold(for: word.key, settings: settings)
+                options.thresholds[word.key] = max(2, settings.tierAThreshold)
             }
             let cleaned = TextDisfluency.apply(words, options)
             return cleaned == words ? line : Tokenizer.join(cleaned)
