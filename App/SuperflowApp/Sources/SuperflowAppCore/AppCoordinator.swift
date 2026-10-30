@@ -237,6 +237,18 @@ public final class AppCoordinator: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             await self.tryStartHotkeys()
+            // Recovery needs the recognizer only when a take was interrupted
+            // mid-recording. An ordinary launch must not sit behind a 10–20 s
+            // model load: open the gate, then warm the model in the background.
+            // A press in the meantime enters the Island's warming state and waits
+            // for the same serialized load.
+            let pending = (try? await environment.database.unfinishedSessions()) ?? []
+            guard !pending.isEmpty else {
+                self.menuBarController.setRecoveryReady(true)
+                launchLog.info("Recovery gate opened after \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms; nothing to recover, model warming in background")
+                if shouldWarmModels { Task { _ = await environment.sessionEngine.warmUp() } }
+                return
+            }
             // Order matters: `RecoveryEngine` calls `makeStream`, which requires a
             // prepared profile, so the model load has to finish first. The hotkeys are
             // already installed, so a press in this window is answered instead of lost.
