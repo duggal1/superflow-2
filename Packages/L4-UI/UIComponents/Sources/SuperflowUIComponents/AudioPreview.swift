@@ -35,6 +35,13 @@ public struct AudioPreview: View {
         self.autoplay = autoplay
     }
 
+    init(url: URL, player: ClipPlayer) {
+        self.url = url
+        chrome = .card
+        autoplay = false
+        _player = State(initialValue: player)
+    }
+
     public var body: some View {
         switch chrome {
         case .card:
@@ -54,6 +61,7 @@ public struct AudioPreview: View {
                     focused = true
                     player.toggle()
                 }
+                .focused($focused)
                 .disabled(clip == nil)
                 Readout(player: player, hover: hover, total: clip?.duration ?? 0)
                 Spacer(minLength: 16)
@@ -67,8 +75,6 @@ public struct AudioPreview: View {
             }
             .frame(height: 32)
         }
-        .focusable()
-        .focused($focused)
         .focusEffectDisabled()
         .onKeyPress(.space) {
             player.toggle()

@@ -36,14 +36,13 @@ struct PlayerBar: View {
                     focused = true
                     player.toggle()
                 }
+                .focused($focused)
                 .disabled(clip == nil)
                 AppButton("Transcript", glyph: nil, kind: .quiet, height: 24) { model.stopPlayback() }
             }
             .padding(.trailing, -8)                                     // glyph edge, not the 32 pt target
         }
         .frame(height: 64)
-        .focusable()
-        .focused($focused)
         .focusEffectDisabled()
         .onKeyPress(.space) { player.toggle(); return .handled }
         .onKeyPress(.leftArrow) { player.seek(player.time - 1); return .handled }

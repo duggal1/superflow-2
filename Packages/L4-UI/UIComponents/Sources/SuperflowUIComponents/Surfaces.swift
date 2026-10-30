@@ -224,7 +224,7 @@ public struct SectionHeader: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(Typography.sectionTitle)
+                .appType(.title)
                 .foregroundStyle(Tok.text)
             if let note {
                 Text(note)

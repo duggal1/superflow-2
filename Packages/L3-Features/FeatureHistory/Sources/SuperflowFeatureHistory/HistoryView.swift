@@ -255,25 +255,25 @@ struct HistoryDetailHeader: View {
                     Image(nsImage: image)
                         .resizable()
                         .interpolation(.high)
-                        .frame(width: 20, height: 20)
+                        .frame(width: 16, height: 16)
                         .accessibilityHidden(true)
                 } else {
                     IconView(.waveform, size: 14, tint: Tok.text2)
-                        .frame(width: 20, height: 20)
+                        .frame(width: 16, height: 16)
                 }
                 Text(appName)
                     .appType(.title)
                     .foregroundStyle(Tok.text)
                 Spacer(minLength: 16)
-                HStack(spacing: 4) {
-                    CopyButton(action: onCopy)
-                    BarIconButton(glyph: .delete, label: "Delete session", action: onDelete)
+                HStack(spacing: 0) {
+                    RowCopyButton(action: onCopy)
+                    RowIconButton(glyph: .delete, label: "Delete session", action: onDelete)
                 }
                 // A 32pt hit target around a 16pt glyph: pull it out by 8 so the
                 // glyph sits on the content edge (law 4).
                 .padding(.trailing, -8)
             }
-            .frame(height: 32)
+            .frame(height: 28)
 
             HStack(spacing: 12) {
                 TimelineView(.everyMinute) { context in
@@ -284,7 +284,7 @@ struct HistoryDetailHeader: View {
             }
             .appType(.caption)
             .foregroundStyle(Tok.text2)
-            .padding(.leading, 32)
+            .padding(.leading, 28)
         }
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isHeader)

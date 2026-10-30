@@ -77,11 +77,8 @@ private struct TranscriptRow: View {
             if expanded { detail.transition(.opacity) }
         }
         .padding(.horizontal, Space.sm)
-        .background(playing ? Tok.well : hover ? Tok.control : .clear,
+        .background(expanded || playing || hover ? Tok.control : .clear,
                     in: .rect(cornerRadius: Radius.nested, style: .continuous))
-        .overlay(alignment: .leading) {
-            if expanded || playing { Rectangle().fill(Ramp.blue[4]).frame(width: 2, height: 16) }
-        }
         .onHover { inside in
             hover = inside
             if inside, let url = entry.audio {
@@ -139,7 +136,7 @@ private struct TranscriptRow: View {
                     RowIconButton(glyph: .play, label: "Play audio") { model.play(entry) }
                         .focused($focused)
                 }
-                RowCopyButton { model.copy(shown) }
+                RowCopyButton { model.copy(entry.cleaned) }
                     .focused($focused)
                 ActionMenu(items: menu, isOpen: $menuOpen).focused($focused)
             }
@@ -173,7 +170,7 @@ private struct TranscriptRow: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: 720, alignment: .leading)
         }
-        .padding(.leading, 32)
+        .padding(.leading, 28)
         .padding(.bottom, Space.md)
     }
 }
