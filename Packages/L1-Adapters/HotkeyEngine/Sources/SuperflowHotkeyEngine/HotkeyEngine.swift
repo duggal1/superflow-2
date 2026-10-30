@@ -125,7 +125,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
 
     private func makePassiveTap(mask: CGEventMask, options: CGEventTapOptions) -> CFMachPort? {
         CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
+            tap: .cghidEventTap,
             place: .headInsertEventTap,
             options: options,
             eventsOfInterest: mask,
@@ -215,7 +215,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         }
         // Our own synthetic paste must never reach the gesture recogniser.
         if KeyEventMapper.isSynthetic(event) { return Unmanaged.passUnretained(event) }
-        let timestamp = event.timestamp
+        let timestamp = DispatchTime.now().uptimeNanoseconds
         switch type {
         case .flagsChanged:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
@@ -259,7 +259,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         guard keyCode == KeyCode.enter || keyCode == KeyCode.escape else {
             return Unmanaged.passUnretained(event)
         }
-        continuation.yield(KeyEventMapper.keyDown(keyCode: keyCode, timestampNs: event.timestamp))
+        continuation.yield(KeyEventMapper.keyDown(keyCode: keyCode, timestampNs: DispatchTime.now().uptimeNanoseconds))
         return nil
     }
 

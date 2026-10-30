@@ -46,7 +46,7 @@ extension AppCoordinator {
                         return
                     }
                     guard let self else { return }
-                    await self.applyGestureActions(
+                    self.enqueueGestureActions(
                         self.gesture.tick(atNs: DispatchTime.now().uptimeNanoseconds)
                     )
                 }
@@ -92,7 +92,17 @@ extension AppCoordinator {
     }
 
     func handleKeyEvent(_ event: KeyEvent) async {
-        await applyGestureActions(gesture.handle(event))
+        enqueueGestureActions(gesture.handle(event))
+    }
+
+    private func enqueueGestureActions(_ actions: [GestureAction]) {
+        guard !actions.isEmpty else { return }
+        let previous = gestureActionTask
+        gestureActionTask = Task { @MainActor [weak self] in
+            await previous?.value
+            guard let self, !Task.isCancelled else { return }
+            await self.applyGestureActions(actions)
+        }
     }
 
     func applyGestureActions(_ actions: [GestureAction]) async {
@@ -109,12 +119,12 @@ extension AppCoordinator {
                         ?? "The microphone did not open. Hold fn again.")
                 }
             case .startSpeculative(.meeting):
-                // A single right-⌘ tap starts a meeting speculatively. Do not
-                // raise the Island for it: the tap may turn out to be nothing,
-                // and a 350 ms flash in the notch reads as a glitch.
-                await menuBarController.startMeeting()
+                break
             case .holdBegan(let kind):
-                if kind == .meeting { islandBridge?.meetingBegan() }
+                if kind == .meeting {
+                    await menuBarController.startMeeting()
+                    if menuBarController.meetingState.isActive { islandBridge?.meetingBegan() }
+                }
             case .beginHandsFree:
                 // Only promise hands-free once the session is actually open.
                 if await menuBarController.beginHandsFreeDictation() {

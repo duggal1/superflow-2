@@ -56,6 +56,7 @@ public final class AppCoordinator: ObservableObject {
     var gesture = GestureRecognizer()
     var hotkeyTask: Task<Void, Never>?
     var gestureTimerTask: Task<Void, Never>?
+    var gestureActionTask: Task<Void, Never>?
     private var sessionRelayTask: Task<Void, Never>?
     private var meetingRelayTask: Task<Void, Never>?
     private var retentionTask: Task<Void, Never>?
