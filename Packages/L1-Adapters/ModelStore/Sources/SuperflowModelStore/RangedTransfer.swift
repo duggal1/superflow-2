@@ -25,16 +25,15 @@ final class SegmentedTransfer: @unchecked Sendable {
         self.configuration = configuration
         self.progress = progress
         self.partsDirectory = destination.deletingLastPathComponent()
-            .appendingPathComponent(".segments-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent(".segments-\(destination.lastPathComponent)", isDirectory: true)
     }
 
     func run() async throws {
         DownloadTelemetry.shared.begin(label: destination.lastPathComponent, totalBytes: total)
         defer { DownloadTelemetry.shared.end() }
-        let fileManager = FileManager.default
-        try fileManager.createDirectory(at: partsDirectory, withIntermediateDirectories: true)
-        defer { try? fileManager.removeItem(at: partsDirectory) }
-
+        try preparePartsDirectory()
+        // Removed only after the assembled file is complete, so a quit or a
+        // dropped connection can resume from the bytes already on disk.
         let aggregate = TransferAggregate(total: total, progress: progress)
         let parts = (0..<chunkCount).map { index in
             partsDirectory.appendingPathComponent("part-\(index)")
@@ -53,7 +52,23 @@ final class SegmentedTransfer: @unchecked Sendable {
         }
 
         try assemble(parts: parts)
+        try? FileManager.default.removeItem(at: partsDirectory)
         progress(1)
+    }
+
+    /// A stable directory keyed by the destination, so parts survive a restart.
+    /// A different total means the file changed underneath us: start clean.
+    private func preparePartsDirectory() throws {
+        let fileManager = FileManager.default
+        let marker = partsDirectory.appendingPathComponent("total")
+        let recorded = (try? String(contentsOf: marker, encoding: .utf8)).flatMap { Int64($0) }
+        if recorded != total {
+            try? fileManager.removeItem(at: partsDirectory)
+        }
+        try fileManager.createDirectory(at: partsDirectory, withIntermediateDirectories: true)
+        if recorded != total {
+            try? "\(total)".write(to: marker, atomically: true, encoding: .utf8)
+        }
     }
 
     private func bounds(for index: Int) -> ClosedRange<Int64> {

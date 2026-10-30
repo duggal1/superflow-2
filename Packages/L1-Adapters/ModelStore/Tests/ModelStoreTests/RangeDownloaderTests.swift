@@ -131,7 +131,7 @@ final class RangeDownloaderTests: XCTestCase {
         XCTAssertFalse(leftovers.contains { $0.hasPrefix(".segments-") })
     }
 
-    func testDroppedChunkResumesFromTheBytesAlreadyOnDisk() async throws {
+    func testDroppedConnectionRetriesAndCompletesTheFile() async throws {
         RangeProtocol.payload = payload
         RangeProtocol.supportsRanges = true
         RangeProtocol.dropFirstResponse = true
@@ -149,12 +149,37 @@ final class RangeDownloaderTests: XCTestCase {
 
         XCTAssertEqual(try Data(contentsOf: url), payload)
         XCTAssertEqual(log.all.last, 1)
-        let chunk = payload.count / 4
         // Four chunks plus at least one retry for the dropped one.
         XCTAssertGreaterThanOrEqual(RangeProtocol.requestedStarts.count, 5)
-        // The retry asked for the remainder, not the whole chunk again.
-        XCTAssertTrue(RangeProtocol.requestedStarts.contains { $0 % chunk != 0 },
-                      "expected a resumed request at a non-chunk-boundary offset, got \(RangeProtocol.requestedStarts)")
+    }
+
+    func testPartsFromAnEarlierRunResumeInsteadOfRestarting() async throws {
+        RangeProtocol.payload = payload
+        RangeProtocol.supportsRanges = true
+        let downloader = URLSessionModelDownloader(chunkCount: 4, minimumSegmentedBytes: 1,
+                                                   configuration: configuration())
+        let url = destination()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let parts = url.deletingLastPathComponent()
+            .appendingPathComponent(".segments-\(url.lastPathComponent)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: parts) }
+        try FileManager.default.createDirectory(at: parts, withIntermediateDirectories: true)
+        try "\(payload.count)".write(to: parts.appendingPathComponent("total"),
+                                     atomically: true, encoding: .utf8)
+        let chunk = payload.count / 4
+        let already = chunk / 2
+        try payload.prefix(already).write(to: parts.appendingPathComponent("part-0"))
+        RangeProtocol.requestedStarts = []
+
+        try await downloader.download(from: URL(string: "https://models.test/model.bin")!,
+                                      to: url, expectedBytes: Int64(payload.count),
+                                      progress: { _ in })
+
+        XCTAssertEqual(try Data(contentsOf: url), payload)
+        XCTAssertTrue(RangeProtocol.requestedStarts.contains(already),
+                      "chunk 0 should resume at \(already), got \(RangeProtocol.requestedStarts)")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: parts.path),
+                       "a finished transfer removes its parts")
     }
 
     func testFallsBackToASingleStreamWhenTheServerCannotRange() async throws {        RangeProtocol.payload = payload
