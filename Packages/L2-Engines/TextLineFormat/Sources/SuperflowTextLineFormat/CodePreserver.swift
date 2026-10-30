@@ -14,6 +14,7 @@ struct CodePreserver {
     mutating func mask(_ text: String) -> String {
         let patterns = [
             "`[^`\\n]+`",
+            "(?<![\\p{L}\\p{N}_.])\\d+\\.\\d+(?:[kKmMbBtT])?(?![\\p{L}\\p{N}_.])",
             "(?<![\\p{L}\\p{N}_.-])(?:\\.{1,2}/)?(?:[\\p{L}\\p{N}_.-]+/)+[\\p{L}\\p{N}_-](?:[\\p{L}\\p{N}_.-]*[\\p{L}\\p{N}_-])?",
             "(?<![\\p{L}\\p{N}_.-])[\\p{L}\\p{N}_-]+\\.(?:swift|ts|tsx|js|jsx|mjs|cjs|py|rs|go|java|kt|kts|json|ya?ml|toml|ini|cfg|env|conf|md|txt|sh|bash|zsh|css|scss|html|sql|xml|csv|lock|plist|png|jpe?g|gif|svg|pdf|ico|webp|log|diff|patch)(?![\\p{L}\\p{N}_.-])",
         ]
