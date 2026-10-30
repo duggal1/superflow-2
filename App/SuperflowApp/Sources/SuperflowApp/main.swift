@@ -1,4 +1,6 @@
 import AppKit
+import ApplicationServices
+import IOKit.hid
 import SwiftUI
 import SuperflowAppCore
 import SuperflowDesignSystem
@@ -60,8 +62,16 @@ struct SuperflowApplication: App {
     private let instanceLock: ApplicationInstanceLock
 
     init() {
-        AppFont.registerBundledFonts()
         let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--keyboard-diagnostics") {
+            print("bundle: \(Bundle.main.bundleURL.path)")
+            print("identifier: \(Bundle.main.bundleIdentifier ?? "unbundled")")
+            print("input preflight: \(CGPreflightListenEventAccess())")
+            print("HID listen granted: \(IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted)")
+            print("accessibility: \(AXIsProcessTrusted())")
+            exit(0)
+        }
+        AppFont.registerBundledFonts()
         let supportDirectory: URL
         if let index = arguments.firstIndex(of: "--application-support-directory"),
            arguments.indices.contains(index + 1) {

@@ -1,0 +1,33 @@
+#!/bin/bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/superflow-buildfix-test.XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
+IDENTITY="$(security find-identity -v -p codesigning | awk '/"Superflow Development"/ {print $2; exit}')"
+[[ -n "$IDENTITY" ]] || { echo 'Superflow Development identity required'; exit 1; }
+mkdir -p "$WORK/bin" "$WORK/products"
+cat > "$WORK/bin/swift" <<'SWIFT'
+#!/bin/bash
+for argument in "$@"; do
+    if [[ "$argument" == --show-bin-path ]]; then printf '%s\n' "$SUPERFLOW_TEST_PRODUCTS"; fi
+done
+SWIFT
+chmod +x "$WORK/bin/swift"
+export PATH="$WORK/bin:$PATH"
+export SUPERFLOW_TEST_PRODUCTS="$WORK/products"
+export SUPERFLOW_APP_BINARY="$WORK/products/SuperflowApp"
+export SUPERFLOW_APP_OUTPUT="$WORK/Superflow.app"
+export SUPERFLOW_SIGN_IDENTITY="$IDENTITY"
+export SUPERFLOW_REQUIRE_HELPER=0 SUPERFLOW_REQUIRE_MODELS=0
+export SUPERFLOW_LLAMA_FRAMEWORK="$WORK/missing.framework"
+for version in 1 2; do
+    printf 'int main(void) { return %s; }\n' "$version" > "$WORK/main.c"
+    clang "$WORK/main.c" -o "$SUPERFLOW_APP_BINARY"
+    make -C "$ROOT" buildfix > "$WORK/build-$version.log" 2>&1
+    codesign --verify --deep --strict "$SUPERFLOW_APP_OUTPUT"
+    codesign -dr - "$SUPERFLOW_APP_OUTPUT" > "$WORK/requirement-$version" 2>/dev/null
+    codesign -dv --verbose=2 "$SUPERFLOW_APP_OUTPUT" 2>&1 | grep 'Authority=Superflow Development' >/dev/null
+done
+cmp "$WORK/requirement-1" "$WORK/requirement-2"
+printf 'PASS: make buildfix preserves the designated requirement across two different executables\n'
+printf 'PASS: both bundles pass strict signature verification\n'
