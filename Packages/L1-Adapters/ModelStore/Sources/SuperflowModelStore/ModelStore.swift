@@ -105,6 +105,7 @@ public actor ModelStore: ModelProvider {
             }
             try? fileManager.removeItem(at: file)
             try? fileManager.removeItem(at: markerURL(for: file))
+            SegmentedTransfer.removeParts(for: temporaryURL(for: artifact))
         }
         return try await fetch(artifact, progress: progress)
     }
@@ -122,12 +123,16 @@ public actor ModelStore: ModelProvider {
             }
         }
         let destination = fileURL(for: artifact)
-        let temporary = directory.appendingPathComponent(".download-\(UUID().uuidString).tmp")
+        // Stable per artifact, not a UUID: a retry or a relaunch must find the
+        // same partial chunks and resume them instead of starting over.
+        let temporary = temporaryURL(for: artifact)
         progress(0)
         defer { try? fileManager.removeItem(at: temporary) }
         try await downloader.download(from: artifact.url, to: temporary,
                                       expectedBytes: artifact.bytes, progress: progress)
         guard ModelVerification.matches(file: temporary, artifact: artifact) else {
+            try? fileManager.removeItem(at: temporary)
+            SegmentedTransfer.removeParts(for: temporary)
             throw SuperflowError.modelUnavailable("Checksum mismatch for \(artifact.id)")
         }
         try? fileManager.removeItem(at: destination)
@@ -148,6 +153,10 @@ public actor ModelStore: ModelProvider {
     private func overrideFile(for artifact: ModelArtifact) -> URL? {
         overrideRoot?.appendingPathComponent(safe(artifact.id), isDirectory: true)
             .appendingPathComponent(safe(artifact.fileName))
+    }
+
+    private func temporaryURL(for artifact: ModelArtifact) -> URL {
+        directory(for: artifact).appendingPathComponent(".download-\(safe(artifact.fileName)).tmp")
     }
 
     private func markerURL(for file: URL) -> URL {

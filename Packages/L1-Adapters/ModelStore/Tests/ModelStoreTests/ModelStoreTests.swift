@@ -19,6 +19,22 @@ private actor FakeDownloader: ModelDownloading {
     }
 }
 
+private actor FlakyDownloader: ModelDownloading {
+    let payload: Data
+    private(set) var destinations: [URL] = []
+    private var calls = 0
+
+    init(payload: Data) { self.payload = payload }
+
+    func download(from url: URL, to destination: URL, expectedBytes: Int64?,
+                  progress: @escaping @Sendable (Double) -> Void) async throws {
+        calls += 1
+        destinations.append(destination)
+        if calls == 1 { throw URLError(.networkConnectionLost) }
+        try payload.write(to: destination)
+    }
+}
+
 private final class ProgressRecorder: @unchecked Sendable {
     private let lock = NSLock()
     private var values: [Double] = []
@@ -97,6 +113,44 @@ final class ModelStoreTests: XCTestCase {
         XCTAssertNil(local)
         let calls = await downloader.calls
         XCTAssertEqual(calls, 0)
+    }
+
+    func testRetryUsesTheSameTemporaryFileSoChunksCanResume() async throws {
+        let downloader = FlakyDownloader(payload: payload)
+        let manifest = ModelManifest(asr: ["parakeet": artifact()])
+        let store = try ModelStore(root: root, manifest: manifest, downloader: downloader)
+
+        do {
+            _ = try await store.ensure(profileID: "parakeet") { _ in }
+            XCTFail("expected the first transfer to fail")
+        } catch {}
+
+        let url = try await store.ensure(profileID: "parakeet") { _ in }
+        let destinations = await downloader.destinations
+        XCTAssertEqual(destinations.count, 2)
+        XCTAssertEqual(destinations.first, destinations.last,
+                       "a retry must reuse the same temporary path or its chunks are orphaned")
+        XCTAssertEqual(destinations.first?.lastPathComponent, ".download-model.bin.tmp")
+        XCTAssertEqual(try Data(contentsOf: url), payload)
+    }
+
+    func testRepairDropsPartialChunksOfTheCorruptFile() async throws {
+        let downloader = FakeDownloader(payload: payload)
+        let manifest = ModelManifest(asr: ["parakeet": artifact()])
+        let store = try ModelStore(root: root, manifest: manifest, downloader: downloader)
+        let url = try await store.ensure(profileID: "parakeet") { _ in }
+
+        let temporary = url.deletingLastPathComponent()
+            .appendingPathComponent(".download-model.bin.tmp")
+        let parts = SegmentedTransfer.partsDirectory(for: temporary)
+        try FileManager.default.createDirectory(at: parts, withIntermediateDirectories: true)
+        try Data("stale".utf8).write(to: parts.appendingPathComponent("part-0"))
+        try Data("corrupt".utf8).write(to: url)
+
+        _ = try await store.repair(profileID: "parakeet") { _ in }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: parts.path),
+                       "resuming bad chunks would rebuild the same corrupt file")
+        XCTAssertEqual(try Data(contentsOf: url), payload)
     }
 
     func testChecksumMismatchDoesNotInstall() async throws {

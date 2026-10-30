@@ -24,8 +24,19 @@ final class SegmentedTransfer: @unchecked Sendable {
         self.chunkCount = chunkCount
         self.configuration = configuration
         self.progress = progress
-        self.partsDirectory = destination.deletingLastPathComponent()
+        self.partsDirectory = Self.partsDirectory(for: destination)
+    }
+
+    /// A stable directory keyed by the destination, so parts survive a restart.
+    static func partsDirectory(for destination: URL) -> URL {
+        destination.deletingLastPathComponent()
             .appendingPathComponent(".segments-\(destination.lastPathComponent)", isDirectory: true)
+    }
+
+    /// Drops any partial chunks for a destination, used when its bytes are
+    /// known bad and resuming them would rebuild the same broken file.
+    static func removeParts(for destination: URL) {
+        try? FileManager.default.removeItem(at: partsDirectory(for: destination))
     }
 
     func run() async throws {
