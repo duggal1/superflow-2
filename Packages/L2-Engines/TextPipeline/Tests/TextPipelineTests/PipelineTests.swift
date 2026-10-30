@@ -7,7 +7,7 @@ import SuperflowTextGrammarGate
 import SuperflowTextLineFormat
 import SuperflowTextPipeline
 
-private struct EraserStage: TextStage {
+private struct EraserStage: SuperflowPorts.TextStage {
     let id = "eraser"
     func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
         var out = draft

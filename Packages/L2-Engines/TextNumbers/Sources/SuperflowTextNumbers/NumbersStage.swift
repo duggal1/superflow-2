@@ -6,7 +6,7 @@ import SuperflowPorts
 ///
 /// The stage walks the tokenizer's tokens with a cursor over the original line,
 /// so whitespace outside a rewritten span is preserved byte for byte.
-public struct NumbersStage: TextStage {
+public struct NumbersStage: SuperflowPorts.TextStage {
     public let id: String
     public init(id: String = "numbers") { self.id = id }
 

@@ -6,7 +6,7 @@ import SuperflowTextPipeline
 @testable import SuperflowMeetingEngine
 
 final class MeetingTimingTests: XCTestCase {
-    private actor TimingStage: TextStage {
+    private actor TimingStage: SuperflowPorts.TextStage {
         nonisolated let id = "timing-recorder"
         private(set) var timings: [WordTiming] = []
 

@@ -2,7 +2,7 @@ import Foundation
 import SuperflowKernel
 import SuperflowPorts
 
-public struct MechanicalDisfluencyStage: TextStage {
+public struct MechanicalDisfluencyStage: SuperflowPorts.TextStage {
     public let id: String
     private let settings: DisfluencySettings
 

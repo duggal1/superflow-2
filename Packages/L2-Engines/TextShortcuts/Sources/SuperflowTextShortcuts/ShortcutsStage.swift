@@ -3,7 +3,7 @@ import SuperflowKernel
 import SuperflowPorts
 
 /// Expands shortcut triggers verbatim and short-circuits the rest of the pipeline.
-public struct ShortcutsStage: TextStage {
+public struct ShortcutsStage: SuperflowPorts.TextStage {
     public let id = "shortcuts"
     public static let maxContentBytes = 200 * 1024
     private let entries: [ShortcutEntry]

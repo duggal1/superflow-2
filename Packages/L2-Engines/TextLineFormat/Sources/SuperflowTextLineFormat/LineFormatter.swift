@@ -314,7 +314,7 @@ public struct LineFormatter: Sendable {
     }
 }
 
-public struct LineFormatStage: TextStage {
+public struct LineFormatStage: SuperflowPorts.TextStage {
     public let id = "lineformat"
     private let settings: LineFormatSettings
     public init(settings: LineFormatSettings) { self.settings = settings }

@@ -4,7 +4,7 @@ import SuperflowPorts
 
 /// Tier 2 grammar gate. Harper may only touch allowlisted lint kinds, only outside protected
 /// spans, only inside the 3 percent edit budget and only under the 50 ms time cap.
-public struct GrammarGateStage: TextStage {
+public struct GrammarGateStage: SuperflowPorts.TextStage {
     public let id: String
     public let policy: GrammarGatePolicy
     private let checker: any GrammarChecker

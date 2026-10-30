@@ -218,7 +218,7 @@ public actor CleanupService {
     }
 }
 
-public struct CleanupStage: TextStage {
+public struct CleanupStage: SuperflowPorts.TextStage {
     public let id = "cleanup"
     private let service: CleanupService
     public init(service: CleanupService) { self.service = service }

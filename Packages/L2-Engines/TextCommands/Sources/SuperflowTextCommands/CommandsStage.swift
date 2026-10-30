@@ -4,7 +4,7 @@ import SuperflowPorts
 /// Spoken commands: "new line", "new paragraph", "newline".
 /// Whole-phrase only: the phrase must start the utterance, end it, or sit next to punctuation,
 /// so "a new line of credit" is never rewritten.
-public struct CommandsStage: TextStage {
+public struct CommandsStage: SuperflowPorts.TextStage {
     public let id = "commands"
     public init() {}
 

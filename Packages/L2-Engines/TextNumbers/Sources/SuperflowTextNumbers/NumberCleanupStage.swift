@@ -2,7 +2,7 @@ import Foundation
 import SuperflowKernel
 import SuperflowPorts
 
-public struct NumberCleanupStage: TextStage {
+public struct NumberCleanupStage: SuperflowPorts.TextStage {
     public let id = "numbers"
     private let grouping: NumberOptions.Grouping
 

@@ -47,11 +47,11 @@ public struct PipelineExplanation: Sendable, Equatable {
 /// Runs text stages in order. A shortcut expansion stops the pipeline immediately.
 /// The pipeline itself cannot throw; each stage owns its own failure fallback.
 public struct TextPipeline: Sendable {
-    public let stages: [any TextStage]
+    public let stages: [any SuperflowPorts.TextStage]
     public let seedProtected: Set<String>
     private let tokenCounter: (@Sendable (String) async -> Int)?
 
-    public init(stages: [any TextStage], seedProtected: Set<String> = [],
+    public init(stages: [any SuperflowPorts.TextStage], seedProtected: Set<String> = [],
                 tokenCounter: (@Sendable (String) async -> Int)? = nil) {
         self.stages = stages
         self.seedProtected = seedProtected
@@ -138,7 +138,7 @@ public struct TextPipeline: Sendable {
             stages: explanations)
     }
 
-    private static func edits(for stage: any TextStage, before: TranscriptDraft,
+    private static func edits(for stage: any SuperflowPorts.TextStage, before: TranscriptDraft,
                               after: TranscriptDraft, context: TextContext) async -> [TextEdit] {
         guard before.text != after.text else { return [] }
         if let explaining = stage as? any ExplainingTextStage,

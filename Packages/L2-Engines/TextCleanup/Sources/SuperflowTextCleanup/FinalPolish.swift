@@ -60,7 +60,7 @@ private extension SentenceSplitter {
     }
 }
 
-public struct FinalPolishStage: TextStage {
+public struct FinalPolishStage: SuperflowPorts.TextStage {
     public let id = "polish"
     public init() {}
     public func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {

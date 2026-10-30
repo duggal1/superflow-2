@@ -40,7 +40,7 @@ public struct TextPipelineDependencies: Sendable {
 public enum TextPipelineBuilder {
     public static func make(settings: AppSettings,
                             dependencies: TextPipelineDependencies = TextPipelineDependencies()) -> TextPipeline {
-        var stages: [any TextStage] = []
+        var stages: [any SuperflowPorts.TextStage] = []
         if settings.commandsEnabled {
             stages.append(CommandsStage())
         }
@@ -48,10 +48,10 @@ public enum TextPipelineBuilder {
             stages.append(ShortcutsStage(entries: dependencies.shortcuts))
         }
         if settings.disfluency.enabled {
-            stages.append(MechanicalDisfluencyStage(settings: settings.disfluency))
+            stages.append(DisfluencyAdapter(settings: settings.disfluency))
         }
         stages.append(SpokenCodeStage())
-        stages.append(NumberCleanupStage())
+        stages.append(NumbersAdapter())
         if settings.codeSpeakEnabled {
             stages.append(CodeSpeakStage())
         }

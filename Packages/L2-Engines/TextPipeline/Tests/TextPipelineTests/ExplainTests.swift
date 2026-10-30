@@ -4,7 +4,7 @@ import SuperflowPorts
 import SuperflowTextLexicon
 import SuperflowTextPipeline
 
-private struct ReplaceStage: TextStage {
+private struct ReplaceStage: SuperflowPorts.TextStage {
     let id = "replace"
     let from: String
     let to: String
@@ -16,7 +16,7 @@ private struct ReplaceStage: TextStage {
     }
 }
 
-private struct ShortcutStage: TextStage {
+private struct ShortcutStage: SuperflowPorts.TextStage {
     let id = "shortcut"
 
     func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
@@ -27,7 +27,7 @@ private struct ShortcutStage: TextStage {
     }
 }
 
-private struct EraserStage: TextStage {
+private struct EraserStage: SuperflowPorts.TextStage {
     let id = "eraser"
 
     func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {

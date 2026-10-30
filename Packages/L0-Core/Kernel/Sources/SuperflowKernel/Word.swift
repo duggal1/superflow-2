@@ -1,27 +1,70 @@
 import Foundation
 
-public struct Word: Equatable, Sendable {
+public struct Word: Equatable, Sendable, Hashable {
     public var lead: String
     public var core: String
     public var trail: String
-    public var protected: Bool
+    public var isProtected: Bool
     public var glue: Bool
+    public var pauseBefore: Duration?
+    // Legacy fields kept for existing callers.
+    public var protected: Bool {
+        get { isProtected }
+        set { isProtected = newValue }
+    }
     public var pause: Bool
 
-    public init(_ core: String, lead: String = "", trail: String = "",
-                protected: Bool = false, glue: Bool = false, pause: Bool = false) {
-        self.core = core
+    public init(lead: String = "", core: String, trail: String = "",
+                isProtected: Bool = false, glue: Bool = false, pauseBefore: Duration? = nil,
+                pause: Bool = false) {
         self.lead = lead
+        self.core = core
         self.trail = trail
-        self.protected = protected
+        self.isProtected = isProtected
         self.glue = glue
+        self.pauseBefore = pauseBefore
         self.pause = pause
     }
 
-    public var key: String { core.lowercased().replacingOccurrences(of: "’", with: "'") }
-    public var hardBreak: Bool { trail.contains { ",;:.?!".contains($0) } }
-    public var sentenceEnd: Bool { trail.contains { ".?!".contains($0) } }
+    // Legacy positional initializer.
+    public init(_ core: String, lead: String = "", trail: String = "",
+                protected: Bool = false, glue: Bool = false, pause: Bool = false) {
+        self.lead = lead
+        self.core = core
+        self.trail = trail
+        self.isProtected = protected
+        self.glue = glue
+        self.pauseBefore = nil
+        self.pause = pause
+    }
+
+    private static let currencySymbols: Set<Character> = ["$", "€", "£", "₹"]
+
     public var text: String { lead + core + trail }
+    public var key: String { core.lowercased().replacingOccurrences(of: "’", with: "'") }
+    public var endsSentence: Bool { trail.contains { ".!?…".contains($0) } }
+    public var sentenceEnd: Bool { endsSentence }
+    public var hardBreak: Bool { trail.contains { ",;:.?!".contains($0) } }
+
+    /// Canonical form used by the protected-literal guard.
+    public var literal: String {
+        lead.filter { Self.currencySymbols.contains($0) } + core + trail.prefix(while: { $0 == "%" })
+    }
+
+    public static func parse(_ token: String) -> Word {
+        let chars = Array(token)
+        guard let first = chars.firstIndex(where: { $0.isLetter || $0.isNumber }),
+              let last = chars.lastIndex(where: { $0.isLetter || $0.isNumber }) else {
+            return Word(lead: token, core: "")
+        }
+        return Word(lead: String(chars[..<first]),
+                    core: String(chars[first...last]),
+                    trail: String(chars[(last + 1)...]))
+    }
+
+    public static func tokenize(_ text: String) -> [Word] {
+        text.split(whereSeparator: \.isWhitespace).map { parse(String($0)) }
+    }
 
     public static func merged(_ core: String, from first: Word, to last: Word, protected: Bool) -> Word {
         Word(core, lead: first.lead, trail: last.trail, protected: protected,
@@ -54,7 +97,7 @@ public extension Tokenizer {
             } else {
                 word = Word(String(slice[start..<end]), lead: String(slice[..<start]), trail: String(slice[end...]))
             }
-            word.protected = word.core.contains(where: \.isNumber)
+            word.isProtected = word.core.contains(where: \.isNumber)
                 || word.core.contains(where: { "/_@".contains($0) })
                 || (word.core.contains(".") && word.core.contains(where: \.isLetter))
             while spanIndex < spans.count, spans[spanIndex].upperBound <= slice.startIndex { spanIndex += 1 }
@@ -62,13 +105,15 @@ public extension Tokenizer {
             while index < spans.count, spans[index].lowerBound < slice.endIndex {
                 let span = spans[index]
                 if span.overlaps(slice.startIndex..<slice.endIndex) {
-                    word.protected = true
+                    word.isProtected = true
                     if position + 1 < slices.count, span.upperBound > slices[position + 1].startIndex {
                         word.glue = true
                     }
                 }
                 index += 1
             }
+            // keep legacy field in sync
+            word.protected = word.isProtected
             return word
         }
     }
