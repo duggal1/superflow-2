@@ -164,8 +164,8 @@ final class RangeDownloaderTests: XCTestCase {
             .appendingPathComponent(".segments-\(url.lastPathComponent)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: parts) }
         try FileManager.default.createDirectory(at: parts, withIntermediateDirectories: true)
-        try "\(payload.count)".write(to: parts.appendingPathComponent("total"),
-                                     atomically: true, encoding: .utf8)
+        try "\(payload.count) 4".write(to: parts.appendingPathComponent("total"),
+                                       atomically: true, encoding: .utf8)
         let chunk = payload.count / 4
         let already = chunk / 2
         try payload.prefix(already).write(to: parts.appendingPathComponent("part-0"))

@@ -57,17 +57,22 @@ final class SegmentedTransfer: @unchecked Sendable {
     }
 
     /// A stable directory keyed by the destination, so parts survive a restart.
-    /// A different total means the file changed underneath us: start clean.
+    /// The marker records the total and chunk count: a different file layout
+    /// means the parts cannot be trusted and the transfer starts clean.
     private func preparePartsDirectory() throws {
         let fileManager = FileManager.default
         let marker = partsDirectory.appendingPathComponent("total")
-        let recorded = (try? String(contentsOf: marker, encoding: .utf8)).flatMap { Int64($0) }
-        if recorded != total {
+        let recorded = (try? String(contentsOf: marker, encoding: .utf8))?
+            .split(separator: " ").compactMap { Int64($0) }
+        let matches = recorded?.count == 2
+            && recorded?[0] == total
+            && recorded?[1] == Int64(chunkCount)
+        if !matches {
             try? fileManager.removeItem(at: partsDirectory)
         }
         try fileManager.createDirectory(at: partsDirectory, withIntermediateDirectories: true)
-        if recorded != total {
-            try? "\(total)".write(to: marker, atomically: true, encoding: .utf8)
+        if !matches {
+            try? "\(total) \(chunkCount)".write(to: marker, atomically: true, encoding: .utf8)
         }
     }
 
