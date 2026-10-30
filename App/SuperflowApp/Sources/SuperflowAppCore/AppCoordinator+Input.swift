@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import SuperflowGestureKit
 import SuperflowKernel
 import SuperflowPorts
@@ -92,7 +93,15 @@ extension AppCoordinator {
     }
 
     func handleKeyEvent(_ event: KeyEvent) async {
-        enqueueGestureActions(gesture.handle(event))
+        let actions = gesture.handle(event)
+        switch event.kind {
+        case .fnDown, .fnUp, .rightCmdDown, .rightCmdUp:
+            Logger(subsystem: "com.superflow.app", category: "KeyboardGesture")
+                .notice("edge=\(String(describing: event.kind), privacy: .public) state=\(String(describing: self.gesture.state), privacy: .public) actions=\(String(describing: actions), privacy: .public)")
+        default:
+            break
+        }
+        enqueueGestureActions(actions)
     }
 
     private func enqueueGestureActions(_ actions: [GestureAction]) {
