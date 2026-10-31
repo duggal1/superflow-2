@@ -82,7 +82,11 @@ public struct GestureRecognizer: Sendable {
 
     private mutating func fnUp(at now: UInt64) -> [GestureAction] {
         switch state {
-        case .armed:
+        case .armed, .pushToTalk:
+            // A 10 ms tick can promote `.armed` to `.pushToTalk` just before the
+            // release is delivered. The event timestamp, not the tick clock, says
+            // whether the key was really held; otherwise a short first tap of a
+            // double-tap submitted the session instead of waiting for the second.
             if elapsedMs(now, since: downAtNs) >= config.holdMs {
                 return submit(.dictation)
             }
@@ -90,8 +94,6 @@ public struct GestureRecognizer: Sendable {
             pendingKind = .dictation
             tapAtNs = now
             return []
-        case .pushToTalk:
-            return submit(.dictation)
         case .awaitingSecondTap, .handsFree, .meetingArmed, .meetingLatched, .idle:
             return []
         }

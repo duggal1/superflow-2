@@ -33,6 +33,20 @@ final class GestureTests: XCTestCase {
         XCTAssertEqual(g.state, .idle)
     }
 
+    /// The 10 ms tick can fire just before a short release is delivered. The
+    /// release timestamp proves it was a tap, so the first tap must still wait
+    /// for a second instead of submitting.
+    func testLateHoldTickBeforeShortReleaseStillCountsAsTap() {
+        var g = make()
+        _ = g.handle(event(.fnDown, 0))
+        XCTAssertEqual(g.tick(atNs: 210 * ms), [.holdBegan(.dictation)])
+        XCTAssertEqual(g.state, .pushToTalk)
+        XCTAssertEqual(g.handle(event(.fnUp, 120)), [])
+        XCTAssertEqual(g.state, .awaitingSecondTap)
+        XCTAssertEqual(g.handle(event(.fnDown, 300)), [.beginHandsFree])
+        XCTAssertEqual(g.state, .handsFree)
+    }
+
     func testDoubleTapFnIsHandsFree() {
         var g = make()
         _ = g.handle(event(.fnDown, 0))

@@ -56,6 +56,7 @@ public final class AppCoordinator: ObservableObject {
     var gesture = GestureRecognizer()
     var hotkeyTask: Task<Void, Never>?
     var gestureTimerTask: Task<Void, Never>?
+    var conflictTask: Task<Void, Never>?
     var gestureActionTask: Task<Void, Never>?
     private var sessionRelayTask: Task<Void, Never>?
     private var meetingRelayTask: Task<Void, Never>?
@@ -309,6 +310,12 @@ public final class AppCoordinator: ObservableObject {
         // A key change has to reach the live tap even when it is already running.
         await environment.hotkeySource.setDictationKey(updated.dictationKey)
         await environment.refreshFunctionKeySuppression(for: updated.dictationKey)
+        if updated.dictationKey == .fn {
+            startDictationConflictMonitor()
+        } else {
+            conflictTask?.cancel()
+            conflictTask = nil
+        }
         gesture.update(config: updated.gesture)
         dashboardModel?.update(settings: updated)
         await refreshPipeline()

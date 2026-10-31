@@ -23,6 +23,29 @@ final class KeyEventMapperTests: XCTestCase {
         XCTAssertEqual(up, KeyEvent(kind: .rightCmdUp, timestampNs: 40))
     }
 
+    /// Releasing right ⌘ while left ⌘ stays held still carries `.maskCommand`.
+    /// The keycode tracker is what distinguishes that release from a new press.
+    func testRightCommandReleaseWhileLeftCommandHeldIsAnUpEdge() {
+        var tracker = ModifierPressTracker()
+        XCTAssertTrue(tracker.isDown(keyCode: KeyCode.leftCommand))
+        XCTAssertTrue(tracker.isDown(keyCode: KeyCode.rightCommand))
+        let release = KeyEventMapper.flagsChanged(
+            keyCode: KeyCode.rightCommand, flags: [.maskCommand],
+            isDown: tracker.isDown(keyCode: KeyCode.rightCommand), timestampNs: 40)
+        XCTAssertEqual(release, KeyEvent(kind: .rightCmdUp, timestampNs: 40))
+        // Left ⌘ was never released, so its next edge must be an up edge.
+        XCTAssertFalse(tracker.isDown(keyCode: KeyCode.leftCommand))
+    }
+
+    func testModifierTrackerTogglesAndResets() {
+        var tracker = ModifierPressTracker()
+        XCTAssertTrue(tracker.isDown(keyCode: KeyCode.fn))
+        XCTAssertFalse(tracker.isDown(keyCode: KeyCode.fn))
+        XCTAssertTrue(tracker.isDown(keyCode: KeyCode.fn))
+        tracker.reset()
+        XCTAssertTrue(tracker.isDown(keyCode: KeyCode.fn))
+    }
+
     func testLeftCommandIsIgnored() {
         XCTAssertNil(KeyEventMapper.flagsChanged(keyCode: KeyCode.leftCommand, flags: [.maskCommand],
                                                  timestampNs: 1))

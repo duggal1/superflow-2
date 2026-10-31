@@ -26,6 +26,10 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     private var lifecycle = HotkeyLifecycle()
     private var wakeObserver: NSObjectProtocol?
     private var healthTimer: DispatchSourceTimer?
+    /// Per-key modifier state, because CGEvent flags cannot tell right ⌘ from a
+    /// left ⌘ that is still held.
+    private var modifierTracker = ModifierPressTracker()
+    private var healthTicks = 0
 
     public init() {
         (events, continuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(256))
@@ -173,6 +177,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             let value = (passiveTap, passiveSource)
             passiveTap = nil
             passiveSource = nil
+            modifierTracker.reset()
             return value
         }
         if let tap = state.0 {
@@ -189,6 +194,28 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         removeTaps()
         _ = installPassiveTap()
         if lock.withLock({ wantsActive }) { installActiveTap() }
+    }
+
+    /// A later-installed tap from another dictation app sits ahead of ours in the
+    /// chain, so it can swallow fn first. Re-adding the passive tap puts it back at
+    /// the head without touching the active tap or the session in progress.
+    private func reclaimPassiveTap() {
+        guard lock.withLock({ lifecycle.isRunning }) else { return }
+        let old = lock.withLock { () -> (CFMachPort?, CFRunLoopSource?) in
+            let value = (passiveTap, passiveSource)
+            passiveTap = nil
+            passiveSource = nil
+            modifierTracker.reset()
+            return value
+        }
+        if let tap = old.0 {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)
+        }
+        if let source = old.1 {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+        }
+        _ = installPassiveTap()
     }
 
     // MARK: callbacks
@@ -208,6 +235,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     private func handlePassive(proxy _: CGEventTapProxy, type: CGEventType,
                                event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            lock.withLock { modifierTracker.reset() }
             if let tap = lock.withLock({ passiveTap }) {
                 CGEvent.tapEnable(tap: tap, enable: true)
             }
@@ -215,12 +243,17 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         }
         // Our own synthetic paste must never reach the gesture recogniser.
         if KeyEventMapper.isSynthetic(event) { return Unmanaged.passUnretained(event) }
-        let timestamp = DispatchTime.now().uptimeNanoseconds
+        // The event timestamp is the moment the key changed. Reading the clock
+        // here instead made a release delivered after a hold tick look held.
+        let timestamp = event.timestamp
         switch type {
         case .flagsChanged:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-            let key = lock.withLock { dictationKey }
+            let (key, isDown) = lock.withLock { () -> (DictationKey, Bool) in
+                (dictationKey, modifierTracker.isDown(keyCode: keyCode))
+            }
             if let mapped = KeyEventMapper.flagsChanged(keyCode: keyCode, flags: event.flags,
+                                                         isDown: isDown,
                                                          timestampNs: timestamp, dictationKey: key) {
                 continuation.yield(mapped)
                 // Drop only the Fn modifier change so macOS cannot run its Globe action (Show
@@ -259,7 +292,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         guard keyCode == KeyCode.enter || keyCode == KeyCode.escape else {
             return Unmanaged.passUnretained(event)
         }
-        continuation.yield(KeyEventMapper.keyDown(keyCode: keyCode, timestampNs: DispatchTime.now().uptimeNanoseconds))
+        continuation.yield(KeyEventMapper.keyDown(keyCode: keyCode, timestampNs: event.timestamp))
         return nil
     }
 
@@ -283,6 +316,11 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             for tap in taps where !CGEvent.tapIsEnabled(tap: tap) {
                 CGEvent.tapEnable(tap: tap, enable: true)
             }
+            // Reclaim the head of the chain once a minute. Reinstalling more often
+            // would drop edges; never doing it lets a later dictation app win fn
+            // for the rest of the process lifetime.
+            self.healthTicks += 1
+            if self.healthTicks % 6 == 0 { self.reclaimPassiveTap() }
         }
         timer.resume()
         lock.withLock { healthTimer = timer }

@@ -1,6 +1,7 @@
 import Foundation
 import OSLog
 import SuperflowGestureKit
+import SuperflowHotkeyEngine
 import SuperflowKernel
 import SuperflowPorts
 
@@ -52,6 +53,7 @@ extension AppCoordinator {
                     )
                 }
             }
+            startDictationConflictMonitor()
         } catch {
             menuBarController.publishError("Keyboard shortcuts are unavailable. Check Input Monitoring in System Settings.")
         }
@@ -74,6 +76,8 @@ extension AppCoordinator {
                         self.hotkeyTask = nil
                         self.gestureTimerTask?.cancel()
                         self.gestureTimerTask = nil
+                        self.conflictTask?.cancel()
+                        self.conflictTask = nil
                         self.menuBarController.publishError(
                             "Keyboard shortcuts are unavailable. Check Input Monitoring in System Settings."
                         )
@@ -87,6 +91,31 @@ extension AppCoordinator {
                     }
                 default:
                     break
+                }
+            }
+        }
+    }
+
+    /// Fn is a global key, so a second dictation app that installs its own tap
+    /// after ours wins the event order and Superflow never sees a press. While fn
+    /// is the chosen key, ask known competitors to quit and say so once each.
+    func startDictationConflictMonitor() {
+        guard settings.dictationKey == .fn, conflictTask == nil else { return }
+        conflictTask = Task { @MainActor [weak self] in
+            var announced = Set<String>()
+            while !Task.isCancelled {
+                guard let self, self.settings.dictationKey == .fn else { return }
+                let closed = DictationConflictResolver.terminateKnownCompetitors()
+                let newlyClosed = closed.filter { announced.insert($0.bundleID).inserted }
+                if !newlyClosed.isEmpty {
+                    let names = newlyClosed.map(\.name).joined(separator: ", ")
+                    self.menuBarController.publishError(
+                        "\(names) also listens for fn, so Superflow closed it to keep dictation working.")
+                }
+                do {
+                    try await Task.sleep(for: .seconds(20))
+                } catch {
+                    return
                 }
             }
         }
