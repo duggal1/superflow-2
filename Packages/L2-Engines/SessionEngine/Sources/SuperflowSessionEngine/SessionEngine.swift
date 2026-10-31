@@ -34,6 +34,7 @@ public actor SessionEngine {
     private var eventTask: Task<Void, Never>?
     private var recognitionTask: Task<Void, Never>?
     private var cleanupCoordinator: SessionCleanupCoordinator?
+    private var warmTask: (id: UUID, task: Task<Bool, Never>)?
     private var nextIndex = 0
     private var lastEndMs = 0
     private var cumulativeTokenCount = 0
@@ -97,26 +98,52 @@ public actor SessionEngine {
         transition(.recording(mode))
     }
 
-    /// Called at launch. A failed warm-up leaves the engine idle and reports a notice.
+    /// Explicit warm-up that owns the `.warming` state (onboarding, settings).
+    /// A failed load leaves the engine idle and reports a notice.
     @discardableResult
     public func warmUp() async -> Bool {
         guard state == .idle else { return false }
         transition(.warming)
-        do {
-            let recognizer = self.recognizer
-            let profile = settings.asrProfile
-            try await withDeadline(modelDeadline, label: "model warm-up") {
-                try await recognizer.warmUp(profile: profile)
-            }
-            if settings.speechEnhancementEnabled, let enhancer {
-                try? await withDeadline(modelDeadline, label: "enhancement warm-up") {
+        let result = await prewarm()
+        transition(.idle)
+        return result
+    }
+
+    /// Loads the model without entering `.warming`. Launch uses this so the UI
+    /// never claims a model load the owner did not ask for. A press during the
+    /// load still starts a session: `start` awaits the same serialized load and
+    /// only enters `.warming` if the model is genuinely not resident yet.
+    @discardableResult
+    public func prewarm() async -> Bool {
+        if let warmTask { return await warmTask.task.value }
+        let id = UUID()
+        let task = Task { await self.performWarmUp() }
+        warmTask = (id, task)
+        let result = await task.value
+        if warmTask?.id == id { warmTask = nil }
+        return result
+    }
+
+    private func performWarmUp() async -> Bool {
+        let recognizer = self.recognizer
+        let profile = settings.asrProfile
+        let enhancer = settings.speechEnhancementEnabled ? self.enhancer : nil
+        let deadline = modelDeadline
+        let enhancement = enhancer.map { enhancer in
+            Task {
+                try? await withDeadline(deadline, label: "enhancement warm-up") {
                     try await enhancer.prepare()
                 }
             }
-            transition(.idle)
+        }
+        do {
+            try await withDeadline(modelDeadline, label: "model warm-up") {
+                try await recognizer.warmUp(profile: profile)
+            }
+            await enhancement?.value
             return true
         } catch {
-            transition(.idle)
+            enhancement?.cancel()
             emit(.notice("Model warm-up failed: \(error.localizedDescription)"))
             return false
         }

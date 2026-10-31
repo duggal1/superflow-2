@@ -203,6 +203,24 @@ public final class AppCoordinator: ObservableObject {
             settings.onboardingComplete = true
             await environment.settingsStore.save(settings)
         }
+        if settings.settingsVersion < AppSettings.currentVersion {
+            settings.settingsVersion = AppSettings.currentVersion
+            await environment.settingsStore.save(settings)
+        }
+        // The model is the long pole. Start both loads before database
+        // maintenance, retention and pipeline construction, and never make the
+        // launch UI wait for them.
+        await environment.sessionEngine.update(settings: settings)
+        Task {
+            let started = DispatchTime.now().uptimeNanoseconds
+            let ready = await environment.sessionEngine.prewarm()
+            launchLog.info("ASR prewarm: \((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000) ms; ready: \(ready)")
+        }
+        Task {
+            let started = DispatchTime.now().uptimeNanoseconds
+            let ready = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute)
+            launchLog.info("Cleanup preparation: \((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000) ms; ready: \(ready)")
+        }
         // Fn is Superflow's dictation key only while it owns dictation, so put the Globe
         // binding in the Do Nothing state first. A different key leaves the Globe alone.
         if settings.dictationKey == .fn { environment.claimFunctionKey() }
@@ -240,21 +258,16 @@ public final class AppCoordinator: ObservableObject {
             guard !pending.isEmpty else {
                 self.menuBarController.setRecoveryReady(true)
                 launchLog.info("Recovery gate opened after \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms; nothing to recover, model warming in background")
-                if shouldWarmModels { Task { _ = await environment.sessionEngine.warmUp() } }
+                if shouldWarmModels { _ = await environment.sessionEngine.prewarm() }
                 return
             }
             // Order matters: `RecoveryEngine` calls `makeStream`, which requires a
             // prepared profile, so the model load has to finish first. The hotkeys are
             // already installed, so a press in this window is answered instead of lost.
-            let modelReady = shouldWarmModels ? await environment.sessionEngine.warmUp() : false
+            let modelReady = shouldWarmModels ? await environment.sessionEngine.prewarm() : false
             await self.recoverInterruptedSessions(environment: environment)
             self.menuBarController.setRecoveryReady(true)
             launchLog.info("Recovery gate opened after \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms; model ready: \(modelReady)")
-        }
-        Task {
-            let started = DispatchTime.now().uptimeNanoseconds
-            let ready = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute)
-            launchLog.info("Cleanup preparation: \((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000) ms; ready: \(ready)")
         }
         if settings.speechEnhancementEnabled {
             modelsModel?.download(ModelsViewModel.enhancementID)

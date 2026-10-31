@@ -111,9 +111,17 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
                 "\(profile.id) is not downloaded (missing \(missing.joined(separator: ", "))).")
         }
         let directory = FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: modelCacheRoot)
-        try await prime(profileID: profile.id, directory: directory)
         let started = DispatchTime.now().uptimeNanoseconds
-        _ = await makeVoiceActivity()
+        // ASR load and Silero load are independent files; paying them one after
+        // the other adds the smaller of the two to every cold launch.
+        let vadTask = Task { await self.makeVoiceActivity() }
+        do {
+            try await prime(profileID: profile.id, directory: directory)
+        } catch {
+            vadTask.cancel()
+            throw error
+        }
+        _ = await vadTask.value
         let elapsed = (DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
         Self.logger.info("Voice activity preparation: \(elapsed) ms")
     }
@@ -210,9 +218,10 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
     /// ANE specialization and warms the decode buffers; paying it at launch keeps
     /// it off the record path.
     private static func warmPredictions(_ manager: any StreamingAsrManager) async throws {
-        // 4 s of silence covers the largest streaming chunk in the catalog
-        // (2,240 ms) with margin; FluidAudio re-chunks internally.
-        let silence = [Float](repeating: 0, count: sampleRate * 4)
+        // 2.5 s of silence covers the largest streaming chunk in the catalog
+        // (2,240 ms) with margin; FluidAudio re-chunks internally. The extra
+        // second and a half only lengthened the cold launch.
+        let silence = [Float](repeating: 0, count: sampleRate * 5 / 2)
         let buffer = try FluidAudioBuffer.make(silence)
         try await manager.appendAudio(buffer)
         try await manager.processBufferedAudio()

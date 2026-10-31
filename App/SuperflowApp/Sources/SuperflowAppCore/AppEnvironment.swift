@@ -159,7 +159,9 @@ public final class AppEnvironment {
         #else
         linter = UnavailableHarperLinter()
         #endif
-        let grammar = HarperChecker(linter: linter)
+        let grammar = HarperChecker(
+            linter: linter,
+            config: HarperConfig(enabled: settings.harperEnabled))
         return TextPipelineBuilder.make(
             settings: settings,
             dependencies: TextPipelineDependencies(

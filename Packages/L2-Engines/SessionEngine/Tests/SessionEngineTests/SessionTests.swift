@@ -149,6 +149,19 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(state4, .idle)
     }
 
+    /// Launch prewarm must not claim the model is loading: the window maps
+    /// `.warming` to a visible "Loading model" banner.
+    func testPrewarmLoadsWithoutEnteringWarming() async {
+        let recognizer = FakeSpeechRecognizer()
+        let engine = engine(recognizer: recognizer)
+        let ok = await engine.prewarm()
+        XCTAssertTrue(ok)
+        let state = await engine.currentState
+        XCTAssertEqual(state, .idle)
+        let prepared = await recognizer.isPrepared(profile: AppSettings.default.asrProfile)
+        XCTAssertTrue(prepared)
+    }
+
     func testWarmUpFailureStillAllowsStart() async throws {
         let engine = engine(recognizer: FakeSpeechRecognizer(failWarmUp: true))
         let ok = await engine.warmUp()

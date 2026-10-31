@@ -195,6 +195,11 @@ public struct GestureConfig: Codable, Sendable, Equatable {
 }
 
 public struct AppSettings: Codable, Sendable, Equatable {
+    /// Bumped when a stored default has to change. Version 2 moves the legacy
+    /// CPU cleanup default onto the GPU; an explicit CPU choice made after the
+    /// migration keeps version 2 and is preserved.
+    public static let currentVersion = 2
+    public var settingsVersion = AppSettings.currentVersion
     public var theme: ThemeMode = .system
     /// Nemotron 3.5 ASR Streaming 0.6B is the model the app installs and runs. It is
     /// the default in one place only, so onboarding and the Models page cannot drift.
@@ -249,6 +254,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = AppSettings()
+        let storedVersion = try c.decodeIfPresent(Int.self, forKey: .settingsVersion) ?? 1
+        settingsVersion = storedVersion
         theme = try c.decodeIfPresent(ThemeMode.self, forKey: .theme) ?? d.theme
         // Streaming only. A stored batch profile (or a removed one) is replaced
         // with the default instead of being allowed onto the dictation path.
@@ -287,6 +294,12 @@ public struct AppSettings: Codable, Sendable, Equatable {
         backgroundDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .backgroundDeadlineMs) ?? d.backgroundDeadlineMs
         cleanupWorkers = try c.decodeIfPresent(Int.self, forKey: .cleanupWorkers) ?? d.cleanupWorkers
         cleanupCompute = try c.decodeIfPresent(ModelCompute.self, forKey: .cleanupCompute) ?? d.cleanupCompute
+        // Version 1 shipped with CPU as the saved value for many installs even
+        // though GPU is the product default. Migrate that legacy value once; a
+        // deliberate CPU choice made after version 2 is left alone.
+        if storedVersion < AppSettings.currentVersion, cleanupCompute == .cpu {
+            cleanupCompute = .gpu
+        }
         meetingsInStats = try c.decodeIfPresent(Bool.self, forKey: .meetingsInStats) ?? d.meetingsInStats
         islandAlwaysOn = try c.decodeIfPresent(Bool.self, forKey: .islandAlwaysOn) ?? d.islandAlwaysOn
         islandLiveText = try c.decodeIfPresent(Bool.self, forKey: .islandLiveText) ?? d.islandLiveText

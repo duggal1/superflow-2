@@ -107,8 +107,17 @@ final class KernelSupportTests: XCTestCase {
         XCTAssertEqual(missing.cleanupCompute, .gpu)
         XCTAssertEqual(ModelCompute.allCases.map(\.label), ["GPU", "CPU"])
 
-        let cpu = try JSONDecoder().decode(AppSettings.self,
-                                           from: Data(#"{"cleanupCompute":"cpu"}"#.utf8))
+        // A legacy row (no settingsVersion) that stored CPU came from the old
+        // default; version 2 moves it onto the GPU once.
+        let legacy = try JSONDecoder().decode(AppSettings.self,
+                                              from: Data(#"{"cleanupCompute":"cpu"}"#.utf8))
+        XCTAssertEqual(legacy.cleanupCompute, .gpu)
+        XCTAssertEqual(legacy.settingsVersion, 1)
+
+        // A deliberate CPU choice made after the migration keeps version 2.
+        let cpu = try JSONDecoder().decode(
+            AppSettings.self,
+            from: Data(#"{"cleanupCompute":"cpu","settingsVersion":2}"#.utf8))
         XCTAssertEqual(cpu.cleanupCompute, .cpu)
 
         let encoded = try JSONEncoder().encode(cpu)

@@ -110,11 +110,21 @@ public final class MenuBarController: ObservableObject {
             error = "Superflow is still loading the speech model. Hold fn again in a moment."
             return false
         }
-        // The launch gate now opens before the background warm-up, so the engine
-        // can be mid-load here. Say that instead of leaking its invalid-state text.
-        if await session.currentState == .warming {
-            error = "Superflow is still loading the speech model. Hold fn again in a moment."
-            return false
+        // The launch prewarm is silent, but an explicit warm-up (onboarding or a
+        // settings change) can still hold `.warming`. Wait for that same load
+        // instead of refusing the key; a refused fn press is indistinguishable
+        // from a dead shortcut.
+        var state = await session.currentState
+        if state == .warming {
+            let deadline = ContinuousClock.now + .seconds(120)
+            while state == .warming, ContinuousClock.now < deadline {
+                try? await Task.sleep(for: .milliseconds(50))
+                state = await session.currentState
+            }
+            if state == .warming {
+                error = "Superflow is still loading the speech model. Hold fn again in a moment."
+                return false
+            }
         }
         let activeMeeting = await meeting?.currentState.isActive ?? false
         guard !activeMeeting else {

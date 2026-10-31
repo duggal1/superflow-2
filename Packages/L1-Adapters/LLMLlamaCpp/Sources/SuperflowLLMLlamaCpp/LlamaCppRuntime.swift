@@ -45,7 +45,10 @@ public actor LlamaCppRuntime: LlamaRuntime {
     private var loadedURL: URL?
     private let sessionCount: Int
 
-    public init(sessions: Int = 2) {
+    /// One context per cleanup worker by default. Three matches the product's
+    /// default worker count, so a long dictation never serializes a chunk behind
+    /// an idle session.
+    public init(sessions: Int = 3) {
         sessionCount = min(4, max(1, sessions))
     }
 
@@ -62,20 +65,33 @@ public actor LlamaCppRuntime: LlamaRuntime {
             throw SuperflowError.modelUnavailable("llama.cpp could not access the model vocabulary")
         }
         let loadedModel = LlamaModel(pointer: pointer, vocabulary: vocabulary)
+        let cores = ProcessInfo.processInfo.activeProcessorCount
+        let generationThreads = Int32(max(2, cores / 2))
+        let batchThreads = Int32(max(2, cores))
         var sessions: [LlamaSession] = []
         for _ in 0..<sessionCount {
             var params = llama_context_default_params()
             params.n_ctx = 4_096
-            params.n_batch = 512
+            params.n_batch = 1_024
+            params.n_ubatch = 512
+            params.n_threads = generationThreads
+            params.n_threads_batch = batchThreads
             guard let context = llama_init_from_model(pointer, params) else {
                 throw SuperflowError.modelUnavailable("llama.cpp could not create a context")
             }
             sessions.append(LlamaSession(model: loadedModel, context: context))
         }
+        // Sessions own independent contexts. Warming them one after another paid
+        // the graph/buffer warm-up cost N times in series on every load.
         let warmupPrompt = LlamaPrompt.render(text: "hello there", options: CleanOptions())
-        for session in sessions {
-            _ = try Self.decode(prompt: warmupPrompt, maxTokens: 32, session: session,
-                                deadline: .now.advanced(by: .seconds(30)))
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for session in sessions {
+                group.addTask {
+                    _ = try Self.decode(prompt: warmupPrompt, maxTokens: 32, session: session,
+                                        deadline: .now.advanced(by: .seconds(30)))
+                }
+            }
+            try await group.waitForAll()
         }
         model = loadedModel
         pool = WorkerPool(sessions)
