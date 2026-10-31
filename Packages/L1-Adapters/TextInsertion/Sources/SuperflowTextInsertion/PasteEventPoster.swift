@@ -28,7 +28,7 @@ public struct CGEventPastePoster: PasteEventPosting {
     private let postTap: CGEventTapLocation
     private let sleep: @Sendable (Duration) async -> Void
 
-    public init(postTap: CGEventTapLocation = .cgAnnotatedSessionEventTap,
+    public init(postTap: CGEventTapLocation = .cgSessionEventTap,
                 sleep: @escaping @Sendable (Duration) async -> Void = { try? await Task.sleep(for: $0) }) {
         self.postTap = postTap
         self.sleep = sleep

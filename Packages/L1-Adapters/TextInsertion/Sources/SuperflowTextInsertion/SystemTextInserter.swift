@@ -89,6 +89,10 @@ public final class SystemTextInserter: TextInserter, @unchecked Sendable {
             base = "The paste was not observed."
         case .accessibilityFailed:
             base = "The text could not be inserted through Accessibility."
+        case .clipboardWriteFailed:
+            base = "The clipboard could not be written."
+        case .noPasteMechanismWorked:
+            base = "No paste mechanism worked."
         }
         return textOnClipboard ? "\(base) The text is on the clipboard." : base
     }

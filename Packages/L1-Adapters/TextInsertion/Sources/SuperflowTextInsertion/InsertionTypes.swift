@@ -64,6 +64,7 @@ public struct TextInsertionOptions: Sendable {
     /// Explicit Accessibility strategy: write the text straight into the
     /// focused element instead of posting a chord.
     public var preferAccessibility: Bool
+    public var preferAccessibilityForEditable: Bool
     /// Last-resort Accessibility write after every paste mechanism failed.
     public var allowAccessibilityFallback: Bool
     /// Write the text to the clipboard when nothing landed, so the Island can
@@ -80,17 +81,18 @@ public struct TextInsertionOptions: Sendable {
     public init(targetPID: pid_t? = nil,
                 strictTarget: Bool = false,
                 restoreClipboard: Bool = true,
-                clipboardRestoreDelay: Duration = .milliseconds(600),
+                clipboardRestoreDelay: Duration = .milliseconds(500),
                 verifiedRestoreDelay: Duration = .milliseconds(50),
                 verifyTimeout: Duration = .milliseconds(400),
                 modifierReleaseTimeout: Duration = .milliseconds(300),
                 allowPaste: Bool = true,
                 preferAccessibility: Bool = false,
+                preferAccessibilityForEditable: Bool = true,
                 allowAccessibilityFallback: Bool = true,
                 writeClipboardOnFailure: Bool = true,
                 preferMenuPaste: Bool = false,
                 copyToClipboardWhenNoTarget: Bool = false,
-                postTap: CGEventTapLocation = .cgAnnotatedSessionEventTap) {
+                postTap: CGEventTapLocation = .cgSessionEventTap) {
         self.targetPID = targetPID
         self.strictTarget = strictTarget
         self.restoreClipboard = restoreClipboard
@@ -100,6 +102,7 @@ public struct TextInsertionOptions: Sendable {
         self.modifierReleaseTimeout = modifierReleaseTimeout
         self.allowPaste = allowPaste
         self.preferAccessibility = preferAccessibility
+        self.preferAccessibilityForEditable = preferAccessibilityForEditable
         self.allowAccessibilityFallback = allowAccessibilityFallback
         self.writeClipboardOnFailure = writeClipboardOnFailure
         self.preferMenuPaste = preferMenuPaste
