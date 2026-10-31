@@ -69,6 +69,7 @@ struct SuperflowApplication: App {
             print("input preflight: \(CGPreflightListenEventAccess())")
             print("HID listen granted: \(IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted)")
             print("accessibility: \(AXIsProcessTrusted())")
+            print("post events: \(CGPreflightPostEventAccess())")
             exit(0)
         }
         AppFont.registerBundledFonts()

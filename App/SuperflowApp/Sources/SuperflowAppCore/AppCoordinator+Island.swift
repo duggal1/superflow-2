@@ -10,7 +10,7 @@ extension AppCoordinator {
                     let outcome = try await environment.textInserter.insert(transcript.text, strategy: .auto)
                     switch outcome {
                     case .pasted, .accessibility: islandModel?.send(.dismissed)
-                    case .clipboardOnly, .blockedSecureField: break
+                    case .clipboardOnly, .permissionRequired, .blockedSecureField: break
                     }
                 } catch {
                     // Keep the failure card available for Copy or another attempt.

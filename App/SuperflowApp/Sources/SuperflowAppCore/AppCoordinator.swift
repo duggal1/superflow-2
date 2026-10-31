@@ -52,6 +52,9 @@ public final class AppCoordinator: ObservableObject {
     )
 
     private var didLaunch = false
+    /// The Accessibility prompt is raised at most once per launch; the system
+    /// dialog is modal enough that repeating it would fight the owner.
+    var didPromptAccessibility = false
     // Shared with `AppCoordinator+Input.swift`, which owns the hotkey and permission wiring.
     var gesture = GestureRecognizer()
     var hotkeyTask: Task<Void, Never>?
@@ -242,6 +245,11 @@ public final class AppCoordinator: ObservableObject {
         islandController?.start()
         Task { await islandBridge?.refreshLastTranscript() }
         observePermissionChanges(environment.permissionGate)
+        if settings.onboardingComplete {
+            // Without Accessibility the OS silently drops every synthetic
+            // paste, so a finished dictation looks like nothing happened.
+            Task { await self.requestAccessibilityForPaste() }
+        }
         menuBarController.setRecoveryReady(false)
         let shouldWarmModels = settings.onboardingComplete
         // Fn has to be live before the model loads. Installing the tap needs no model,
@@ -415,6 +423,10 @@ public final class AppCoordinator: ObservableObject {
             sessionRelayTask = Task { [weak self] in
                 for await event in events {
                     guard let self else { return }
+                    if case .inserted(.permissionRequired) = event {
+                        // Ask while the failure is fresh, not on the next launch.
+                        Task { await self.requestAccessibilityForPaste() }
+                    }
                     self.sessionEventRelay.publish(event)
                 }
             }

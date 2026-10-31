@@ -173,6 +173,14 @@ if [[ -n "$HELPER_EXECUTABLE" ]]; then
     mkdir -p "$HELPER_BUNDLE/Contents/MacOS" "$HELPER_BUNDLE/Contents/Resources"
     cp "$HELPER_EXECUTABLE" "$HELPER_BUNDLE/Contents/MacOS/$HELPER_NAME"
     cp "$HELPER_INFO_PLIST" "$HELPER_BUNDLE/Contents/Info.plist"
+    # SwiftPM resource bundles live next to the helper binary in the build
+    # directory. `Bundle.module` looks in the *helper's* Contents/Resources, so
+    # without this copy the first access aborts with "unable to find bundle"
+    # (the LLM prompt templates are the first such access during model load).
+    HELPER_BIN_DIR="$(dirname "$HELPER_EXECUTABLE")"
+    while IFS= read -r bundle; do
+        ditto "$bundle" "$HELPER_BUNDLE/Contents/Resources/$(basename "$bundle")"
+    done < <(find -H "$HELPER_BIN_DIR" -maxdepth 1 -type d -name '*.bundle' -print 2>/dev/null)
     if [[ "$HAVE_FRAMEWORK" == 1 ]]; then
         mkdir -p "$HELPER_BUNDLE/Contents/Frameworks"
         ditto "$LLAMA_FRAMEWORK" "$HELPER_BUNDLE/Contents/Frameworks/llama.framework"

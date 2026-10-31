@@ -35,6 +35,10 @@ public actor SessionEngine {
     private var recognitionTask: Task<Void, Never>?
     private var cleanupCoordinator: SessionCleanupCoordinator?
     private var warmTask: (id: UUID, task: Task<Bool, Never>)?
+    /// The last transcript the OS refused to paste because Accessibility was
+    /// off. Granting the permission retries this text instead of asking the
+    /// owner to dictate it again. Never logged.
+    private var pendingInsertion: String?
     private var nextIndex = 0
     private var lastEndMs = 0
     private var cumulativeTokenCount = 0
@@ -156,6 +160,10 @@ public actor SessionEngine {
             throw SuperflowError.invalidState("session already active: \(state.label)")
         }
 
+        // A new dictation supersedes any text still waiting on a permission
+        // grant; it is already in History, so keeping two would paste stale
+        // words later.
+        pendingInsertion = nil
         let bundleID = await inserter.frontmostBundleID()
         // Let Chromium/Electron build their Accessibility tree while the user speaks.
         await inserter.prepareForInsertion()
@@ -325,6 +333,9 @@ public actor SessionEngine {
                 if let fallback { emit(.inserted(fallback)) }
             }
         }
+        if let insertion, case .permissionRequired = insertion {
+            pendingInsertion = text
+        }
         if !settings.keepJournals, finalized { await journals.delete(session: record.id) }
         if finalized {
             transition(.complete(record.id))
@@ -336,6 +347,26 @@ public actor SessionEngine {
         self.record = nil
         return SessionOutcome(sessionID: record.id, text: text, wordCount: words,
                               cleanupState: cleanupState, insertion: insertion)
+    }
+
+    /// Retries the transcript held back by a missing Accessibility grant. Safe
+    /// to call whenever the permission flips to granted: it does nothing when
+    /// there is no pending text, and keeps the text if the grant is still not
+    /// enough (for example the target app closed in the meantime).
+    public func retryPendingInsertion() async -> InsertionOutcome? {
+        guard let text = pendingInsertion else { return nil }
+        do {
+            let outcome = try await withDeadline(insertionDeadline, label: "insertion retry") {
+                [inserter] in
+                try await inserter.insert(text, strategy: .auto)
+            }
+            if case .permissionRequired = outcome { return outcome }
+            pendingInsertion = nil
+            emit(.inserted(outcome))
+            return outcome
+        } catch {
+            return nil
+        }
     }
 
     public func cancel() async {

@@ -131,6 +131,13 @@ final class IslandBridge {
         box.send(.notice(notice))
     }
 
+    /// A deferred paste landed after the owner granted Accessibility. The
+    /// failure card is stale, so retract it instead of leaving a copy prompt
+    /// over text that is already in the field.
+    func pasteRecovered() {
+        box.send(.dismissed)
+    }
+
     /// The session refused to open — the model is still loading, the microphone
     /// is gone, a meeting is running. Retracting to nothing reads as a dead key,
     /// so the notch says why instead.
@@ -160,7 +167,7 @@ final class IslandBridge {
             case .pasted, .accessibility:
                 didLand = true
                 box.send(.landed(words: Self.words(latestText)))
-            case .clipboardOnly, .blockedSecureField:
+            case .clipboardOnly, .permissionRequired, .blockedSecureField:
                 // The copy card must quote the finalized transcript, so the
                 // failure card is built on `.finished`, not from the last
                 // (possibly partial) segment seen here.

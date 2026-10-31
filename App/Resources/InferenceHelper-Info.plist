@@ -24,8 +24,10 @@
 	<dict>
 		<key>JoinExistingSession</key>
 		<false/>
+		<!-- libxpc only accepts NSRunLoop or dispatch_main here; "NSXPC" makes
+		     the service abort in xpc_main with "unknown RunLoopType". -->
 		<key>RunLoopType</key>
-		<string>NSXPC</string>
+		<string>NSRunLoop</string>
 		<key>ServiceType</key>
 		<string>Application</string>
 	</dict>

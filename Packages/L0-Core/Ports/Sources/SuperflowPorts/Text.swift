@@ -69,6 +69,11 @@ public enum InsertionOutcome: Sendable, Equatable {
     case pasted
     case accessibility
     case clipboardOnly(reason: String)
+    /// The OS refused synthetic input because Accessibility is not granted.
+    /// Kept separate from `clipboardOnly` so the app can prompt once, then
+    /// retry the same text the moment the grant lands instead of asking the
+    /// owner to dictate again.
+    case permissionRequired(reason: String)
     case blockedSecureField
 }
 

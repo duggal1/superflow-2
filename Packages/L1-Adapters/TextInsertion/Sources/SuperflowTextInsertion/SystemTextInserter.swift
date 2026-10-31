@@ -62,6 +62,9 @@ public final class SystemTextInserter: TextInserter, @unchecked Sendable {
             return .blockedSecureField
         case .notInserted(.emptyText, _):
             return .pasted
+        case .notInserted(.accessibilityNotTrusted, let onClipboard):
+            return .permissionRequired(reason: reason(for: .accessibilityNotTrusted,
+                                                       textOnClipboard: onClipboard))
         case .notInserted(let failure, let onClipboard):
             return .clipboardOnly(reason: reason(for: failure, textOnClipboard: onClipboard))
         }

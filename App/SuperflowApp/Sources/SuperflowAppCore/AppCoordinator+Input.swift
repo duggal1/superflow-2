@@ -89,6 +89,11 @@ extension AppCoordinator {
                         await self.environment?.refreshFunctionKeySuppression(
                             for: self.settings.dictationKey)
                     }
+                    if status == .granted {
+                        // A dictation may have finished while the grant was missing.
+                        // Paste it now rather than asking for the words again.
+                        await self.retryPendingPasteIfPossible()
+                    }
                 default:
                     break
                 }

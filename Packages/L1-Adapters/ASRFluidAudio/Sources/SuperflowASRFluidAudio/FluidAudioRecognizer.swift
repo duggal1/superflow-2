@@ -139,14 +139,13 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
                 let manager = try await factory(profileID, directory)
                 let loaded = DispatchTime.now().uptimeNanoseconds
                 Self.logger.info("ASR model load: \((loaded - started) / 1_000_000) ms")
-                do {
-                    try await Self.warmPredictions(manager)
-                } catch {
-                    await manager.cleanup()
-                    throw error
-                }
-                let primed = DispatchTime.now().uptimeNanoseconds
-                Self.logger.info("ASR first inference: \((primed - loaded) / 1_000_000) ms")
+                // No dummy prediction. Feeding synthetic silence raced
+                // FluidAudio's chunk prefetch and intermittently aborted the
+                // process from Core ML's async submission queue ("MPSGraph
+                // tensor shape is missing or has unexpected rank"), which is
+                // an Objective-C exception Swift cannot catch. The model load
+                // is the long pole; the first real chunk pays the one-time
+                // specialization instead.
                 await pool.release(manager, profileID: profileID)
             }
             preparing[profileID] = task
@@ -212,21 +211,6 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
 
     private func returnEngine(_ manager: any StreamingAsrManager, profileID: String) async {
         await pool.release(manager, profileID: profileID)
-    }
-
-    /// Load plus one dummy prediction. The first prediction triggers Core ML's
-    /// ANE specialization and warms the decode buffers; paying it at launch keeps
-    /// it off the record path.
-    private static func warmPredictions(_ manager: any StreamingAsrManager) async throws {
-        // 2.5 s of silence covers the largest streaming chunk in the catalog
-        // (2,240 ms) with margin; FluidAudio re-chunks internally. The extra
-        // second and a half only lengthened the cold launch.
-        let silence = [Float](repeating: 0, count: sampleRate * 5 / 2)
-        let buffer = try FluidAudioBuffer.make(silence)
-        try await manager.appendAudio(buffer)
-        try await manager.processBufferedAudio()
-        _ = try await manager.finish()
-        try await manager.reset()
     }
 
     private func makeVoiceActivity() async -> any VoiceActivityClassifying {
