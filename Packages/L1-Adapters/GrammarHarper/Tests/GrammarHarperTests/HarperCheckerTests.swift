@@ -141,6 +141,19 @@ final class HarperCheckerTests: XCTestCase {
         XCTAssertFalse(lints.contains { $0.kind == "Spelling" })
     }
 
+    /// Long text is linted on several handles; the second/third chunk's offsets
+    /// must be shifted back onto the source, not left relative to the slice.
+    func testRealBackendFindsSpellingInLaterChunk() async throws {
+        try XCTSkipUnless(HarperAvailability.isCompiledIn, "real Harper XCFramework not built")
+        let linter = HarperFFILinter()
+        let text = String(repeating: "This sentence is correct. ", count: 30)
+            + "This has teh mistake. "
+        let lints = await linter.lint(text, customWords: [])
+        let spelling = try XCTUnwrap(lints.first { $0.kind == "Spelling" })
+        let range = NSRange(location: spelling.utf16Start, length: spelling.utf16Length)
+        XCTAssertEqual((text as NSString).substring(with: range), "teh")
+    }
+
     func testRealBackendReportsRepetition() async throws {
         try XCTSkipUnless(HarperAvailability.isCompiledIn, "real Harper XCFramework not built")
         let linter = HarperFFILinter()
