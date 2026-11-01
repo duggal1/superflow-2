@@ -9,7 +9,7 @@ struct MeetingDetail: View {
     @ObservedObject var model: PastMeetingsModel
     let document: MeetingDocument
     let proxy: ScrollViewProxy
-    let collapse: () -> Void
+    let collapse: (() -> Void)?
     @Environment(DialogHost.self) private var dialogs
     @Environment(\.accessibilityReduceMotion) private var reduce
     @State private var hoverTime: TimeInterval?
@@ -39,7 +39,11 @@ struct MeetingDetail: View {
 
     private var heading: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
-            RowButton("Collapse meeting", radius: 0, action: collapse) {
+            if let collapse {
+                RowButton("Collapse meeting", radius: 0, action: collapse) {
+                    Text(document.title).font(Typography.sectionTitle).foregroundStyle(Tok.text)
+                }
+            } else {
                 Text(document.title).font(Typography.sectionTitle).foregroundStyle(Tok.text)
             }
             Text("\(Humanize.when(document.startedAt)) · \(Humanize.duration(Double(document.durationMs) / 1000)) · \(Humanize.words(document.turns.filter { !$0.isGap }.reduce(0) { $0 + $1.text.split(whereSeparator: \.isWhitespace).count }))")

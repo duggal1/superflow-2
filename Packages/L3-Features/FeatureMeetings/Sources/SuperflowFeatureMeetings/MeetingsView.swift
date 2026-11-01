@@ -13,26 +13,26 @@ public struct MeetingsView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            PageBar {
-                Segmented(selection: $model.tab, items: [
-                    Segmented.Item(MeetingsTab.live.label, value: MeetingsTab.live),
-                    Segmented.Item(MeetingsTab.past.label, value: MeetingsTab.past),
-                ])
-            } trailing: { EmptyView() }
-            PageTitle("Meetings").pageWidth(Layout.page).padding(.bottom, Space.sectionGap)
+        SplitPage(title: "Meetings") {
+            Segmented(selection: $model.tab, items: [
+                Segmented.Item(MeetingsTab.live.label, value: MeetingsTab.live),
+                Segmented.Item(MeetingsTab.past.label, value: MeetingsTab.past),
+            ])
+        } trailing: {
+            EmptyView()
+        } list: {
+            MeetingListPane(model: model.past, tab: $model.tab)
+        } detail: {
             Group {
                 switch model.tab {
-                case .live: ScrollView { live.pageWidth(Layout.page) }
-                case .past: PastMeetingsView(model: model.past).pageWidth(Layout.page)
+                case .live: ScrollView { live.padding(.horizontal, Layout.pad) }
+                case .past: MeetingDetailPane(model: model.past)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .background(Tok.bg)
         .task {
             await model.observe()
-            await model.past.reload()
         }
         .task {
             while !Task.isCancelled {
@@ -41,6 +41,7 @@ public struct MeetingsView: View {
             }
         }
         .toast(model.toast)
+        .onChange(of: model.isRecording) { _, recording in if recording { model.tab = .live } }
     }
 
     @ViewBuilder
