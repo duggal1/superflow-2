@@ -105,10 +105,9 @@ public final class IslandController {
             guard case .history = model.phase else { return false }
             switch keyCode {
             case 126: // up arrow
-                model.historySelection = max(0, model.historySelection - 1)
+                model.moveHistorySelection(by: -1)
             case 125: // down arrow
-                model.historySelection = min(max(0, model.history.count - 1),
-                                             model.historySelection + 1)
+                model.moveHistorySelection(by: 1)
             case 36, 76: // Return, keypad Enter
                 if model.history.indices.contains(model.historySelection) {
                     model.copy(model.history[model.historySelection])
