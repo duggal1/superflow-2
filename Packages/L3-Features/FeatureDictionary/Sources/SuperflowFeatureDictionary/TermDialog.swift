@@ -14,6 +14,8 @@ struct TermDialog: View {
     @State private var kind: Kind
     @State private var say: String
     @State private var result: String
+    @State private var wire = 0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(existing: LexiconEntry? = nil, onSave: @escaping (LexiconDraft) -> Void) {
         self.existing = existing
@@ -39,6 +41,8 @@ struct TermDialog: View {
         DialogFrame(title: existing == nil
                         ? (kind == .term ? "Add a term" : "Add a correction")
                         : (kind == .term ? "Edit term" : "Edit correction"),
+                    subtitle: kind == .term ? "A word Superflow should always spell your way."
+                        : "When the transcript has this, type that instead.",
                     confirmTitle: existing == nil ? "Add" : "Save",
                     canConfirm: canConfirm,
                     onConfirm: {
@@ -53,25 +57,39 @@ struct TermDialog: View {
                         onSave(draft)
                     }) {
             VStack(alignment: .leading, spacing: 16) {
-                Segmented(selection: $kind, items: [
-                    .init("Term", value: .term),
-                    .init("Correction", value: .correction),
-                ], level: .dialog)
-                DialogField(kind == .term ? "Term" : "You say") {
-                    AppTextField(text: $say, prompt: kind == .term ? "Next.js" : "next js",
-                                 autofocus: true)
+                if existing == nil {
+                    Segmented(selection: $kind, items: [
+                        .init("Term", value: .term),
+                        .init("Correction", value: .correction),
+                    ], level: .dialog)
                 }
                 if kind == .correction {
-                    DialogField("You get") {
-                        AppTextField(text: $result, prompt: "Next.js")
+                    HStack(alignment: .bottom, spacing: 12) {
+                        DialogField("You say") { AppTextField(text: $say, prompt: "next js", autofocus: true) }
+                        PixelWire(progress: wire, horizontal: true).frame(height: 32)
+                        DialogField("You get") { AppTextField(text: $result, prompt: "Next.js") }
                     }
-                    .transition(.opacity)
+                    if canConfirm {
+                        HStack(spacing: 10) {
+                            Text(say).foregroundStyle(Tok.text2).strikethrough()
+                            PixelMark(rows: ["....#..", ".....#.", "#######", ".....#.", "....#.."], cell: 2, color: Ramp.blue[4])
+                            Text(result).foregroundStyle(Tok.text)
+                        }
+                        .appType(.body).frame(height: 24)
+                    }
+                } else {
+                    DialogField("Term") { AppTextField(text: $say, prompt: "Next.js", autofocus: true) }
+                    if canConfirm { PixelChip(say, mono: false) }
                 }
                 if risky {
-                    Badge("Common phrase", variant: .orange)
+                    PixelBadge("Common phrase", kind: .caution)
                 }
             }
-            .animation(Motion.fade, value: kind)
+            .animation(reduceMotion ? nil : Motion.fade, value: kind)
+        }
+        .onAppear { wire = canConfirm ? 1 : 0 }
+        .onChange(of: canConfirm) { _, valid in
+            withAnimation(reduceMotion ? nil : .snappy(duration: 0.3)) { wire = valid ? 1 : 0 }
         }
     }
 }

@@ -59,6 +59,8 @@ public struct DialogLayer: View {
 
 public struct DialogFrame<Content: View>: View {
     private let title: String
+    private let subtitle: String?
+    private let width: CGFloat
     private let confirmTitle: String
     private let canConfirm: Bool
     private let showsCancel: Bool
@@ -66,10 +68,12 @@ public struct DialogFrame<Content: View>: View {
     private let content: Content
     @Environment(DialogHost.self) private var host
 
-    public init(title: String, confirmTitle: String, canConfirm: Bool,
+    public init(title: String, subtitle: String? = nil, width: CGFloat = 480, confirmTitle: String, canConfirm: Bool,
                 showsCancel: Bool = true, onConfirm: @escaping () -> Void,
                 @ViewBuilder content: () -> Content) {
         self.title = title
+        self.subtitle = subtitle
+        self.width = width
         self.confirmTitle = confirmTitle
         self.canConfirm = canConfirm
         self.showsCancel = showsCancel
@@ -79,9 +83,10 @@ public struct DialogFrame<Content: View>: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text(title)
-                .appType(.title)
-                .foregroundStyle(Tok.text)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).appType(.title).foregroundStyle(Tok.text)
+                if let subtitle { Text(subtitle).appType(.body).foregroundStyle(Tok.text2) }
+            }
             content
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
@@ -97,7 +102,7 @@ public struct DialogFrame<Content: View>: View {
             }
         }
         .padding(24)
-        .frame(width: 480)
+        .frame(width: width)
         .background(Tok.surface, in: .rect(cornerRadius: Radius.card, style: .continuous))
         .modifier(ContrastStroke(radius: Radius.card))
         .pixelAudit("DialogFrame")
