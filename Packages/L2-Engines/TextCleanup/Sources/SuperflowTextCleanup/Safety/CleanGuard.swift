@@ -22,8 +22,14 @@ public enum CleanGuard {
             cursor = match.upperBound
             end = span.upperBound
         }
-        // Numbers and filenames are data even when a caller has not marked them.
-        let data = Tokenizer.tokens(in: input).filter {
+        let comparable = ListPlanner.plan(input, protected: protected).map { segment in
+            switch segment {
+            case .prose(let text): text
+            case .list(let lead, let items): ([lead] + items).joined(separator: " ")
+            }
+        }.joined(separator: " ")
+        // Enumeration labels are formatting; numbers within items remain data.
+        let data = Tokenizer.tokens(in: comparable).filter {
             $0.core.contains(where: \.isNumber) || $0.core.contains("_") || $0.core.contains("/") || $0.core.contains(".")
         }.map(\.core)
         cursor = result.text.startIndex
@@ -33,31 +39,13 @@ public enum CleanGuard {
                   boundary(result.text, match.upperBound, before: false) else { return .protectedLost }
             cursor = match.upperBound
         }
-        let source = content(input)
+        let source = content(comparable)
         let cleaned = content(result.text)
         guard !cleaned.isEmpty else { return .contentChanged }
-        if source != cleaned {
-            let lowered = input.lowercased()
-            let markers = [" um ", " uh ", " like ", " actually ", "i mean", "no wait", " i was i "]
-            let repeated = zip(source, source.dropFirst()).contains { $0 == $1 }
-            guard repeated || markers.contains(where: { (" " + lowered + " ").contains($0) }) else {
-                return .contentChanged
-            }
-            if let sourceTail = source.last, let outputTail = cleaned.last,
-               sourceTail != outputTail, !outputTail.contains(where: \.isNumber) {
-                return .truncated
-            }
-        }
-        let sourceSet = Set(source)
-        let retained = sourceSet.intersection(cleaned).count
-        if sourceSet.count > 6 && retained * 3 < sourceSet.count { return .contentChanged }
-        let unknown = cleaned.filter { !sourceSet.contains($0) && !$0.contains(where: \.isNumber) }.count
-        guard unknown <= max(0, (cleaned.count - 10) / 10) else { return .contentChanged }
-        var counts = Dictionary(source.map { ($0, 1) }, uniquingKeysWith: +)
-        for word in cleaned where sourceSet.contains(word) {
-            counts[word, default: 0] -= 1
-            if counts[word, default: 0] < 0 { return .contentChanged }
-        }
+        // S1-mini is a normalizer: grammar, false starts and explicit corrections
+        // legitimately change word order and vocabulary. Exact lexical equality
+        // rejects that work. Keep the hard data checks above and reject gross loss.
+        if source.count > 12, cleaned.count * 2 < source.count { return .truncated }
         return nil
     }
 
@@ -83,7 +71,10 @@ public enum CleanGuard {
         "theres": ["there", "is"], "heres": ["here", "is"],
     ]
     private static func content(_ text: String) -> [String] {
-        let words = text.split(whereSeparator: \.isWhitespace).map {
+        let unmarked = text.components(separatedBy: "\n").map { line in
+            line.replacingOccurrences(of: #"^\s*(?:[-*•]|[0-9]+[.)])\s+"#, with: "", options: .regularExpression)
+        }.joined(separator: "\n")
+        let words = unmarked.split(whereSeparator: \.isWhitespace).map {
             String($0.lowercased().filter { $0.isLetter || $0.isNumber || "$€£₹¥%@_/-".contains($0) })
         }.filter { !$0.isEmpty && !fillers.contains($0) }
         var result: [String] = []

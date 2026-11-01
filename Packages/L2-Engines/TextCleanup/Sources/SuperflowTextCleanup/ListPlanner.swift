@@ -48,7 +48,9 @@ public enum ListPlanner {
         let bullets = words.indices.filter { matches(["bullet"], $0) }.map {
             Mark(position: $0, length: $0 + 1 < keys.count && ["point", "points"].contains(keys[$0 + 1]) ? 2 : 1)
         }
-        guard let chain = sequence(ordinals.map { [$0] }) ?? sequence(cardinals.map { ["number", $0] }) ?? (bullets.count >= 2 ? bullets : nil),
+        let explicitList = keys.contains { ["list", "steps", "items", "things", "following", "checklist"].contains($0) }
+        let numbered = explicitList ? (sequence(cardinals.map { [$0] }) ?? sequence((1...10).map { [String($0)] })) : nil
+        guard let chain = sequence(ordinals.map { [$0] }) ?? sequence(cardinals.map { ["number", $0] }) ?? numbered ?? (bullets.count >= 2 ? bullets : nil),
               let first = chain.first else { return [.prose(text)] }
         func joined(_ range: Range<Int>) -> String { words[range].map(\.full).joined(separator: " ") }
         let leadEnd = (0..<first.position).last(where: { words[$0].trail.contains { ".?!".contains($0) } || timed[$0].pause }).map { $0 + 1 } ?? 0

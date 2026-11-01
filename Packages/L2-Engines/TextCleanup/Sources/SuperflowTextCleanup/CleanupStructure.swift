@@ -47,6 +47,10 @@ enum CleanupStructureDetector {
     static func isList(_ text: String) -> Bool {
         guard !text.isEmpty else { return false }
         if hasBulletLines(text) { return true }
+        if ListPlanner.plan(text).contains(where: {
+            if case .list = $0 { return true }
+            return false
+        }) { return true }
         let lower = text.lowercased()
         let clauses = clauseStarts(lower)
         let ordinalCount = orderedOrdinals(clauses)

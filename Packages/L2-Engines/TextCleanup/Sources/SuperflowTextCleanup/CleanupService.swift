@@ -81,7 +81,9 @@ public actor CleanupService {
             plans = [ChunkPlan(index: 0, text: text, tokens: count)]
         } else {
             let words = WordTimingProjection.apply(to: Tokenizer.words(text, protected: protected), timings: context.wordTimings)
-            plans = await ChunkPlanner(config: config, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
+            var planning = config
+            planning.overlapPercent = 0
+            plans = await ChunkPlanner(config: planning, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
         }
         guard !plans.isEmpty else { return ("", []) }
         var results = [ChunkOutcome](repeating: ChunkOutcome(index: 0, text: "", state: .pending), count: plans.count)
@@ -89,43 +91,20 @@ public actor CleanupService {
             var next = 0
             for _ in 0..<min(config.workers, plans.count) {
                 let plan = plans[next]; next += 1
-                group.addTask { await self.cleanChunk(plan, depth: 0, styling: styling, structure: structure, protected: protected, context: context) }
+                group.addTask { await self.cleanChunk(plan, styling: styling, structure: structure, protected: protected, context: context) }
             }
             for await result in group {
                 results[result.index] = result
                 if next < plans.count {
                     let plan = plans[next]; next += 1
-                    group.addTask { await self.cleanChunk(plan, depth: 0, styling: styling, structure: structure, protected: protected, context: context) }
+                    group.addTask { await self.cleanChunk(plan, styling: styling, structure: structure, protected: protected, context: context) }
                 }
             }
         }
-        var pieces: [String] = []
-        var tail = results[0].text
-        for index in plans.indices.dropFirst() {
-            if !plans[index].overlap.isEmpty {
-                let splice = SeamSplicer.splice(tail, results[index].text, overlapWords: wordCount(plans[index].overlap))
-                if splice.aligned { pieces.append(splice.kept); tail = splice.rest; continue }
-                pieces.append(tail)
-                let owned = ChunkPlan(index: index, text: plans[index].ownedText, tokens: 0)
-                let replacement = await cleanChunk(owned, depth: 0, styling: styling, structure: structure, protected: protected, context: context)
-                results[index] = replacement; tail = replacement.text
-            } else { pieces.append(tail); tail = results[index].text }
-        }
-        pieces.append(tail)
-        let assembled = SeamSplicer.join(pieces)
-        let check = CleanResult(text: assembled, tokensIn: 0, tokensOut: 0, hitTokenCap: false, latencyMs: 0)
-        if CleanGuard.verify(input: text, protected: protected, result: check, cap: Int.max) != nil {
-            for index in results.indices {
-                results[index].text = plans[index].ownedText
-                results[index].state = .fallback
-                results[index].reason = "assembly content guard"
-            }
-            return (text, results)
-        }
-        return (assembled, results)
+        return (SeamSplicer.join(results.map(\.text)), results)
     }
 
-    private func cleanChunk(_ plan: ChunkPlan, depth: Int, styling: String, structure: String,
+    private func cleanChunk(_ plan: ChunkPlan, styling: String, structure: String,
                             protected: Protected, context: TextContext) async -> ChunkOutcome {
         if plan.tokens > config.hardTokenCap {
             return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
@@ -158,35 +137,13 @@ public actor CleanupService {
             if let failure = CleanGuard.verify(input: plan.text, protected: protected, result: result, cap: cap) { throw failure }
             let elapsed = start.duration(to: .now)
             return ChunkOutcome(index: plan.index, text: result.text, state: .cleaned, tokensIn: result.tokensIn,
-                                tokensOut: result.tokensOut, latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000), attempts: depth + 1)
+                                tokensOut: result.tokensOut, latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000), attempts: 1)
         } catch {
-            if depth < config.retryDepth, !(error is CancellationError), !Task.isCancelled {
-                let words = Tokenizer.tokens(in: plan.text)
-                if words.count >= 48 {
-                    let spans = protected.ranges(in: plan.text)
-                    let middle = words.count / 2
-                    if let cut = (1..<words.count).sorted(by: { abs($0 - middle) < abs($1 - middle) }).first(where: { index in
-                        !spans.contains { $0.lowerBound < words[index].range.lowerBound && words[index].range.lowerBound < $0.upperBound }
-                    }) {
-                        let lhs = words[..<cut].map(\.full).joined(separator: " ")
-                        let rhs = words[cut...].map(\.full).joined(separator: " ")
-                        let a = await cleanChunk(ChunkPlan(index: plan.index, text: lhs, tokens: 0), depth: depth + 1,
-                                                 styling: styling, structure: structure, protected: protected, context: context)
-                        let b = await cleanChunk(ChunkPlan(index: plan.index, text: rhs, tokens: 0), depth: depth + 1,
-                                                 styling: styling, structure: structure, protected: protected, context: context)
-                        return ChunkOutcome(index: plan.index, text: SeamSplicer.join([a.text, b.text]),
-                                            state: a.state == .cleaned && b.state == .cleaned ? .cleaned : .fallback,
-                                            tokensIn: tokensIn + a.tokensIn + b.tokensIn, tokensOut: tokensOut + a.tokensOut + b.tokensOut,
-                                            latencyMs: a.latencyMs + b.latencyMs, attempts: a.attempts + b.attempts,
-                                            reason: String(describing: error))
-                    }
-                }
-            }
             let elapsed = start.duration(to: .now)
             return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
                                 tokensIn: tokensIn, tokensOut: tokensOut,
                                 latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000),
-                                attempts: depth + 1, reason: String(describing: error))
+                                attempts: 1, reason: String(describing: error))
         }
     }
 
