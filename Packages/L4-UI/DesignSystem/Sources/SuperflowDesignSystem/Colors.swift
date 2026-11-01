@@ -168,6 +168,9 @@ public enum Tok {
                                              dark: Hex.accentHoverDark).color
     public static let accentPressed = Color(hex: Hex.accentPressed)
     public static let accentText = HexColor(light: Hex.accentTextLight, dark: Hex.accentTextDark).color
+    public static let diffStrong = HexColor(light: 0x93C5FD, dark: 0x1D4ED8).color
+    public static let diffSoft = HexColor(light: 0xDBEAFE, dark: 0x1E3A8A).color
+    public static let diffInk = HexColor(light: 0x0A0A0A, dark: 0xFFFFFF).color
     public static let accentSoft = HexColor(light: Hex.accentSoftLight, dark: Hex.accentSoftDark,
                                             darkAlpha: Hex.accentSoftDarkAlpha).color
     /// The progress fill of a card, one step stronger than `accentSoft`: blue 600 at

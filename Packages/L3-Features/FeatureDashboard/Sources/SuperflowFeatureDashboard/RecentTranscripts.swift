@@ -20,8 +20,8 @@ public struct RecentTranscripts: View {
                 Spacer(minLength: Space.md)
                 AppButton("Open History", glyph: nil, kind: .quiet, height: 24, action: openHistory)
             }
-            Card(padding: Space.xs) {
-                VStack(spacing: 2) {
+            Card(padding: 12) {
+                VStack(spacing: 4) {
                     if model.entries.isEmpty { ExampleRow() }
                     else { ForEach(model.entries) { TranscriptRow(entry: $0, model: model) } }
                 }
@@ -34,18 +34,15 @@ public struct RecentTranscripts: View {
 }
 
 private struct TranscriptRow: View {
-    enum Variant: Hashable { case cleaned, raw }
     let entry: RecentDictationEntry
     @ObservedObject var model: RecentDictationViewModel
     @State private var hover = false
-    @State private var mode: Variant = .cleaned
     @State private var menuOpen = false
     @FocusState private var focused: Bool
 
     private var playing: Bool { model.playingID == entry.id }
     private var expanded: Bool { model.expandedID == entry.id && !playing }
     private var revealed: Bool { hover || focused || menuOpen || expanded }
-    private var shown: String { mode == .raw && !entry.raw.isEmpty ? entry.raw : entry.cleaned }
     private var failed: Bool {
         entry.record.status == .failed || entry.record.status == .cancelled || entry.failure != nil
     }
@@ -160,18 +157,10 @@ private struct TranscriptRow: View {
     }
 
     private var detail: some View {
-        VStack(alignment: .leading, spacing: Space.md) {
-            if !entry.raw.isEmpty {
-                Segmented(selection: $mode,
-                          items: [.init("Cleaned", value: .cleaned), .init("Raw", value: .raw)],
-                          onCard: true)
-            }
-            Text(shown).appType(.reading).foregroundStyle(Tok.text)
-                .textSelection(.enabled)
-                .frame(maxWidth: 720, alignment: .leading)
-        }
+        DiffTranscript(raw: entry.raw, cleaned: entry.cleaned)
         .padding(.leading, 28)
-        .padding(.bottom, Space.md)
+        .padding(.top, 8)
+        .padding(.bottom, 20)
     }
 }
 
