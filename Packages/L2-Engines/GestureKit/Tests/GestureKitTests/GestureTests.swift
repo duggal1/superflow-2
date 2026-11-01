@@ -28,6 +28,27 @@ final class GestureTests: XCTestCase {
         XCTAssertEqual(g.state, .meetingArmed)
     }
 
+    func testFailedMeetingStartupDoesNotBlockNextFnPress() {
+        var g = make()
+        XCTAssertEqual(g.handle(event(.rightCmdDown, 0)), [.startSpeculative(.meeting)])
+        XCTAssertEqual(g.tick(atNs: 600 * ms), [.holdBegan(.meeting)])
+        // Simulate the backend denying microphone or system-audio access.
+        g.recoverFromFailedStart(.meeting)
+        XCTAssertEqual(g.state, .idle)
+        XCTAssertEqual(g.handle(event(.rightCmdUp, 700)), [])
+        XCTAssertEqual(g.handle(event(.fnDown, 800)), [.startSpeculative(.dictation)])
+        XCTAssertEqual(g.handle(event(.fnUp, 1100)), [.submit(.dictation)])
+    }
+
+    func testFailedMeetingDoubleTapDoesNotBlockFn() {
+        var g = make()
+        _ = g.handle(event(.rightCmdDown, 0))
+        _ = g.handle(event(.rightCmdUp, 80))
+        XCTAssertEqual(g.handle(event(.rightCmdDown, 200)), [.latchMeeting])
+        g.recoverFromFailedStart(.meeting)
+        XCTAssertEqual(g.handle(event(.fnDown, 300)), [.startSpeculative(.dictation)])
+    }
+
     private func make() -> GestureRecognizer { GestureRecognizer() }
 
     func testFnHoldIsPushToTalk() {

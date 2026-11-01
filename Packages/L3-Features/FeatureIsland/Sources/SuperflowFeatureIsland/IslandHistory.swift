@@ -9,9 +9,6 @@ import SwiftUI
 struct HistoryPanel: View {
     let model: IslandModel
 
-    @State private var cursor = 0
-    @FocusState private var focused: Bool
-
     private var pad: CGFloat { IslandLayout.cardPad }
 
     var body: some View {
@@ -49,7 +46,7 @@ struct HistoryPanel: View {
                         .frame(maxWidth: .infinity, minHeight: 80)
                 } else {
                     ForEach(Array(rows.enumerated()), id: \.element.id) { index, transcript in
-                        HistoryRow(model: model, transcript: transcript, selected: index == cursor)
+                        HistoryRow(model: model, transcript: transcript, selected: index == model.historySelection)
                             .modifier(RowReveal(index: index))
                     }
                 }
@@ -70,29 +67,6 @@ struct HistoryPanel: View {
             .frame(height: 40)
 
             Spacer(minLength: 0)
-        }
-        .focusable()
-        .focused($focused)
-        .focusEffectDisabled()
-        .onAppear {
-            focused = true
-            cursor = 0
-        }
-        .onKeyPress(.upArrow) {
-            cursor = max(0, cursor - 1)
-            return .handled
-        }
-        .onKeyPress(.downArrow) {
-            cursor = min(max(0, rows.count - 1), cursor + 1)
-            return .handled
-        }
-        .onKeyPress(.return) {
-            if rows.indices.contains(cursor) { model.copy(rows[cursor]) }
-            return .handled
-        }
-        .onKeyPress(.escape) {
-            model.send(.dismissed)
-            return .handled
         }
     }
     private func todayLabel(_ label: String) -> some View {

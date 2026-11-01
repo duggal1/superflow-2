@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if ! command -v rg >/dev/null 2>&1; then
+    echo 'Required lint tool ripgrep (rg) is missing.' >&2
+    exit 1
+fi
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 violations=0
 ui_roots=("$repo_root/Packages" "$repo_root/App/SuperflowApp" "$repo_root/App/InferenceHelper")

@@ -108,6 +108,6 @@ final class AppCompositionTests: XCTestCase {
 
         XCTAssertEqual(pipeline.stageIDs,
                        ["disfluency", "spokenCode", "numbers", "lexicon", "codeAware",
-                        "polish", "lineformat"])
+                        "polish", "structure", "lineformat"])
     }
 }

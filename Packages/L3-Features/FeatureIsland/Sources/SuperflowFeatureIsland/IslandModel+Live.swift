@@ -30,12 +30,19 @@ public extension IslandModel {
         case .idle, .hover:
             today = feed.wordsToday()
             history = feed.history(limit: 5)
+            historySelection = 0
             go(prefs.alwaysOn ? .history : .recent(feed.lastTranscript()))
         case .recent, .history:
             go(.idle)
         case .failed, .undo, .notice, .landed, .listening, .handsFree, .processing:
             break
         }
+    }
+
+    /// Keyboard selection is owned by the model; AppKit sends navigation edges.
+    func moveHistorySelection(by delta: Int) {
+        guard case .history = phase else { return }
+        historySelection = min(max(0, historySelection + delta), max(0, history.count - 1))
     }
 
     func mark() {
