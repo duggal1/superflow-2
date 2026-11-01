@@ -156,18 +156,14 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(posts, 1)
     }
 
-    /// A host that only reads the HID stream ignores the session-level chord.
-    /// The second post goes to the other tap and the same AX verification runs.
-    func testUnobservedPasteRetriesAtTheAlternateTap() async {
-        let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"),
-                                  noChangePosts: 1)
+    func testStaleAccessibilityNeverCausesASecondPaste() async {
+        let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"), noChangePosts: 1)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
-        XCTAssertEqual(report.steps, [InsertionStep.focusUnknown, InsertionStep.pbWritten,
-                                      InsertionStep.cmdvPosted, InsertionStep.cmdvRetried,
-                                      InsertionStep.verified])
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
         let taps = await harness.poster.taps
-        XCTAssertEqual(taps, [.cgSessionEventTap, .cghidEventTap])
+        XCTAssertEqual(taps, [.cgSessionEventTap])
+        XCTAssertTrue(harness.target.insertedTexts.isEmpty)
+        XCTAssertTrue(harness.menu.pressedPIDs.isEmpty)
     }
 
     /// Without a usable baseline a second chord could paste twice, so the retry
@@ -193,15 +189,12 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(restores, 1)
     }
 
-    func testUnobservedPasteFallsBackToAccessibility() async {
+    func testUnobservedPasteDoesNotFallBackToAccessibility() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"), posterIncrements: false)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .accessibility, verified: true))
-        XCTAssertEqual(Array(report.steps.suffix(2)),
-                       [InsertionStep.pasteNotObserved, InsertionStep.axVerified])
-        await harness.scheduler.runPending()
-        let restores = await harness.clipboard.restores
-        XCTAssertEqual(restores, 1)
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
+        XCTAssertTrue(harness.target.insertedTexts.isEmpty)
+        XCTAssertEqual(harness.scheduler.delays, [.milliseconds(500)])
     }
 
     /// A host that ignores the synthetic chord may still honour its own
@@ -209,7 +202,7 @@ final class TextInsertionServiceTests: XCTestCase {
     func testIgnoredChordFallsBackToMenuPaste() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"),
                                   pasteValue: "hello",
-                                  posterIncrements: false,
+                                  posterResult: false,
                                   menuResult: .pressed,
                                   menuPastes: true)
         var options = TextInsertionOptions()
@@ -222,17 +215,16 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(harness.scheduler.delays, [.milliseconds(50)])
     }
 
-    /// A pressed-but-ignored menu item is not an insertion; Accessibility is
-    /// still the last resort.
-    func testIgnoredMenuPasteFallsBackToAccessibility() async {
+    /// A pressed menu item may land before AX reflects it. Never write twice.
+    func testUnobservedMenuPasteDoesNotFallBackToAccessibility() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"),
-                                  posterIncrements: false,
+                                  posterResult: false,
                                   menuResult: .pressed)
         var options = TextInsertionOptions()
         options.preferMenuPaste = true
         let report = await harness.service.insert("hello", options: options)
-        XCTAssertEqual(report.result, .inserted(method: .accessibility, verified: true))
-        XCTAssertEqual(report.steps.last, InsertionStep.axVerified)
+        XCTAssertEqual(report.result, .inserted(method: .menuPaste, verified: false))
+        XCTAssertTrue(harness.target.insertedTexts.isEmpty)
     }
 
     func testBothPathsFailLeavesTextOnClipboardAndDoesNotRestore() async {

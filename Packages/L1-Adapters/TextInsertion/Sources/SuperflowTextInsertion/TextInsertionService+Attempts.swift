@@ -47,23 +47,10 @@ extension TextInsertionService {
             return (result, UInt16(keyCode))
         }
 
-        // Session-level and HID-level chords are read by different hosts. When the
-        // first one produced no observable change, try the other location once.
-        let alternate: CGEventTapLocation = primary == .cghidEventTap
-            ? .cgSessionEventTap : .cghidEventTap
-        guard await poster.postPaste(keyCode: keyCode, tap: alternate) else {
-            steps.append(InsertionStep.cmdvFailed)
-            return (InsertionAttempt(inserted: false, verified: false, posted: true, steps: steps),
-                    UInt16(keyCode))
-        }
-        steps.append(InsertionStep.cmdvRetried)
-        let second = await awaitContent(target: target, baseline: baseline,
-                                        expected: expected, timeout: options.verifyTimeout)
-        if let result = confirmed(second, steps: &steps) {
-            return (result, UInt16(keyCode))
-        }
-        steps.append(InsertionStep.pasteNotObserved)
-        return (InsertionAttempt(inserted: false, verified: false, posted: true, steps: steps),
+        // A posted chord may have landed while AX still exposes stale content.
+        // Observation is advisory: a second mutation risks duplicate insertion.
+        steps.append(InsertionStep.unverifiable)
+        return (InsertionAttempt(inserted: true, verified: false, posted: true, steps: steps),
                 UInt16(keyCode))
     }
 
@@ -82,8 +69,8 @@ extension TextInsertionService {
     }
 
     /// Presses the target's own Edit > Paste menu item. Verification uses the
-    /// same content baseline as the chord, so a pressed-but-ignored item is not
-    /// reported as a successful insertion.
+    /// same baseline as the chord. An accepted press is never followed by an
+    /// automatic second mutation, even when AX cannot confirm it.
     func menuPasteAttempt(text: String, target: (any InsertionTarget)?, pid: pid_t,
                           options: TextInsertionOptions) async -> InsertionAttempt {
         let baseline = await captureBaseline(target)
@@ -108,7 +95,7 @@ extension TextInsertionService {
             return InsertionAttempt(inserted: true, verified: true, posted: false, steps: steps)
         case .nothing:
             steps.append(InsertionStep.notObserved)
-            return InsertionAttempt(inserted: false, verified: false, posted: false, steps: steps)
+            return InsertionAttempt(inserted: true, verified: false, posted: false, steps: steps)
         }
     }
 
@@ -138,7 +125,7 @@ extension TextInsertionService {
             return InsertionAttempt(inserted: true, verified: true, posted: false,
                                     steps: [InsertionStep.axVerified])
         case .nothing:
-            return InsertionAttempt(inserted: false, verified: false, posted: false,
+            return InsertionAttempt(inserted: true, verified: false, posted: false,
                                     steps: [InsertionStep.axNotObserved])
         }
     }

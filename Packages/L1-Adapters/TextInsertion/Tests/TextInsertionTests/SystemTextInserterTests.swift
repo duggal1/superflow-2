@@ -88,7 +88,7 @@ final class SystemTextInserterTests: XCTestCase {
     func testAutoUsesMenuPasteWhenTheChordIsIgnored() async throws {
         let harness = makeAdapter(focus: .unknown(reason: "role-AXGroup"),
                                   pasteValue: "hello",
-                                  posterIncrements: false,
+                                  posterResult: false,
                                   menuResult: .pressed,
                                   menuPastes: true)
         let outcome = try await harness.inserter.insert("hello", strategy: .auto)
@@ -106,7 +106,7 @@ final class SystemTextInserterTests: XCTestCase {
     }
 
     func testAutoFallsBackToAccessibility() async throws {
-        let harness = makeAdapter(focus: .unknown(reason: "role-AXGroup"), posterIncrements: false)
+        let harness = makeAdapter(focus: .unknown(reason: "role-AXGroup"), posterResult: false)
         let outcome = try await harness.inserter.insert("fallback", strategy: .auto)
         XCTAssertEqual(outcome, .accessibility)
         XCTAssertEqual(harness.target.insertedTexts, ["fallback"])
