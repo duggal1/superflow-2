@@ -19,6 +19,7 @@ private struct CleanupRequest: Sendable {
 public actor SessionCleanupCoordinator {
     private let repository: any TranscriptRepository
     private let sessionID: SessionID
+    private let metrics: any MetricsSink
     private let emit: @Sendable (SessionEvent) -> Void
     private var workerTasks: [Task<Void, Never>] = []
     private var requests: [CleanupRequest] = []
@@ -32,9 +33,10 @@ public actor SessionCleanupCoordinator {
     private var isFinished = false
 
     public init(repository: any TranscriptRepository, sessionID: SessionID,
-                emit: @escaping @Sendable (SessionEvent) -> Void) {
+                metrics: any MetricsSink = NoopMetrics(), emit: @escaping @Sendable (SessionEvent) -> Void) {
         self.repository = repository
         self.sessionID = sessionID
+        self.metrics = metrics
         self.emit = emit
     }
 
@@ -135,6 +137,15 @@ public actor SessionCleanupCoordinator {
             let result: PipelineResult
             if let precomputed = request.precomputed { result = precomputed }
             else { result = await request.pipeline.run(segment.rawText, context: context) }
+            for timing in result.timings {
+                metrics.record("session.text." + timing.id + ".ms", valueMs: Double(timing.ms))
+            }
+            metrics.event("session.cleanup", [
+                "segment": String(request.index),
+                "interactive": String(request.interactive),
+                "state": String(describing: result.draft.cleanupState),
+                "fallbackCount": String(result.draft.diagnostics.filter { $0.stage.hasPrefix("cleanup") }.count),
+            ])
             let cleaned = result.draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
             // A filler-only dictation cleans to a valid empty string. Preserve
             // that result; only an empty non-cleaned result is a failure that

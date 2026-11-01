@@ -118,6 +118,8 @@ extension SessionEngine {
                     emit(.notice("Noise suppression is unavailable; using the raw microphone. \(error.localizedDescription)"))
                 }
             }
+            let feedStream = consumeCapture(streams, writer: journalWriter, archive: clip)
+
             // Let Chromium/Electron build their Accessibility tree while the user
             // speaks; the microphone is already live.
             await inserter.prepareForInsertion()
@@ -134,9 +136,6 @@ extension SessionEngine {
 
             // Inference runs on its own lane. A stalled call drops the oldest
             // queued audio instead of stopping capture, levels and journaling.
-            let (feedStream, feed) = AsyncStream<AudioChunk>.makeStream(
-                bufferingPolicy: .bufferingNewest(4096))
-            recognitionFeed = feed
             recognitionDrainTask = Task {
                 for await chunk in feedStream {
                     await feedRecognition(recognition, chunk: chunk)
@@ -145,7 +144,7 @@ extension SessionEngine {
 
             let eventContinuation = continuation
             let cleanup = SessionCleanupCoordinator(repository: repository, sessionID: newRecord.id,
-                                                    emit: { event in
+                                                    metrics: metrics, emit: { event in
                 eventContinuation.yield(event)
             })
             await cleanup.start(workerCount: settings.cleanupWorkers)
@@ -157,19 +156,17 @@ extension SessionEngine {
             recognitionTask = Task { [weak self] in
                 await self?.consumeRecognition(recognition, session: id)
             }
-            sampleTask = Task { [weak self] in
-                await self?.consumeAudio(streams.samples, writer: journalWriter,
-                                         archive: clip, feed: feed)
-            }
-            eventTask = Task { [weak self] in
-                await self?.consumeAudioEvents(streams.events)
-            }
             newRecord.status = .recording
             return id
         } catch {
             await cleanupCoordinator?.cancel()
             cleanupCoordinator = nil
             await audio.stop()
+            sampleTask?.cancel()
+            await sampleTask?.value
+            sampleTask = nil
+            eventTask?.cancel()
+            eventTask = nil
             recognitionFeed?.finish()
             recognitionFeed = nil
             recognitionDrainTask?.cancel()

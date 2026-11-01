@@ -4,6 +4,20 @@ import SuperflowKernel
 import SuperflowPorts
 
 extension SessionEngine {
+    /// Keep levels and durable capture live while the recognizer specializes.
+    func consumeCapture(_ streams: AudioStreams, writer: any AudioJournalWriter,
+                        archive: (any AudioArchiveWriter)?) -> AsyncStream<AudioChunk> {
+        let (stream, feed) = AsyncStream<AudioChunk>.makeStream(bufferingPolicy: .bufferingNewest(4096))
+        recognitionFeed = feed
+        sampleTask = Task { [weak self] in
+            await self?.consumeAudio(streams.samples, writer: writer, archive: archive, feed: feed)
+        }
+        eventTask = Task { [weak self] in
+            await self?.consumeAudioEvents(streams.events)
+        }
+        return stream
+    }
+
     /// Journal raw capture first. Archive and recognize the enhanced stream,
     /// including its delayed tail before the recognition stream is finished.
     func consumeAudio(_ samples: AsyncStream<AudioChunk>, writer: (any AudioJournalWriter)?,
