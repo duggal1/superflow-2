@@ -24,3 +24,8 @@
 - Reuse the existing load probe for CPU/GPU/ANE/all; do not synthesize model inputs.
 - Record known baseline data and explicitly missing measurements in docs/perf.
 - Gate later behavior changes on a complete packaged-app baseline and quality data.
+- Approved continuation: implement bounded speculative full-segment cleanup with
+  exact-input reuse, revision/cancellation rejection, and a default-off diagnostic flag.
+- Implement opt-in local call suggestions and calendar reminders; never auto-record.
+- Verify native paste, packaged launch and helper reconnection with repeatable probes.
+- Keep summaries, Labs chapters, new model tiers and an ASR daemon excluded.

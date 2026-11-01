@@ -74,3 +74,19 @@ retry now lives in its own file. `make verify` is the release gate.
 
 Remaining UNTESTED: packaged-app cold launch time, real AX paste, physical fn and
 right-Command, and any compute-policy change (needs WER on >=200 utterances).
+
+## Latest test-build continuation
+
+Bounded speculative cleanup is implemented behind `SUPERFLOW_SPECULATIVE_CLEANUP=1`
+(default off). It processes a completed-sentence partial through the unchanged
+whole-segment pipeline, reusing the result only for identical final input, session,
+pipeline revision and compatible context. Revised text falls back to normal cleanup.
+One inference task remains the limit even during cancellation. No sentence fragments
+are joined to manufacture a new transcript. GPU-contention and real-model quality
+gates remain pending, so this is opt-in rather than the product default.
+
+Verification: 39 SessionEngine tests pass, including cancellation, stale-input
+rejection and 100 synthetic equivalence fixtures; `make lint` passes. Synthetic
+equivalence does not establish real-model WER or stop-to-paste performance.
+Call detection and calendar reminders remain outstanding. The latest owner request
+prioritizes a fresh release app for hands-on testing before further implementation.

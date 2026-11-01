@@ -128,7 +128,8 @@ public final class AppEnvironment {
             inserter: textInserter,
             archive: audioArchive,
             enhancer: speechEnhancer,
-            metrics: metrics
+            metrics: metrics,
+            speculativeCleanupEnabled: ProcessInfo.processInfo.environment["SUPERFLOW_SPECULATIVE_CLEANUP"] == "1"
         )
         meetingEngine = MeetingEngine(
             mic: microphone,

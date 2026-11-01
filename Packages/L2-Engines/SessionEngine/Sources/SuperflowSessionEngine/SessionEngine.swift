@@ -52,6 +52,9 @@ public actor SessionEngine {
     var cumulativeTokenCount = 0
     var levelCounter = 0
     var latency = SessionLatency()
+    let speculative = SpeculativePipeline()
+    let speculativeCleanupEnabled: Bool
+    var pipelineRevision = UUID()
     var journalWarned = false
     /// True only after `begin()` succeeded for this session. A missing or broken
     /// DeepFilterNet must never fail dictation; the capture lane uses raw audio.
@@ -70,7 +73,7 @@ public actor SessionEngine {
                 inserter: any TextInserter, archive: (any AudioArchiveStore)? = nil,
                 settings: AppSettings = .default, enhancer: (any SpeechEnhancer)? = nil, project: ProjectContext? = nil,
                 metrics: MetricsSink = NoopMetrics(), clock: TimeSource = SystemTimeSource(),
-                insertionDeadline: Duration = .seconds(8)) {
+                insertionDeadline: Duration = .seconds(8), speculativeCleanupEnabled: Bool = false) {
         self.audio = audio
         self.recognizer = recognizer
         self.enhancer = enhancer
@@ -84,6 +87,7 @@ public actor SessionEngine {
         self.metrics = metrics
         self.clock = clock
         self.insertionDeadline = insertionDeadline
+        self.speculativeCleanupEnabled = speculativeCleanupEnabled
         (events, continuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(256))
     }
 
@@ -91,18 +95,21 @@ public actor SessionEngine {
     public var currentSession: SessionRecord? { record }
 
     public func update(settings: AppSettings) async {
+        pipelineRevision = UUID()
         self.settings = settings
     }
 
     /// Replaces the explicit project scope for the rest of the session. Cleanup
     /// rows already queued keep the scope they captured.
     public func update(project: ProjectContext?) async {
+        pipelineRevision = UUID()
         self.project = project
     }
 
     /// Replaces the pipeline after a settings, dictionary or shortcut change.
     /// Segments already being cleaned keep the pipeline they captured.
     public func update(pipeline: TextPipeline, settings: AppSettings) async {
+        pipelineRevision = UUID()
         self.pipeline = pipeline
         self.settings = settings
     }

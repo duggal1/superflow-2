@@ -64,6 +64,7 @@ extension SessionEngine {
 
         isStarting = true
         defer { isStarting = false }
+        await speculative.cancel()
 
         // A new dictation supersedes any text still waiting on a permission
         // grant; it is already in History, so keeping two would paste stale
@@ -313,6 +314,7 @@ extension SessionEngine {
         guard state.isActive || state == .idle else { return }
         let id = record?.id
         transition(.cancelled(id))
+        await speculative.cancel()
         sampleTask?.cancel()
         recognitionTask?.cancel()
         recognitionFeed?.finish()
@@ -356,6 +358,7 @@ extension SessionEngine {
             switch event {
             case .partial(let text):
                 emit(.partial(text))
+                await speculate(text, session: session)
             case .committed(let segment):
                 await persist(segment, session: session)
             case .endpoint:
@@ -382,9 +385,13 @@ extension SessionEngine {
         let withinInteractiveBudget = tokens.map { cumulativeTokenCount + $0 <= 600 } ?? true
         if let tokens { cumulativeTokenCount += tokens }
         let interactive = raw.endMs <= 30_000 && withinInteractiveBudget
+        let revision = pipelineRevision
+        var precomputed = speculativeCleanupEnabled && index == 0 && interactive && raw.words.isEmpty
+            ? await speculative.take(.init(session: session, revision: revision, text: raw.text)) : nil
+        if revision != pipelineRevision { precomputed = nil }
         await cleanupCoordinator?.submit(index: index, interactive: interactive,
                                           pipeline: pipeline, settings: settings,
-                                          project: project, wordTimings: raw.words)
+                                          project: project, wordTimings: raw.words, precomputed: precomputed)
     }
 
     // MARK: assembly
