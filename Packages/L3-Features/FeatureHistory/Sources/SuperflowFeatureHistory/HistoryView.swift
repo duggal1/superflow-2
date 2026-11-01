@@ -161,13 +161,9 @@ public struct HistoryView: View {
                         AudioPreview(url: audio)
                             .id(session.id)
                     }
-                    VStack(alignment: .leading, spacing: 16) {
-                        Segmented(selection: $model.showRaw, items: [
-                            Segmented.Item("Cleaned", value: false),
-                            Segmented.Item("Raw", value: true),
-                        ])
-                        transcript
-                    }
+                    DiffTranscript(raw: transcriptText(raw: true), cleaned: transcriptText(raw: false),
+                                   showRaw: $model.showRaw, onCard: false)
+                        .id(session.id)
                 }
                 .padding(.horizontal, Layout.pad)
                 .padding(.top, Space.xxs)
@@ -194,48 +190,12 @@ public struct HistoryView: View {
         return url
     }
 
-    @ViewBuilder
-    private var transcript: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            ForEach(model.segments) { segment in
-                segmentView(segment)
-            }
-        }
-        .frame(maxWidth: Space.proseMaxWidth, alignment: .leading)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .textSelection(.enabled)
-    }
-
-    private func segmentView(_ segment: Segment) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            if let speaker = model.speakerName(for: segment) {
-                Text(speaker)
-                    .appType(.label)
-                    .foregroundStyle(Tok.text2)
-            }
-            if model.showRaw {
-                Text(rawText(segment))
-            } else {
-                Text(model.displayText(for: segment))
-                    .appType(.reading)
-                    .foregroundStyle(Tok.text)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    /// Raw mode marks the words cleanup changed, so the difference is visible.
-    private func rawText(_ segment: Segment) -> AttributedString {
-        var attributed = AttributedString()
-        let pieces = TextDiff.segments(reference: segment.bestText, candidate: segment.rawText)
-        for piece in pieces {
-            var run = AttributedString(piece.text)
-            run.font = AppType.reading.font
-            run.foregroundColor = piece.changed ? Tok.text : Tok.text2
-            if piece.changed { run.backgroundColor = Tok.accentSoft }
-            attributed += run
-        }
-        return attributed
+    private func transcriptText(raw: Bool) -> String {
+        model.segments.map { segment in
+            let text = raw ? segment.rawText : segment.bestText
+            guard let speaker = model.speakerName(for: segment) else { return text }
+            return "\(speaker): \(text)"
+        }.filter { !$0.isEmpty }.joined(separator: "\n")
     }
 }
 

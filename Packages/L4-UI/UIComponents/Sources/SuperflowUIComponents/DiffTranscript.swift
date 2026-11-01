@@ -8,22 +8,29 @@ public struct DiffTranscript: View {
 
     private let raw: String
     private let cleaned: String
+    private let externalRaw: Binding<Bool>?
+    private let onCard: Bool
     @State private var mode: Variant = .cleaned
     @State private var diff: TranscriptDiff.Result?
     @State private var reveal = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(raw: String, cleaned: String) {
+    public init(raw: String, cleaned: String, showRaw: Binding<Bool>? = nil, onCard: Bool = true) {
         self.raw = raw
         self.cleaned = cleaned
+        self.externalRaw = showRaw
+        self.onCard = onCard
     }
 
     public var body: some View {
-        let showRaw = mode == .raw && !raw.isEmpty
+        let showRaw = (externalRaw?.wrappedValue ?? (mode == .raw)) && !raw.isEmpty
         VStack(alignment: .leading, spacing: 20) {
             if !raw.isEmpty {
                 HStack(spacing: 20) {
-                    Segmented(selection: $mode, items: [.init("Cleaned", value: .cleaned), .init("Raw", value: .raw)], onCard: true)
+                    Segmented(selection: Binding<Variant>(get: { showRaw ? .raw : .cleaned }, set: { next in
+                        if let externalRaw { externalRaw.wrappedValue = next == .raw }
+                        else { mode = next }
+                    }), items: [.init("Cleaned", value: .cleaned), .init("Raw", value: .raw)], onCard: onCard)
                     if let diff {
                         swatch(Tok.diffStrong, count: showRaw ? diff.removed : diff.rewritten,
                                label: showRaw ? "removed" : "rewritten")
