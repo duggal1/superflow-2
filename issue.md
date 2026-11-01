@@ -1,5 +1,12 @@
 # Issue
 
+## Settings and Meetings navigation lag
+
+Users report severe lag when opening Settings or Meetings and switching pages.
+
+- [x] Unresolved
+- [ ] Resolved
+
 ## Island floats below the menu bar
 
 The Island is reported to float below the menu bar instead of attaching to the screen edge.

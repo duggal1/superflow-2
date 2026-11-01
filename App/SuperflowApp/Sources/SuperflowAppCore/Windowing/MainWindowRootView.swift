@@ -243,7 +243,7 @@ private struct SidebarRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                IconView(section.icon, size: 15, tint: isSelected || hover ? Tok.text : Tok.text2,
+                IconView(section.icon, size: 15, tint: Tok.text,
                          selected: isSelected)
                     .frame(width: 20, height: 20)
                 Text(section.title)
