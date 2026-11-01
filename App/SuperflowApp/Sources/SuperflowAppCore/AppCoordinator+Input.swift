@@ -125,6 +125,8 @@ extension AppCoordinator {
     /// after ours wins the event order and Superflow never sees a press. While fn
     /// is the chosen key, ask known competitors to quit and say so once each.
     func startDictationConflictMonitor() {
+        // Temporarily disabled so other dictation apps can remain open.
+        /*
         guard settings.dictationKey == .fn, conflictTask == nil else { return }
         conflictTask = Task { @MainActor [weak self] in
             var announced = Set<String>()
@@ -144,6 +146,7 @@ extension AppCoordinator {
                 }
             }
         }
+        */
     }
 
     func handleKeyEvent(_ event: KeyEvent) async {
