@@ -144,7 +144,7 @@ public struct DownloadCard<Leading: View, Trailing: View>: View {
 
             ThroughputStrip(meter: meter)
                 .frame(maxWidth: .infinity)
-                .frame(height: 48)
+                .frame(height: 22)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -184,77 +184,43 @@ private struct FrontShape: Shape {
 
 struct ThroughputStrip: View {
     let meter: ThroughputMeter
-    @Environment(\.displayScale) private var scale
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private let rows = 6
-    private let gap: CGFloat = 3
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { tl in
-            let values = meter.history
-            let lastPush = meter.lastPush
-            Canvas { ctx, size in
-                draw(&ctx, size, values: values, lastPush: lastPush, now: tl.date)
+        let values = meter.history
+        Canvas { context, size in
+            let columns = max(1, Int((size.width + 2) / 6))
+            let tail = Array(values.suffix(columns))
+            let peak = max(tail.max() ?? 1, 1)
+            let offset = columns - tail.count
+            for column in 0..<columns {
+                let value = column < offset ? 0 : tail[column - offset]
+                let height = value > 0 ? max(1, Int((value / peak * 4).rounded(.up))) : 0
+                for row in 0..<4 {
+                    let tone: Color = row >= height ? Tok.control
+                        : row == height - 1 ? (column == columns - 1 ? Tok.text : Ramp.blue[4]) : Ramp.blue[3]
+                    context.fill(Path(CGRect(x: CGFloat(column) * 6, y: CGFloat(3 - row) * 6, width: 4, height: 4)),
+                                 with: .color(tone), style: FillStyle(antialiased: false))
+                }
             }
         }
-        .clipped()
         .accessibilityHidden(true)
-    }
-
-    private func snap(_ v: CGFloat) -> CGFloat { (v * scale).rounded() / scale }
-
-    private func draw(_ ctx: inout GraphicsContext, _ size: CGSize,
-                      values: [Double], lastPush: Date, now: Date) {
-        let n = ThroughputMeter.columns
-        guard size.width > 0, values.count == n + 1 else { return }
-
-        let cell = floor(((size.width - gap * CGFloat(n - 1)) / CGFloat(n)) * scale) / scale
-        guard cell > 0 else { return }
-        let pitch = cell + gap
-        let stack = CGFloat(rows) * cell + CGFloat(rows - 1) * gap
-        let top = size.height - stack
-
-        let phase: CGFloat = reduceMotion
-            ? 1
-            : CGFloat(min(max(now.timeIntervalSince(lastPush) / ThroughputMeter.interval, 0), 1))
-        let maxV = max(values.max() ?? 0, ThroughputMeter.floorSpeed)
-
-        for (k, v) in values.enumerated() {
-            let x = snap((CGFloat(k) - phase) * pitch)
-            if x + cell < 0 || x > size.width { continue }
-
-            let lit = v <= 0 ? 0 : max(1, Int((v / maxV * Double(rows)).rounded()))
-            let rel = Double(k) / Double(n)
-            let tone: Color = k == n ? Ramp.blue[4]
-                            : rel > 0.66 ? Ramp.blue[3]
-                            : rel > 0.33 ? Ramp.blue[2]
-                            :              Ramp.blue[1]
-
-            for r in 0..<rows {
-                let rect = CGRect(x: x, y: top + CGFloat(rows - 1 - r) * pitch, width: cell, height: cell)
-                ctx.fill(Path(roundedRect: rect, cornerRadius: 2, style: .continuous),
-                         with: .color(r < lit ? tone : Tok.well))
-            }
-        }
     }
 }
 
 @MainActor @Observable
 final class ThroughputMeter {
-    static let columns = 36
-    static let interval: TimeInterval = 0.5
-    static let floorSpeed: Double = 2_000_000
+    static let columns = 40
+    static let interval: TimeInterval = 1
 
     private(set) var speed: Double = 0
-    private(set) var history = [Double](repeating: 0, count: ThroughputMeter.columns + 1)
+    private(set) var history = [Double](repeating: 0, count: ThroughputMeter.columns)
     private(set) var lastPush = Date()
 
     @ObservationIgnored private var window: [(t: Date, bytes: Double)] = []
 
     func reset(now: Date = .now) {
         speed = 0
-        history = [Double](repeating: 0, count: Self.columns + 1)
+        history = [Double](repeating: 0, count: Self.columns)
         lastPush = now
         window.removeAll()
     }
