@@ -6,11 +6,17 @@ on:
 
 jobs:
   verify:
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Show toolchain
-        run: swift --version
+      - name: Verify Swift 6.4 compiler
+        run: |
+          swift --version
+          swift --version | grep -Eq 'Swift version 6\.4([. ]|$)'
+      - name: Install required lint dependency
+        run: |
+          if ! command -v rg >/dev/null 2>&1; then brew install ripgrep; fi
+          command -v rg
       - name: Verify packages, tests, and architecture rules
         run: make verify
