@@ -104,7 +104,7 @@ extension SessionEngine {
             // Open capture before the model wait. The capture stream buffers while
             // the model specializes, so levels, journaling and the archive start
             // immediately instead of freezing the whole session on inference.
-            let streams = try await audio.start()
+            let streams = try await startCapture()
             // Noise suppression is optional. A missing or broken model degrades
             // this session to raw audio with a truthful notice; it must never
             // fail the start after the microphone is already open.
@@ -137,7 +137,7 @@ extension SessionEngine {
             recognitionFeed = feed
             recognitionDrainTask = Task {
                 for await chunk in feedStream {
-                    await recognition.feed(chunk)
+                    await feedRecognition(recognition, chunk: chunk)
                 }
             }
 
@@ -240,31 +240,14 @@ extension SessionEngine {
         let words = wordCount(text)
         let duration = max(lastEndMs, Int(clock.now().timeIntervalSince(record.startedAt) * 1000))
 
-        // No speech means no clip worth keeping: discard it rather than spend rows
-        // on a player for silence.
-        if let clip = archiveWriter {
-            archiveWriter = nil
-            if words == 0 {
-                await clip.discard()
-            } else if let archived = await clip.finish(),
-                      let store = repository as? any AudioMetadataStore {
-                try? await store.setAudio(session: record.id, duration: archived.duration,
-                                          peaks: Data(archived.peaks))
-            }
-        }
+        // `session.stop.ms` ends when the text is ready to insert; it excludes the
+        // paste as well as the archive and History bookkeeping that follow it.
         metrics.record("session.stop.ms", valueMs: Double((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000))
 
-        var finalized = false
-        if assembledText != nil {
-            do {
-                try await repository.finalizeSession(record.id, endedAt: clock.now(), status: .complete,
-                                                      durationMs: duration, wordCount: words,
-                                                      cleanupState: cleanupState)
-                finalized = true
-            } catch {
-                emit(.notice("Could not finalize the session in History: \(error.localizedDescription)"))
-            }
-        }
+        // Insert before archiving and finalizing. The transcript is already durable
+        // as segments, and recovery never re-inserts, so a crash between the paste
+        // and the History finalize cannot duplicate or lose text. The owner should
+        // not wait on a clip write and a row update they cannot see.
         var insertion: InsertionOutcome?
         if !text.isEmpty {
             transition(.inserting)
@@ -284,6 +267,34 @@ extension SessionEngine {
         }
         if let insertion, case .permissionRequired = insertion {
             pendingInsertion = text
+        }
+
+        // No speech means no clip worth keeping: discard it rather than spend rows
+        // on a player for silence.
+        if let clip = archiveWriter {
+            archiveWriter = nil
+            if words == 0 {
+                await clip.discard()
+            } else if let archived = await clip.finish(),
+                      let store = repository as? any AudioMetadataStore {
+                try? await store.setAudio(session: record.id, duration: archived.duration,
+                                          peaks: Data(archived.peaks))
+            }
+        }
+
+        var finalized = false
+        if assembledText != nil {
+            let finalizeStarted = DispatchTime.now().uptimeNanoseconds
+            do {
+                try await repository.finalizeSession(record.id, endedAt: clock.now(), status: .complete,
+                                                      durationMs: duration, wordCount: words,
+                                                      cleanupState: cleanupState)
+                finalized = true
+            } catch {
+                emit(.notice("Could not finalize the session in History: \(error.localizedDescription)"))
+            }
+            metrics.record("session.finalize.ms",
+                           valueMs: Double((DispatchTime.now().uptimeNanoseconds - finalizeStarted) / 1_000_000))
         }
         if !settings.keepJournals, finalized { await journals.delete(session: record.id) }
         if finalized {

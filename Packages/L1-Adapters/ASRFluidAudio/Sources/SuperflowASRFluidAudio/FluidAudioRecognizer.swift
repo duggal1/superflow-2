@@ -18,6 +18,7 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
     private var preparedProfiles: Set<String> = []
     private var preparing: [String: Task<Void, Error>] = [:]
     private static let logger = Logger(subsystem: "com.superflow.app", category: "ModelWarmup")
+    private static let signposter = OSSignposter(subsystem: "com.superflow.app", category: "latency")
     private var vadManager: VadManager?
 
     public init(modelCacheRoot: URL? = nil, fileManager: FileManager = .default,
@@ -135,6 +136,8 @@ public actor FluidAudioRecognizer: SpeechRecognizer {
             let factory = engineFactory
             let pool = self.pool
             task = Task {
+                let interval = Self.signposter.beginInterval("asr.load", id: Self.signposter.makeSignpostID())
+                defer { Self.signposter.endInterval("asr.load", interval) }
                 let started = DispatchTime.now().uptimeNanoseconds
                 let manager = try await factory(profileID, directory)
                 let loaded = DispatchTime.now().uptimeNanoseconds

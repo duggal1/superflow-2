@@ -1,0 +1,42 @@
+{
+  "captured": "2026-11-01",
+  "machine": "Apple M1, 8 GB, macOS 27.2",
+  "runtimes": {
+    "fluidAudio": "0.17.7 @ 503b4bd",
+    "asrProfile": "nemotron-multilingual/latin/2240ms",
+    "coreML": "macOS system runtime"
+  },
+  "asrMetadata": {
+    "source": "installed metadata.json",
+    "chunk_mel_frames": 224,
+    "att_context_size": [42, 13],
+    "vocab_size": 2828,
+    "note": "Native tiling is 3 tiles of 14 frames with 13 frames lookahead; a 2240 ms call processes 28 encoder frames. This matches the installed artifact, not the older [56, 0] documentation."
+  },
+  "componentLoadFreshProcessSeconds": {
+    "probe": "tools/profile-coreml-load.swift, release binary, separate process per row, same path and signing identity",
+    "encoder": {
+      "gpu": [4.319763, 0.780641, 1.590633],
+      "cpu": [6.786571, 0.006639, 0.006079]
+    },
+    "decoder": { "gpu": [0.00358, 0.00105, 0.00084], "cpu": [0.001252, 0.000656, 0.000698] },
+    "joint": { "gpu": [0.002668, 0.000561, 0.000529], "cpu": [0.000985, 0.000575, 0.000527] },
+    "decoder_joint": { "gpu": [0.002148, 0.000567, 0.00052], "cpu": [0.001007, 0.000566, 0.0005] }
+  },
+  "observations": [
+    "The encoder owns almost all model load time; decoder, joint and decoder_joint are under 4 ms each.",
+    "Warm CPU specialization is cached across processes (6 ms) while the GPU path still pays 0.78-1.59 s per fresh process, so a resident process is the only current way to avoid that cost.",
+    "First-ever CPU specialization was 6.79 s, so the 6 ms rows are cache hits, not a faster weight read."
+  ],
+  "missingMeasurements": [
+    "Packaged-app time from process start (sysctl) to prewarm return; the CLI probe does not share Core ML caches with the app bundle.",
+    "Prediction cost per component on CPU, GPU, ANE and all; the probe times load only.",
+    "Microphone open to first accepted sample and microphone start to first partial (paced fixture).",
+    "Stop to visible paste in an external AX harness at 3 s, 10 s and 30 s takes.",
+    "Word error rate and punctuation for any compute-policy change."
+  ],
+  "gatesNotYetMet": [
+    "Phase 1 startup-order A/B needs time-to-all-ready and peak footprint from the packaged app.",
+    "Phase 2 compute-policy A/B needs WER on at least 200 utterances before adoption."
+  ]
+}

@@ -51,6 +51,7 @@ public actor SessionEngine {
     var lastEndMs = 0
     var cumulativeTokenCount = 0
     var levelCounter = 0
+    var latency = SessionLatency()
     var journalWarned = false
     /// True only after `begin()` succeeded for this session. A missing or broken
     /// DeepFilterNet must never fail dictation; the capture lane uses raw audio.
@@ -138,6 +139,7 @@ public actor SessionEngine {
     }
 
     func emit(_ event: SessionEvent) {
+        recordLatency(event)
         continuation.yield(event)
     }
 

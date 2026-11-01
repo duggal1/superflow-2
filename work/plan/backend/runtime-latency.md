@@ -19,3 +19,8 @@
 - Finish: app build, required architecture gates and applicable tests, review owned diff.
 - Commit each workstream separately on fix/backend-runtime-latency; preserve unrelated edits.
 - Record evidence and inventory in agents/codex/backend-runtime/results/report.md.
+- Solution phase 0: add model-load and stop signposts, insertion-return and
+  microphone-open/first-feed timings; test success and failure attribution.
+- Reuse the existing load probe for CPU/GPU/ANE/all; do not synthesize model inputs.
+- Record known baseline data and explicitly missing measurements in docs/perf.
+- Gate later behavior changes on a complete packaged-app baseline and quality data.
