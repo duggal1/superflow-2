@@ -34,6 +34,7 @@ final class ModelsViewTests: XCTestCase {
         await vm.refresh()
         let speaker = try XCTUnwrap(vm.items.first { $0.kind == .meetings })
         XCTAssertEqual(speaker.state, .installed)
+        XCTAssertTrue(speaker.isActive)
     }
 
     private func makeModel(llm: URL? = URL(fileURLWithPath: "/tmp/s1-mini.gguf"),

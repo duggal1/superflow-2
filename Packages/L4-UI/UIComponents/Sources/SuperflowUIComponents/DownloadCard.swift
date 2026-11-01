@@ -132,8 +132,6 @@ public struct DownloadCard<Leading: View, Trailing: View>: View {
                         .overlay(alignment: .leading) {
                             Text(rate.value)
                                 .font(metricFont).monospacedDigit().foregroundStyle(Tok.text)
-                                .contentTransition(.numericText(value: speed))
-                                .animation(rollAnimation, value: rate.value)
                         }
                     Text(rate.unit).font(AppType.body.font).foregroundStyle(Tok.text2)
                 }

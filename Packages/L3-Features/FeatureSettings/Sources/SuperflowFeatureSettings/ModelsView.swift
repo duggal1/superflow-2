@@ -159,7 +159,7 @@ public final class ModelsViewModel {
             case .speech: items[i].isActive = onDisk
             case .enhancement: items[i].isActive = onDisk && enhancementEnabled()
             case .cleanup: items[i].isActive = onDisk && cleanupEnabled()
-            case .meetings: items[i].isActive = false
+            case .meetings: items[i].isActive = onDisk
             }
         }
     }
@@ -275,11 +275,16 @@ public struct ModelsView: View {
             if vm.items.isEmpty {
                 EmptyState("No models.", message: "Reinstall Superflow to restore them.")
             } else {
-                ForEach(ModelKind.allCases) { kind in
-                    let items = vm.items.filter { $0.kind == kind }
+                ModelPipeline(noise: vm.items.contains { $0.kind == .enhancement && $0.isActive },
+                              speech: vm.items.contains { $0.kind == .speech && $0.isActive },
+                              cleanup: vm.items.contains { $0.kind == .cleanup && $0.isActive })
+                ForEach([false, true], id: \.self) { meetings in
+                    let order: [ModelKind] = meetings ? [.meetings] : [.enhancement, .speech, .cleanup]
+                    let items = order.flatMap { kind in vm.items.filter { $0.kind == kind } }
                     if !items.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
-                            SectionHeader(kind.title)
+                            SectionHeader(meetings ? "Meetings" : "Dictation",
+                                          note: "\(items.filter { if case .installed = $0.state { true } else { false } }.count) of \(items.count) installed")
                             VStack(spacing: 8) {
                                 ForEach(items) { ModelCard(item: $0, vm: vm) }
                             }
@@ -316,12 +321,12 @@ struct ModelCard: View {
                     AppButton("Cancel", kind: .quiet) { vm.cancel(item.id) }
                 case .installed:
                     if item.isActive {
-                        Badge("Active", variant: .green, size: .sm)
+                        PixelBadge("Active", kind: .active)
                     } else {
-                        Badge("Installed", variant: .neutral, size: .sm)
+                        PixelBadge("Installed", kind: .installed)
                     }
                 case .failed:
-                    Badge("Failed", variant: .rose, size: .sm)
+                    PixelBadge("Failed", kind: .failed)
                     AppButton("Retry", kind: .secondary) { vm.retry(item.id) }
                 }
             }
