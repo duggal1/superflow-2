@@ -33,6 +33,7 @@ public final class IslandModel {
     public internal(set) var prefs = IslandPrefs()
     /// Newest first, read when a card opens, never streamed.
     public internal(set) var history: [IslandTranscript] = []
+    public internal(set) var historySelection = 0
     /// Words dictated today, meetings excluded. The hover shelf reads it.
     public internal(set) var today = 0
     /// The current partial. Empty unless `prefs.liveText` is on.
