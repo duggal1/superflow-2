@@ -15,12 +15,11 @@ public struct CleanupConfig: Sendable, Equatable {
     /// 0...0.20; 0 disables the overlap). Every chunk after the first
     /// re-shares the previous chunk's trailing sentences so the model never
     /// starts blind at a seam, and the stitcher dedupes the repeated opening
-    /// from the finished assembly. With the product sizes (soft 600, hard 850)
-    /// the 12% default adds about 72 tokens per seam, which keeps overlap+body
-    /// inside the provisional input budget pending calibration.
+    /// from the finished assembly. CleanupService disables overlap so each
+    /// source word belongs to exactly one model request.
     public var overlapPercent: Double
 
-    public init(softTokenTarget: Int = 600, hardTokenCap: Int = 850, interactiveDeadlineMs: Int = 1_500,
+    public init(softTokenTarget: Int = 500, hardTokenCap: Int = 600, interactiveDeadlineMs: Int = 1_500,
                 backgroundDeadlineMs: Int = 30_000, workers: Int = 3, ratioFloor: Double = 0.6,
                 retryDepth: Int = 3, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_024,
                 overlapPercent: Double = 0.12) {
@@ -97,9 +96,10 @@ public struct ChunkPlanner: Sendable {
                     guard !words[cursor - 1].glue,
                           cursor == words.count || words[cursor - 1].sentenceEnd || words[cursor - 1].pause else { continue }
                     let extended = await count(Tokenizer.join(words[start..<cursor]))
-                    guard extended <= target else { break }
+                    guard extended <= hard else { break }
                     end = cursor
                     measured = extended
+                    if measured >= target { break }
                 }
             }
             // A protected term can itself exceed the model budget. Keep it whole;

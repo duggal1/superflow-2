@@ -13,7 +13,7 @@ struct DisfluencyAdapter: SuperflowPorts.TextStage {
         guard !draft.shortCircuit, settings.enabled else { return draft }
         var config = TextDisfluencyStage.Config()
         config.minRun = max(2, settings.tierAThreshold)
-        config.maxPhraseLength = settings.collapseRepeatedPhrases ? 3 : 1
+        config.maxPhraseLength = settings.collapseRepeatedPhrases ? 8 : 1
         config.stripFillers = settings.fillerPrepass
         config.legitimatePairs = []
         guard settings.collapseDuplicates else {
