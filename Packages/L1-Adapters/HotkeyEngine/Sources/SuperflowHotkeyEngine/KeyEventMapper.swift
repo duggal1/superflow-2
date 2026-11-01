@@ -47,8 +47,8 @@ public struct ModifierPressTracker: Sendable {
 public enum KeyEventMapper {
     /// Which key produced this flag change, and whether it went down. Right ⌘ stays
     /// a meeting key, so it is mapped before the dictation key is consulted.
-    /// `isDown` comes from `ModifierPressTracker`; when omitted the flags are used,
-    /// which is correct only when no other key of the same class is held.
+    /// Device-specific flags are authoritative. `isDown` is only a fallback for
+    /// events that expose the aggregate flag without either physical side.
     public static func flagsChanged(keyCode: Int64, flags: CGEventFlags,
                                     isDown: Bool? = nil,
                                     timestampNs: UInt64,

@@ -36,6 +36,7 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
         if let loading { try await loading.value; return }
         guard streamer == nil else { return }
         let task = Task {
+            try await DeepFilterNetCompiledModel.shared.prepare(in: directory)
             let runtime = try await DeepFilterNetCoreMLStreamer.load(configuration: .init(
                 variant: .deepFilterNet3, source: .local(directory), computeUnits: .cpuAndGPU))
             guard runtime.hopSize == 480, runtime.sampleRate == 48_000 else {

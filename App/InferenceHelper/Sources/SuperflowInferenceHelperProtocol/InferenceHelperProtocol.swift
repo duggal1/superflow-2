@@ -2,7 +2,7 @@ import Foundation
 
 /// XPC surface between the menu-bar app and the inference helper.
 ///
-/// The helper owns the ASR and LLM runtimes so that a crash or a wedged model
+/// The helper owns the cleanup runtime so that a crash or a wedged model
 /// restarts the helper process instead of taking the app down with it. Keeping
 /// the protocol in its own library lets the app and the helper agree on the
 /// surface without either importing the other's implementation.
@@ -15,7 +15,8 @@ import Foundation
     /// helper reloads the model when it differs from the loaded one.
     func prepareModel(atPath path: String, gpu: Bool, reply: @escaping (Bool, String?) -> Void)
 
-    /// Run tokenization and completion in the helper process.
+    /// Run tokenization and completion in the helper process. Completion keeps
+    /// the caller's deadline, queue priority and truncation metadata.
     func countTokens(in text: String, reply: @escaping (Int, String?) -> Void)
     func complete(prompt: String, maxTokens: Int, deadlineMs: Int, interactive: Bool,
                   reply: @escaping (String?, Int, Bool, String?) -> Void)

@@ -6,10 +6,12 @@ import SuperflowInferenceHelperProtocol
 /// holds its delegate weakly, so this top-level binding is what keeps the
 /// service alive while `resume()` runs the helper's run loop.
 final class InferenceHelperListenerDelegate: NSObject, NSXPCListenerDelegate {
+    private let service = InferenceHelperService()
+
     func listener(_ listener: NSXPCListener,
                   shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
         connection.exportedInterface = NSXPCInterface(with: InferenceHelperProtocol.self)
-        connection.exportedObject = InferenceHelperService()
+        connection.exportedObject = service
         connection.resume()
         return true
     }
