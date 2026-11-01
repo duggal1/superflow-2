@@ -5,7 +5,6 @@ import SuperflowEnhancementDeepFilterNet
 import SuperflowAudioJournal
 import SuperflowDiagnostics
 import SuperflowDiarizationFluidAudio
-import SuperflowGrammarHarper
 import SuperflowHotkeyEngine
 import SuperflowInferenceHelperProtocol
 import SuperflowKernel
@@ -154,22 +153,12 @@ public final class AppEnvironment {
                 workers: settings.cleanupWorkers
             )
         )
-        let linter: any HarperLinting
-        #if canImport(HarperFFI)
-        linter = HarperFFILinter()
-        #else
-        linter = UnavailableHarperLinter()
-        #endif
-        let grammar = HarperChecker(
-            linter: linter,
-            config: HarperConfig(enabled: settings.harperEnabled))
         return TextPipelineBuilder.make(
             settings: settings,
             dependencies: TextPipelineDependencies(
                 lexiconEntries: lexicon,
                 shortcuts: shortcuts,
                 cleaner: cleanup,
-                grammarChecker: grammar,
                 project: project
             )
         )

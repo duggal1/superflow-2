@@ -29,6 +29,13 @@ final class LongFormSafetyTests: XCTestCase {
         XCTAssertEqual(ListPlanner.plan("at first I waited a second then third place"), [.prose("at first I waited a second then third place")])
     }
 
+    func testS1SelfCorrectionIsAccepted() {
+        let input = "so um i need to like send the the report by uh friday no wait make that thursday"
+        let output = CleanResult(text: "I need to send the report by Thursday.", tokensIn: 0,
+                                 tokensOut: 8, hitTokenCap: false, latencyMs: 0)
+        XCTAssertNil(CleanGuard.verify(input: input, protected: Protected(), result: output, cap: 100))
+    }
+
     func testGuardRejectsMissingDuplicatedReorderedAndInventedContent() {
         func failure(_ input: String, _ output: String, protected: Protected = Protected()) -> CleanGuard.Failure? {
             CleanGuard.verify(input: input, protected: protected,

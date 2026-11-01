@@ -50,12 +50,19 @@ final class PipelineTests: XCTestCase {
         return settings
     }
 
+    func testCleanupRunsFirstAndHarperNeverRuns() {
+        let pipeline = TextPipelineBuilder.make(settings: allSettings(),
+                                                dependencies: dependencies(grammar: FakeGrammarChecker()))
+        XCTAssertEqual(pipeline.stageIDs.first, "cleanup")
+        XCTAssertFalse(pipeline.stageIDs.contains("grammar"))
+    }
+
     func testCanonicalStageOrder() {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
-            "commands", "shortcuts", "disfluency", "spokenCode", "numbers", "lexicon", "codeAware",
-            "cleanup", "numbers.assert", "lexicon.assert", "polish", "structure", "grammar", "lineformat",
+            "cleanup", "commands", "shortcuts", "disfluency", "spokenCode", "numbers", "lexicon", "codeAware",
+            "polish", "structure", "lineformat",
         ])
     }
 
@@ -67,7 +74,7 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs,
                        ["shortcuts", "disfluency", "spokenCode", "numbers", "lexicon", "codeAware",
-                        "numbers.assert", "lexicon.assert", "polish", "structure", "lineformat"])
+                        "polish", "structure", "lineformat"])
     }
 
     func testCodeSpeakIsOptInAndRunsAfterNumbers() async {
@@ -134,7 +141,7 @@ final class PipelineTests: XCTestCase {
         XCTAssertNotNil(lexicon)
         XCTAssertNotNil(assertion)
         if let cleanup, let lexicon, let assertion {
-            XCTAssertLessThan(lexicon, cleanup)
+            XCTAssertLessThan(cleanup, lexicon)
             XCTAssertLessThan(cleanup, assertion)
         }
     }

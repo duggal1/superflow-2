@@ -62,33 +62,12 @@ public actor CleanupService {
                                   diagnostics: [Diagnostic(stage: "cleanup", message: "model not ready")])
         }
         return await CleanPriority.$current.withValue(context.interactive ? .interactive : .background) {
-            var parts: [String] = []
-            var chunks: [ChunkOutcome] = []
-            for segment in ListPlanner.plan(tier0, protected: protected, timings: context.wordTimings) {
-                switch segment {
-                case .prose(let text):
-                    let output = await self.prose(text, protected: protected, context: context,
-                                                  styling: context.settings.cleanupStyling,
-                                                  structure: context.settings.cleanupStructure)
-                    parts.append(output.text); chunks.append(contentsOf: output.chunks)
-                case .list(let lead, let items):
-                    let heading = await self.prose(lead, protected: protected, context: context,
-                                                   styling: context.settings.cleanupStyling, structure: "prose")
-                    chunks.append(contentsOf: heading.chunks)
-                    var cleaned: [String] = []
-                    for item in items {
-                        let output = await self.prose(item, protected: protected, context: context,
-                                                      styling: "semi-casual", structure: "prose")
-                        cleaned.append(output.text); chunks.append(contentsOf: output.chunks)
-                    }
-                    parts.append(ListRenderer.render(lead: heading.text, items: cleaned, protected: protected))
-                }
-            }
-            for index in chunks.indices { chunks[index].index = index }
-            let fallback = chunks.contains { $0.state == .fallback }
-            return CleanupOutcome(text: parts.filter { !$0.isEmpty }.joined(separator: "\n\n"),
-                                  state: fallback ? .fallback : .cleaned, chunks: chunks,
-                                  diagnostics: chunks.compactMap { chunk in
+            let output = await self.prose(tier0, protected: protected, context: context,
+                                          styling: context.settings.cleanupStyling,
+                                          structure: context.settings.cleanupStructure)
+            let fallback = output.chunks.contains { $0.state == .fallback }
+            return CleanupOutcome(text: output.text, state: fallback ? .fallback : .cleaned,
+                                  chunks: output.chunks, diagnostics: output.chunks.compactMap { chunk in
                 chunk.reason.map { Diagnostic(stage: "cleanup[\(chunk.index)]", message: $0) }
             })
         }
@@ -96,8 +75,14 @@ public actor CleanupService {
 
     private func prose(_ text: String, protected: Protected, context: TextContext,
                        styling: String, structure: String) async -> (text: String, chunks: [ChunkOutcome]) {
-        let words = WordTimingProjection.apply(to: Tokenizer.words(text, protected: protected), timings: context.wordTimings)
-        let plans = await ChunkPlanner(config: config, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
+        let count = await cleaner.countTokens(text)
+        let plans: [ChunkPlan]
+        if count <= config.hardTokenCap {
+            plans = [ChunkPlan(index: 0, text: text, tokens: count)]
+        } else {
+            let words = WordTimingProjection.apply(to: Tokenizer.words(text, protected: protected), timings: context.wordTimings)
+            plans = await ChunkPlanner(config: config, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
+        }
         guard !plans.isEmpty else { return ("", []) }
         var results = [ChunkOutcome](repeating: ChunkOutcome(index: 0, text: "", state: .pending), count: plans.count)
         await withTaskGroup(of: ChunkOutcome.self) { group in

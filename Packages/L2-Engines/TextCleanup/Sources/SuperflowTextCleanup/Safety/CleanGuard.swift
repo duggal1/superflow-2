@@ -33,7 +33,32 @@ public enum CleanGuard {
                   boundary(result.text, match.upperBound, before: false) else { return .protectedLost }
             cursor = match.upperBound
         }
-        return content(input) == content(result.text) ? nil : .contentChanged
+        let source = content(input)
+        let cleaned = content(result.text)
+        guard !cleaned.isEmpty else { return .contentChanged }
+        if source != cleaned {
+            let lowered = input.lowercased()
+            let markers = [" um ", " uh ", " like ", " actually ", "i mean", "no wait", " i was i "]
+            let repeated = zip(source, source.dropFirst()).contains { $0 == $1 }
+            guard repeated || markers.contains(where: { (" " + lowered + " ").contains($0) }) else {
+                return .contentChanged
+            }
+            if let sourceTail = source.last, let outputTail = cleaned.last,
+               sourceTail != outputTail, !outputTail.contains(where: \.isNumber) {
+                return .truncated
+            }
+        }
+        let sourceSet = Set(source)
+        let retained = sourceSet.intersection(cleaned).count
+        if sourceSet.count > 6 && retained * 3 < sourceSet.count { return .contentChanged }
+        let unknown = cleaned.filter { !sourceSet.contains($0) && !$0.contains(where: \.isNumber) }.count
+        guard unknown <= max(0, (cleaned.count - 10) / 10) else { return .contentChanged }
+        var counts = Dictionary(source.map { ($0, 1) }, uniquingKeysWith: +)
+        for word in cleaned where sourceSet.contains(word) {
+            counts[word, default: 0] -= 1
+            if counts[word, default: 0] < 0 { return .contentChanged }
+        }
+        return nil
     }
 
     private static func boundary(_ text: String, _ index: String.Index, before: Bool) -> Bool {

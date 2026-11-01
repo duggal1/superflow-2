@@ -106,8 +106,8 @@ final class CleanupTests: XCTestCase {
             "Here are the steps first install it second run it third ship it", context: TextContext())
         let options = await cleaner.lastOptions
         XCTAssertEqual(options?.structure, "prose")
-        XCTAssertEqual(options?.styling, "semi-casual")
-        XCTAssertEqual(outcome.text, "Here are the steps:\n- install it\n- run it\n- ship it")
+        XCTAssertEqual(options?.styling, "semi-formal")
+        XCTAssertEqual(outcome.text, "Here are the steps first install it second run it third ship it")
     }
 
     func testOrdinaryProseStaysProse() async {
@@ -244,21 +244,15 @@ final class CleanupTests: XCTestCase {
         }
     }
 
-    func testListsArePlannedBeforeChunksAndControlsStayConstant() async {
+    func testShortTranscriptReachesCleanerIntact() async {
         let cleaner = RecordingCleaner()
-        let config = CleanupConfig(softTokenTarget: 12, hardTokenCap: 24)
-        let service = CleanupService(cleaner: cleaner, config: config)
-        let text = "first alpha beta gamma. second delta epsilon zeta. third eta theta iota. "
-            + "fourth kappa lambda mu. the overflowed garden stays open tonight regardless. "
-            + "the garden gate stays open far too late."
+        let service = CleanupService(cleaner: cleaner)
+        let text = "first alpha beta. second gamma delta. third epsilon zeta."
         let outcome = await service.clean(text, context: TextContext())
         let options = await cleaner.byInput
-        XCTAssertTrue(options.values.allSatisfy { $0.structure == "prose" })
-        XCTAssertEqual(options["alpha beta gamma."]?.styling, "semi-casual")
-        XCTAssertEqual(options["delta epsilon zeta."]?.styling, "semi-casual")
-        XCTAssertEqual(options["eta theta iota."]?.styling, "semi-casual")
-        XCTAssertEqual(options["kappa lambda mu."]?.styling, "semi-casual")
-        XCTAssertTrue(outcome.text.hasPrefix("- alpha beta gamma\n- delta epsilon zeta\n- eta theta iota\n- kappa lambda mu"))
-        XCTAssertTrue(outcome.text.contains("the garden gate stays open far too late."))
+        XCTAssertEqual(options.count, 1)
+        XCTAssertEqual(options[text]?.structure, "lists")
+        XCTAssertEqual(options[text]?.styling, "semi-formal")
+        XCTAssertEqual(outcome.text, text)
     }
 }

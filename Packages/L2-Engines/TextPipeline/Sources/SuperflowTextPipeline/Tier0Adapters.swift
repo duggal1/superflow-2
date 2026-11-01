@@ -41,8 +41,7 @@ struct DisfluencyAdapter: SuperflowPorts.TextStage {
 }
 
 struct NumbersAdapter: SuperflowPorts.TextStage {
-    let id: String
-    init(id: String = "numbers") { self.id = id }
+    let id = "numbers"
 
     func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
         guard !draft.shortCircuit else { return draft }

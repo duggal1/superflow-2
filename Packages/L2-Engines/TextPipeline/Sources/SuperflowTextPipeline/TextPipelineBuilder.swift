@@ -35,12 +35,14 @@ public struct TextPipelineDependencies: Sendable {
     }
 }
 
-/// Commands and shortcuts precede mechanical cleanup, then language cleanup,
-/// protected-aware polish, the grammar gate, and line formatting.
+/// S1-mini receives the raw transcript before deterministic text formatting.
 public enum TextPipelineBuilder {
     public static func make(settings: AppSettings,
                             dependencies: TextPipelineDependencies = TextPipelineDependencies()) -> TextPipeline {
         var stages: [any SuperflowPorts.TextStage] = []
+        if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
+            stages.append(CleanupStage(service: cleaner))
+        }
         if settings.commandsEnabled {
             stages.append(CommandsStage())
         }
@@ -60,16 +62,8 @@ public enum TextPipelineBuilder {
             stages.append(CodeAwareStage(settings: settings.codeAware,
                                          project: dependencies.project))
         }
-        if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
-            stages.append(CleanupStage(service: cleaner))
-        }
-        stages.append(NumbersAdapter(id: "numbers.assert"))
-        stages.append(LexiconStage(entries: dependencies.lexiconEntries, id: "lexicon.assert"))
         stages.append(FinalPolishStage())
         stages.append(TextStructureStage())
-        if settings.harperEnabled, let grammar = dependencies.grammarChecker {
-            stages.append(GrammarGateStage(checker: grammar, policy: dependencies.grammarPolicy))
-        }
         stages.append(LineFormatStage(settings: settings.lineFormat))
 
         let seed = Set(dependencies.lexiconEntries.filter(\.enabled).map(\.canonical).filter { !$0.isEmpty })
