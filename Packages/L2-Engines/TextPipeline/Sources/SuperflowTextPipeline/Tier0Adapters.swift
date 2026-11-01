@@ -15,6 +15,7 @@ struct DisfluencyAdapter: SuperflowPorts.TextStage {
         config.minRun = max(2, settings.tierAThreshold)
         config.maxPhraseLength = settings.collapseRepeatedPhrases ? 3 : 1
         config.stripFillers = settings.fillerPrepass
+        config.legitimatePairs = []
         guard settings.collapseDuplicates else {
             return await MechanicalDisfluencyStage(settings: settings).apply(draft, context: context)
         }
@@ -32,12 +33,16 @@ struct DisfluencyAdapter: SuperflowPorts.TextStage {
             }
             return TextDisfluencyStage(config: config).apply(TextDraft(words: words)).text
         }.joined(separator: "\n")
+        if result.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            result.cleanupState = .cleaned
+        }
         return result
     }
 }
 
 struct NumbersAdapter: SuperflowPorts.TextStage {
-    let id = "numbers"
+    let id: String
+    init(id: String = "numbers") { self.id = id }
 
     func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
         guard !draft.shortCircuit else { return draft }

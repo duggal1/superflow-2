@@ -82,3 +82,20 @@ final class LongFormSafetyTests: XCTestCase {
         await semaphore.release()
     }
 }
+
+extension LongFormSafetyTests {
+    func testStructureFormatsFallbackWithoutChangingProtectedOrUnstructuredText() async {
+        let stage = TextStructureStage()
+        let input = "first install the app second grant access third start dictation"
+        let result = await stage.apply(TranscriptDraft(text: input, cleanupState: .fallback), context: TextContext())
+        XCTAssertEqual(result.text, "- install the app\n- grant access\n- start dictation")
+        for raw in ["first install second run", "a first class ticket and a second opinion", "- Existing\n\n- Bullets", "```text\nfirst install second run third ship\n```"] {
+            let kept = await stage.apply(TranscriptDraft(text: raw), context: TextContext())
+            XCTAssertEqual(kept.text, raw)
+        }
+        let protected = Protected(literals: ["first install"])
+        let kept = await stage.apply(TranscriptDraft(text: input, protected: protected), context: TextContext())
+        XCTAssertEqual(kept.text, input)
+        XCTAssertEqual(CleanupStructureDetector.structure(for: "First install. Second run. Third test.", configured: "prose"), "lists")
+    }
+}

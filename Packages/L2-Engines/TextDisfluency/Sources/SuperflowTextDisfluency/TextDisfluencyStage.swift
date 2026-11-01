@@ -18,7 +18,7 @@ public struct TextDisfluencyStage: TextStage {
 
     public func apply(_ draft: TextDraft) -> TextDraft {
         var words = config.stripFillers ? stripFillers(draft.words) : draft.words
-        if words.isEmpty { return draft }
+        if words.isEmpty { return TextDraft(words: []) }
         for _ in 0..<8 {
             let before = words.count
             words = collapseRuns(words)

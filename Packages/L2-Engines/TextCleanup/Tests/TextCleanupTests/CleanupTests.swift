@@ -122,11 +122,11 @@ final class CleanupTests: XCTestCase {
         XCTAssertEqual(CleanupStructureDetector.structure(
             for: "First one. Second two. Third three.", configured: "bullets"), "bullets")
         XCTAssertEqual(CleanupStructureDetector.structure(
-            for: "First one. Second two. Third three.", configured: "prose"), "list")
+            for: "First one. Second two. Third three.", configured: "prose"), "lists")
         XCTAssertEqual(CleanupStructureDetector.structure(
             for: "First one. Second two.", configured: "prose"), "prose")
         XCTAssertEqual(CleanupStructureDetector.structure(
-            for: "- one\n- two\n- three", configured: "prose"), "list")
+            for: "- one\n- two\n- three", configured: "prose"), "lists")
     }
 
     func testCodingProjectUpgradesCleanupContext() async {

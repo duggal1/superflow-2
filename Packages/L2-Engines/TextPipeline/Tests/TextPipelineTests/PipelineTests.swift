@@ -55,7 +55,7 @@ final class PipelineTests: XCTestCase {
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
             "commands", "shortcuts", "disfluency", "spokenCode", "numbers", "lexicon", "codeAware",
-            "cleanup", "polish", "grammar", "lineformat",
+            "cleanup", "numbers.assert", "lexicon.assert", "polish", "structure", "grammar", "lineformat",
         ])
     }
 
@@ -67,7 +67,7 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs,
                        ["shortcuts", "disfluency", "spokenCode", "numbers", "lexicon", "codeAware",
-                        "polish", "lineformat"])
+                        "numbers.assert", "lexicon.assert", "polish", "structure", "lineformat"])
     }
 
     func testCodeSpeakIsOptInAndRunsAfterNumbers() async {

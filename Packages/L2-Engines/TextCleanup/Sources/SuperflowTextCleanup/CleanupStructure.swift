@@ -2,7 +2,7 @@ import Foundation
 
 /// Deterministic list detection for the cleanup control line.
 ///
-/// The model is only ever asked for `list` structure on strong, explicit cues.
+/// The model is only ever asked for `lists` structure on strong, explicit cues.
 /// Everything else stays `prose`, because asking a small model to invent bullets
 /// from ordinary speech is exactly the kind of change this pipeline forbids.
 enum CleanupStructureDetector {
@@ -19,7 +19,7 @@ enum CleanupStructureDetector {
     /// Keeps an explicit user setting intact and only upgrades `prose`.
     static func structure(for text: String, configured: String) -> String {
         guard configured == "prose" else { return configured }
-        return isList(text) ? "list" : configured
+        return isList(text) ? "lists" : configured
     }
 
     /// True when the text opens with a list continuation cue: a bullet or

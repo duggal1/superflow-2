@@ -63,7 +63,10 @@ public enum TextPipelineBuilder {
         if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
             stages.append(CleanupStage(service: cleaner))
         }
+        stages.append(NumbersAdapter(id: "numbers.assert"))
+        stages.append(LexiconStage(entries: dependencies.lexiconEntries, id: "lexicon.assert"))
         stages.append(FinalPolishStage())
+        stages.append(TextStructureStage())
         if settings.harperEnabled, let grammar = dependencies.grammarChecker {
             stages.append(GrammarGateStage(checker: grammar, policy: dependencies.grammarPolicy))
         }

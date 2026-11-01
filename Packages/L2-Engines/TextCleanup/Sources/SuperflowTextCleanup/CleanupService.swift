@@ -158,7 +158,8 @@ public actor CleanupService {
             try await semaphore.acquire(priority: CleanPriority.current)
             let result: CleanResult
             do {
-                let options = CleanOptions(styling: styling, structure: structure, context: context.cleanupContext,
+                let detectedStructure = CleanupStructureDetector.structure(for: plan.text, configured: structure)
+                let options = CleanOptions(styling: styling, structure: detectedStructure, context: context.cleanupContext,
                                            deadlineMs: deadline, maxNewTokens: cap)
                 if cleaner is any DeadlineManagedTextCleaner {
                     result = try await cleaner.clean(plan.text, options: options)
