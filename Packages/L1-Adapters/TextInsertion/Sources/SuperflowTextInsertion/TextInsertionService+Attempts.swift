@@ -81,6 +81,37 @@ extension TextInsertionService {
         }
     }
 
+    /// Presses the target's own Edit > Paste menu item. Verification uses the
+    /// same content baseline as the chord, so a pressed-but-ignored item is not
+    /// reported as a successful insertion.
+    func menuPasteAttempt(text: String, target: (any InsertionTarget)?, pid: pid_t,
+                          options: TextInsertionOptions) async -> InsertionAttempt {
+        let baseline = await captureBaseline(target)
+        let result = menuPaster.pressPaste(pid: pid)
+        var steps = [InsertionStep.menu(result)]
+        guard result == .pressed else {
+            return InsertionAttempt(inserted: false, verified: false, posted: false, steps: steps)
+        }
+        guard let baseline, baseline.isUsable else {
+            steps.append(InsertionStep.unverifiable)
+            return InsertionAttempt(inserted: true, verified: false, posted: false, steps: steps)
+        }
+        let observation = await awaitContent(target: target, baseline: baseline,
+                                             expected: baseline.expectedValue(afterInserting: text),
+                                             timeout: options.verifyTimeout)
+        switch observation {
+        case .exact:
+            steps.append(InsertionStep.valueVerified)
+            return InsertionAttempt(inserted: true, verified: true, posted: false, steps: steps)
+        case .changed, .countChanged:
+            steps.append(InsertionStep.verified)
+            return InsertionAttempt(inserted: true, verified: true, posted: false, steps: steps)
+        case .nothing:
+            steps.append(InsertionStep.notObserved)
+            return InsertionAttempt(inserted: false, verified: false, posted: false, steps: steps)
+        }
+    }
+
     func accessibilityAttempt(text: String, target: (any InsertionTarget)?,
                               verifyTimeout: Duration) async -> InsertionAttempt {
         guard let target else {

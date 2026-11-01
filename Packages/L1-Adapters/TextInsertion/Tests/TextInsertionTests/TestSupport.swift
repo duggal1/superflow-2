@@ -166,22 +166,54 @@ struct FakeKeyResolver: PasteKeyResolving {
 actor FakeApps: FrontmostAppProviding {
     private var current: pid_t?
     private let own: pid_t
+    private let bundleID: String?
+    var activationSucceeds = true
     private(set) var activated: [pid_t] = []
 
-    init(frontmost: pid_t?, ownPID: pid_t = 999) {
+    init(frontmost: pid_t?, ownPID: pid_t = 999, bundleID: String? = nil) {
         current = frontmost
         own = ownPID
+        self.bundleID = bundleID
     }
 
     func frontmostPID() async -> pid_t? { current }
     func selfPID() async -> pid_t { own }
+    func bundleIdentifier(pid: pid_t) async -> String? { bundleID }
 
     func activate(pid: pid_t) async {
         activated.append(pid)
-        current = pid
+        if activationSucceeds { current = pid }
     }
 
+    func setActivationSucceeds(_ value: Bool) { activationSucceeds = value }
     func setFrontmost(_ pid: pid_t?) async { current = pid }
+}
+
+/// Simulates the app's own Edit > Paste menu item. When `result == .pressed`
+/// and a box is supplied, the character count grows, matching a real paste.
+final class FakeMenuPaster: MenuPasting, @unchecked Sendable {
+    private let result: MenuPasteResult
+    private let box: Box<Int?>?
+    private let valueBox: Box<String?>?
+    private let pasteValue: String
+
+    private(set) var pressedPIDs: [pid_t] = []
+
+    init(result: MenuPasteResult = .notFound, box: Box<Int?>? = nil,
+         valueBox: Box<String?>? = nil, pasteValue: String = "") {
+        self.result = result
+        self.box = box
+        self.valueBox = valueBox
+        self.pasteValue = pasteValue
+    }
+
+    func pressPaste(pid: pid_t) -> MenuPasteResult {
+        pressedPIDs.append(pid)
+        guard result == .pressed else { return result }
+        if let box, let current = box.value { box.value = current + pasteValue.utf16.count }
+        if let valueBox { valueBox.value = (valueBox.value ?? "") + pasteValue }
+        return .pressed
+    }
 }
 
 final class InlineRestoreScheduler: RestoreScheduling, @unchecked Sendable {

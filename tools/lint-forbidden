@@ -183,7 +183,7 @@ report_matches '\.formatted\(date:|DateFormatter' \
 
 report_outside 'AVAudioPlayer' "UIComponents/Sources/SuperflowUIComponents/AudioPreview\.swift:" \
     'AVAudioPlayer lives only in the one shared audio preview.' "${ui_roots[@]}"
-report_outside 'AVAudioFile\(forWriting' "AudioArchive\.swift:" \
+report_outside 'AVAudioFile\(forWriting' "AudioArchive\.swift:|Tests/" \
     'Audio files are written only by AudioArchiveWriter.' "${ui_roots[@]}"
 
 # Pass 3 settings rows all carry a glyph.

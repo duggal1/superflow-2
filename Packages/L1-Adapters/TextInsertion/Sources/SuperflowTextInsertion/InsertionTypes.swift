@@ -87,7 +87,9 @@ public struct TextInsertionOptions: Sendable {
                 modifierReleaseTimeout: Duration = .milliseconds(300),
                 allowPaste: Bool = true,
                 preferAccessibility: Bool = false,
-                preferAccessibilityForEditable: Bool = true,
+                // Paste first is the proven path for Electron, terminals and
+                // web views. Accessibility remains the fallback, not the default.
+                preferAccessibilityForEditable: Bool = false,
                 allowAccessibilityFallback: Bool = true,
                 writeClipboardOnFailure: Bool = true,
                 preferMenuPaste: Bool = false,

@@ -34,38 +34,37 @@ private struct DictationKeyOption: View {
     @State private var hover = false
 
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: Space.xs) {
-                Text(key.cap)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(Tok.keycapText)
-                    .frame(width: 84, height: 56)
-                    .background(fill, in: .rect(cornerRadius: Radius.field, style: .continuous))
-                    .background(alignment: .bottom) {
-                        // The lip is a second surface, never a shadow.
-                        RoundedRectangle(cornerRadius: Radius.field, style: .continuous)
-                            .fill(Tok.well)
-                            .frame(height: 56)
-                            .offset(y: 3)
-                    }
-                    .padding(.bottom, 3)
-                Text(key.caption)
-                    .appType(.caption)
-                    .foregroundStyle(selected ? Tok.text : Tok.text2)
-                    .lineLimit(1)
-                Circle()
-                    .fill(selected ? Tok.accent : Color.clear)
-                    .frame(width: 4, height: 4)
-            }
-            .contentShape(.rect)
+        VStack(spacing: Space.xs) {
+            Text(key.cap)
+                .font(Typography.ui(20, weight: 500))
+                .foregroundStyle(Tok.keycapText)
+                .frame(width: 84, height: 56)
+                .background(fill, in: .rect(cornerRadius: Radius.field, style: .continuous))
+                .background(alignment: .bottom) {
+                    // The lip is a second surface, never a shadow.
+                    RoundedRectangle(cornerRadius: Radius.field, style: .continuous)
+                        .fill(Tok.well)
+                        .frame(height: 56)
+                        .offset(y: 3)
+                }
+                .padding(.bottom, 3)
+            Text(key.caption)
+                .appType(.caption)
+                .foregroundStyle(selected ? Tok.text : Tok.text2)
+                .lineLimit(1)
+            Circle()
+                .fill(selected ? Tok.accent : Color.clear)
+                .frame(width: 4, height: 4)
         }
-        .buttonStyle(.plain)
+        .contentShape(.rect)
+        .gesture(DragGesture(minimumDistance: 0).onEnded { _ in action() })
         .clickable()
         .focusStep(.rect(cornerRadius: Radius.field))
         .onHover { hover = $0 }
         .animation(Motion.hoverIn, value: hover)
         .accessibilityLabel("\(key.caption) key")
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { action() }
     }
 
     private var fill: Color {

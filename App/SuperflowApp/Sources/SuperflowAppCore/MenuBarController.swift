@@ -23,13 +23,29 @@ public final class MenuBarController: ObservableObject {
     private let sessionEvents: AsyncStream<SessionEvent>?
     private let meetingEvents: AsyncStream<MeetingEvent>?
     private var observations: [Task<Void, Never>] = []
+    /// One start at a time. A double-tap can arrive while the speculative start
+    /// is still inside its model or microphone wait; both callers share it
+    /// instead of racing into "session already active".
+    private var startTask: Task<Bool, Never>?
 
-    public init(environment: AppEnvironment?, mainWindow: MainWindowController,
-                sessionEvents: AsyncStream<SessionEvent>? = nil,
-                meetingEvents: AsyncStream<MeetingEvent>? = nil) {
-        session = environment?.sessionEngine
-        meeting = environment?.meetingEngine
-        hotkeys = environment?.hotkeySource
+    public convenience init(environment: AppEnvironment?, mainWindow: MainWindowController,
+                            sessionEvents: AsyncStream<SessionEvent>? = nil,
+                            meetingEvents: AsyncStream<MeetingEvent>? = nil) {
+        self.init(session: environment?.sessionEngine,
+                  meeting: environment?.meetingEngine,
+                  hotkeys: environment?.hotkeySource,
+                  mainWindow: mainWindow,
+                  sessionEvents: sessionEvents,
+                  meetingEvents: meetingEvents)
+    }
+
+    init(session: SessionEngine?, meeting: MeetingEngine?,
+         hotkeys: (any HotkeySource)?, mainWindow: MainWindowController,
+         sessionEvents: AsyncStream<SessionEvent>? = nil,
+         meetingEvents: AsyncStream<MeetingEvent>? = nil) {
+        self.session = session
+        self.meeting = meeting
+        self.hotkeys = hotkeys
         self.mainWindow = mainWindow
         self.sessionEvents = sessionEvents
         self.meetingEvents = meetingEvents
@@ -103,13 +119,23 @@ public final class MenuBarController: ObservableObject {
 
     @discardableResult
     public func startDictation(mode: SessionMode = .dictation) async -> Bool {
-        guard let session else { return false }
-        // A silent return here is why fn looked dead for the first seconds after
-        // launch. Say what is happening instead.
-        guard recoveryReady else {
-            error = "Superflow is still loading the speech model. Hold fn again in a moment."
-            return false
+        guard session != nil else { return false }
+        if let startTask {
+            let result = await startTask.value
+            if result, mode == .handsFree { await session?.setMode(.handsFree) }
+            return result
         }
+        let task = Task { @MainActor [weak self] in
+            await self?.performStartDictation(mode: mode) ?? false
+        }
+        startTask = task
+        let result = await task.value
+        startTask = nil
+        return result
+    }
+
+    private func performStartDictation(mode: SessionMode) async -> Bool {
+        guard let session else { return false }
         // The launch prewarm is silent, but an explicit warm-up (onboarding or a
         // settings change) can still hold `.warming`. Wait for that same load
         // instead of refusing the key; a refused fn press is indistinguishable
@@ -122,7 +148,7 @@ public final class MenuBarController: ObservableObject {
                 state = await session.currentState
             }
             if state == .warming {
-                error = "Superflow is still loading the speech model. Hold fn again in a moment."
+                error = "Superflow is still getting ready. Hold fn again in a moment."
                 return false
             }
         }
@@ -146,16 +172,37 @@ public final class MenuBarController: ObservableObject {
     @discardableResult
     public func beginHandsFreeDictation() async -> Bool {
         guard let session else { return false }
-        // A double-tap lands after the speculative start, but if that start
-        // failed there is no session to latch. Start one rather than promise a
-        // microphone that is not open.
         var state = await session.currentState
-        if !state.isActive {
-            guard await startDictation() else { return false }
-            state = await session.currentState
+        // An explicit warm-up owns `.warming` without a session yet. Wait for it
+        // to finish, then start. A cold speculative start also passes through
+        // `.warming`; the same wait lands on its recording state.
+        if state == .warming {
+            let deadline = ContinuousClock.now + .seconds(120)
+            while state == .warming, ContinuousClock.now < deadline {
+                try? await Task.sleep(for: .milliseconds(25))
+                state = await session.currentState
+            }
         }
-        guard case .recording = state else { return false }
-        await session.setMode(.handsFree)
+        if !state.isActive {
+            // A double-tap lands after the speculative start, but if that start
+            // failed there is no session to latch. Start one rather than promise
+            // a microphone that is not open. This shares any in-flight start.
+            guard await startDictation(mode: .handsFree) else { return false }
+        } else if case .recording = state {
+            await session.setMode(.handsFree)
+        } else {
+            // `.warming` from the speculative start, or `.finalizing` from an
+            // edge case: wait for the recording state before promising hands-free.
+            let deadline = ContinuousClock.now + .seconds(120)
+            while ContinuousClock.now < deadline {
+                state = await session.currentState
+                if case .recording = state { break }
+                if !state.isActive { break }
+                try? await Task.sleep(for: .milliseconds(25))
+            }
+            guard case .recording = state else { return false }
+            await session.setMode(.handsFree)
+        }
         sessionState = await session.currentState
         await hotkeys?.setActiveTap(true)
         return true

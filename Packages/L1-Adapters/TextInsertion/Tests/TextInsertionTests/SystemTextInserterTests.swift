@@ -13,15 +13,19 @@ private struct AdapterHarness {
     let poster: FakePoster
     let apps: FakeApps
     let scheduler: InlineRestoreScheduler
+    let menu: FakeMenuPaster
 }
 
 @MainActor
 private func makeAdapter(focus: InsertionFocus = .editable(role: "AXTextArea"),
                          count: Int? = 0,
+                         pasteValue: String = "",
                          posterResult: Bool = true,
                          posterIncrements: Bool = true,
                          frontmost: pid_t? = 77,
-                         ownPID: pid_t = 999) -> AdapterHarness {
+                         ownPID: pid_t = 999,
+                         menuResult: MenuPasteResult = .notFound,
+                         menuPastes: Bool = false) -> AdapterHarness {
     let countBox = Box(count)
     let target = FakeTarget(count: countBox)
     let focusInspector = FakeFocusInspector(focus: focus, target: target)
@@ -29,19 +33,23 @@ private func makeAdapter(focus: InsertionFocus = .editable(role: "AXTextArea"),
     let poster = FakePoster(result: posterResult, increments: posterIncrements, box: countBox)
     let apps = FakeApps(frontmost: frontmost, ownPID: ownPID)
     let scheduler = InlineRestoreScheduler()
+    let menu = FakeMenuPaster(result: menuResult,
+                              box: menuPastes ? countBox : nil,
+                              pasteValue: menuPastes ? pasteValue : "")
     let service = TextInsertionService(
         focus: focusInspector,
         clipboard: clipboard,
         poster: poster,
         keyResolver: FakeKeyResolver(code: 9),
         apps: apps,
+        menuPaster: menu,
         restoreScheduler: scheduler,
         secureInput: { false },
         axTrusted: { true },
         sleep: { _ in })
     return AdapterHarness(inserter: SystemTextInserter(service: service), focus: focusInspector,
                           target: target, clipboard: clipboard, poster: poster, apps: apps,
-                          scheduler: scheduler)
+                          scheduler: scheduler, menu: menu)
 }
 
 @MainActor
@@ -65,14 +73,27 @@ final class SystemTextInserterTests: XCTestCase {
         XCTAssertTrue(harness.target.insertedTexts.isEmpty)
     }
 
-    func testAutoUsesAccessibilityFirstForEditableFields() async throws {
+    func testAutoPastesForEditableFields() async throws {
         let harness = makeAdapter()
-        let outcome = try await harness.inserter.insert("ax first", strategy: .auto)
-        XCTAssertEqual(outcome, .accessibility)
+        let outcome = try await harness.inserter.insert("paste first", strategy: .auto)
+        XCTAssertEqual(outcome, .pasted)
         let writes = await harness.clipboard.writes
-        XCTAssertEqual(writes, 0)
+        XCTAssertEqual(writes, 1)
         let posts = await harness.poster.posts
-        XCTAssertEqual(posts, 0)
+        XCTAssertEqual(posts, 1)
+        XCTAssertTrue(harness.menu.pressedPIDs.isEmpty, "no menu fallback after a confirmed chord")
+    }
+
+    /// A host that ignores the synthetic chord may still honour Edit > Paste.
+    func testAutoUsesMenuPasteWhenTheChordIsIgnored() async throws {
+        let harness = makeAdapter(focus: .unknown(reason: "role-AXGroup"),
+                                  pasteValue: "hello",
+                                  posterIncrements: false,
+                                  menuResult: .pressed,
+                                  menuPastes: true)
+        let outcome = try await harness.inserter.insert("hello", strategy: .auto)
+        XCTAssertEqual(outcome, .pasted)
+        XCTAssertEqual(harness.menu.pressedPIDs, [77])
     }
 
     func testPasteSuccessReturnsPastedAndRestores() async throws {
@@ -132,12 +153,14 @@ final class SystemTextInserterTests: XCTestCase {
         let auto = SystemTextInserter.options(for: .auto)
         XCTAssertTrue(auto.allowPaste)
         XCTAssertTrue(auto.allowAccessibilityFallback)
-        XCTAssertTrue(auto.preferAccessibilityForEditable)
+        XCTAssertFalse(auto.preferAccessibilityForEditable)
+        XCTAssertTrue(auto.preferMenuPaste)
 
         let pasteboard = SystemTextInserter.options(for: .pasteboard)
         XCTAssertTrue(pasteboard.allowPaste)
         XCTAssertFalse(pasteboard.allowAccessibilityFallback)
         XCTAssertFalse(pasteboard.preferAccessibilityForEditable)
+        XCTAssertFalse(pasteboard.preferMenuPaste)
 
         let accessibility = SystemTextInserter.options(for: .accessibility)
         XCTAssertFalse(accessibility.allowPaste)

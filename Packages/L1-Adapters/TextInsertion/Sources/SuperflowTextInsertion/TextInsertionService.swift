@@ -21,15 +21,16 @@ public actor TextInsertionService {
     let clipboard: any PasteboardAccess
     let poster: any PasteEventPosting
     let keyResolver: any PasteKeyResolving
-    private let apps: any FrontmostAppProviding
+    let apps: any FrontmostAppProviding
+    let menuPaster: any MenuPasting
     private let restoreScheduler: any RestoreScheduling
     private let secureInput: @Sendable () -> Bool
     private let axTrusted: @Sendable () -> Bool
     let sleep: @Sendable (Duration) async -> Void
-    private let preparedTargetTTL: Duration
+    let preparedTargetTTL: Duration
 
-    private var preparedPID: pid_t?
-    private var preparedAt: ContinuousClock.Instant?
+    var preparedPID: pid_t?
+    var preparedAt: ContinuousClock.Instant?
     private var insertionInFlight = false
     private var insertionWaiters: [CheckedContinuation<Void, Never>] = []
     private var pendingRestore: PendingRestore?
@@ -46,6 +47,7 @@ public actor TextInsertionService {
                 poster: any PasteEventPosting,
                 keyResolver: any PasteKeyResolving,
                 apps: any FrontmostAppProviding,
+                menuPaster: any MenuPasting = AXMenuPaste(),
                 restoreScheduler: any RestoreScheduling,
                 secureInput: @escaping @Sendable () -> Bool = { SecureInput.isActive() },
                 axTrusted: @escaping @Sendable () -> Bool = { AXIsProcessTrusted() },
@@ -56,6 +58,7 @@ public actor TextInsertionService {
         self.poster = poster
         self.keyResolver = keyResolver
         self.apps = apps
+        self.menuPaster = menuPaster
         self.restoreScheduler = restoreScheduler
         self.secureInput = secureInput
         self.axTrusted = axTrusted
@@ -167,8 +170,14 @@ public actor TextInsertionService {
             return finish(.notInserted(.secureField, textOnClipboard: false))
         case .notEditable:
             report.append(InsertionStep.focusNotEditable)
-            let wrote = await writeIfNeeded(text, enabled: options.writeClipboardOnFailure)
-            return finish(.notInserted(.noEditableTarget, textOnClipboard: wrote))
+            // Focus classification is advisory. Electron, terminals and web
+            // views routinely report no editable element while accepting a
+            // paste. Only the Finder needs a real field: its desktop cannot
+            // receive one, so a synthetic chord would type into nothing.
+            if await apps.bundleIdentifier(pid: targetPID) == "com.apple.finder" {
+                let wrote = await writeIfNeeded(text, enabled: options.writeClipboardOnFailure)
+                return finish(.notInserted(.noEditableTarget, textOnClipboard: wrote))
+            }
         case .editable, .unknown:
             report.append(InsertionStep.tag(inspection.focus))
         }
@@ -231,7 +240,20 @@ public actor TextInsertionService {
             }
         }
 
-        // Ambiguous containers paste first; Accessibility is the recovery path.
+        // A host that ignored the chord may still honour its own Edit > Paste
+        // menu item, and that path needs no key events at all.
+        if !inserted, options.allowPaste, options.preferMenuPaste, !secureInput() {
+            let attempt = await menuPasteAttempt(text: text, target: target,
+                                                 pid: targetPID, options: options)
+            report.append(contentsOf: attempt.steps)
+            if attempt.inserted {
+                inserted = true
+                verified = attempt.verified
+                method = .menuPaste
+            }
+        }
+
+        // Accessibility is the recovery path, never the default.
         if !inserted, !axAttempted, axAllowed {
             let attempt = await accessibilityAttempt(text: text, target: target,
                                                      verifyTimeout: options.verifyTimeout)
@@ -323,51 +345,4 @@ public actor TextInsertionService {
         }
     }
 
-    // MARK: - Target resolution
-
-    private func resolveTarget(options: TextInsertionOptions) async -> pid_t? {
-        if let explicit = options.targetPID { return explicit }
-
-        let current = await apps.frontmostPID()
-        let ownPID = await apps.selfPID()
-        let prepared = freshPreparedPID()
-
-        // The user moved to a different real app after recording started. Never
-        // yank focus back to the old target; drop the stale preparation.
-        if let prepared, let current, current != ownPID, current != prepared {
-            invalidatePreparedTarget()
-        }
-
-        let target: pid_t?
-        if let current, current != ownPID {
-            target = current
-        } else if let prepared {
-            target = prepared
-        } else {
-            target = nil
-        }
-        // Consume the prepared target so a later insert can never yank focus back.
-        invalidatePreparedTarget()
-
-        if let target, target != current {
-            await apps.activate(pid: target)
-            _ = await waitForFrontmost(pid: target)
-        }
-        return target
-    }
-
-    private func freshPreparedPID() -> pid_t? {
-        guard let preparedPID, let preparedAt else { return nil }
-        guard ContinuousClock.now - preparedAt <= preparedTargetTTL else { return nil }
-        return preparedPID
-    }
-
-    private func waitForFrontmost(pid: pid_t) async -> Bool {
-        if await apps.frontmostPID() == pid { return true }
-        for _ in 0..<12 {
-            await sleep(.milliseconds(25))
-            if await apps.frontmostPID() == pid { return true }
-        }
-        return false
-    }
 }

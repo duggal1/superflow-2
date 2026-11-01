@@ -64,12 +64,15 @@ struct SuperflowApplication: App {
     init() {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("--keyboard-diagnostics") {
-            print("bundle: \(Bundle.main.bundleURL.path)")
-            print("identifier: \(Bundle.main.bundleIdentifier ?? "unbundled")")
-            print("input preflight: \(CGPreflightListenEventAccess())")
-            print("HID listen granted: \(IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted)")
-            print("accessibility: \(AXIsProcessTrusted())")
-            print("post events: \(CGPreflightPostEventAccess())")
+            let lines = [
+                "bundle: \(Bundle.main.bundleURL.path)",
+                "identifier: \(Bundle.main.bundleIdentifier ?? "unbundled")",
+                "input preflight: \(CGPreflightListenEventAccess())",
+                "HID listen granted: \(IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted)",
+                "accessibility: \(AXIsProcessTrusted())",
+                "post events: \(CGPreflightPostEventAccess())",
+            ]
+            FileHandle.standardOutput.write(Data((lines.joined(separator: "\n") + "\n").utf8))
             exit(0)
         }
         AppFont.registerBundledFonts()

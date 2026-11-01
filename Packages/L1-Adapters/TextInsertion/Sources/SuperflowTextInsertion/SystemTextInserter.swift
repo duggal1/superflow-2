@@ -37,10 +37,12 @@ public final class SystemTextInserter: TextInserter, @unchecked Sendable {
         var options = TextInsertionOptions()
         switch strategy {
         case .auto:
-            break
+            // Chord first, then the app's own Edit > Paste, then Accessibility.
+            options.preferMenuPaste = true
         case .pasteboard:
             options.allowAccessibilityFallback = false
             options.preferAccessibilityForEditable = false
+            options.preferMenuPaste = false
         case .accessibility:
             options.preferAccessibility = true
             options.allowPaste = false
@@ -57,7 +59,7 @@ public final class SystemTextInserter: TextInserter, @unchecked Sendable {
     static func outcome(for report: TextInsertionReport) -> InsertionOutcome {
         switch report.result {
         case .inserted(let method, _):
-            return method == .paste ? .pasted : .accessibility
+            return method == .accessibility ? .accessibility : .pasted
         case .notInserted(.secureField, _):
             return .blockedSecureField
         case .notInserted(.emptyText, _):

@@ -8,12 +8,18 @@ extension SessionEngine {
     /// including its delayed tail before the recognition stream is finished.
     func consumeAudio(_ samples: AsyncStream<AudioChunk>, writer: (any AudioJournalWriter)?,
                       archive: (any AudioArchiveWriter)?,
-                      stream: any RecognitionStream) async {
-        let enhancing = settings.speechEnhancementEnabled && enhancer != nil
+                      feed: AsyncStream<AudioChunk>.Continuation) async {
+        let enhancing = enhancementActive
         var stage = EnhancementStage(enhancer: enhancer, enabled: enhancing)
         var cleanCursor: Int64 = 0
         var warned = false
         for await chunk in samples {
+            // Levels come straight from capture, before journaling, enhancement
+            // or inference. The meter must move even when a model call is slow.
+            levelCounter += 1
+            if levelCounter % 4 == 0 {
+                emit(.level(Self.rms(chunk.samples)))
+            }
             if let writer {
                 await writer.append(chunk)
                 // Journaling can stop mid-session (disk full / IO error). Keep
@@ -28,20 +34,17 @@ extension SessionEngine {
             if !clean.isEmpty {
                 let enhanced = AudioChunk(samples: clean, startSample: enhancing ? cleanCursor : chunk.startSample, source: .mic)
                 await archive?.append(enhanced)
-                await stream.feed(enhanced)
+                feed.yield(enhanced)
                 cleanCursor += Int64(clean.count)
-            }
-            levelCounter += 1
-            if levelCounter % 4 == 0 {
-                emit(.level(Self.rms(chunk.samples)))
             }
         }
         let tail = await stage.finish()
         if !tail.isEmpty {
             let chunk = AudioChunk(samples: tail, startSample: cleanCursor, source: .mic)
             await archive?.append(chunk)
-            await stream.feed(chunk)
+            feed.yield(chunk)
         }
+        feed.finish()
         if let failure = stage.failure, !warned { emit(.notice(failure)) }
     }
 

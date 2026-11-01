@@ -32,7 +32,7 @@ extension AppCoordinator {
         do {
             try await environment.hotkeySource.start()
             // The tap is live, so any earlier permission message is stale.
-            menuBarController.publishError("")
+            publishHotkeyStatus(environment: environment)
             let events = environment.hotkeySource.events
             hotkeyTask = Task { [weak self] in
                 for await event in events {
@@ -59,8 +59,18 @@ extension AppCoordinator {
         }
     }
 
-    func observePermissionChanges(_ permissions: any PermissionGate) {
-        guard permissionTask == nil else { return }
+    /// Presses can arrive through a listen-only tap while macOS still runs its
+    /// Globe action. That is a real degradation, not a ready state.
+    private func publishHotkeyStatus(environment: AppEnvironment) {
+        if environment.hotkeySource.tapStatus.hasLostSuppression {
+            menuBarController.publishError(
+                "Keyboard shortcuts are on, but Accessibility is off, so macOS may still open the emoji picker when you press fn.")
+        } else {
+            menuBarController.publishError("")
+        }
+    }
+
+    func observePermissionChanges(_ permissions: any PermissionGate) {        guard permissionTask == nil else { return }
         permissionTask = Task { [weak self] in
             let updates = await permissions.updates()
             for await (permission, status) in updates {
@@ -88,6 +98,9 @@ extension AppCoordinator {
                     if self.hotkeyTask != nil {
                         await self.environment?.refreshFunctionKeySuppression(
                             for: self.settings.dictationKey)
+                        if let environment = self.environment {
+                            self.publishHotkeyStatus(environment: environment)
+                        }
                     }
                     if status == .granted {
                         // A dictation may have finished while the grant was missing.
@@ -126,8 +139,7 @@ extension AppCoordinator {
         }
     }
 
-    func handleKeyEvent(_ event: KeyEvent) async {
-        let actions = gesture.handle(event)
+    func handleKeyEvent(_ event: KeyEvent) async {        let actions = gesture.handle(event)
         switch event.kind {
         case .fnDown, .fnUp, .rightCmdDown, .rightCmdUp:
             Logger(subsystem: "com.superflow.app", category: "KeyboardGesture")

@@ -65,8 +65,8 @@ public final class AppCoordinator: ObservableObject {
     private var meetingRelayTask: Task<Void, Never>?
     private var retentionTask: Task<Void, Never>?
     var permissionTask: Task<Void, Never>?
-    private let sessionEventRelay = EngineEventRelay<SessionEvent>()
-    private let meetingEventRelay = EngineEventRelay<MeetingEvent>()
+    let sessionEventRelay = EngineEventRelay<SessionEvent>()
+    let meetingEventRelay = EngineEventRelay<MeetingEvent>()
 
     public lazy var dashboardModel: DashboardViewModel? = {
         guard let environment else { return nil }
@@ -211,82 +211,22 @@ public final class AppCoordinator: ObservableObject {
             settings.settingsVersion = AppSettings.currentVersion
             await environment.settingsStore.save(settings)
         }
-        // The model is the long pole. Start both loads before database
-        // maintenance, retention and pipeline construction, and never make the
-        // launch UI wait for them.
-        await environment.sessionEngine.update(settings: settings)
-        Task {
-            let started = DispatchTime.now().uptimeNanoseconds
-            let ready = await environment.sessionEngine.prewarm()
-            launchLog.info("ASR prewarm: \((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000) ms; ready: \(ready)")
-        }
-        Task {
-            let started = DispatchTime.now().uptimeNanoseconds
-            let ready = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute)
-            launchLog.info("Cleanup preparation: \((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000) ms; ready: \(ready)")
-        }
-        // Fn is Superflow's dictation key only while it owns dictation, so put the Globe
-        // binding in the Do Nothing state first. A different key leaves the Globe alone.
-        if settings.dictationKey == .fn { environment.claimFunctionKey() }
+
+        // Everything the window needs to paint must happen before `isLoaded`.
+        // Nothing that can take seconds is allowed in this path: the dashboard is
+        // visible from the first frame and the rest of startup is background work.
         themeStore.mode = settings.theme
-        islandBridge?.setStoresTranscripts(!settings.noTranscriptStorage)
-        applyIslandPrefs(settings)
-        await environment.transcripts.setNoTranscriptStorage(settings.noTranscriptStorage)
-        await purgeExpiredTranscripts()
-        await sweepAudioArchive()
-        scheduleRetentionPurge()
-        await environment.practiceRunner.update(profile: settings.asrProfile)
+        dashboardModel?.update(settings: settings)
         gesture.update(config: settings.gesture)
-        await refreshPipeline()
-        islandBridge?.start(events: sessionEventRelay.subscribe())
-        islandBridge?.startMeetingEvents(meetingEventRelay.subscribe(), engine: environment.meetingEngine)
-        startEventRelays()
-        menuBarController.observe()
-        islandController?.start()
-        Task { await islandBridge?.refreshLastTranscript() }
-        observePermissionChanges(environment.permissionGate)
-        if settings.onboardingComplete {
-            // Without Accessibility the OS silently drops every synthetic
-            // paste, so a finished dictation looks like nothing happened.
-            Task { await self.requestAccessibilityForPaste() }
-        }
-        menuBarController.setRecoveryReady(false)
-        let shouldWarmModels = settings.onboardingComplete
-        // Fn has to be live before the model loads. Installing the tap needs no model,
-        // and doing it after the warm-up meant the key did nothing for the whole load
-        // while the status read "Warming up".
-        Task { [weak self] in
-            guard let self else { return }
-            await self.tryStartHotkeys()
-            // Recovery needs the recognizer only when a take was interrupted
-            // mid-recording. An ordinary launch must not sit behind a 10–20 s
-            // model load: open the gate, then warm the model in the background.
-            // A press in the meantime enters the Island's warming state and waits
-            // for the same serialized load.
-            let pending = (try? await environment.database.unfinishedSessions()) ?? []
-            guard !pending.isEmpty else {
-                self.menuBarController.setRecoveryReady(true)
-                launchLog.info("Recovery gate opened after \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms; nothing to recover, model warming in background")
-                if shouldWarmModels { _ = await environment.sessionEngine.prewarm() }
-                return
-            }
-            // Order matters: `RecoveryEngine` calls `makeStream`, which requires a
-            // prepared profile, so the model load has to finish first. The hotkeys are
-            // already installed, so a press in this window is answered instead of lost.
-            let modelReady = shouldWarmModels ? await environment.sessionEngine.prewarm() : false
-            await self.recoverInterruptedSessions(environment: environment)
-            self.menuBarController.setRecoveryReady(true)
-            launchLog.info("Recovery gate opened after \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms; model ready: \(modelReady)")
-        }
-        if settings.speechEnhancementEnabled {
-            modelsModel?.download(ModelsViewModel.enhancementID)
-            Task { [weak self] in
-                do { try await environment.recognizer.prepareVoiceActivity() }
-                catch { self?.menuBarController.publishError("Speech detection: \(error.localizedDescription)") }
-            }
-        }
+        if settings.dictationKey == .fn { environment.claimFunctionKey() }
+        await environment.sessionEngine.update(settings: settings)
         isLoaded = true
         launchLog.info("UI initialization: \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms")
+
+        // The model is the long pole. Start both loads now, without making any
+        // caller wait for them, then wire the live UI and background maintenance.
+        startModelPreparation(environment: environment, log: launchLog)
+        await finishLaunch(environment: environment, launchStarted: launchStarted, log: launchLog)
     }
 
     public func copyRecoveredTranscript() {
@@ -351,7 +291,7 @@ public final class AppCoordinator: ObservableObject {
 
     /// The two Island switches are mirrored, not stored, in the model. Settings
     /// pushes them on load and on every save, so the notch and the window agree.
-    private func applyIslandPrefs(_ settings: AppSettings) {
+    func applyIslandPrefs(_ settings: AppSettings) {
         islandController?.model.configure(
             IslandPrefs(alwaysOn: settings.islandAlwaysOn, liveText: settings.islandLiveText)
         )
@@ -362,7 +302,7 @@ public final class AppCoordinator: ObservableObject {
         _ = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute)
     }
 
-    private func recoverInterruptedSessions(environment: AppEnvironment) async {
+    func recoverInterruptedSessions(environment: AppEnvironment) async {
         let engine = await environment.makeRecoveryEngine(settings: settings)
         let report = await engine.recover()
         if report.hasRecoveredText {
@@ -374,7 +314,7 @@ public final class AppCoordinator: ObservableObject {
         }
     }
 
-    private func scheduleRetentionPurge() {
+    func scheduleRetentionPurge() {
         retentionTask?.cancel()
         retentionTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -392,7 +332,7 @@ public final class AppCoordinator: ObservableObject {
 
     /// Removes clips past the retention setting, then clears the two columns for
     /// any row whose file is gone. Runs at launch and once a day.
-    private func sweepAudioArchive() async {
+    func sweepAudioArchive() async {
         guard let environment, settings.keepAudio else { return }
         await environment.audioArchive.sweep(olderThanDays: settings.audioRetentionDays)
         guard settings.audioRetentionDays != nil else { return }
@@ -405,7 +345,7 @@ public final class AppCoordinator: ObservableObject {
         }
     }
 
-    private func purgeExpiredTranscripts(now: Date = Date()) async {
+    func purgeExpiredTranscripts(now: Date = Date()) async {
         guard let environment, let retentionDays = settings.retentionDays, retentionDays > 0,
               let cutoff = Calendar.current.date(byAdding: .day, value: -retentionDays, to: now) else { return }
         do {
@@ -416,7 +356,7 @@ public final class AppCoordinator: ObservableObject {
         }
     }
 
-    private func startEventRelays() {
+    func startEventRelays() {
         guard let environment else { return }
         if sessionRelayTask == nil {
             let events = environment.sessionEngine.events

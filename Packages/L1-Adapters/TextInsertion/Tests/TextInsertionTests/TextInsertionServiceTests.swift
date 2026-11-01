@@ -11,6 +11,7 @@ private struct Harness {
     let poster: FakePoster
     let apps: FakeApps
     let scheduler: InlineRestoreScheduler
+    let menu: FakeMenuPaster
     let count: Box<Int?>
 }
 
@@ -27,6 +28,9 @@ private func makeHarness(focus: InsertionFocus = .editable(role: "AXTextArea"),
                           noChangePosts: Int = 0,
                          frontmost: pid_t? = 77,
                          ownPID: pid_t = 999,
+                         bundleID: String? = nil,
+                         menuResult: MenuPasteResult = .notFound,
+                         menuPastes: Bool = false,
                          ttl: Duration = TextInsertionService.defaultPreparedTargetTTL) -> Harness {
     let countBox = Box(count)
     let valueBox = value.map { Box(Optional($0)) }
@@ -36,8 +40,12 @@ private func makeHarness(focus: InsertionFocus = .editable(role: "AXTextArea"),
     let poster = FakePoster(result: posterResult, increments: posterIncrements, box: countBox,
                             valueBox: valueBox, pasteValue: pasteValue,
                             noChangePosts: noChangePosts)
-    let apps = FakeApps(frontmost: frontmost, ownPID: ownPID)
+    let apps = FakeApps(frontmost: frontmost, ownPID: ownPID, bundleID: bundleID)
     let scheduler = InlineRestoreScheduler()
+    let menu = FakeMenuPaster(result: menuResult,
+                              box: menuPastes ? countBox : nil,
+                              valueBox: menuPastes ? valueBox : nil,
+                              pasteValue: menuPastes ? pasteValue : "")
     let secure = Box(secureInput)
     let trustedBox = Box(trusted)
     let service = TextInsertionService(
@@ -46,13 +54,14 @@ private func makeHarness(focus: InsertionFocus = .editable(role: "AXTextArea"),
         poster: poster,
         keyResolver: FakeKeyResolver(code: 9),
         apps: apps,
+        menuPaster: menu,
         restoreScheduler: scheduler,
         secureInput: { secure.value },
         axTrusted: { trustedBox.value },
         sleep: { _ in },
         preparedTargetTTL: ttl)
     return Harness(service: service, focus: focusInspector, target: target, clipboard: clipboard,
-                   poster: poster, apps: apps, scheduler: scheduler, count: countBox)
+                   poster: poster, apps: apps, scheduler: scheduler, menu: menu, count: countBox)
 }
 
 @MainActor
@@ -86,8 +95,21 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertTrue(harness.target.insertedTexts.isEmpty)
     }
 
-    func testNotEditableTargetSkipsPaste() async {
-        let harness = makeHarness(focus: .notEditable(reason: "role-AXButton"))
+    /// Focus classification is advisory: Electron/terminals often report a
+    /// non-editable role while accepting a paste into the real field.
+    func testNotEditableNonFinderStillPastes() async {
+        let harness = makeHarness(focus: .notEditable(reason: "role-AXGroup"))
+        let report = await harness.service.insert("hello", options: TextInsertionOptions())
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
+        let posts = await harness.poster.posts
+        XCTAssertEqual(posts, 1)
+        let text = await harness.clipboard.text
+        XCTAssertEqual(text, "hello")
+    }
+
+    func testFinderNotEditableDoesNotPaste() async {
+        let harness = makeHarness(focus: .notEditable(reason: "role-AXGroup"),
+                                  bundleID: "com.apple.finder")
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
         XCTAssertEqual(report.result, .notInserted(.noEditableTarget, textOnClipboard: true))
         let posts = await harness.poster.posts
@@ -96,8 +118,9 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(text, "hello")
     }
 
-    func testNotEditableHonoursWriteClipboardOnFailure() async {
-        let harness = makeHarness(focus: .notEditable(reason: "role-AXButton"))
+    func testFinderNotEditableHonoursWriteClipboardOnFailure() async {
+        let harness = makeHarness(focus: .notEditable(reason: "role-AXGroup"),
+                                  bundleID: "com.apple.finder")
         var options = TextInsertionOptions()
         options.writeClipboardOnFailure = false
         let report = await harness.service.insert("hello", options: options)
@@ -162,12 +185,43 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(restores, 1)
     }
 
+    /// A host that ignores the synthetic chord may still honour its own
+    /// Edit > Paste menu item, which needs no key events at all.
+    func testIgnoredChordFallsBackToMenuPaste() async {
+        let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"),
+                                  pasteValue: "hello",
+                                  posterIncrements: false,
+                                  menuResult: .pressed,
+                                  menuPastes: true)
+        var options = TextInsertionOptions()
+        options.preferMenuPaste = true
+        let report = await harness.service.insert("hello", options: options)
+        XCTAssertEqual(report.result, .inserted(method: .menuPaste, verified: true))
+        XCTAssertEqual(Array(report.steps.suffix(2)), [InsertionStep.menuPressed,
+                                                       InsertionStep.verified])
+        XCTAssertTrue(harness.target.insertedTexts.isEmpty)
+        XCTAssertEqual(harness.scheduler.delays, [.milliseconds(50)])
+    }
+
+    /// A pressed-but-ignored menu item is not an insertion; Accessibility is
+    /// still the last resort.
+    func testIgnoredMenuPasteFallsBackToAccessibility() async {
+        let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"),
+                                  posterIncrements: false,
+                                  menuResult: .pressed)
+        var options = TextInsertionOptions()
+        options.preferMenuPaste = true
+        let report = await harness.service.insert("hello", options: options)
+        XCTAssertEqual(report.result, .inserted(method: .accessibility, verified: true))
+        XCTAssertEqual(report.steps.last, InsertionStep.axVerified)
+    }
+
     func testBothPathsFailLeavesTextOnClipboardAndDoesNotRestore() async {
         let harness = makeHarness(posterResult: false)
         harness.target.accepts = false
         let report = await harness.service.insert("keep me", options: TextInsertionOptions())
         XCTAssertEqual(report.result, .notInserted(.eventPostFailed, textOnClipboard: true))
-        XCTAssertEqual(report.steps.last, InsertionStep.cmdvFailed)
+        XCTAssertEqual(report.steps.last, InsertionStep.axTextFailed)
         XCTAssertFalse(report.clipboardRestoreScheduled)
         XCTAssertEqual(harness.scheduler.pendingCount, 0)
         let text = await harness.clipboard.text
@@ -200,7 +254,7 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(harness.focus.preparedPIDs, [42])
 
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .accessibility, verified: true))
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
         let activated = await harness.apps.activated
         XCTAssertEqual(activated, [42])
         let current = await harness.apps.frontmostPID()
@@ -258,8 +312,10 @@ final class TextInsertionServiceTests: XCTestCase {
 
     func testTargetNotFrontmostWritesClipboard() async {
         let harness = makeHarness(frontmost: 77)
+        await harness.apps.setActivationSucceeds(false)
         var options = TextInsertionOptions()
         options.targetPID = 55
+        options.strictTarget = true
         let report = await harness.service.insert("hello", options: options)
         XCTAssertEqual(report.result, .notInserted(.targetNotFrontmost, textOnClipboard: true))
         XCTAssertTrue(report.steps.contains(InsertionStep.notFrontmost))
@@ -318,17 +374,18 @@ final class TextInsertionServiceTests: XCTestCase {
 
     // MARK: - Elite-path regressions (added before the upgrade)
 
-    /// A confidently editable field must not need the clipboard at all.
-    func testEditableFocusUsesAccessibilityFirstWithoutTouchingClipboard() async {
+    /// A confidently editable field still pastes first: that is the path that
+    /// works in Electron, terminals and web views. Accessibility is fallback.
+    func testEditableFocusPastesFirst() async {
         let harness = makeHarness()
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .accessibility, verified: true))
-        XCTAssertEqual(harness.target.insertedTexts, ["hello"])
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
+        XCTAssertTrue(harness.target.insertedTexts.isEmpty)
         let posts = await harness.poster.posts
-        XCTAssertEqual(posts, 0)
+        XCTAssertEqual(posts, 1)
         let writes = await harness.clipboard.writes
-        XCTAssertEqual(writes, 0)
-        XCTAssertFalse(report.clipboardRestoreScheduled)
+        XCTAssertEqual(writes, 1)
+        XCTAssertTrue(report.clipboardRestoreScheduled)
     }
 
     /// A confirmed paste only needs a short settle window, not half a second.
@@ -378,7 +435,7 @@ final class TextInsertionServiceTests: XCTestCase {
         await harness.apps.setFrontmost(55)
 
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .accessibility, verified: true))
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
         XCTAssertEqual(harness.focus.inspectedPIDs, [55])
         let activated = await harness.apps.activated
         XCTAssertTrue(activated.isEmpty, "a stale prepared target must not steal focus")
@@ -402,13 +459,15 @@ final class TextInsertionServiceTests: XCTestCase {
 
     // MARK: - Content verification
 
-    func testAccessibilityPrimaryVerifiesWholeValueContent() async {
-        let harness = makeHarness(count: 3, value: "abc", selection: (3, 0))
+    func testPastePrimaryVerifiesWholeValueContentForEditableFocus() async {
+        let harness = makeHarness(count: 3, value: "abc", selection: (3, 0),
+                                  pasteValue: "hello")
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .accessibility, verified: true))
-        XCTAssertEqual(report.steps, [InsertionStep.focusEditable, InsertionStep.axValueVerified])
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
+        XCTAssertEqual(report.steps, [InsertionStep.focusEditable, InsertionStep.pbWritten,
+                                      InsertionStep.cmdvPosted, InsertionStep.valueVerified])
         let writes = await harness.clipboard.writes
-        XCTAssertEqual(writes, 0)
+        XCTAssertEqual(writes, 1)
     }
 
     func testPasteVerifiesWholeValueContent() async {
@@ -436,7 +495,9 @@ final class TextInsertionServiceTests: XCTestCase {
     func testAccessibilityFailureFallsBackToPaste() async {
         let harness = makeHarness()
         harness.target.accepts = false
-        let report = await harness.service.insert("hello", options: TextInsertionOptions())
+        var options = TextInsertionOptions()
+        options.preferAccessibilityForEditable = true
+        let report = await harness.service.insert("hello", options: options)
         XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
         XCTAssertEqual(report.steps, [InsertionStep.focusEditable, InsertionStep.axSetFailed,
                                       InsertionStep.pbWritten, InsertionStep.cmdvPosted,

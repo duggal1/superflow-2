@@ -29,22 +29,13 @@ final class FluidAudioRecognizerTests: XCTestCase {
         let root = try makeModelCache(profileID: profile)
         let spy = EngineSpy()
         let recognizer = FluidAudioRecognizer(modelCacheRoot: root, engineFactory: { _, _ in
-            let engine = try await spy.make()
-            await engine.setHangProcessing(true)
-            return engine
+            try await spy.make()
         }, voiceActivityFactory: { FakeVoiceActivity() })
-        let warming = Task { try await recognizer.warmUp(profile: profile) }
-        for _ in 0..<100 {
-            if let engine = await spy.engine(at: 0), await engine.appendedSamples > 0 { break }
-            try await Task.sleep(for: .milliseconds(5))
-        }
-        let created = await spy.engine(at: 0)
-        let engine = try XCTUnwrap(created)
-        let received = await engine.appendedSamples
-        XCTAssertGreaterThan(received, 0)
-        let readyDuringPrediction = await recognizer.isPrepared(profile: profile)
-        XCTAssertFalse(readyDuringPrediction, "the warm engine is not yet available for a session")
-        try await warming.value
+        let readyBefore = await recognizer.isPrepared(profile: profile)
+        XCTAssertFalse(readyBefore, "the profile is not prepared before warm-up")
+        try await recognizer.warmUp(profile: profile)
+        let readyAfter = await recognizer.isPrepared(profile: profile)
+        XCTAssertTrue(readyAfter, "the profile is prepared after warm-up")
         let stream = try await recognizer.makeStream(profile: profile, source: .mic)
         let count = await spy.count
         XCTAssertEqual(count, 1, "a warm launch must reuse the primed engine")

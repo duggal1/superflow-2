@@ -132,7 +132,7 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertTrue(model.canAdvance)
 
         await model.advance()
-        XCTAssertEqual(model.step, .done)
+        XCTAssertEqual(model.step, .key)
     }
 
     func testModelReadySkipsDownload() async {
@@ -169,7 +169,7 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(model.toast.current?.style, .error)
 
         await model.skipCurrent()
-        XCTAssertEqual(model.step, .done)
+        XCTAssertEqual(model.step, .key)
         XCTAssertTrue(model.speechSkipped)
     }
 
@@ -188,7 +188,7 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(model.primaryTitle, "Continue")
 
         await model.performPrimaryAction()
-        XCTAssertEqual(model.step, .done)
+        XCTAssertEqual(model.step, .key)
     }
 
     func testCleanupStepReportsReadyAndCanBeDisabled() async {
@@ -222,7 +222,7 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(model.cleanupDetail, "Download failed")
 
         await model.skipCurrent()
-        XCTAssertEqual(model.step, .done)
+        XCTAssertEqual(model.step, .key)
         XCTAssertTrue(model.speechSkipped)
         XCTAssertFalse(model.cleanupWanted)
     }

@@ -64,7 +64,9 @@ public final class MeetingsViewModel: ObservableObject {
     public var statusLabel: String {
         switch state {
         case .idle: "Ready"
-        case .warming: "Loading model"
+        // The microphone is already open while the model finishes loading, so
+        // "Loading model" would describe internal work the owner never waits on.
+        case .warming: "Starting"
         case .recording: "Recording"
         case .finalizing: "Finishing"
         case .complete: "Saved"

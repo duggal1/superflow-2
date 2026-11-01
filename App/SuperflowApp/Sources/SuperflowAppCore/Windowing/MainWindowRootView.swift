@@ -33,19 +33,21 @@ public struct MainWindowRootView: View {
 
     public var body: some View {
         Group {
-            if !coordinator.isLoaded {
-                StartupStatusView(message: "Opening your local library…")
-                    .frame(minWidth: Layout.windowMinWidth, minHeight: Layout.windowMinHeight)
-            } else if let startupError = coordinator.startupError {
+            if let startupError = coordinator.startupError {
                 StartupStatusView(message: startupError, retry: retryStartup)
                     .frame(minWidth: Layout.windowMinWidth, minHeight: Layout.windowMinHeight)
             } else if !coordinator.settings.onboardingComplete,
+                      coordinator.isLoaded || !OnboardingCheckpoint.isComplete(),
                       let model = coordinator.onboardingModel {
+                // The UserDefaults checkpoint decides the first frame, so a
+                // finished setup never flashes onboarding while settings load.
                 OnboardingView(model: model)
                     .frame(width: Layout.onboardingWidth, height: Layout.onboardingHeight)
                     .background(Tok.bg)
                     .background(WindowChrome(kind: .onboarding))
             } else {
+                // The dashboard is the first frame. Launch work that can take
+                // longer than a frame happens after it is already visible.
                 mainWindow
             }
         }
@@ -167,9 +169,9 @@ public struct MainWindowRootView: View {
             return .noMicrophone
         }
         switch menuBar.sessionState {
-        case .warming:
-            return .warming
-        case .recording, .finalizing, .inserting:
+        case .warming, .recording, .finalizing, .inserting:
+            // A warming session already owns the microphone, so it is listening
+            // from the owner's point of view. Model loading is never surfaced.
             return .listening
         case .idle, .complete, .cancelled, .failed:
             return .ready
@@ -324,14 +326,11 @@ private enum EngineFix {
 }
 
 private enum EngineStatus {
-    case ready, warming, listening, noMicrophone, noKeyboardAccess
+    case ready, listening, noMicrophone, noKeyboardAccess
 
     var label: String {
         switch self {
         case .ready: "Ready"
-        // `.warming` is now only a real model load, so name the work instead of
-        // claiming a warm-up the owner cannot see.
-        case .warming: "Loading model"
         case .listening: "Listening"
         case .noMicrophone: "No microphone access"
         case .noKeyboardAccess: "Input Monitoring off"
@@ -341,7 +340,7 @@ private enum EngineStatus {
     var tone: DotTone {
         switch self {
         case .ready: .green
-        case .warming, .listening: .orange
+        case .listening: .orange
         case .noMicrophone, .noKeyboardAccess: .rose
         }
     }
@@ -349,7 +348,7 @@ private enum EngineStatus {
     var level: DotLevel {
         switch self {
         case .ready: .success
-        case .warming, .listening: .warning
+        case .listening: .warning
         case .noMicrophone, .noKeyboardAccess: .error
         }
     }
@@ -358,15 +357,15 @@ private enum EngineStatus {
         switch self {
         case .noMicrophone: .microphone
         case .noKeyboardAccess: .keyboardAccess
-        case .ready, .warming, .listening: .settings
+        case .ready, .listening: .settings
         }
     }
 
-    /// Only these two have no end to show, so only they animate. A ready or
+    /// Only listening has no end to show, so only it animates. A ready or
     /// blocked status is a fact, and a fact must not loop.
     var isWorking: Bool {
         switch self {
-        case .warming, .listening: true
+        case .listening: true
         case .ready, .noMicrophone, .noKeyboardAccess: false
         }
     }

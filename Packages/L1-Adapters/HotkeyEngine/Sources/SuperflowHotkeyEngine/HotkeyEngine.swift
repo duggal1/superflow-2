@@ -20,6 +20,9 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     /// When true the passive tap is installed as an active tap so the lone Fn press can be
     /// swallowed before macOS runs its Globe action. Requires Accessibility.
     private var suppressFn = false
+    /// True when the passive tap was actually installed as a filtering tap. A
+    /// listen-only fallback still receives events but cannot stop the Globe action.
+    private var passiveFiltering = false
     /// The physical modifier that counts as the dictation key. Read on the tap
     /// thread, so it lives under the same lock as the taps.
     private var dictationKey: DictationKey = .fn
@@ -53,6 +56,17 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         if lock.withLock({ wantsActive }) { installActiveTap() }
         observeWake()
         startHealthTimer()
+    }
+
+    /// The live tap state, so the UI can say when Fn observation works but
+    /// suppression does not. A listen-only fallback still delivers presses but
+    /// cannot keep macOS from running its Globe shortcut.
+    public var tapStatus: HotkeyTapStatus {
+        lock.withLock {
+            HotkeyTapStatus(passiveTapInstalled: passiveTap != nil,
+                            passiveTapIsFiltering: passiveFiltering,
+                            fnSuppressionRequested: suppressFn)
+        }
     }
 
     public func stop() async {
@@ -111,11 +125,19 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         // installed active so the lone Fn press can be swallowed; if that fails (no Accessibility)
         // we fall back to listening, so hotkeys keep working and only suppression is lost.
         let wantsSwallow = lock.withLock { suppressFn }
+        var filtering = wantsSwallow
         var tap = makePassiveTap(mask: mask, options: wantsSwallow ? .defaultTap : .listenOnly)
-        if tap == nil, wantsSwallow { tap = makePassiveTap(mask: mask, options: .listenOnly) }
-        guard let tap else { return false }
+        if tap == nil, wantsSwallow {
+            tap = makePassiveTap(mask: mask, options: .listenOnly)
+            filtering = false
+        }
+        guard let tap else {
+            lock.withLock { passiveFiltering = false }
+            return false
+        }
         guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
             CFMachPortInvalidate(tap)
+            lock.withLock { passiveFiltering = false }
             return false
         }
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
@@ -123,13 +145,19 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         lock.withLock {
             passiveTap = tap
             passiveSource = source
+            passiveFiltering = filtering
         }
         return true
     }
 
     private func makePassiveTap(mask: CGEventMask, options: CGEventTapOptions) -> CFMachPort? {
+        // Session level, not HID level: creating an event tap where HID events
+        // enter the window server requires root, so a normal signed app's tap
+        // never existed and fn/right-Command looked dead. Fn flag changes and
+        // ordinary key events are delivered at the session tap, and filtering
+        // here still owns the lone Fn press.
         CGEvent.tapCreate(
-            tap: .cghidEventTap,
+            tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: options,
             eventsOfInterest: mask,
@@ -177,6 +205,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             let value = (passiveTap, passiveSource)
             passiveTap = nil
             passiveSource = nil
+            passiveFiltering = false
             modifierTracker.reset()
             return value
         }
@@ -205,6 +234,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             let value = (passiveTap, passiveSource)
             passiveTap = nil
             passiveSource = nil
+            passiveFiltering = false
             modifierTracker.reset()
             return value
         }
@@ -312,6 +342,11 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         timer.schedule(deadline: .now() + 10, repeating: 10)
         timer.setEventHandler { [weak self] in
             guard let self else { return }
+            // A wake or a permission change can leave the passive tap missing
+            // while the process keeps running. Retry instead of staying deaf.
+            if self.lock.withLock({ self.passiveTap == nil && self.lifecycle.isRunning }) {
+                _ = self.installPassiveTap()
+            }
             let taps = self.lock.withLock { [self.passiveTap, self.activeTap].compactMap { $0 } }
             for tap in taps where !CGEvent.tapIsEnabled(tap: tap) {
                 CGEvent.tapEnable(tap: tap, enable: true)
