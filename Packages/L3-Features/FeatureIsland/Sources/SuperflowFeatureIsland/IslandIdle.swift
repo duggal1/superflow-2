@@ -6,27 +6,49 @@ import SwiftUI
 /// notch and the lamp is the only sign the Island is listening for a click.
 struct IdleMark: View {
     let model: IslandModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         if model.prefs.alwaysOn {
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
-                Canvas { context, _ in
-                    let tones = [Ramp.blue[1], Ramp.blue[2], Ramp.blue[4], Ramp.blue[2], Ramp.blue[1]]
-                    for (index, tone) in tones.enumerated() {
-                        context.fill(Path(CGRect(x: CGFloat(index) * 3, y: 0,
-                                                 width: 2, height: 2)),
-                                     with: .color(tone),
-                                     style: FillStyle(antialiased: false))
-                    }
-                }
-                .frame(width: 14, height: 2)
-                .padding(.bottom, 3)
+                IdleLampView(reduceMotion: reduceMotion)
+                    .padding(.bottom, 3)
             }
             .accessibilityHidden(true)
         } else {
             Color.clear
         }
+    }
+}
+
+struct IdleLampView: View {
+    let reduceMotion: Bool
+    @Environment(\.displayScale) private var scale
+
+    var body: some View {
+        let grid = IslandPixelGrid(scale: scale)
+        TimelineView(.animation(minimumInterval: 0.18, paused: reduceMotion)) { timeline in
+            let head = reduceMotion ? 2 : IdleLampMotion.head(at: timeline.date)
+            Canvas { context, _ in
+                for index in 0..<5 {
+                    let tone = Ramp.blue[max(1, 4 - abs(index - head))]
+                    context.fill(Path(grid.rect(CGRect(x: CGFloat(index) * 3, y: 0,
+                                                      width: 2, height: 2))),
+                                 with: .color(tone), style: FillStyle(antialiased: false))
+                }
+            }
+        }
+        .frame(width: grid.length(14), height: grid.length(2))
+        .accessibilityHidden(true)
+    }
+}
+
+enum IdleLampMotion {
+    static func head(at date: Date) -> Int {
+        let step = Int(floor(date.timeIntervalSinceReferenceDate / 0.18))
+        let position = (step % 8 + 8) % 8
+        return position <= 4 ? position : 8 - position
     }
 }
 
