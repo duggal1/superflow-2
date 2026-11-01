@@ -31,7 +31,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     private var healthTimer: DispatchSourceTimer?
     /// Per-key modifier state, because CGEvent flags cannot tell right ⌘ from a
     /// left ⌘ that is still held.
-    private var modifierTracker = ModifierPressTracker()
+    private var modifierTracker = ModifierEventMapper()
     private var healthTicks = 0
 
     public init() {
@@ -280,21 +280,12 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         switch type {
         case .flagsChanged:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-            let (key, isDown) = lock.withLock { () -> (DictationKey, Bool) in
-                (dictationKey, modifierTracker.isDown(keyCode: keyCode))
+            let (key, mapped) = lock.withLock { () -> (DictationKey, [KeyEvent]) in
+                (dictationKey, modifierTracker.events(keyCode: keyCode, flags: event.flags,
+                                                       timestampNs: timestamp, dictationKey: dictationKey))
             }
-            if let mapped = KeyEventMapper.flagsChanged(keyCode: keyCode, flags: event.flags,
-                                                         isDown: isDown,
-                                                         timestampNs: timestamp, dictationKey: key) {
-                continuation.yield(mapped)
-                // Drop only the Fn modifier change so macOS cannot run its Globe action (Show
-                // Emoji & Symbols) underneath us. Key events are untouched, so Fn plus a function
-                // key or an arrow still delivers the real key: the system is not hijacked, only
-                // the emoji binding is suppressed while Superflow runs.
-                if key == .fn, mapped.kind == .fnDown || mapped.kind == .fnUp {
-                    if lock.withLock({ suppressFn }) { return nil }
-                }
-            }
+            for edge in mapped { continuation.yield(edge) }
+            if key == .fn, keyCode == KeyCode.fn, lock.withLock({ suppressFn }) { return nil }
         case .keyDown:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
             let active = lock.withLock { activeTap != nil }

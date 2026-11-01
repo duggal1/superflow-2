@@ -132,3 +132,54 @@ public enum KeyEventMapper {
         event.getIntegerValueField(.eventSourceUserData) == SyntheticInputMarker.value
     }
 }
+
+/// Device flags are snapshots. Keycodes may be rewritten by keyboard software,
+/// so recognize physical right Command even on another modifier's event.
+public struct ModifierEventMapper: Sendable {
+    private var tracker = ModifierPressTracker()
+    private var fnDown = false
+    private var commandDown = false
+
+    public init() {}
+
+    public mutating func reset() {
+        tracker.reset()
+        // Keep the last snapshot: a release after tap recovery must still emit
+        // an up edge for a gesture that began before the interruption.
+    }
+
+    public mutating func events(keyCode: Int64, flags: CGEventFlags, timestampNs: UInt64,
+                                dictationKey: DictationKey) -> [KeyEvent] {
+        let tracked = tracker.isDown(keyCode: keyCode)
+        let mapped = KeyEventMapper.flagsChanged(keyCode: keyCode, flags: flags,
+                                                 isDown: tracked, timestampNs: timestampNs,
+                                                 dictationKey: dictationKey)
+        var result: [KeyEvent] = []
+        let physicalCommands = UInt64(NX_DEVICERCMDKEYMASK | NX_DEVICELCMDKEYMASK)
+        let nextCommand: Bool?
+        if keyCode == KeyCode.rightCommand {
+            nextCommand = mapped?.kind == .rightCmdDown
+        } else if flags.rawValue & physicalCommands != 0 || !flags.contains(.maskCommand) {
+            nextCommand = flags.rawValue & UInt64(NX_DEVICERCMDKEYMASK) != 0
+        } else {
+            nextCommand = nil
+        }
+        if let nextCommand, nextCommand != commandDown {
+            commandDown = nextCommand
+            result.append(KeyEvent(kind: nextCommand ? .rightCmdDown : .rightCmdUp, timestampNs: timestampNs))
+        }
+        let nextFn: Bool?
+        if dictationKey == .fn {
+            nextFn = flags.contains(.maskSecondaryFn)
+        } else if let mapped, mapped.kind == .fnDown || mapped.kind == .fnUp {
+            nextFn = mapped.kind == .fnDown
+        } else {
+            nextFn = nil
+        }
+        if let nextFn, nextFn != fnDown {
+            fnDown = nextFn
+            result.append(KeyEvent(kind: nextFn ? .fnDown : .fnUp, timestampNs: timestampNs))
+        }
+        return result
+    }
+}

@@ -126,6 +126,7 @@ extension SessionEngine {
             try await withDeadline(modelDeadline, label: "model warm-up") {
                 try await recognizer.warmUp(profile: profile)
             }
+            try Task.checkCancellation()
             let recognition = try await withDeadline(modelDeadline, label: "recognition stream") {
                 try await recognizer.makeStream(profile: profile, source: .mic)
             }
@@ -149,6 +150,7 @@ extension SessionEngine {
             })
             await cleanup.start(workerCount: settings.cleanupWorkers)
             cleanupCoordinator = cleanup
+            try Task.checkCancellation()
             transition(.recording(mode))
 
             let id = newRecord.id
@@ -165,6 +167,8 @@ extension SessionEngine {
             newRecord.status = .recording
             return id
         } catch {
+            await cleanupCoordinator?.cancel()
+            cleanupCoordinator = nil
             await audio.stop()
             recognitionFeed?.finish()
             recognitionFeed = nil
@@ -195,16 +199,12 @@ extension SessionEngine {
         let started = DispatchTime.now().uptimeNanoseconds
 
         await audio.stop()
-        // Both consumers touch the model, so both are bounded: a stuck prediction must not hold
-        // the session in `finalizing` forever. The abandoned call keeps running and is dropped.
         if let sampleTask {
             let task = sampleTask
             _ = try? await withDeadline(finishDeadline, label: "capture drain") { await task.value }
             task.cancel()
         }
         sampleTask = nil
-        // Every captured chunk has been yielded by now; let the relay drain what
-        // it can before the recognizer produces its final segment.
         recognitionFeed?.finish()
         recognitionFeed = nil
         if let recognitionDrainTask {
@@ -234,6 +234,10 @@ extension SessionEngine {
             emit(.notice("Crash recovery was off for this session: the audio journal stopped (low disk). Dictation still worked and the transcript is saved."))
         }
 
+        if Task.isCancelled {
+            await cancel()
+            return nil
+        }
         let cleanupState = await cleanupCoordinator?.finish() ?? .skipped
         cleanupCoordinator = nil
         let assembledText = await finalText(session: record.id)
@@ -241,15 +245,14 @@ extension SessionEngine {
         let words = wordCount(text)
         let duration = max(lastEndMs, Int(clock.now().timeIntervalSince(record.startedAt) * 1000))
 
-        // `session.stop.ms` ends when the text is ready to insert; it excludes the
-        // paste as well as the archive and History bookkeeping that follow it.
         metrics.record("session.stop.ms", valueMs: Double((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000))
 
-        // Insert before archiving and finalizing. The transcript is already durable
-        // as segments, and recovery never re-inserts, so a crash between the paste
-        // and the History finalize cannot duplicate or lose text. The owner should
-        // not wait on a clip write and a row update they cannot see.
         var insertion: InsertionOutcome?
+        guard self.record?.id == record.id else { return nil }
+        if Task.isCancelled {
+            await cancel()
+            return nil
+        }
         if !text.isEmpty {
             transition(.inserting)
             do {
@@ -394,5 +397,4 @@ extension SessionEngine {
                                           project: project, wordTimings: raw.words, precomputed: precomputed)
     }
 
-    // MARK: assembly
 }

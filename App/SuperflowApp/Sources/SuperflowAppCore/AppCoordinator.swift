@@ -63,6 +63,9 @@ public final class AppCoordinator: ObservableObject {
     var gestureTimerTask: Task<Void, Never>?
     var conflictTask: Task<Void, Never>?
     var gestureActionTask: Task<Void, Never>?
+    var gestureGeneration: UInt64 = 0
+    var gestureIsFinishing = false
+    var gestureCancelPending = false
     private var sessionRelayTask: Task<Void, Never>?
     private var meetingRelayTask: Task<Void, Never>?
     private var retentionTask: Task<Void, Never>?

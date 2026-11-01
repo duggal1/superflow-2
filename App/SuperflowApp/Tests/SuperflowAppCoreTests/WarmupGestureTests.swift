@@ -4,6 +4,7 @@ import SuperflowGestureKit
 import SuperflowHotkeyEngine
 import SuperflowKernel
 import SuperflowPorts
+import SuperflowTestKit
 import XCTest
 @testable import SuperflowAppCore
 
@@ -45,6 +46,34 @@ final class WarmupGestureTests: XCTestCase {
             await coordinator.handleKeyEvent(KeyEvent(kind: down, timestampNs: 200_000_000))
             XCTAssertEqual(coordinator.gesture.state, expected)
         }
+        await coordinator.gestureActionTask?.value
+    }
+
+    @MainActor
+    func testRapidRetapsAndEscapeDoNotAccumulateStaleStarts() async throws {
+        _ = NSApplication.shared
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let coordinator = AppCoordinator(applicationSupportDirectory: directory)
+        let gate = AsyncGate()
+        coordinator.gestureActionTask = Task { await gate.wait() }
+        let edges: [(KeyEvent.Kind, Int)] = [(.fnDown, 0), (.fnUp, 80), (.fnDown, 200), (.fnUp, 250), (.fnDown, 400)]
+        for (kind, time) in edges {
+            await coordinator.handleKeyEvent(KeyEvent(kind: kind, timestampNs: UInt64(time) * 1_000_000))
+        }
+        XCTAssertTrue(coordinator.gestureIsFinishing)
+        for index in 0..<100 {
+            await coordinator.handleKeyEvent(KeyEvent(kind: .fnDown, timestampNs: UInt64(index + 500) * 1_000_000))
+            await coordinator.handleKeyEvent(KeyEvent(kind: .escape, timestampNs: UInt64(index + 501) * 1_000_000))
+        }
+        XCTAssertEqual(coordinator.gesture.state, .idle)
+        XCTAssertTrue(coordinator.gestureCancelPending)
+        await gate.open()
+        await coordinator.gestureActionTask?.value
+        XCTAssertFalse(coordinator.gestureIsFinishing)
+        XCTAssertFalse(coordinator.gestureCancelPending)
+        await coordinator.handleKeyEvent(KeyEvent(kind: .fnDown, timestampNs: 2_000_000_000))
+        XCTAssertEqual(coordinator.gesture.state, .armed)
         await coordinator.gestureActionTask?.value
     }
 

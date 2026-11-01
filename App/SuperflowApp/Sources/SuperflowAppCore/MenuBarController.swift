@@ -129,7 +129,11 @@ public final class MenuBarController: ObservableObject {
             await self?.performStartDictation(mode: mode) ?? false
         }
         startTask = task
-        let result = await task.value
+        let result = await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
+        }
         startTask = nil
         return result
     }
@@ -143,7 +147,7 @@ public final class MenuBarController: ObservableObject {
         var state = await session.currentState
         if state == .warming {
             let deadline = ContinuousClock.now + .seconds(120)
-            while state == .warming, ContinuousClock.now < deadline {
+            while !Task.isCancelled, state == .warming, ContinuousClock.now < deadline {
                 try? await Task.sleep(for: .milliseconds(50))
                 state = await session.currentState
             }
@@ -152,6 +156,7 @@ public final class MenuBarController: ObservableObject {
                 return false
             }
         }
+        guard !Task.isCancelled else { return false }
         let activeMeeting = await meeting?.currentState.isActive ?? false
         guard !activeMeeting else {
             error = "Stop the meeting before starting dictation."
@@ -178,11 +183,12 @@ public final class MenuBarController: ObservableObject {
         // `.warming`; the same wait lands on its recording state.
         if state == .warming {
             let deadline = ContinuousClock.now + .seconds(120)
-            while state == .warming, ContinuousClock.now < deadline {
+            while !Task.isCancelled, state == .warming, ContinuousClock.now < deadline {
                 try? await Task.sleep(for: .milliseconds(25))
                 state = await session.currentState
             }
         }
+        guard !Task.isCancelled else { return false }
         if !state.isActive {
             // A double-tap lands after the speculative start, but if that start
             // failed there is no session to latch. Start one rather than promise
@@ -194,7 +200,7 @@ public final class MenuBarController: ObservableObject {
             // `.warming` from the speculative start, or `.finalizing` from an
             // edge case: wait for the recording state before promising hands-free.
             let deadline = ContinuousClock.now + .seconds(120)
-            while ContinuousClock.now < deadline {
+            while !Task.isCancelled, ContinuousClock.now < deadline {
                 state = await session.currentState
                 if case .recording = state { break }
                 if !state.isActive { break }

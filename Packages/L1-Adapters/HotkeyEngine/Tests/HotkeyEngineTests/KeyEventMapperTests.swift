@@ -126,3 +126,24 @@ final class KeyEventMapperTests: XCTestCase {
         XCTAssertFalse(KeyEventMapper.isSynthetic(plain))
     }
 }
+
+extension KeyEventMapperTests {
+    func testTapRecoveryDoesNotLoseTheReleaseOfAHeldFnKey() {
+        var mapper = ModifierEventMapper()
+        _ = mapper.events(keyCode: KeyCode.fn, flags: .maskSecondaryFn, timestampNs: 1, dictationKey: .fn)
+        mapper.reset()
+        XCTAssertEqual(mapper.events(keyCode: KeyCode.fn, flags: [], timestampNs: 2,
+                                     dictationKey: .fn).map(\.kind), [.fnUp])
+    }
+
+    func testPhysicalRightCommandSnapshotSurvivesRewrittenKeycodeAndDuplicateEvents() {
+        var mapper = ModifierEventMapper()
+        let flags = CGEventFlags(rawValue: CGEventFlags.maskCommand.rawValue | 0x10)
+        XCTAssertEqual(mapper.events(keyCode: KeyCode.leftCommand, flags: flags, timestampNs: 1,
+                                     dictationKey: .fn).map(\.kind), [.rightCmdDown])
+        XCTAssertTrue(mapper.events(keyCode: KeyCode.rightShift, flags: flags, timestampNs: 2,
+                                    dictationKey: .fn).isEmpty)
+        XCTAssertEqual(mapper.events(keyCode: KeyCode.leftCommand, flags: [], timestampNs: 3,
+                                     dictationKey: .fn).map(\.kind), [.rightCmdUp])
+    }
+}

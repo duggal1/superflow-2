@@ -73,6 +73,20 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(inserted.first, outcome?.text)
     }
 
+    func testCancelledStopNeverPastes() async throws {
+        let inserter = RecordingInserter()
+        let engine = engine(inserter: inserter)
+        _ = try await engine.start()
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return await engine.stop()
+        }
+        let outcome = await task.value
+        let inserted = await inserter.inserted
+        XCTAssertNil(outcome)
+        XCTAssertTrue(inserted.isEmpty)
+    }
+
     func testCancelDiscardsEverything() async throws {
         let repo = InMemoryRepository()
         let inserter = RecordingInserter()

@@ -127,6 +127,7 @@ public actor MeetingEngine {
                     emit(.notice("Speaker separation is not installed. Download the meeting model in Settings; recording can continue with one remote speaker label."))
                 }
             }
+            try Task.checkCancellation()
             await diarizer?.beginSession()
             micOriginNs = clock.monotonicNs()
             try await startSource(.mic, audio: mic, session: newRecord.id)
@@ -146,6 +147,7 @@ public actor MeetingEngine {
             } else {
                 await systemUnavailable("System audio was not enabled.", session: newRecord.id)
             }
+            try Task.checkCancellation()
             transition(.recording)
             newRecord.status = .recording
             return newRecord.id

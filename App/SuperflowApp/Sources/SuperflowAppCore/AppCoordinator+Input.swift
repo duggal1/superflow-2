@@ -146,7 +146,22 @@ extension AppCoordinator {
         }
     }
 
-    func handleKeyEvent(_ event: KeyEvent) async {        let actions = gesture.handle(event)
+    func handleKeyEvent(_ event: KeyEvent) async {
+        if event.kind == .escape {
+            guard gesture.state != .idle || gestureIsFinishing
+                || menuBarController.sessionState.isActive || menuBarController.meetingState.isActive else { return }
+            guard !gestureCancelPending else { return }
+            gestureCancelPending = true
+            let kind: SessionKind = menuBarController.meetingState.isActive
+                || gesture.state == .meetingArmed || gesture.state == .meetingLatched ? .meeting : .dictation
+            gestureGeneration &+= 1
+            gestureActionTask?.cancel()
+            gesture = GestureRecognizer(config: settings.gesture)
+            enqueueGestureActions([.cancel(kind, .escape)])
+            return
+        }
+        guard !gestureIsFinishing else { return }
+        let actions = gesture.handle(event)
         switch event.kind {
         case .fnDown, .fnUp, .rightCmdDown, .rightCmdUp:
             Logger(subsystem: "com.superflow.app", category: "KeyboardGesture")
@@ -160,9 +175,20 @@ extension AppCoordinator {
     private func enqueueGestureActions(_ actions: [GestureAction]) {
         guard !actions.isEmpty else { return }
         let previous = gestureActionTask
+        let generation = gestureGeneration
+        let terminal = actions.contains { action in
+            switch action { case .submit, .cancel: true; default: false }
+        }
+        if terminal { gestureIsFinishing = true }
         gestureActionTask = Task { @MainActor [weak self] in
             await previous?.value
-            guard let self, !Task.isCancelled else { return }
+            guard let self, !Task.isCancelled, generation == self.gestureGeneration else { return }
+            defer {
+                if terminal, generation == self.gestureGeneration {
+                    self.gestureIsFinishing = false
+                    self.gestureCancelPending = false
+                }
+            }
             await self.applyGestureActions(actions)
         }
     }
@@ -176,7 +202,8 @@ extension AppCoordinator {
                 // A refused start (model still loading, no recovery) emits no
                 // session event. Say why in the notch: silently retracting looks
                 // exactly like a dead fn key.
-                if !started {
+                if !started, !Task.isCancelled {
+                    gesture = GestureRecognizer(config: settings.gesture)
                     islandBridge?.refused(menuBarController.error
                         ?? "The microphone did not open. Hold fn again.")
                 }
@@ -188,10 +215,12 @@ extension AppCoordinator {
                     if menuBarController.meetingState.isActive { islandBridge?.meetingBegan() }
                 }
             case .beginHandsFree:
+                guard gesture.state == .handsFree else { continue }
                 // Only promise hands-free once the session is actually open.
                 if await menuBarController.beginHandsFreeDictation() {
                     islandBridge?.handsFreeBegan()
-                } else {
+                } else if !Task.isCancelled {
+                    gesture = GestureRecognizer(config: settings.gesture)
                     islandBridge?.refused(menuBarController.error
                         ?? "The microphone did not open. Hold fn again.")
                 }
@@ -200,6 +229,7 @@ extension AppCoordinator {
                 if menuBarController.meetingState.isActive {
                     islandBridge?.meetingBegan()
                 } else {
+                    gesture = GestureRecognizer(config: settings.gesture)
                     islandBridge?.refused(menuBarController.error
                         ?? "The meeting could not start.")
                 }
