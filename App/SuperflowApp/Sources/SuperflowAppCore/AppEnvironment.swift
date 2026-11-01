@@ -235,7 +235,8 @@ public final class AppEnvironment {
     }
 
     private static func loadThirdPartyNotices() -> String {
-        let names = ["README.md", "S1-mini-NOTICE.txt", "S1-mini-LICENSE.txt", "FluidAudio-LICENSE.txt", "llama.cpp-LICENSE.txt"]
+        let names = ["README.md", "S1-mini-NOTICE.txt", "S1-mini-LICENSE.txt", "FluidAudio-LICENSE.txt",
+                     "llama.cpp-LICENSE.txt", "Hex-LICENSE.txt"]
         let directory = Bundle.module.resourceURL?.appendingPathComponent("ThirdPartyNotices", isDirectory: true)
         return names.compactMap { name -> String? in
             guard let directory else { return nil }
