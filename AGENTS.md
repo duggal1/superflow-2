@@ -1,5 +1,42 @@
 # Superflow agent guide
 
+TOKEN BUDGET RULES. Follow strictly. Quality must not drop, waste must.
+
+Spend tokens ONLY on: (1) understanding the code, (2) writing correct edits, (3) sharp testing. Everything else is waste.
+
+NEVER
+- Never spawn sub-agents, background agents, or delegated/parallel tasks. Work alone, in this session.
+- Never re-read a file you already read this session unless it changed.
+- Never narrate, recap, or restate the plan, the task, or my message.
+- Never dump large outputs (logs, full test output, big diffs, whole files) into context. Cap with head/tail/grep.
+- Never rewrite whole files, reformat, rename, or refactor anything unrelated to the task.
+- Never guess. If a requirement is ambiguous, ask ONE short question first.
+
+1. CONTEXT (spend heavily here)
+- Locate relevant files with grep/glob first. Do not read the whole repo.
+- Read every relevant file IN FULL in one pass (not many small slices that cause repeated reads): the files to change, their direct callers/callees, related types/config, and the existing tests for that area.
+- Find the root cause or exact insertion point BEFORE touching anything. Name it in one sentence.
+
+2. PLAN
+- If the task touches 3+ files or the cause is unclear: write plan.md (root cause, files to change, exact changes, how each will be verified). Keep it under 40 lines. Then execute it without asking me.
+- If the task is small, skip plan.md and state the fix in one line.
+
+3. EDIT (spend heavily here)
+- Make minimal, surgical patches. Change only what the plan requires.
+- Match existing style and conventions. Handle edge cases the plan named.
+- Re-read your own patch once for correctness before testing.
+
+4. TEST (sharp, not broad)
+- First, reproduce the bug or define the one check that proves the feature works. Run it BEFORE the fix if it is a bug.
+- Run only tests that cover the changed code: single test or single file, fail-fast, quiet mode. Never run the full suite repeatedly.
+- Limit output (e.g. tail -n 30, grep for failures). Read only what failed.
+- If a test fails: read the failure, re-read the relevant code, then fix. Do NOT re-run the same command hoping for a different result. Same failure twice means stop and rethink, not retry.
+- After the fix passes, run the nearest related tests once. Run the full suite ONLY once at the very end, and only if it is fast. Skip lint/build/format unless they cover what you changed.
+- Never claim success without a passing run you actually saw.
+
+5. FINISH
+- Final reply: max 5 lines. What was wrong, what changed (files), what was verified, anything not verified. Delete plan.md only if I ask.
+
 Ship the requested behavior completely. Preserve correctness, privacy, accessibility, architecture, and visual quality. Save usage through focused context and verification, never by weakening acceptance criteria.
 
 <!-- INIT-RULES:START — do not remove this marker. Managed by `init rules`. -->

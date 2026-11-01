@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import IOKit.hidsystem
 import SuperflowKernel
 import SuperflowPorts
 
@@ -17,10 +18,8 @@ public enum KeyCode {
 
 /// Physical modifier state derived from the `flagsChanged` keycode stream.
 ///
-/// CGEvent flags only say whether *a* Command (or Option, Shift, Control) key is
-/// down. Releasing right ⌘ while left ⌘ is held therefore still carries
-/// `.maskCommand`, and the old mapper reported a second press. The keycode is
-/// the only per-key truth, so each flags change toggles that keycode.
+/// Fallback for events without device-specific modifier flags. Physical flags
+/// take precedence in the mapper because a disabled tap may miss an edge.
 public struct ModifierPressTracker: Sendable {
     private var pressed: Set<Int64> = []
 
@@ -55,7 +54,7 @@ public enum KeyEventMapper {
                                     timestampNs: UInt64,
                                     dictationKey: DictationKey = .fn) -> KeyEvent? {
         if keyCode == KeyCode.rightCommand {
-            let down = isDown ?? flags.contains(.maskCommand)
+            let down = modifierIsDown(keyCode, flags: flags, tracked: isDown)
             return KeyEvent(kind: down ? .rightCmdDown : .rightCmdUp, timestampNs: timestampNs)
         }
         switch dictationKey {
@@ -65,16 +64,41 @@ public enum KeyEventMapper {
             let down = flags.contains(.maskSecondaryFn)
             return KeyEvent(kind: down ? .fnDown : .fnUp, timestampNs: timestampNs)
         case .rightOption where keyCode == KeyCode.rightOption:
-            return modifier(isDown ?? flags.contains(.maskAlternate), timestampNs)
+            return modifier(modifierIsDown(keyCode, flags: flags, tracked: isDown), timestampNs)
         case .leftOption where keyCode == KeyCode.leftOption:
-            return modifier(isDown ?? flags.contains(.maskAlternate), timestampNs)
+            return modifier(modifierIsDown(keyCode, flags: flags, tracked: isDown), timestampNs)
         case .rightShift where keyCode == KeyCode.rightShift:
-            return modifier(isDown ?? flags.contains(.maskShift), timestampNs)
+            return modifier(modifierIsDown(keyCode, flags: flags, tracked: isDown), timestampNs)
         case .rightControl where keyCode == KeyCode.rightControl:
-            return modifier(isDown ?? flags.contains(.maskControl), timestampNs)
+            return modifier(modifierIsDown(keyCode, flags: flags, tracked: isDown), timestampNs)
         default:
             return nil
         }
+    }
+
+    private static func modifierIsDown(_ keyCode: Int64, flags: CGEventFlags, tracked: Bool?) -> Bool {
+        let aggregate: CGEventFlags
+        let side: Int32
+        let other: Int32
+        switch keyCode {
+        case KeyCode.rightCommand:
+            (aggregate, side, other) = (.maskCommand, NX_DEVICERCMDKEYMASK, NX_DEVICELCMDKEYMASK)
+        case KeyCode.rightOption:
+            (aggregate, side, other) = (.maskAlternate, NX_DEVICERALTKEYMASK, NX_DEVICELALTKEYMASK)
+        case KeyCode.leftOption:
+            (aggregate, side, other) = (.maskAlternate, NX_DEVICELALTKEYMASK, NX_DEVICERALTKEYMASK)
+        case KeyCode.rightShift:
+            (aggregate, side, other) = (.maskShift, NX_DEVICERSHIFTKEYMASK, NX_DEVICELSHIFTKEYMASK)
+        case KeyCode.rightControl:
+            (aggregate, side, other) = (.maskControl, NX_DEVICERCTLKEYMASK, NX_DEVICELCTLKEYMASK)
+        default:
+            return false
+        }
+        guard flags.contains(aggregate) else { return false }
+        if flags.rawValue & UInt64(side | other) != 0 {
+            return flags.rawValue & UInt64(side) != 0
+        }
+        return tracked ?? true
     }
 
     private static func modifier(_ down: Bool, _ timestampNs: UInt64) -> KeyEvent {

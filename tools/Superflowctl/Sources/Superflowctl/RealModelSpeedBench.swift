@@ -41,8 +41,11 @@ struct RealModelSpeedBench {
         try await recognizer.warmUp(profile: profileID)
         let loadSeconds = Self.seconds(loadClock.now - loadStart)
 
-        // Two discarded passes: page in weights and let Core ML finish lazy specialization.
-        for _ in 0..<2 { _ = try await runOnce(recognizer: recognizer, audio: audio, chunkSamples: chunkSamples) }
+        // Report the first real inference separately from warm throughput.
+        let first = try await runOnce(recognizer: recognizer, audio: audio, chunkSamples: chunkSamples)
+        print(String(format: "first real audio: stream %.1fms  first feed %.1fms  finish %.1fms  failures 0",
+                     first.stream * 1000, (first.chunkLatencies.first ?? 0) * 1000, first.finish * 1000))
+        _ = try await runOnce(recognizer: recognizer, audio: audio, chunkSamples: chunkSamples)
 
         let baseline = Self.footprintBytes()
         var walls: [Double] = []
@@ -84,6 +87,7 @@ struct RealModelSpeedBench {
     }
 
     private struct Run {
+        let stream: Double
         let wall: Double
         let finish: Double
         let chunkLatencies: [Double]
@@ -92,11 +96,14 @@ struct RealModelSpeedBench {
 
     private func runOnce(recognizer: FluidAudioRecognizer, audio: [Float],
                          chunkSamples: Int) async throws -> Run {
+        let streamStart = ContinuousClock.now
         let stream = try await recognizer.makeStream(profile: profileID, source: .mic)
+        let streamSeconds = Self.seconds(streamStart.duration(to: .now))
         let counter = WordCounter()
         let consumer = Task {
             for await event in stream.events {
                 if case .committed(let segment) = event { await counter.add(segment.text) }
+                if case .failure = event { await counter.failed() }
             }
         }
         let clock = ContinuousClock()
@@ -117,7 +124,8 @@ struct RealModelSpeedBench {
         await stream.finish()
         await consumer.value
         let finish = Self.seconds(clock.now - finishStart)
-        return Run(wall: wall, finish: finish, chunkLatencies: latencies,
+        guard await counter.failures == 0 else { throw BenchError.recognitionFailed }
+        return Run(stream: streamSeconds, wall: wall, finish: finish, chunkLatencies: latencies,
                    words: await counter.words)
     }
 
@@ -154,16 +162,20 @@ struct RealModelSpeedBench {
 
 private actor WordCounter {
     private(set) var words = 0
+    private(set) var failures = 0
     func add(_ text: String) { words += text.split(whereSeparator: \.isWhitespace).count }
+    func failed() { failures += 1 }
 }
 
 private enum BenchError: Error, LocalizedError {
     case usage
     case debugBuild
+    case recognitionFailed
     var errorDescription: String? {
         switch self {
         case .usage: "usage: superflowctl bench <audio> <profile> <model-cache-root> [repeats] [chunk-ms]"
         case .debugBuild: "Refusing to benchmark a Debug build; use swift build -c release."
+        case .recognitionFailed: "Recognition failed during the benchmark; timings are invalid."
         }
     }
 }

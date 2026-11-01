@@ -55,6 +55,8 @@ public final class AppCoordinator: ObservableObject {
     /// The Accessibility prompt is raised at most once per launch; the system
     /// dialog is modal enough that repeating it would fight the owner.
     var didPromptAccessibility = false
+    var didPromptInputMonitoring = false
+    var isStartingHotkeys = false
     // Shared with `AppCoordinator+Input.swift`, which owns the hotkey and permission wiring.
     var gesture = GestureRecognizer()
     var hotkeyTask: Task<Void, Never>?

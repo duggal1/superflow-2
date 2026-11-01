@@ -3,6 +3,7 @@ import SuperflowInferenceHelperProtocol
 import SuperflowKernel
 import SuperflowLLMCore
 import SuperflowLLMLlamaCpp
+import SuperflowPorts
 
 /// Model runtime owner for the XPC process.
 @objc public final class InferenceHelperService: NSObject, InferenceHelperProtocol {
@@ -56,15 +57,22 @@ import SuperflowLLMLlamaCpp
         }
     }
 
-    public func complete(prompt: String, maxTokens: Int,
-                         reply: @escaping (String?, String?) -> Void) {
+    public func complete(prompt: String, maxTokens: Int, deadlineMs: Int, interactive: Bool,
+                         reply: @escaping (String?, Int, Bool, String?) -> Void) {
+        guard maxTokens > 0, deadlineMs > 0 else {
+            reply(nil, -1, false, "Completion requires a positive token limit and deadline.")
+            return
+        }
         let callback = HelperCallback(reply)
         let runtime = self.runtime
         Task {
             do {
-                callback.call((try await runtime.complete(prompt: prompt, maxTokens: maxTokens), nil))
+                let output = try await CleanPriority.$current.withValue(interactive ? .interactive : .background) {
+                    try await runtime.completion(prompt: prompt, maxTokens: maxTokens, deadlineMs: deadlineMs)
+                }
+                callback.call((output.text, output.generatedTokens ?? -1, output.hitTokenCap, nil))
             } catch {
-                callback.call((nil, error.localizedDescription))
+                callback.call((nil, -1, false, error.localizedDescription))
             }
         }
     }

@@ -69,6 +69,10 @@ public struct GestureRecognizer: Sendable {
             holdAnnounced = false
             return [.startSpeculative(.dictation)]
         case .awaitingSecondTap where pendingKind == .dictation:
+            guard elapsedMs(now, since: tapAtNs) < config.doubleTapMs else {
+                reset()
+                return [.cancel(.dictation, .secondTapTimeout)] + fnDown(at: now)
+            }
             state = .handsFree
             pendingKind = .dictation
             holdAnnounced = true
@@ -110,6 +114,10 @@ public struct GestureRecognizer: Sendable {
             holdAnnounced = false
             return [.startSpeculative(.meeting)]
         case .awaitingSecondTap where pendingKind == .meeting:
+            guard elapsedMs(now, since: tapAtNs) < config.doubleTapMs else {
+                reset()
+                return [.cancel(.meeting, .secondTapTimeout)] + rightCmdDown(at: now)
+            }
             state = .meetingLatched
             pendingKind = .meeting
             holdAnnounced = true

@@ -19,7 +19,8 @@ public enum AXRoleClassifier {
     ]
 
     public static func classify(role: String, subrole: String,
-                                valueSettable: Bool, hasEditableAncestor: Bool) -> InsertionFocus {
+                                valueSettable: @autoclosure () -> Bool,
+                                hasEditableAncestor: @autoclosure () -> Bool) -> InsertionFocus {
         if role == "AXSecureTextField" || subrole == "AXSecureTextField" {
             return .secure
         }
@@ -30,13 +31,14 @@ public enum AXRoleClassifier {
         // signal: a slider, checkbox or pop-up button exposes a settable
         // AXValue but cannot accept text. An editable ancestor still wins for
         // nested elements inside a real editor.
-        if nonEditableRoles.contains(role), !hasEditableAncestor {
+        let editableAncestor = hasEditableAncestor()
+        if nonEditableRoles.contains(role), !editableAncestor {
             return .notEditable(reason: "role-\(role)")
         }
-        if valueSettable {
+        if valueSettable() {
             return .editable(role: role.isEmpty ? "settable-value" : role)
         }
-        if hasEditableAncestor {
+        if editableAncestor {
             return .editable(role: role.isEmpty ? "editable-ancestor" : role)
         }
         return .unknown(reason: "role-\(role.isEmpty ? "none" : role)")

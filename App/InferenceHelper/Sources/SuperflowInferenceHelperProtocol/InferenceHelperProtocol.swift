@@ -17,13 +17,13 @@ import Foundation
 
     /// Run tokenization and completion in the helper process.
     func countTokens(in text: String, reply: @escaping (Int, String?) -> Void)
-    func complete(prompt: String, maxTokens: Int,
-                  reply: @escaping (String?, String?) -> Void)
+    func complete(prompt: String, maxTokens: Int, deadlineMs: Int, interactive: Bool,
+                  reply: @escaping (String?, Int, Bool, String?) -> Void)
 }
 
 /// Version of the protocol surface, returned by `ping`. Bump when a method is
 /// added or its semantics change; the app refuses to use a helper it does not
 /// understand.
 public enum InferenceHelperProtocolVersion {
-    public static let current = "3"
+    public static let current = "4"
 }

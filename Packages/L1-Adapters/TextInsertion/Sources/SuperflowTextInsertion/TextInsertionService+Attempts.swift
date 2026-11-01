@@ -16,7 +16,7 @@ extension TextInsertionService {
     func captureBaseline(_ target: (any InsertionTarget)?) async -> InsertionBaseline? {
         guard let target else { return nil }
         let value = await target.textValue()
-        let range = await target.selectedRange()
+        let range = value == nil ? nil : await target.selectedRange()
         let count = value == nil ? await target.characterCount() : nil
         return InsertionBaseline(value: value, range: range, count: count)
     }
@@ -164,18 +164,19 @@ extension TextInsertionService {
         guard let target else { return .nothing }
         let deadline = ContinuousClock.now + timeout
         while ContinuousClock.now < deadline {
-            await sleep(.milliseconds(40))
             if let beforeValue = baseline.value {
                 if let now = await target.textValue() {
-                    if now == beforeValue { continue }
-                    if let expected, now == expected { return .exact }
-                    return .changed
+                    if now != beforeValue {
+                        if let expected, now == expected { return .exact }
+                        return .changed
+                    }
                 }
             }
             if let beforeCount = baseline.count,
                let now = await target.characterCount(), now != beforeCount {
                 return .countChanged
             }
+            await sleep(.milliseconds(40))
         }
         return .nothing
     }

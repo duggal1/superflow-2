@@ -3,6 +3,21 @@ import XCTest
 @testable import SuperflowEnhancementDeepFilterNet
 
 final class EnhancerTests: XCTestCase, @unchecked Sendable {
+    func testPreparationPersistsCompiledModelForTheNextLaunch() async throws {
+        guard ProcessInfo.processInfo.environment["SUPERFLOW_TEST_ENHANCER"] == "1" else {
+            throw XCTSkip("Set SUPERFLOW_TEST_ENHANCER=1 to verify the installed model cache")
+        }
+        let root = try XCTUnwrap(FileManager.default.urls(for: .applicationSupportDirectory,
+                                                         in: .userDomainMask).first)
+            .appendingPathComponent("Superflow/Models/DeepFilterNet3", isDirectory: true)
+        guard await DeepFilterNetModelStore(directory: root).isAvailable() else {
+            throw XCTSkip("The checksum-verified model must already be installed")
+        }
+        try await DeepFilterNetEnhancer(directory: root).prepare()
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: root.appendingPathComponent("DeepFilterNet3-Streaming.mlmodelc").path))
+    }
+
     func testFIRPreservesTimingAcrossArbitraryChunkBoundaries() {
         let signal = (0..<16_000).map { Float(sin(Double($0) * 2 * .pi * 440 / 16_000)) }
         var pair = EnhancementResampler()

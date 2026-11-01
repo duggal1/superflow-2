@@ -28,6 +28,7 @@ final class FakeTarget: InsertionTarget {
     /// Some views update the value without updating `AXNumberOfCharacters`.
     var updatesCountOnInsert = true
     private(set) var insertedTexts: [String] = []
+    private(set) var selectionQueries = 0
 
     init(count: Box<Int?>, value: Box<String?>? = nil,
          selection: (location: Int, length: Int)? = nil) {
@@ -40,7 +41,10 @@ final class FakeTarget: InsertionTarget {
 
     func textValue() -> String? { value?.value }
 
-    func selectedRange() -> (location: Int, length: Int)? { selectedRangeValue }
+    func selectedRange() -> (location: Int, length: Int)? {
+        selectionQueries += 1
+        return selectedRangeValue
+    }
 
     func selectionLength() -> Int? { selectedRangeValue?.length }
 

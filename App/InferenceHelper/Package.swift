@@ -11,6 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../Packages/L0-Core/Kernel"),
+        .package(path: "../../Packages/L0-Core/Ports"),
         .package(path: "../../Packages/L1-Adapters/LLMLlamaCpp"),
     ],
     targets: [
@@ -20,6 +21,7 @@ let package = Package(
             dependencies: [
                 "SuperflowInferenceHelperProtocol",
                 .product(name: "SuperflowKernel", package: "Kernel"),
+                .product(name: "SuperflowPorts", package: "Ports"),
                 .product(name: "SuperflowLLMCore", package: "LLMLlamaCpp"),
                 .product(name: "SuperflowLLMLlamaCpp", package: "LLMLlamaCpp"),
             ]
@@ -34,6 +36,7 @@ let package = Package(
                 "SuperflowInferenceHelperCore",
                 "SuperflowInferenceHelperProtocol",
                 .product(name: "SuperflowKernel", package: "Kernel"),
+                .product(name: "SuperflowPorts", package: "Ports"),
                 .product(name: "SuperflowLLMCore", package: "LLMLlamaCpp"),
                 .product(name: "SuperflowLLMLlamaCpp", package: "LLMLlamaCpp"),
             ],

@@ -11,14 +11,21 @@ import SuperflowPorts
 @MainActor
 extension AppCoordinator {
     func tryStartHotkeys() async {
-        guard let environment, hotkeyTask == nil else { return }
+        guard let environment, hotkeyTask == nil, !isStartingHotkeys else { return }
+        isStartingHotkeys = true
+        defer { isStartingHotkeys = false }
         // `recoveryReady` is not needed to install the tap: `MenuBarController.startDictation`
         // already refuses a session until recovery finishes. Gating the tap on it left fn
         // dead through startup for no safety benefit.
         guard settings.onboardingComplete else { return }
         // Without the tap the fn key silently does nothing, so the status footer has
         // to say why instead of leaving the owner pressing a key that cannot arrive.
-        guard await environment.permissionGate.status(.inputMonitoring) == .granted else {
+        var inputStatus = await environment.permissionGate.status(.inputMonitoring)
+        if inputStatus != .granted, !didPromptInputMonitoring {
+            didPromptInputMonitoring = true
+            inputStatus = await environment.permissionGate.request(.inputMonitoring)
+        }
+        guard inputStatus == .granted else {
             menuBarController.publishError("Dictation is off. Input Monitoring is not granted.")
             return
         }

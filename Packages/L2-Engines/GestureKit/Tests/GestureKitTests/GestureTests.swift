@@ -10,6 +10,24 @@ private func event(_ kind: KeyEvent.Kind, _ atMs: Int) -> KeyEvent {
 }
 
 final class GestureTests: XCTestCase {
+    func testExpiredFnTapStartsANewGestureEvenWhenTimerHasNotRun() {
+        var g = make()
+        _ = g.handle(event(.fnDown, 0))
+        _ = g.handle(event(.fnUp, 80))
+        XCTAssertEqual(g.handle(event(.fnDown, 431)),
+                       [.cancel(.dictation, .secondTapTimeout), .startSpeculative(.dictation)])
+        XCTAssertEqual(g.state, .armed)
+    }
+
+    func testExpiredCommandTapDoesNotLatchAMeeting() {
+        var g = make()
+        _ = g.handle(event(.rightCmdDown, 0))
+        _ = g.handle(event(.rightCmdUp, 80))
+        XCTAssertEqual(g.handle(event(.rightCmdDown, 430)),
+                       [.cancel(.meeting, .secondTapTimeout), .startSpeculative(.meeting)])
+        XCTAssertEqual(g.state, .meetingArmed)
+    }
+
     private func make() -> GestureRecognizer { GestureRecognizer() }
 
     func testFnHoldIsPushToTalk() {

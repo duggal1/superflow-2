@@ -2,6 +2,7 @@ import Foundation
 import SuperflowInferenceHelperProtocol
 import SuperflowKernel
 import SuperflowLLMCore
+import SuperflowPorts
 
 /// Runs llama.cpp in the embedded helper process so inference failures do not
 /// terminate the menu-bar app or its active recording session.
@@ -45,16 +46,24 @@ public actor XPCInferenceHelperRuntime: LlamaRuntime {
     }
 
     public func complete(prompt: String, maxTokens: Int) async throws -> String {
+        try await completion(prompt: prompt, maxTokens: maxTokens, deadlineMs: 30_000).text
+    }
+
+    public func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion {
         guard ready else {
             throw XPCInferenceError.helper("The inference helper is not ready.")
         }
+        let interactive = CleanPriority.current == .interactive
         return try await withRecovery {
             try await self.request { proxy, finish in
-                proxy.complete(prompt: prompt, maxTokens: maxTokens) { text, error in
+                proxy.complete(prompt: prompt, maxTokens: maxTokens, deadlineMs: deadlineMs,
+                               interactive: interactive) { text, generatedTokens, hitTokenCap, error in
                     if let error {
                         finish(.failure(.helper(error)))
                     } else if let text {
-                        finish(.success(text))
+                        finish(.success(LlamaCompletion(text: text,
+                                                       generatedTokens: generatedTokens >= 0 ? generatedTokens : nil,
+                                                       hitTokenCap: hitTokenCap)))
                     } else {
                         finish(.failure(.helper("The inference helper returned no text.")))
                     }

@@ -2,6 +2,16 @@ import XCTest
 @testable import SuperflowTextInsertion
 
 final class AXRoleClassifierTests: XCTestCase {
+    func testKnownTextAndSecureRolesSkipAdditionalAccessibilityQueries() {
+        for (role, subrole) in [("AXTextArea", ""), ("AXTextField", "AXSecureTextField")] {
+            var queries = 0
+            func query() -> Bool { queries += 1; return false }
+            _ = AXRoleClassifier.classify(role: role, subrole: subrole,
+                                          valueSettable: query(), hasEditableAncestor: query())
+            XCTAssertEqual(queries, 0)
+        }
+    }
+
     func testSecureRoleOrSubrole() {
         XCTAssertEqual(AXRoleClassifier.classify(role: "AXTextField", subrole: "AXSecureTextField",
                                                  valueSettable: true, hasEditableAncestor: false), .secure)

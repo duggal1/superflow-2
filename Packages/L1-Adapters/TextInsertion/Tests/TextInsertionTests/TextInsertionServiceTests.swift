@@ -13,6 +13,7 @@ private struct Harness {
     let scheduler: InlineRestoreScheduler
     let menu: FakeMenuPaster
     let count: Box<Int?>
+    let sleeps: Box<[Duration]>
 }
 
 @MainActor
@@ -48,6 +49,7 @@ private func makeHarness(focus: InsertionFocus = .editable(role: "AXTextArea"),
                               pasteValue: menuPastes ? pasteValue : "")
     let secure = Box(secureInput)
     let trustedBox = Box(trusted)
+    let sleeps = Box<[Duration]>([])
     let service = TextInsertionService(
         focus: focusInspector,
         clipboard: clipboard,
@@ -58,14 +60,31 @@ private func makeHarness(focus: InsertionFocus = .editable(role: "AXTextArea"),
         restoreScheduler: scheduler,
         secureInput: { secure.value },
         axTrusted: { trustedBox.value },
-        sleep: { _ in },
+        sleep: { sleeps.value.append($0) },
         preparedTargetTTL: ttl)
     return Harness(service: service, focus: focusInspector, target: target, clipboard: clipboard,
-                   poster: poster, apps: apps, scheduler: scheduler, menu: menu, count: countBox)
+                   poster: poster, apps: apps, scheduler: scheduler, menu: menu, count: countBox,
+                   sleeps: sleeps)
 }
 
 @MainActor
 final class TextInsertionServiceTests: XCTestCase {
+    func testVerifiedPasteDoesNotWaitBeforeObservingTheChangedTarget() async {
+        let harness = makeHarness()
+        var options = TextInsertionOptions()
+        options.modifierReleaseTimeout = .zero
+        let report = await harness.service.insert("hello", options: options)
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: true))
+        XCTAssertTrue(harness.sleeps.value.isEmpty)
+    }
+
+    func testBaselineWithoutAValueSkipsTheSelectionQuery() async {
+        let harness = makeHarness()
+        let baseline = await harness.service.captureBaseline(harness.target)
+        XCTAssertEqual(baseline?.count, 0)
+        XCTAssertEqual(harness.target.selectionQueries, 0)
+    }
+
     func testEmptyTextDoesNotTouchTheClipboard() async {
         let harness = makeHarness()
         let report = await harness.service.insert("", options: TextInsertionOptions())

@@ -5,6 +5,17 @@ import XCTest
 @testable import SuperflowHotkeyEngine
 
 final class KeyEventMapperTests: XCTestCase {
+    func testPhysicalCommandFlagsOverrideTrackerAfterAMissedEdge() {
+        let leftHeld: CGEventFlags = [.maskCommand, CGEventFlags(rawValue: 0x08)]
+        XCTAssertEqual(KeyEventMapper.flagsChanged(keyCode: KeyCode.rightCommand, flags: leftHeld,
+                                                   isDown: true, timestampNs: 40)?.kind, .rightCmdUp)
+        let rightHeld: CGEventFlags = [.maskCommand, CGEventFlags(rawValue: 0x10)]
+        XCTAssertEqual(KeyEventMapper.flagsChanged(keyCode: KeyCode.rightCommand, flags: rightHeld,
+                                                   isDown: false, timestampNs: 50)?.kind, .rightCmdDown)
+        XCTAssertEqual(KeyEventMapper.flagsChanged(keyCode: KeyCode.rightCommand, flags: [],
+                                                   isDown: true, timestampNs: 60)?.kind, .rightCmdUp)
+    }
+
     func testFnPressAndRelease() {
         let down = KeyEventMapper.flagsChanged(keyCode: KeyCode.fn, flags: [.maskSecondaryFn],
                                                timestampNs: 10)

@@ -4,9 +4,56 @@ import SuperflowInferenceHelperProtocol
 import SuperflowKernel
 import SuperflowLLMCore
 import SuperflowLLMLlamaCpp
+import SuperflowPorts
 import XCTest
 
 final class InferenceHelperServiceTests: XCTestCase {
+    private actor ManagedOnlyRuntime: LlamaRuntime {
+        private(set) var deadlineMs: Int?
+        private(set) var priority: CleanPriority?
+        func load(modelURL: URL, compute: ModelCompute) async throws {}
+        func complete(prompt: String, maxTokens: Int) async throws -> String {
+            throw SuperflowError.invalidState("legacy completion lost the request budget")
+        }
+        func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion {
+            self.deadlineMs = deadlineMs
+            priority = CleanPriority.current
+            return LlamaCompletion(text: "managed", generatedTokens: 7, hitTokenCap: true)
+        }
+    }
+
+    func testHelperUsesManagedRuntimeCompletion() async {
+        let replied = expectation(description: "managed completion")
+        let runtime = ManagedOnlyRuntime()
+        let service = InferenceHelperService(runtime: runtime)
+        service.complete(prompt: "fixture", maxTokens: 7, deadlineMs: 1_500,
+                         interactive: true) { text, tokens, hitCap, error in
+            XCTAssertEqual(text, "managed")
+            XCTAssertEqual(tokens, 7)
+            XCTAssertTrue(hitCap)
+            XCTAssertNil(error)
+            replied.fulfill()
+        }
+        await fulfillment(of: [replied], timeout: 1)
+        let deadline = await runtime.deadlineMs
+        let priority = await runtime.priority
+        XCTAssertEqual(deadline, 1_500)
+        XCTAssertEqual(priority, .interactive)
+    }
+
+    func testCompletionRejectsInvalidBudgets() {
+        let service = InferenceHelperService(runtime: ManagedOnlyRuntime())
+        for (tokens, deadline) in [(0, 1_500), (7, 0), (-1, -1)] {
+            service.complete(prompt: "fixture", maxTokens: tokens, deadlineMs: deadline,
+                             interactive: false) { text, count, hitCap, error in
+                XCTAssertNil(text)
+                XCTAssertEqual(count, -1)
+                XCTAssertFalse(hitCap)
+                XCTAssertNotNil(error)
+            }
+        }
+    }
+
     private actor FakeLlamaRuntime: LlamaRuntime {
         private var loaded = false
         private let loadError: String?
@@ -99,7 +146,8 @@ final class InferenceHelperServiceTests: XCTestCase {
         let completionReply = expectation(description: "completion reply")
         var completion: String?
         var completionError: String?
-        service.complete(prompt: "raw text", maxTokens: 100) { text, error in
+        service.complete(prompt: "raw text", maxTokens: 100, deadlineMs: 30_000,
+                         interactive: false) { text, _, _, error in
             completion = text
             completionError = error
             completionReply.fulfill()
