@@ -10,16 +10,19 @@ public struct DiffTranscript: View {
     private let cleaned: String
     private let externalRaw: Binding<Bool>?
     private let onCard: Bool
+    private let rawHighlightsOnly: Bool
     @State private var mode: Variant = .cleaned
     @State private var diff: TranscriptDiff.Result?
     @State private var reveal = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(raw: String, cleaned: String, showRaw: Binding<Bool>? = nil, onCard: Bool = true) {
+    public init(raw: String, cleaned: String, showRaw: Binding<Bool>? = nil, onCard: Bool = true,
+                rawHighlightsOnly: Bool = false) {
         self.raw = raw
         self.cleaned = cleaned
         self.externalRaw = showRaw
         self.onCard = onCard
+        self.rawHighlightsOnly = rawHighlightsOnly
     }
 
     public var body: some View {
@@ -31,7 +34,7 @@ public struct DiffTranscript: View {
                         if let externalRaw { externalRaw.wrappedValue = next == .raw }
                         else { mode = next }
                     }), items: [.init("Cleaned", value: .cleaned), .init("Raw", value: .raw)], onCard: onCard)
-                    if let diff {
+                    if let diff, !rawHighlightsOnly {
                         swatch(Tok.diffStrong, count: showRaw ? diff.removed : diff.rewritten,
                                label: showRaw ? "removed" : "rewritten")
                         swatch(Tok.diffSoft, count: diff.polished, label: "polished")
@@ -42,7 +45,7 @@ public struct DiffTranscript: View {
             }
             Text(shown(showRaw)).appType(.reading).lineSpacing(6).foregroundStyle(Tok.text)
                 .textSelection(.enabled).frame(maxWidth: 720, alignment: .leading)
-            if let diff, !diff.hunks.isEmpty { changes(diff.hunks) }
+            if let diff, !rawHighlightsOnly, !diff.hunks.isEmpty { changes(diff.hunks) }
         }
         .task(id: DiffKey(raw: raw, cleaned: cleaned)) {
             diff = nil
@@ -57,14 +60,15 @@ public struct DiffTranscript: View {
     }
 
     private func shown(_ showRaw: Bool) -> AttributedString {
+        if rawHighlightsOnly && !showRaw { return AttributedString(cleaned) }
         guard let diff else { return AttributedString(showRaw ? raw : cleaned) }
         let tokens = showRaw ? diff.raw : diff.cleaned
         var result = AttributedString()
         for (index, token) in tokens.enumerated() {
             var word = AttributedString(token.text)
-            if index < reveal && token.level > 0 {
-                word.backgroundColor = token.level == 2 ? Tok.diffStrong : Tok.diffSoft
-                word.foregroundColor = token.level == 2 ? Tok.diffInk : Tok.text
+            if index < reveal && (rawHighlightsOnly ? token.level == 2 : token.level > 0) {
+                word.backgroundColor = rawHighlightsOnly ? Tok.accentSoft : (token.level == 2 ? Tok.diffStrong : Tok.diffSoft)
+                word.foregroundColor = rawHighlightsOnly ? Tok.text : (token.level == 2 ? Tok.diffInk : Tok.text)
             }
             result += word
             result += AttributedString(token.gap)

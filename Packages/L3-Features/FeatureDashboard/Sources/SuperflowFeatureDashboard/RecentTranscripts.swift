@@ -157,7 +157,7 @@ private struct TranscriptRow: View {
     }
 
     private var detail: some View {
-        DiffTranscript(raw: entry.raw, cleaned: entry.cleaned)
+        DiffTranscript(raw: entry.raw, cleaned: entry.cleaned, rawHighlightsOnly: true)
         .padding(.leading, 28)
         .padding(.top, 8)
         .padding(.bottom, 20)
