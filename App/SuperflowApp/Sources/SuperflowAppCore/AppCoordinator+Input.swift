@@ -206,7 +206,7 @@ extension AppCoordinator {
                 // session event. Say why in the notch: silently retracting looks
                 // exactly like a dead fn key.
                 if !started, !Task.isCancelled {
-                    gesture = GestureRecognizer(config: settings.gesture)
+                    gesture.recoverFromFailedStart(.dictation)
                     islandBridge?.refused(menuBarController.error
                         ?? "The microphone did not open. Hold fn again.")
                 }
@@ -215,7 +215,12 @@ extension AppCoordinator {
             case .holdBegan(let kind):
                 if kind == .meeting {
                     await menuBarController.startMeeting()
-                    if menuBarController.meetingState.isActive { islandBridge?.meetingBegan() }
+                    if menuBarController.meetingState.isActive {
+                        islandBridge?.meetingBegan()
+                    } else {
+                        gesture.recoverFromFailedStart(.meeting)
+                        islandBridge?.refused(menuBarController.error ?? "The meeting could not start.")
+                    }
                 }
             case .beginHandsFree:
                 guard gesture.state == .handsFree else { continue }
@@ -223,7 +228,7 @@ extension AppCoordinator {
                 if await menuBarController.beginHandsFreeDictation() {
                     islandBridge?.handsFreeBegan()
                 } else if !Task.isCancelled {
-                    gesture = GestureRecognizer(config: settings.gesture)
+                    gesture.recoverFromFailedStart(.dictation)
                     islandBridge?.refused(menuBarController.error
                         ?? "The microphone did not open. Hold fn again.")
                 }
@@ -232,7 +237,7 @@ extension AppCoordinator {
                 if menuBarController.meetingState.isActive {
                     islandBridge?.meetingBegan()
                 } else {
-                    gesture = GestureRecognizer(config: settings.gesture)
+                    gesture.recoverFromFailedStart(.meeting)
                     islandBridge?.refused(menuBarController.error
                         ?? "The meeting could not start.")
                 }
