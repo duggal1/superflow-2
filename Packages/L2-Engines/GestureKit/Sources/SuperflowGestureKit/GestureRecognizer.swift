@@ -18,6 +18,22 @@ public struct GestureRecognizer: Sendable {
         self.config = config
     }
 
+    /// Release a pending gesture when the session backend refuses to start.
+    /// Without this, a failed right-Command meeting remains armed and blocks Fn.
+    public mutating func recoverFromFailedStart(_ kind: SessionKind) {
+        switch (kind, state) {
+        case (.meeting, .meetingArmed), (.meeting, .meetingLatched),
+             (.dictation, .armed), (.dictation, .pushToTalk),
+             (.dictation, .handsFree):
+            reset()
+        case (.meeting, .awaitingSecondTap) where pendingKind == .meeting,
+             (.dictation, .awaitingSecondTap) where pendingKind == .dictation:
+            reset()
+        default:
+            break
+        }
+    }
+
     public mutating func update(config: GestureConfig) {
         self.config = config
     }
