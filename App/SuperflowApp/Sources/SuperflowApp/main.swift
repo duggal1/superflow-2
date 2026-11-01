@@ -13,6 +13,12 @@ import SuperflowUIComponents
 @MainActor
 final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // The resident process is the only thing that keeps a loaded Core ML
+        // model hot: a fresh process pays 0.8-1.6 s to rebuild the GPU encoder
+        // graph. Opt out of automatic and sudden termination so the runtime is
+        // not reclaimed while the app sits idle between dictations.
+        ProcessInfo.processInfo.disableAutomaticTermination("Keep the ASR model resident between dictations")
+        ProcessInfo.processInfo.disableSuddenTermination()
         // `ATSApplicationFontsPath` registers the bundled faces for a packaged app. This is
         // the belt-and-braces path: one wrong plist value would otherwise drop the display
         // face silently and every title would fall back to the system serif. UI text is SF Pro

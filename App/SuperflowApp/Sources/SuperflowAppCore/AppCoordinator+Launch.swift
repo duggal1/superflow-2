@@ -10,14 +10,16 @@ import SuperflowKernel
 extension AppCoordinator {
     func startModelPreparation(environment: AppEnvironment, log: Logger) {
         Task {
+            // ASR owns the GPU first. Both loads specialize Core ML graphs, and
+            // overlapping them makes the encoder — the critical path to the
+            // first dictation — wait behind cleanup. Cleanup only has to be
+            // ready before the first Stop, which is always later than this.
             let started = DispatchTime.now().uptimeNanoseconds
             let ready = await environment.sessionEngine.prewarm()
             log.info("ASR prewarm: \((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000) ms; ready: \(ready)")
-        }
-        Task {
-            let started = DispatchTime.now().uptimeNanoseconds
-            let ready = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute)
-            log.info("Cleanup preparation: \((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000) ms; ready: \(ready)")
+            let cleanupStarted = DispatchTime.now().uptimeNanoseconds
+            let cleanupReady = await environment.prepareInstalledCleanupModel(compute: settings.cleanupCompute)
+            log.info("Cleanup preparation: \((DispatchTime.now().uptimeNanoseconds - cleanupStarted) / 1_000_000) ms; ready: \(cleanupReady)")
         }
     }
 
