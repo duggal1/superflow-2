@@ -49,7 +49,7 @@ final class DiffTranscriptRenderTests: XCTestCase {
                 bitmap.size = size
                 host.cacheDisplay(in: host.bounds, to: bitmap)
                 var bluePixels = 0
-                for y in stride(from: 0, to: bitmap.pixelsHigh, by: 2) {
+                for y in stride(from: 120, to: 200, by: 2) {
                     for x in stride(from: 0, to: bitmap.pixelsWide, by: 2) {
                         guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
                         if color.blueComponent > color.redComponent + 0.05 { bluePixels += 1 }

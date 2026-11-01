@@ -34,7 +34,7 @@ public struct DiffTranscript: View {
                         if let externalRaw { externalRaw.wrappedValue = next == .raw }
                         else { mode = next }
                     }), items: [.init("Cleaned", value: .cleaned), .init("Raw", value: .raw)], onCard: onCard)
-                    if let diff, !rawHighlightsOnly {
+                    if let diff {
                         swatch(Tok.diffStrong, count: showRaw ? diff.removed : diff.rewritten,
                                label: showRaw ? "removed" : "rewritten")
                         swatch(Tok.diffSoft, count: diff.polished, label: "polished")
@@ -43,7 +43,8 @@ public struct DiffTranscript: View {
                     }
                 }
             }
-            Text(shown(showRaw)).appType(.reading).lineSpacing(6).foregroundStyle(Tok.text)
+            Text(shown(showRaw)).appType(.reading).lineSpacing(6)
+                .foregroundStyle(rawHighlightsOnly && showRaw ? Tok.text2 : Tok.text)
                 .textSelection(.enabled).frame(maxWidth: 720, alignment: .leading)
             if let diff, !rawHighlightsOnly, !diff.hunks.isEmpty { changes(diff.hunks) }
         }
@@ -66,9 +67,9 @@ public struct DiffTranscript: View {
         var result = AttributedString()
         for (index, token) in tokens.enumerated() {
             var word = AttributedString(token.text)
-            if index < reveal && (rawHighlightsOnly ? token.level == 2 : token.level > 0) {
-                word.backgroundColor = rawHighlightsOnly ? Tok.accentSoft : (token.level == 2 ? Tok.diffStrong : Tok.diffSoft)
-                word.foregroundColor = rawHighlightsOnly ? Tok.text : (token.level == 2 ? Tok.diffInk : Tok.text)
+            if index < reveal && token.level > 0 {
+                word.backgroundColor = token.level == 2 ? Tok.diffStrong : Tok.diffSoft
+                word.foregroundColor = rawHighlightsOnly ? Tok.diffInk : (token.level == 2 ? Tok.diffInk : Tok.text)
             }
             result += word
             result += AttributedString(token.gap)
@@ -89,7 +90,12 @@ public struct DiffTranscript: View {
 
     private func swatch(_ color: Color, count: Int, label: String) -> some View {
         HStack(spacing: 6) {
-            Rectangle().fill(color).frame(width: 8, height: 8)
+            if rawHighlightsOnly {
+                PixelMark(rows: [".###.", "#####", "#####", "#####", ".###."], cell: 1.5, color: color)
+                    .frame(width: 8, height: 8)
+            } else {
+                Rectangle().fill(color).frame(width: 8, height: 8)
+            }
             Text("\(count)").monospacedDigit().foregroundStyle(Tok.text)
             Text(label).foregroundStyle(Tok.text2)
         }
