@@ -39,6 +39,16 @@ NEVER
 
 Ship the requested behavior completely. Preserve correctness, privacy, accessibility, architecture, and visual quality. Save usage through focused context and verification, never by weakening acceptance criteria.
 
+## Issue tracking
+
+- At the start of every task, read [issue.md](issue.md) and check its status before acting on a recorded issue.
+- Record confirmed significant medium or larger bugs, fundamental feature failures, and catastrophic issues. Ignore minor bugs; use judgment for medium issues.
+- Add each issue under `# Issue` with a short title, a description under 20 words, and exactly one checked status: `Unresolved` or `Resolved`. Include concise evidence or verification when useful.
+- After fixing an issue, verify the fix and mark it `Resolved` in issue.md. If it remains unfixed or unverified, leave it `Unresolved`.
+- When resolving an issue, update the latest resolution below with its title and verification.
+
+Latest resolution: None recorded.
+
 <!-- INIT-RULES:START — do not remove this marker. Managed by `init rules`. -->
 Read [GIT-SKILLS.md](GIT-SKILLS.md) before Git writes. Read [RULES.md](RULES.md) for substantial engineering work. Small, low-risk edits use inspect → edit → verify.
 
