@@ -78,7 +78,18 @@ public struct DictionaryView: View {
     @ViewBuilder
     private var groups: some View {
         if !terms.isEmpty {
-            group("Terms", entries: terms)
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeader("Terms", note: "Always spelled your way.")
+                Card(padding: 16) {
+                    FlowLayout {
+                        ForEach(terms) { entry in
+                            TermChip(entry.canonical, disabled: !entry.enabled,
+                                     onOpen: { edit(entry) },
+                                     onDelete: { Task { await model.delete(entry) } })
+                        }
+                    }
+                }
+            }
         }
         if !corrections.isEmpty {
             group("Corrections", entries: corrections)
@@ -90,7 +101,15 @@ public struct DictionaryView: View {
                     bundledExpanded.toggle()
                 }
                 if bundledExpanded {
-                    entryList(bundled)
+                    Card(padding: 16) {
+                        FlowLayout {
+                            ForEach(bundled) { entry in
+                                TermChip(entry.canonical, disabled: !entry.enabled,
+                                         onOpen: { edit(entry) },
+                                         onDelete: { Task { await model.delete(entry) } })
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -98,16 +117,13 @@ public struct DictionaryView: View {
 
     private func group(_ title: String, entries: [LexiconEntry]) -> some View {
         VStack(alignment: .leading, spacing: Space.xs) {
-            Text(title)
-                .appType(.caption)
-                .foregroundStyle(Tok.text2)
-            entryList(entries)
+            SectionHeader(title, note: "When the transcript has the left, Superflow types the right.")
+            Card(padding: 8) { entryList(entries) }
         }
     }
 
     private func entryList(_ entries: [LexiconEntry]) -> some View {
-        LazyVGrid(columns: [.init(.flexible(), spacing: 16), .init(.flexible())],
-                  alignment: .leading, spacing: 4) {
+        VStack(spacing: 2) {
             ForEach(entries) { entry in
                 EntryRow(trigger: entry.triggers.first ?? entry.canonical,
                          result: entry.canonical,

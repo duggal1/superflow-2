@@ -62,16 +62,20 @@ public struct ShortcutsView: View {
     }
 
     private var list: some View {
-        LazyVGrid(columns: [.init(.flexible(), spacing: 16), .init(.flexible())],
-                  alignment: .leading, spacing: 4) {
-            ForEach(model.visibleEntries) { entry in
-                EntryRow(trigger: entry.trigger,
-                         result: firstLine(entry.content),
-                         badge: entry.match == .inline ? "Inline" : nil,
-                         badgeVariant: .blue,
-                         isDisabled: !entry.enabled,
-                         onOpen: { edit(entry) },
-                         onDelete: { Task { await model.delete(entry) } })
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader("Your shortcuts", note: "\(model.visibleEntries.count) phrases. Say one and Superflow types the text.")
+            Card(padding: 8) {
+                VStack(spacing: 2) {
+                    ForEach(model.visibleEntries) { entry in
+                        EntryRow(trigger: entry.trigger,
+                                 result: firstLine(entry.content),
+                                 badge: entry.match == .inline ? "Inline" : nil,
+                                 badgeVariant: .blue,
+                                 isDisabled: !entry.enabled,
+                                 onOpen: { edit(entry) },
+                                 onDelete: { Task { await model.delete(entry) } })
+                    }
+                }
             }
         }
     }

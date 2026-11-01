@@ -138,18 +138,14 @@ public struct EntryRow: View {
     }
 
     public var body: some View {
-        RowButton("\(trigger), becomes \(result)", height: 36) {
+        RowButton("\(trigger), becomes \(result)", height: 44) {
             onOpen()
         } content: {
-            HStack(spacing: Space.md) {
-                Text(trigger)
-                    .appType(.body)
-                    .foregroundStyle(Tok.text2)
-                    .frame(minWidth: 96, maxWidth: 180, alignment: .leading)
-                    .lineLimit(1)
-                IconView(.arrow, size: 12, tint: Tok.text2)
+            HStack(spacing: 12) {
+                PixelChip(trigger)
+                PixelMark(rows: ["....#..", ".....#.", "#######", ".....#.", "....#.."], cell: 2, color: Tok.text2)
                 Text(result)
-                    .appType(.label)
+                    .appType(.body)
                     .foregroundStyle(isDisabled ? Tok.text2 : Tok.text)
                     .lineLimit(1)
                 Spacer(minLength: Space.md)
