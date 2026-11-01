@@ -17,7 +17,9 @@
     "probe": "tools/profile-coreml-load.swift, release binary, separate process per row, same path and signing identity",
     "encoder": {
       "gpu": [4.319763, 0.780641, 1.590633],
-      "cpu": [6.786571, 0.006639, 0.006079]
+      "cpu": [6.786571, 0.006639, 0.006079],
+      "ane": [369.491285, 139.712644],
+      "all": "timed out after 600 s; not pursued"
     },
     "decoder": { "gpu": [0.00358, 0.00105, 0.00084], "cpu": [0.001252, 0.000656, 0.000698] },
     "joint": { "gpu": [0.002668, 0.000561, 0.000529], "cpu": [0.000985, 0.000575, 0.000527] },
@@ -26,7 +28,10 @@
   "observations": [
     "The encoder owns almost all model load time; decoder, joint and decoder_joint are under 4 ms each.",
     "Warm CPU specialization is cached across processes (6 ms) while the GPU path still pays 0.78-1.59 s per fresh process, so a resident process is the only current way to avoid that cost.",
-    "First-ever CPU specialization was 6.79 s, so the 6 ms rows are cache hits, not a faster weight read."
+    "First-ever CPU specialization was 6.79 s, so the 6 ms rows are cache hits, not a faster weight read.",
+    "ANE specialization cost 140-370 s per fresh process on this machine, so the vendor's ANE recommendation is unusable for launch-time loading here; the GPU product default stands.",
+    "The manager honors the passed MLModelConfiguration and already exposes per-model overrides (FLUIDAUDIO_ENCODER_CU, FLUIDAUDIO_DECODER_CU, FLUIDAUDIO_JOINT_CU, FLUIDAUDIO_DECODERJOINT_CU) plus SUPERFLOW_COMPUTE_UNITS, so Phase 2 needs no loader change.",
+    "The vendor loads decoder.mlmodelc and joint.mlmodelc whenever present even if decoder_joint.mlmodelc covers the path; measured cost is under 4 ms each, so skipping them is not worth a dependency patch."
   ],
   "missingMeasurements": [
     "Packaged-app time from process start (sysctl) to prewarm return; the CLI probe does not share Core ML caches with the app bundle.",

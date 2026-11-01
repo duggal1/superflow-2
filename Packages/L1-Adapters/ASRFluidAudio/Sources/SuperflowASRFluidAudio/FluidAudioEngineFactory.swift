@@ -20,6 +20,12 @@ public enum FluidAudioEngineLoader {
             .map { URL(fileURLWithPath: $0, isDirectory: true) } ?? modelDirectory
         let configuration = MLModelConfiguration()
         configuration.computeUnits = computeUnits()
+        // Diagnostic A/B only, default off: low-precision accumulation trades
+        // a little accuracy for GPU speed. WER must be measured before any
+        // product default changes.
+        if ProcessInfo.processInfo.environment["SUPERFLOW_GPU_LOW_PRECISION"] == "1" {
+            configuration.allowLowPrecisionAccumulationOnGPU = true
+        }
         switch profile.engine {
         case .streaming(let variant):
             let manager = variant.createManager(configuration: configuration)
