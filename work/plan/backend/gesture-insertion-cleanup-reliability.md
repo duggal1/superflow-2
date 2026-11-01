@@ -26,3 +26,8 @@
   double-tap reached meetingLatched; Escape followed. Physical key check remains.
 - No 30-minute–10-hour audio or whisper corpus was supplied: those quality and
   performance claims remain unmeasured. No GPU/model/tier defaults changed.
+- Follow-up native probe: a synthetic right-Command double-tap reached the
+  meeting gesture, and a process sample showed the meeting microphone running
+  through DeepFilterNet and ASR. Startup had not completed when Escape was
+  sent after seven seconds; cancellation left a failed session record. Full
+  meeting readiness and the physical shortcut remain UNTESTED.
