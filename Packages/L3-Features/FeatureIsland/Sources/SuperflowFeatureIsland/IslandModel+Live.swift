@@ -39,6 +39,12 @@ public extension IslandModel {
         }
     }
 
+    /// Keyboard selection is owned by the model; AppKit sends navigation edges.
+    func moveHistorySelection(by delta: Int) {
+        guard case .history = phase else { return }
+        historySelection = min(max(0, historySelection + delta), max(0, history.count - 1))
+    }
+
     func mark() {
         guard phase == .meeting || phase == .meetingPanel, let start = meetingStart else { return }
         markedMoments.append(max(0, Date().timeIntervalSince(start)))
