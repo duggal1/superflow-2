@@ -30,6 +30,7 @@ public extension IslandModel {
         case .idle, .hover:
             today = feed.wordsToday()
             history = feed.history(limit: 5)
+            historySelection = 0
             go(prefs.alwaysOn ? .history : .recent(feed.lastTranscript()))
         case .recent, .history:
             go(.idle)
