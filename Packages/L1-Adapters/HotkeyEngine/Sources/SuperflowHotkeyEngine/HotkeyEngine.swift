@@ -120,6 +120,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     private func installPassiveTap() -> Bool {
         let mask = CGEventMask(1) << CGEventType.flagsChanged.rawValue
             | CGEventMask(1) << CGEventType.keyDown.rawValue
+            | CGEventMask(1) << CGEventType.keyUp.rawValue
         // A listen-only tap can observe Fn but can never take it from the system, which is exactly
         // why the Globe/Fn key still opened the emoji picker. With Accessibility the tap is
         // installed active so the lone Fn press can be swallowed; if that fails (no Accessibility)
@@ -300,7 +301,19 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             if active, keyCode == KeyCode.enter || keyCode == KeyCode.escape {
                 return Unmanaged.passUnretained(event)
             }
-            continuation.yield(KeyEventMapper.keyDown(keyCode: keyCode, timestampNs: timestamp))
+            let key = lock.withLock { dictationKey }
+            if KeyEventMapper.isOwnGlobeKey(keyCode: keyCode, dictationKey: key) {
+                return lock.withLock { suppressFn } ? nil : Unmanaged.passUnretained(event)
+            }
+            if let mapped = KeyEventMapper.keyDown(keyCode: keyCode, timestampNs: timestamp, dictationKey: key) {
+                continuation.yield(mapped)
+            }
+        case .keyUp:
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            let suppress = lock.withLock {
+                suppressFn && KeyEventMapper.isOwnGlobeKey(keyCode: keyCode, dictationKey: dictationKey)
+            }
+            if suppress { return nil }
         default:
             break
         }
@@ -322,7 +335,9 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         guard keyCode == KeyCode.enter || keyCode == KeyCode.escape else {
             return Unmanaged.passUnretained(event)
         }
-        continuation.yield(KeyEventMapper.keyDown(keyCode: keyCode, timestampNs: event.timestamp))
+        if let mapped = KeyEventMapper.keyDown(keyCode: keyCode, timestampNs: event.timestamp) {
+            continuation.yield(mapped)
+        }
         return nil
     }
 

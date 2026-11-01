@@ -5,6 +5,7 @@ import SuperflowKernel
 import SuperflowPorts
 
 public enum KeyCode {
+    public static let globe: Int64 = 179
     public static let fn: Int64 = 0x3F
     public static let rightCommand: Int64 = 0x36
     public static let leftCommand: Int64 = 0x37
@@ -105,7 +106,16 @@ public enum KeyEventMapper {
         KeyEvent(kind: down ? .fnDown : .fnUp, timestampNs: timestampNs)
     }
 
-    public static func keyDown(keyCode: Int64, timestampNs: UInt64) -> KeyEvent {
+    public static func isOwnGlobeKey(keyCode: Int64, dictationKey: DictationKey) -> Bool {
+        dictationKey == .fn && (keyCode == KeyCode.globe || keyCode == KeyCode.fn)
+    }
+
+    public static func keyDown(keyCode: Int64, timestampNs: UInt64,
+                               dictationKey: DictationKey = .fn) -> KeyEvent? {
+        // Some keyboards emit a Globe key event beside the Fn flags change,
+        // including after release. It belongs to the shortcut, not a chord.
+        guard !isOwnGlobeKey(keyCode: keyCode, dictationKey: dictationKey),
+              keyCode != KeyCode.rightCommand else { return nil }
         switch keyCode {
         case KeyCode.enter:
             return KeyEvent(kind: .enter, timestampNs: timestampNs)

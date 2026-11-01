@@ -91,6 +91,16 @@ final class KeyEventMapperTests: XCTestCase {
                        KeyEvent(kind: .rightCmdDown, timestampNs: 9))
     }
 
+    func testGlobeCompanionEventDoesNotCancelFnDoubleTap() {
+        XCTAssertNil(KeyEventMapper.keyDown(keyCode: KeyCode.globe, timestampNs: 90))
+        XCTAssertNil(KeyEventMapper.keyDown(keyCode: KeyCode.fn, timestampNs: 90))
+        XCTAssertNil(KeyEventMapper.keyDown(keyCode: KeyCode.rightCommand, timestampNs: 90))
+        XCTAssertEqual(KeyEventMapper.keyDown(keyCode: KeyCode.globe, timestampNs: 90,
+                                             dictationKey: .rightOption)?.kind, .otherKeyDown(179))
+        XCTAssertTrue(KeyEventMapper.isOwnGlobeKey(keyCode: KeyCode.globe, dictationKey: .fn))
+        XCTAssertFalse(KeyEventMapper.isOwnGlobeKey(keyCode: KeyCode.globe, dictationKey: .rightOption))
+    }
+
     func testEnterEscapeAndOtherKeys() {
         XCTAssertEqual(KeyEventMapper.keyDown(keyCode: KeyCode.enter, timestampNs: 1),
                        KeyEvent(kind: .enter, timestampNs: 1))
