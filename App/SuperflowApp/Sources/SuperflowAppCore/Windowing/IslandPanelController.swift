@@ -15,6 +15,14 @@ final class IslandPanel: NSPanel {
     override var canBecomeMain: Bool { false }
     override func cancelOperation(_ sender: Any?) { onCancel?() }
 
+    /// AppKit owns the panel's keyboard events even when SwiftUI's FocusState
+    /// has not acquired focus (notably on headless CI runners).
+    var onHistoryKey: ((UInt16) -> Bool)?
+    override func keyDown(with event: NSEvent) {
+        if onHistoryKey?(event.keyCode) == true { return }
+        super.keyDown(with: event)
+    }
+
     /// By default AppKit pushes a window below the menu bar. That is half of the
     /// floating-badge bug.
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
@@ -93,6 +101,25 @@ public final class IslandController {
         }
         panel.contentView = host
         panel.onCancel = { [unowned model] in model.send(.dismissed) }
+        panel.onHistoryKey = { [unowned model] keyCode in
+            guard case .history = model.phase else { return false }
+            switch keyCode {
+            case 126: // up arrow
+                model.historySelection = max(0, model.historySelection - 1)
+            case 125: // down arrow
+                model.historySelection = min(max(0, model.history.count - 1),
+                                             model.historySelection + 1)
+            case 36, 76: // Return, keypad Enter
+                if model.history.indices.contains(model.historySelection) {
+                    model.copy(model.history[model.historySelection])
+                }
+            case 53: // Escape
+                model.send(.dismissed)
+            default:
+                return false
+            }
+            return true
+        }
         model.placement = { [weak self] in self?.place($0) }
         model.phaseDidChange = { [weak self] in self?.phaseChanged($0) }
     }
