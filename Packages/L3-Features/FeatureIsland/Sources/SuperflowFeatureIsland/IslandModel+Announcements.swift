@@ -12,7 +12,9 @@ extension IslandModel {
         case .meetingPanel: performer.perform(.levelChange, performanceTime: .default)
         case .landed: performer.perform(.levelChange, performanceTime: .default)
         case .failed, .undo: performer.perform(.generic, performanceTime: .default)
-        case .notice: performer.perform(.alignment, performanceTime: .default)
+        case .notice(let notice):
+            performer.perform(.alignment, performanceTime: .default)
+            if notice.kind == .milestone { playMilestoneSound() }
         case .idle, .hover, .processing, .recent, .history: break
         }
 

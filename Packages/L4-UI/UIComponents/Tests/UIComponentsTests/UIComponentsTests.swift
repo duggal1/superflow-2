@@ -206,6 +206,12 @@ final class UIComponentsTests: XCTestCase {
         }
     }
 
+    func testCancellationCueIsLouderThanOtherCues() {
+        XCTAssertEqual(SoundCue.transcriptionCancel.defaultVolume, 0.8)
+        XCTAssertEqual(SoundCue.clickSoft.defaultVolume, 0.5)
+        XCTAssertEqual(SoundCue.completion.defaultVolume, 0.5)
+    }
+
     func testTransferTextShowsMeasuredRateAndBytes() {
         let snapshot = TransferSnapshot(label: "s1-mini", receivedBytes: 120_000_000,
                                         totalBytes: 484_219_808, bytesPerSecond: 24_600_000)

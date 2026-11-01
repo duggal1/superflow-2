@@ -18,14 +18,18 @@ final class IslandNoticeTests: XCTestCase {
 
     func testMilestoneWaitsUntilCaptureEnds() async throws {
         let model = model()
+        var soundCount = 0
+        model.playMilestoneSound = { soundCount += 1 }
         let notice = IslandNotice.milestone(words: 1000)
         model.send(.holdBegan(nil))
         model.send(.notice(notice))
         XCTAssertEqual(model.phase, .listening)
+        XCTAssertEqual(soundCount, 0)
         model.send(.cancelled)
         XCTAssertEqual(model.phase, .idle)
         try await Task.sleep(for: .milliseconds(700))
         XCTAssertEqual(model.phase, .notice(notice))
+        XCTAssertEqual(soundCount, 1)
         model.send(.dismissed)
     }
 
@@ -42,19 +46,38 @@ final class IslandNoticeTests: XCTestCase {
 
     func testStaleNoticeIsIgnored() {
         let model = model()
+        var soundCount = 0
+        model.playMilestoneSound = { soundCount += 1 }
         model.notify(IslandNotice(kind: .milestone, title: "Old milestone", detail: "",
                                   postedAt: Date().addingTimeInterval(-121)))
         XCTAssertEqual(model.phase, .idle)
+        XCTAssertEqual(soundCount, 0)
+    }
+
+    func testOnlyDisplayedMilestonesPlayCompletionSound() {
+        let model = model()
+        var soundCount = 0
+        model.playMilestoneSound = { soundCount += 1 }
+        model.notify(.milestone(words: 1000))
+        XCTAssertEqual(soundCount, 1)
+        model.notify(.milestone(words: 1000))
+        XCTAssertEqual(soundCount, 1)
+        model.send(.dismissed)
+        model.notify(.streak(days: 3))
+        XCTAssertEqual(soundCount, 1)
     }
 
     func testNoticeThatExpiresInQueueNeverAppears() async throws {
         let model = model()
+        var soundCount = 0
+        model.playMilestoneSound = { soundCount += 1 }
         model.send(.holdBegan(nil))
         model.notify(IslandNotice(kind: .milestone, title: "Expiring milestone", detail: "",
                                   postedAt: Date().addingTimeInterval(-119.8)))
         model.send(.cancelled)
         try await Task.sleep(for: .milliseconds(700))
         XCTAssertEqual(model.phase, .idle)
+        XCTAssertEqual(soundCount, 0)
     }
 
     func testPastedWordCountDoesNotInventAMilestone() async throws {

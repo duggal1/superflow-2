@@ -1,11 +1,12 @@
 import AppKit
 import Foundation
 
-/// The two short UI cues the app ships. Nothing else plays a sound: the
-/// onboarding primary button clicks, and Escape during a dictation cancels it.
 public enum SoundCue: String, Sendable, CaseIterable {
     case clickSoft = "click-soft"
     case transcriptionCancel = "transcription-cancel"
+    case completion = "completion"
+
+    var defaultVolume: Float { self == .transcriptionCancel ? 0.8 : 0.5 }
 }
 
 /// Plays a bundled cue through AppKit, which honours the system output device
@@ -21,10 +22,10 @@ public enum Sounds {
             ?? Bundle.module.url(forResource: cue.rawValue, withExtension: "mp3")
     }
 
-    public static func play(_ cue: SoundCue, volume: Float = 0.5) {
+    public static func play(_ cue: SoundCue, volume: Float? = nil) {
         guard let sound = sound(for: cue) else { return }
         sound.stop()
-        sound.volume = volume
+        sound.volume = volume ?? cue.defaultVolume
         sound.play()
     }
 

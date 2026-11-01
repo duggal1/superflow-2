@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Observation
+import SuperflowUIComponents
 import SwiftUI
 
 public enum IslandPlacement: Sendable { case home, active }
@@ -87,6 +88,7 @@ public final class IslandModel {
     @ObservationIgnored public var feed: any IslandFeed
     @ObservationIgnored public var placement: (IslandPlacement) -> Void = { _ in }
     @ObservationIgnored public var phaseDidChange: (IslandPhase) -> Void = { _ in }
+    @ObservationIgnored var playMilestoneSound: () -> Void = { Sounds.play(.completion) }
     @ObservationIgnored var timer: Task<Void, Never>?
     @ObservationIgnored var hoverTask: Task<Void, Never>?
     @ObservationIgnored private var ticker: Task<Void, Never>?
