@@ -23,6 +23,13 @@ struct TechDictionaryGate: Sendable {
         "repo", "component", "model", "edit", "build", "config",
     ]
 
+    private static let devApps: Set<String> = [
+        "com.microsoft.VSCode", "com.todesktop.230313mzl4w4u92", "dev.zed.Zed",
+        "com.apple.dt.Xcode", "com.jetbrains.intellij", "com.jetbrains.WebStorm",
+        "com.apple.Terminal", "com.googlecode.iterm2", "com.mitchellh.ghostty",
+        "dev.warp.Warp-Stable", "com.anthropic.claudefordesktop", "com.anthropic.claude-code",
+    ]
+
     init(userEntries: [LexiconEntry], project: ProjectContext?) {
         pinned = Set(userEntries.map { Self.normalized($0.canonical) })
         let paths = project?.paths ?? []
@@ -38,10 +45,25 @@ struct TechDictionaryGate: Sendable {
         if !rule.neg.isEmpty, Self.contains(Set(rule.neg), in: tokens, near: trigger, radius: 3) {
             return false
         }
+        if rule.tier == .b, Self.normalized(trigger) == "textract" {
+            if Self.projectMentionsTextract(context) { return false }
+            if !Set(tokens).intersection(Set(rule.neg)).isEmpty { return false }
+            return true
+        }
         guard rule.tier == .b else { return true }
 
         if pinned.contains(Self.normalized(canonical)) { return true }
+        if let bundle = context.activeAppBundleID, Self.devApps.contains(bundle) {
+            if rule.neg.isEmpty || !Self.contains(Set(rule.neg), in: tokens, near: trigger, radius: 3) {
+                return true
+            }
+        }
         if projectAllows(canonical) { return true }
+        // AWS Textract is a real product: never replace it when the project
+        // mentions textract or the context carries an AWS/document signal.
+        if Self.normalized(trigger) == "textract", Self.projectMentionsTextract(context) {
+            return false
+        }
 
         var words = Self.devWords
         words.formUnion(rule.requires.map { Self.normalized($0) })
@@ -78,6 +100,13 @@ struct TechDictionaryGate: Sendable {
         text.lowercased()
             .split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" })
             .map(String.init)
+    }
+
+    private static func projectMentionsTextract(_ context: TextContext) -> Bool {
+        if context.project?.paths.contains(where: { $0.lowercased().contains("textract") }) == true {
+            return true
+        }
+        return false
     }
 
     private static func normalized(_ text: String) -> String {

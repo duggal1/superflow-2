@@ -81,16 +81,20 @@ public struct TextContext: Sendable {
     /// Session-scoped project scope. Nil means TextCodeAware cannot resolve
     /// paths at all; it still normalizes filenames and extensions.
     public var project: ProjectContext?
+    /// Frontmost application bundle identifier when known. Used by the tech
+    /// dictionary gate to enable ambiguous (Tier B) aliases in dev apps.
+    public var activeAppBundleID: String?
 
     public init(source: AudioSourceKind = .mic, speakerID: String? = nil, interactive: Bool = true,
                 settings: AppSettings = .default, project: ProjectContext? = nil,
-                wordTimings: [WordTiming] = []) {
+                wordTimings: [WordTiming] = [], activeAppBundleID: String? = nil) {
         self.source = source
         self.speakerID = speakerID
         self.interactive = interactive
         self.settings = settings
         self.project = project
         self.wordTimings = wordTimings
+        self.activeAppBundleID = activeAppBundleID
     }
 
     /// Cleanup context sent to the model. A coding session upgrades the
