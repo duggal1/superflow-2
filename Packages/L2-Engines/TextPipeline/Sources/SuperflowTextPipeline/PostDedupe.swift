@@ -3,7 +3,7 @@ import SuperflowKernel
 import SuperflowPorts
 
 enum PostDedupe {
-    private static let stutters = Set("i it we you they he she was were my your our the a an to of in on at for with and or but if because what how why when where".split(separator: " ").map(String.init))
+    private static let stutters = Set("i it we you they he she was were my your our the a an to of in on at for with and or but if because what how why when where text".split(separator: " ").map(String.init))
     private static let protectedWords = Set("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion not no never none nothing nobody neither nor cannot without".split(separator: " ").map(String.init))
 
     static func apply(_ text: String, protected: Protected = Protected()) -> String {
