@@ -231,3 +231,5 @@ A full recognition relay discards oldest audio without warning or entering journ
 Evidence: consumeCapture uses bufferingNewest(4096); consumeAudio ignores feed.yield's dropped result.
 
 Hardening progress: polarity/name/quantifier regression coverage added; overflow now surfaces a notice and blocks incomplete insertion while retaining the journal. Physical overflow/recovery and full v2 acceptance remain unverified, so issues stay Unresolved. CI dependency repair remains outstanding.
+
+Overflow regression: a simulated dropped chunk prevents insertion and retains an unfinished session and journal. Physical overflow and recovery remain unverified.

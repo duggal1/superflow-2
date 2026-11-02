@@ -454,6 +454,24 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(events, ["warmup audio=1"])
     }
 
+    func testOverflowNeverPastesAndRetainsJournalForRecovery() async throws {
+        let repository = InMemoryRepository()
+        let journals = FakeJournalStore()
+        let inserter = RecordingInserter()
+        let engine = engine(repo: repository, journals: journals, inserter: inserter)
+        let id = try await engine.start()
+        let dropped = AudioChunk(samples: [0.5], startSample: 0, source: .mic)
+        await engine.reportDelivery(.dropped(dropped))
+        let outcome = await engine.stop()
+        let inserted = await inserter.inserted
+        let pending = try await repository.unfinishedSessions()
+        let recorded = await journals.sampleCount(session: id, source: .mic)
+        XCTAssertTrue(inserted.isEmpty)
+        XCTAssertNil(outcome?.insertion)
+        XCTAssertTrue(pending.contains { $0.id == id })
+        XCTAssertGreaterThan(recorded, 0)
+    }
+
     /// Stopping must drain every captured chunk into recognition before the
     /// stream sees `finish`; otherwise the tail of the dictation is dropped.
     func testStopDrainsRelayBeforeFinishingRecognition() async throws {

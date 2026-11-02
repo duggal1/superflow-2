@@ -65,7 +65,10 @@ extension SessionEngine {
     func reportDelivery(_ result: AsyncStream<AudioChunk>.Continuation.YieldResult) {
         if case .dropped = result, !recognitionOverflow {
             recognitionOverflow = true
-            emit(.notice("Recognition fell behind. Audio is retained in the journal for recovery; incomplete text will not be pasted."))
+            let message = journalWarned
+                ? "Recognition fell behind and the audio journal is unavailable. Incomplete text will not be pasted."
+                : "Recognition fell behind. Audio is retained in the journal for recovery; incomplete text will not be pasted."
+            emit(.notice(message))
         }
     }
 

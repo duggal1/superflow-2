@@ -11,3 +11,5 @@ Implemented: lemma-aware meaning carriers, conservative repeated-word settings, 
 Observed: initial carrier tests failed 4 assertions; targeted carrier cases then passed. SessionEngine 40 tests and TextPipeline 30 tests passed. Cleanup 44 tests passed before final added magnitude protection; final rerun passed all 44 tests and lint.
 Remaining: CI dependency repair; dedicated tap thread; segment carry; fixtures/ablation/sweeps; packaged latency and physical key verification. No 9/10 or latency claim. No production binary rebuilt in this change.
 Magnitude checks currently conservatively reject model conversions that replace spelled magnitude words; deterministic number formatting remains available after raw recovery.
+
+Follow-up: simulated relay overflow now has a passing journal-retention/no-paste regression; archive is preserved and degraded-journal notices are truthful. Enhancement package passes locally with cached artifacts, while CI clean build remains unresolved; no clean rebuild was attempted with 7.6 GiB free.

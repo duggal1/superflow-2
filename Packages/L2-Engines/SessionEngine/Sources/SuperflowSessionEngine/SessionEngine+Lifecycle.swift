@@ -274,7 +274,7 @@ extension SessionEngine {
         // on a player for silence.
         if let clip = archiveWriter {
             archiveWriter = nil
-            if words == 0 {
+            if words == 0 && !recognitionOverflow {
                 await clip.discard()
             } else if let archived = await clip.finish(),
                       let store = repository as? any AudioMetadataStore {
@@ -302,7 +302,7 @@ extension SessionEngine {
             transition(.complete(record.id))
             emit(.finished(record.id, .complete))
         } else {
-            transition(.failed(record.id, "Transcript could not be finalized."))
+            transition(.failed(record.id, recognitionOverflow ? "Recognition fell behind; recovery is required." : "Transcript could not be finalized."))
             emit(.finished(record.id, .failed))
         }
         self.record = nil
