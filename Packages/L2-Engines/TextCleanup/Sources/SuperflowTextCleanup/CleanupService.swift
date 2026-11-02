@@ -48,12 +48,16 @@ public actor CleanupService {
     private let metrics: any MetricsSink
     public let config: CleanupConfig
     private let semaphore: AsyncSemaphore
+    private let structureMapping: any StructureMapping
 
-    public init(cleaner: any TextCleaner, config: CleanupConfig = CleanupConfig(), metrics: any MetricsSink = NoopMetrics()) {
+    public init(cleaner: any TextCleaner, config: CleanupConfig = CleanupConfig(),
+                metrics: any MetricsSink = NoopMetrics(),
+                structureMapping: any StructureMapping = S1MiniStructureMapping()) {
         self.cleaner = cleaner
         self.metrics = metrics
         self.config = config
         self.semaphore = AsyncSemaphore(config.workers)
+        self.structureMapping = structureMapping
     }
 
     public func countTokens(_ text: String) async -> Int { await cleaner.countTokens(text) }
@@ -93,7 +97,7 @@ public actor CleanupService {
     private func outcomeTag(_ chunk: ChunkOutcome) -> String {
         guard chunk.state == .fallback else { return "accepted" }
         let reason = chunk.reason ?? ""
-        if ["truncated", "protectedLost", "contentChanged", "empty"].contains(reason) { return "rejected." + reason }
+        if ["truncated", "protectedLost", "contentChanged", "empty", "quoteChanged"].contains(reason) { return "rejected." + reason }
         if reason.localizedCaseInsensitiveContains("timeout") || reason.localizedCaseInsensitiveContains("timed out") { return "deadline" }
         if reason.localizedCaseInsensitiveContains("cancel") { return "cancelled" }
         return "runtime_error"
@@ -102,7 +106,7 @@ public actor CleanupService {
     private func prose(_ text: String, protected: Protected, context: TextContext,
                        styling: String, structure: String) async -> (text: String, chunks: [ChunkOutcome]) {
         let count = await cleaner.countTokens(text)
-        let plans: [ChunkPlan]
+        var plans: [ChunkPlan]
         if count <= config.hardTokenCap {
             plans = [ChunkPlan(index: 0, text: text, tokens: count)]
         } else {
@@ -111,6 +115,7 @@ public actor CleanupService {
             planning.overlapPercent = 0
             plans = await ChunkPlanner(config: planning, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
         }
+        plans = await coalesceEnumerationSeams(plans)
         guard !plans.isEmpty else { return ("", []) }
         var results = [ChunkOutcome](repeating: ChunkOutcome(index: 0, text: "", state: .pending), count: plans.count)
         await withTaskGroup(of: ChunkOutcome.self) { group in
@@ -130,6 +135,33 @@ public actor CleanupService {
         return (SeamSplicer.join(results.map(\.text)), results)
     }
 
+    /// A spoken list must reach the model in one request. When an ordered run
+    /// straddles a cut, merge the two chunks if the merged input still fits.
+    private func coalesceEnumerationSeams(_ plans: [ChunkPlan]) async -> [ChunkPlan] {
+        guard plans.count > 1 else { return plans }
+        var merged: [ChunkPlan] = []
+        var index = 0
+        while index < plans.count {
+            let current = plans[index]
+            if index + 1 < plans.count,
+               EnumerationDetector.straddles(current.text, plans[index + 1].text) {
+                let combined = current.ownedText + " " + plans[index + 1].ownedText
+                let tokens = await cleaner.countTokens(combined)
+                if tokens <= config.hardTokenCap {
+                    merged.append(ChunkPlan(index: 0, text: combined, tokens: tokens))
+                    index += 2
+                    continue
+                }
+            }
+            merged.append(current)
+            index += 1
+        }
+        return merged.enumerated().map { offset, plan in
+            ChunkPlan(index: offset, text: plan.text, tokens: plan.tokens,
+                      overlap: plan.overlap, ownedText: plan.ownedText)
+        }
+    }
+
     private func cleanChunk(_ plan: ChunkPlan, styling: String, structure: String,
                             protected: Protected, context: TextContext) async -> ChunkOutcome {
         if plan.tokens > config.hardTokenCap {
@@ -147,16 +179,23 @@ public actor CleanupService {
         var generationMs: Int?
         do {
             try Task.checkCancellation()
+            let baseStructure = CleanupStructureDetector.structure(for: plan.text, configured: structure)
+            let detectedStructure = structureMapping.structure(
+                for: EnumerationDetector.detect(plan.text), base: baseStructure)
+            let canQuote = config.format.spokenQuotes
+                && protected.ranges(in: plan.text, detect: false).isEmpty
+            let modelInput = canQuote
+                ? SpokenQuotes.apply(plan.text, style: config.format.quoteStyle)
+                : plan.text
             try await semaphore.acquire(priority: CleanPriority.current)
             let result: CleanResult
             do {
-                let detectedStructure = CleanupStructureDetector.structure(for: plan.text, configured: structure)
                 let options = CleanOptions(styling: styling, structure: detectedStructure, context: context.cleanupContext,
                                            deadlineMs: deadline, maxNewTokens: cap)
                 if cleaner is any DeadlineManagedTextCleaner {
-                    result = try await cleaner.clean(plan.text, options: options)
+                    result = try await cleaner.clean(modelInput, options: options)
                 } else {
-                    result = try await withDeadline(ms: deadline) { try await self.cleaner.clean(plan.text, options: options) }
+                    result = try await withDeadline(ms: deadline) { try await self.cleaner.clean(modelInput, options: options) }
                 }
                 await semaphore.release()
             } catch { await semaphore.release(); throw error }
@@ -164,7 +203,10 @@ public actor CleanupService {
             tokensOut = result.tokensOut
             prefillMs = result.prefillMs
             generationMs = result.generationMs
-            if let failure = CleanGuard.verify(input: plan.text, protected: protected, result: result, cap: cap) { throw failure }
+            if let failure = CleanGuard.verify(input: modelInput, protected: protected, result: result, cap: cap) { throw failure }
+            if canQuote, !QuoteGate.preserved(input: modelInput, output: result.text) {
+                throw CleanGuard.Failure.quoteChanged
+            }
             let elapsed = start.duration(to: .now)
             return ChunkOutcome(index: plan.index, text: result.text, state: .cleaned, tokensIn: result.tokensIn,
                                 tokensOut: result.tokensOut, latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000), attempts: 1, prefillMs: result.prefillMs, generationMs: result.generationMs)

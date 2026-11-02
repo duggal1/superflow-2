@@ -10,6 +10,7 @@ import SuperflowTextLexicon
 import SuperflowTextLineFormat
 import SuperflowTextNumbers
 import SuperflowTextShortcuts
+import SuperflowTechDictionary
 
 public struct TextPipelineDependencies: Sendable {
     public var lexiconEntries: [LexiconEntry]
@@ -43,6 +44,7 @@ public enum TextPipelineBuilder {
             stages.append(CleanupStage(service: cleaner))
         }
         stages.append(PostDedupeStage())
+        stages.append(FormattingStage())
         if settings.commandsEnabled {
             stages.append(CommandsStage())
         }
@@ -60,6 +62,9 @@ public enum TextPipelineBuilder {
                                          project: dependencies.project))
         }
         stages.append(LineFormatStage(settings: settings.lineFormat))
+        // Final deterministic layer. The dictionary is loaded once and is never
+        // exposed to ASR or the cleanup model.
+        stages.append(LexiconStage(entries: TechDictionary.entries, id: "techDictionary"))
 
         let seed = Set(dependencies.lexiconEntries.filter(\.enabled).map(\.canonical).filter { !$0.isEmpty })
         let tokenCounter: (@Sendable (String) async -> Int)?

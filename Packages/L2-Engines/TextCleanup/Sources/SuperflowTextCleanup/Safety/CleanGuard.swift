@@ -3,7 +3,7 @@ import SuperflowKernel
 import SuperflowPorts
 
 public enum CleanGuard {
-    public enum Failure: String, Error, Sendable { case truncated, protectedLost, contentChanged, empty }
+    public enum Failure: String, Error, Sendable { case truncated, protectedLost, contentChanged, empty, quoteChanged }
 
     public static func verify(input: String, protected: Protected, result: CleanResult, cap: Int) -> Failure? {
         if result.hitTokenCap || result.tokensOut >= cap { return .truncated }

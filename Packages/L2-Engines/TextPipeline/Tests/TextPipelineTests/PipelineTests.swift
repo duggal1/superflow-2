@@ -61,8 +61,8 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
-            "cleanup", "dedupe", "commands", "shortcuts", "spokenCode", "numbers", "lexicon", "codeAware",
-            "lineformat",
+            "cleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "numbers", "lexicon", "codeAware",
+            "lineformat", "techDictionary",
         ])
     }
 
@@ -73,7 +73,8 @@ final class PipelineTests: XCTestCase {
         settings.harperEnabled = false
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs,
-                       ["dedupe", "shortcuts", "spokenCode", "numbers", "lexicon", "codeAware", "lineformat"])
+                       ["dedupe", "format", "shortcuts", "spokenCode", "numbers", "lexicon", "codeAware", "lineformat",
+                        "techDictionary"])
     }
 
     func testCodeSpeakIsOptInAndRunsAfterNumbers() async {
@@ -86,8 +87,8 @@ final class PipelineTests: XCTestCase {
 
         settings.codeSpeakEnabled = true
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
-        XCTAssertEqual(Array(pipeline.stageIDs.prefix(6)),
-                       ["dedupe", "commands", "shortcuts", "spokenCode", "numbers", "codeSpeak"])
+        XCTAssertEqual(Array(pipeline.stageIDs.prefix(7)),
+                       ["dedupe", "format", "commands", "shortcuts", "spokenCode", "numbers", "codeSpeak"])
         let index = pipeline.stageIDs.firstIndex(of: "codeSpeak")
         XCTAssertEqual(index.map { pipeline.stageIDs[$0 + 1] }, "lexicon")
 
@@ -210,8 +211,37 @@ final class PipelineTests: XCTestCase {
         XCTAssertEqual(first.draft.cleanupState, second.draft.cleanupState)
     }
 
-    func testLineFormatIsAlwaysLast() {
+    func testTechDictionaryIsAlwaysLast() {
         let pipeline = TextPipelineBuilder.make(settings: AppSettings.default, dependencies: dependencies())
-        XCTAssertEqual(pipeline.stageIDs.last, "lineformat")
+        XCTAssertEqual(pipeline.stageIDs.last, "techDictionary")
+        XCTAssertEqual(pipeline.stageIDs.dropLast().last, "lineformat")
+        XCTAssertTrue(pipeline.stageIDs.contains("format"))
+    }
+
+    func testBundledTechDictionaryRunsAfterFormatting() async {
+        var settings = AppSettings.default
+        settings.cleanupEnabled = false
+        settings.commandsEnabled = false
+        settings.lineFormat.capitalize = false
+        settings.lineFormat.finalPeriod = false
+        let pipeline = TextPipelineBuilder.make(settings: settings,
+                                                dependencies: TextPipelineDependencies())
+        let result = await pipeline.run("use next js and git hub",
+                                        context: TextContext(settings: settings))
+        XCTAssertEqual(result.text, "use Next.js and GitHub")
+        XCTAssertEqual(result.timings.last?.id, "techDictionary")
+    }
+
+    func testFormattingShapesModelLikeListWithoutChangingWords() async {
+        var settings = AppSettings.default
+        settings.cleanupEnabled = false
+        settings.commandsEnabled = false
+        settings.lineFormat.capitalize = false
+        settings.lineFormat.finalPeriod = false
+        let pipeline = TextPipelineBuilder.make(settings: settings)
+        let input = "Grocery list 1. milk 2. eggs 3. bread"
+        let result = await pipeline.run(input, context: TextContext(settings: settings))
+        XCTAssertTrue(result.text.contains("1. milk\n2. eggs\n3. bread"), result.text)
+        XCTAssertTrue(FormatGuard.preserves(input, result.text), result.text)
     }
 }

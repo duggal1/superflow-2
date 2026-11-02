@@ -18,11 +18,14 @@ public struct CleanupConfig: Sendable, Equatable {
     /// from the finished assembly. CleanupService disables overlap so each
     /// source word belongs to exactly one model request.
     public var overlapPercent: Double
+    /// Structure-only formatting policy. Defaults keep every optional rewrite
+    /// off except list and paragraph shaping after cleanup.
+    public var format: FormatConfig
 
     public init(softTokenTarget: Int = 500, hardTokenCap: Int = 600, interactiveDeadlineMs: Int = 1_500,
                 backgroundDeadlineMs: Int = 30_000, workers: Int = 3, ratioFloor: Double = 0.6,
                 retryDepth: Int = 3, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_024,
-                overlapPercent: Double = 0.12) {
+                overlapPercent: Double = 0.12, format: FormatConfig = FormatConfig()) {
         self.softTokenTarget = softTokenTarget
         self.hardTokenCap = hardTokenCap
         self.interactiveDeadlineMs = interactiveDeadlineMs
@@ -33,6 +36,7 @@ public struct CleanupConfig: Sendable, Equatable {
         self.hallucinationFloor = hallucinationFloor
         self.maxNewTokens = maxNewTokens
         self.overlapPercent = overlapPercent
+        self.format = format
     }
 }
 
