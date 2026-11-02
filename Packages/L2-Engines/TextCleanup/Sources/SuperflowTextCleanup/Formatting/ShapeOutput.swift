@@ -66,7 +66,15 @@ public func shapeOutput(_ cleaned: String, config: FormatConfig,
             counters.paragraphReverts += 1
         }
     }
-    return Whitespace.tidy(text)
+    return guardWhitespace(text, Whitespace.tidy(text), counters: &counters)
+}
+
+func guardWhitespace(_ input: String, _ output: String, counters: inout FormatCounters) -> String {
+    guard FormatGuard.preserves(input, output) else {
+        counters.whitespaceReverts += 1
+        return input
+    }
+    return output
 }
 
 /// Runs after dedupe and before insertion. Fenced code is never reflowed.
@@ -88,6 +96,10 @@ public struct FormattingStage: SuperflowPorts.TextStage {
         if counters.paragraphReverts > 0 {
             output.diagnostics.append(Diagnostic(stage: id,
                 message: "paragraph formatting reverted: \(counters.paragraphReverts)"))
+        }
+        if counters.whitespaceReverts > 0 {
+            output.diagnostics.append(Diagnostic(stage: id,
+                message: "whitespace formatting reverted: \(counters.whitespaceReverts)"))
         }
         return output
     }

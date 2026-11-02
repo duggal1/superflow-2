@@ -22,6 +22,7 @@ public enum FormatGuard {
 public struct FormatCounters: Sendable, Equatable {
     public var listReverts = 0
     public var paragraphReverts = 0
+    public var whitespaceReverts = 0
     public var listsFormatted = 0
     public var paragraphsSplit = 0
     public init() {}

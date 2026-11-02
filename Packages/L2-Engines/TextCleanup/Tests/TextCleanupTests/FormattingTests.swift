@@ -208,6 +208,11 @@ final class WhitespaceTests: XCTestCase {
 }
 
 final class ShapeOutputTests: XCTestCase {
+    func testWhitespaceGuardRejectsWordLoss() {
+        var counters = FormatCounters()
+        XCTAssertEqual(guardWhitespace("keep every word", "keep word", counters: &counters), "keep every word")
+        XCTAssertEqual(counters.whitespaceReverts, 1)
+    }
     func testFormatsInlineListWithoutReverts() {
         var counters = FormatCounters()
         let out = shapeOutput("My list 1. milk 2. eggs 3. bread",
