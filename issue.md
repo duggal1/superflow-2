@@ -252,6 +252,8 @@ Without wordfreq, migration silently changes alias tiers and fails to reproduce 
 
 Evidence: two isolated migration runs matched each other, preserved source, but differed from bundled v4.
 
+Mitigation: migration now fails if wordfreq is unavailable. Reproducibility with the original word list remains unverified.
+
 ## Developer app gate lacks production context
 
 Production TextContext constructors omit activeAppBundleID, preventing developer-application gating.

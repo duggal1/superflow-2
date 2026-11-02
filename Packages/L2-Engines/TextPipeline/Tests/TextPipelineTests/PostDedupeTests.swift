@@ -25,6 +25,9 @@ final class PostDedupeTests: XCTestCase {
         XCTAssertEqual(PostDedupe.apply("it was doing that it was doing that because earlier"), "it was doing that because earlier")
         XCTAssertEqual(PostDedupe.apply("I tried to I tried to go back"), "I tried to go back")
         XCTAssertEqual(PostDedupe.apply("what what exactly changed"), "what exactly changed")
+        XCTAssertEqual(PostDedupe.apply("we must we must we must fix the back end"), "we must fix the back end")
+        XCTAssertEqual(PostDedupe.apply("must must fix the tech stack"), "must fix the tech stack")
+        XCTAssertEqual(PostDedupe.apply("the back end uses the tech stack"), "the back end uses the tech stack")
     }
     func testProtectsMeaningAndFormatting() {
         for input in ["call five five five one two one two", "the code is 7 7 3", "a very very big file", "he said that that was wrong", "I had had enough", "we flew to New York New York is huge", "open src/app.swift src/app.swift now", "it wasn't wasn't there"] {

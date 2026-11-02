@@ -347,8 +347,8 @@ def load_common_words() -> set[str]:
     try:
         from wordfreq import top_n_list
         return set(top_n_list("en", 30_000))
-    except Exception:
-        return set()
+    except ImportError as error:
+        raise RuntimeError("Install wordfreq before migrating; refusing to generate an unsafe catalog without the English word list") from error
 
 
 def write_csv(path: Path, header: list[str], rows: list[list]) -> None:
