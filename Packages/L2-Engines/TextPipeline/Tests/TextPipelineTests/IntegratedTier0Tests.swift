@@ -41,7 +41,7 @@ final class IntegratedTier0Tests: XCTestCase {
         let context = TextContext(settings: settings)
         let cases: [(String, String)] = [
             ("extremely extremely extremely important", "extremely important"),
-            ("he had had enough", "he had enough"),
+            ("he had had enough", "he had had enough"),
             ("a six hundred million-parameter model", "a 600M-parameter model"),
             ("half a million", "0.5M"),
             ("half 1M", "0.5M"),

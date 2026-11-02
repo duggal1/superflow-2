@@ -39,6 +39,7 @@ public enum CleanGuard {
                   boundary(result.text, match.upperBound, before: false) else { return .protectedLost }
             cursor = match.upperBound
         }
+        guard MeaningCarriers.accepts(comparable, result.text) else { return .contentChanged }
         let source = content(comparable)
         let cleaned = content(result.text)
         guard !cleaned.isEmpty else { return .contentChanged }

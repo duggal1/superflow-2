@@ -26,7 +26,7 @@ final class PipelineTests: XCTestCase {
         let result = await pipeline.run("I need an extremely extremely fast model with zero point six billion",
                                         context: TextContext(settings: settings))
         XCTAssertTrue(result.text.contains("0.6B"), result.text)
-        XCTAssertFalse(result.text.lowercased().contains("extremely extremely"), result.text)
+        XCTAssertTrue(result.text.lowercased().contains("extremely extremely"), result.text)
     }
     private func dependencies(cleaner: FakeTextCleaner = FakeTextCleaner(.identity),
                               grammar: FakeGrammarChecker? = nil,

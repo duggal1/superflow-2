@@ -3,6 +3,7 @@ import SuperflowKernel
 
 public struct TextDisfluencyStage: TextStage {
     public struct Config: Sendable {
+        public var singleWordAllowlist: Set<String>?
         public var minRun = 2
         public var maxPhraseLength = 3
         public var legitimatePairs: Set<String> = ["had", "that"]
@@ -49,6 +50,7 @@ public struct TextDisfluencyStage: TextStage {
             while j < words.count, canRepeat(words[j - 1], words[j]) { j += 1 }
             let run = j - i
             let collapses = run >= max(2, config.minRun)
+                && (run >= 3 || (config.singleWordAllowlist?.contains(words[i].key) ?? true))
                 && !(run == 2 && config.legitimatePairs.contains(words[i].key))
             if collapses {
                 var kept = words[i]
@@ -98,6 +100,7 @@ public struct TextDisfluencyStage: TextStage {
     }
 
     private func isRepeat(_ w: [Word], _ a: Int, _ b: Int, _ n: Int) -> Bool {
+        if w[a..<(a + n)].allSatisfy({ $0.core.first?.isUppercase == true }) { return false }
         guard soft(w[b - 1]), (w[b].pauseBefore ?? .zero) <= config.maxStutterPause else { return false }
         for k in 0..<n {
             let x = w[a + k], y = w[b + k]

@@ -100,12 +100,12 @@ final class CleanupTests: XCTestCase {
         XCTAssertEqual(plans.map(\.text).joined(separator: " "), text)
     }
 
-    func testListCuesNeverChangeProseControlLine() async {
+    func testExplicitListCuesSelectTrainedListsControl() async {
         let cleaner = FakeTextCleaner(.identity)
         let outcome = await service(cleaner).clean(
             "Here are the steps first install it second run it third ship it", context: TextContext())
         let options = await cleaner.lastOptions
-        XCTAssertEqual(options?.structure, "prose")
+        XCTAssertEqual(options?.structure, "lists")
         XCTAssertEqual(options?.styling, "semi-formal")
         XCTAssertEqual(outcome.text, "Here are the steps first install it second run it third ship it")
     }

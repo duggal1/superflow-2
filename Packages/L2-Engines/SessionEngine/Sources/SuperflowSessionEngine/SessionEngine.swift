@@ -55,6 +55,7 @@ public actor SessionEngine {
     let speculative = SpeculativePipeline()
     let speculativeCleanupEnabled: Bool
     var pipelineRevision = UUID()
+    var recognitionOverflow = false
     var journalWarned = false
     /// True only after `begin()` succeeded for this session. A missing or broken
     /// DeepFilterNet must never fail dictation; the capture lane uses raw audio.
@@ -135,6 +136,7 @@ public actor SessionEngine {
         lastEndMs = 0
         cumulativeTokenCount = 0
         levelCounter = 0
+        recognitionOverflow = false
         journalWarned = false
         enhancementActive = false
         cleanupCoordinator = nil

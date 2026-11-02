@@ -96,10 +96,9 @@ public struct ChunkPlanner: Sendable {
                     guard !words[cursor - 1].glue,
                           cursor == words.count || words[cursor - 1].sentenceEnd || words[cursor - 1].pause else { continue }
                     let extended = await count(Tokenizer.join(words[start..<cursor]))
-                    guard extended <= hard else { break }
+                    guard extended <= target else { break }
                     end = cursor
                     measured = extended
-                    if measured >= target { break }
                 }
             }
             // A protected term can itself exceed the model budget. Keep it whole;

@@ -15,10 +15,12 @@ struct DisfluencyAdapter: SuperflowPorts.TextStage {
         config.minRun = max(2, settings.tierAThreshold)
         config.maxPhraseLength = settings.collapseRepeatedPhrases ? 8 : 1
         config.stripFillers = settings.fillerPrepass
-        config.legitimatePairs = []
+        config.singleWordAllowlist = Set("first second third fourth fifth i it we you they he she was were my your our the a an to of in on at for with and or but if because what how why when where".split(separator: " ").map(String.init))
+        config.legitimatePairs = ["had", "that"]
         guard settings.collapseDuplicates else {
             return await MechanicalDisfluencyStage(settings: settings).apply(draft, context: context)
         }
+        let preserved = Set("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion not no never none nothing nobody neither nor cannot without".split(separator: " ").map(String.init))
         var result = draft
         result.text = draft.text.components(separatedBy: "\n").map { line in
             var words = WordTimingProjection.apply(to: Tokenizer.words(line, protected: draft.protected),
@@ -28,6 +30,7 @@ struct DisfluencyAdapter: SuperflowPorts.TextStage {
             }
             words = words.map { word in
                 var word = word
+                if preserved.contains(word.key) || word.key.hasSuffix("n't") { word.isProtected = true }
                 word.glue = false
                 return word
             }

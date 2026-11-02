@@ -47,7 +47,7 @@ extension SessionEngine {
             }
             return true
         } catch {
-            emit(.notice("Model warm-up failed: \\(error.localizedDescription)"))
+            emit(.notice("Model warm-up failed: \(error.localizedDescription)"))
             return false
         }
     }
@@ -237,7 +237,7 @@ extension SessionEngine {
         }
         let cleanupState = await cleanupCoordinator?.finish() ?? .skipped
         cleanupCoordinator = nil
-        let assembledText = await finalText(session: record.id)
+        let assembledText = recognitionOverflow ? nil : await finalText(session: record.id)
         let text = assembledText ?? ""
         let words = wordCount(text)
         let duration = max(lastEndMs, Int(clock.now().timeIntervalSince(record.startedAt) * 1000))

@@ -48,7 +48,7 @@ extension SessionEngine {
             if !clean.isEmpty {
                 let enhanced = AudioChunk(samples: clean, startSample: enhancing ? cleanCursor : chunk.startSample, source: .mic)
                 await archive?.append(enhanced)
-                feed.yield(enhanced)
+                reportDelivery(feed.yield(enhanced))
                 cleanCursor += Int64(clean.count)
             }
         }
@@ -56,10 +56,17 @@ extension SessionEngine {
         if !tail.isEmpty {
             let chunk = AudioChunk(samples: tail, startSample: cleanCursor, source: .mic)
             await archive?.append(chunk)
-            feed.yield(chunk)
+            reportDelivery(feed.yield(chunk))
         }
         feed.finish()
         if let failure = stage.failure, !warned { emit(.notice(failure)) }
+    }
+
+    func reportDelivery(_ result: AsyncStream<AudioChunk>.Continuation.YieldResult) {
+        if case .dropped = result, !recognitionOverflow {
+            recognitionOverflow = true
+            emit(.notice("Recognition fell behind. Audio is retained in the journal for recovery; incomplete text will not be pasted."))
+        }
     }
 
     func consumeAudioEvents(_ events: AsyncStream<AudioEvent>) async {
