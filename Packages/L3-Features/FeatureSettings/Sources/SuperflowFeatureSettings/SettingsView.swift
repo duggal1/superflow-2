@@ -7,7 +7,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum SettingsTab: String, CaseIterable, Identifiable, Hashable {
-    case general, dictation, text, meetings, privacy, advanced
+    case general, dictation, text, meetings, intelligence, privacy, advanced
 
     var id: Self { self }
     var title: String { rawValue.capitalized }
@@ -20,6 +20,7 @@ enum SettingsTab: String, CaseIterable, Identifiable, Hashable {
         case .dictation: DictationTab.titles
         case .text: TextTab.titles
         case .meetings: MeetingsTab.titles
+        case .intelligence: IntelligenceTab.titles
         case .privacy: PrivacyTab.titles
         case .advanced: AdvancedTab.titles
         }
@@ -47,7 +48,7 @@ public struct SettingsView: View {
     }
 
     public var body: some View {
-        Page(title: "Settings", subtitle: "Everything stays on this Mac.", width: Layout.narrow, clipContent: true) {
+        Page(title: "Settings", subtitle: "Your preferences.", width: Layout.narrow, clipContent: true) {
             SearchField(text: $model.searchQuery, prompt: "Search settings", isFocused: $searchFocus)
         } trailing: {
             if model.hasChanges {
@@ -112,6 +113,7 @@ public struct SettingsView: View {
         case .dictation: DictationTab(model: model, query: query)
         case .text: TextTab(model: model, query: query)
         case .meetings: MeetingsTab(model: model, query: query)
+        case .intelligence: IntelligenceTab(query: query)
         case .privacy: PrivacyTab(model: model, query: query, showNotices: $showingNotices)
         case .advanced: AdvancedTab(model: model, query: query)
         }
