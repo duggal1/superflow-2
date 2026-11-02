@@ -70,6 +70,7 @@ public final class AppCoordinator: ObservableObject {
     private var meetingRelayTask: Task<Void, Never>?
     private var retentionTask: Task<Void, Never>?
     var permissionTask: Task<Void, Never>?
+    var intelligenceTriggerObserver: NSObjectProtocol?
     let sessionEventRelay = EngineEventRelay<SessionEvent>()
     let meetingEventRelay = EngineEventRelay<MeetingEvent>()
 

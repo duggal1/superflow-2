@@ -9,6 +9,7 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
     private var streamer: DeepFilterNetCoreMLStreamer?
     private var loading: Task<Void, Error>?
     private var resampler = EnhancementResampler()
+    private var outputGain = EnhancementOutputGain()
     private var pending: [Float] = []
     private var inputCount = 0
     private var outputCount = 0
@@ -62,7 +63,7 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
     public func process(_ samples: [Float]) async throws -> [Float] {
         guard let streamer else { throw SuperflowError.invalidState("DeepFilterNet 3 is not prepared.") }
         inputCount += samples.count
-        return try process48(resampler.upsample(samples), streamer: streamer)
+        return outputGain.apply(try process48(resampler.upsample(samples), streamer: streamer))
     }
 
     private func process48(_ samples: [Float], streamer: DeepFilterNetCoreMLStreamer) throws -> [Float] {
@@ -83,9 +84,11 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
     public func finish() async throws -> [Float] {
         guard let streamer else { return [] }
         // Flush both FIR delays and the model lookahead without counting padding as input.
-        var output = try process48(resampler.upsample([Float](repeating: 0, count: 960)), streamer: streamer)
+        var output = outputGain.apply(
+            try process48(resampler.upsample([Float](repeating: 0, count: 960)), streamer: streamer))
         let remaining = max(0, inputCount - outputCount)
-        output.append(contentsOf: resampler.downsample(try streamer.flush()).prefix(remaining))
+        let tail = Array(resampler.downsample(try streamer.flush()).prefix(remaining))
+        output.append(contentsOf: outputGain.apply(tail))
         await reset()
         return output
     }
@@ -93,6 +96,7 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
     public func reset() async {
         streamer?.reset()
         resampler = EnhancementResampler()
+        outputGain.reset()
         pending.removeAll(keepingCapacity: true)
         inputCount = 0
         outputCount = 0

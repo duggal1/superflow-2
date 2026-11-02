@@ -10,6 +10,15 @@ import XCTest
 
 final class WarmupGestureTests: XCTestCase {
     @MainActor
+    func testIntelligenceTriggerOpensPageWithoutStartingADictationGesture() async {
+        _ = NSApplication.shared
+        let coordinator = AppCoordinator()
+        await coordinator.handleKeyEvent(KeyEvent(kind: .intelligenceDown, timestampNs: 0))
+        XCTAssertEqual(coordinator.mainWindowController.selection, .intelligence)
+        XCTAssertEqual(coordinator.gesture.state, .idle)
+    }
+
+    @MainActor
     func testDoubleTapIsRecognizedWhileSessionActionsArePending() async throws {
         _ = NSApplication.shared
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

@@ -3,6 +3,17 @@ import XCTest
 @testable import SuperflowEnhancementDeepFilterNet
 
 final class EnhancerTests: XCTestCase, @unchecked Sendable {
+    func testOutputGainBoostsSpeechAndLimitsPeaksWithoutClipping() {
+        var gain = EnhancementOutputGain()
+        let boosted = gain.apply([0.2, -0.2])
+        XCTAssertEqual(boosted[0], 0.264, accuracy: 0.000001)
+        XCTAssertEqual(boosted[1], -0.264, accuracy: 0.000001)
+
+        let limited = gain.apply([0.9, -0.9, 1.2, -1.2])
+        XCTAssertLessThanOrEqual(limited.map(abs).max() ?? 0, EnhancementOutputGain.peakLimit)
+        XCTAssertTrue(limited.allSatisfy(\.isFinite))
+    }
+
     func testPreparationPersistsCompiledModelForTheNextLaunch() async throws {
         guard ProcessInfo.processInfo.environment["SUPERFLOW_TEST_ENHANCER"] == "1" else {
             throw XCTSkip("Set SUPERFLOW_TEST_ENHANCER=1 to verify the installed model cache")

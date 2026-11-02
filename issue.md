@@ -282,3 +282,30 @@ Production TextContext constructors omit activeAppBundleID, preventing developer
 Evidence: identifier appears in TextContext and gate, but no production caller supplies it. Mixed-language false positives also require policy review.
 
 Latest resolution: Dictionary gate bypasses developer context — failing-before regressions now pass for Textract gating and disabled pins.
+
+## Short ASR first result is late
+
+Two-second dictation does not return a partial while the clip is still playing.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: on the 2240 ms tier, the first partial arrived at 2400 ms after the 2136 ms input end. The product's 1120 ms tier now produces a partial at 1309 ms during a repeated 2319 ms run, but the first isolated run took 12873 ms. First-use latency still needs a safe warm-up fix.
+
+## Intelligence trigger does not open the page
+
+The saved trigger key did not reach the global hotkey tap or main-window router.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: left/right Control and Option map to the Intelligence event; the app route selects the Intelligence page without starting dictation. Hotkey and app route tests pass.
+
+## Enhanced speech needs a louder level
+
+DeepFilterNet output reached VAD, ASR and the enhanced archive without gain adjustment.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: enhanced output targets 1.32× gain and applies a 0.98 peak ceiling. The raw journal remains before enhancement; gain and clipping regression passes.

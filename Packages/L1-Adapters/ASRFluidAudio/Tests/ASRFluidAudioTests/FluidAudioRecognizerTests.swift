@@ -58,7 +58,7 @@ final class FluidAudioRecognizerTests: XCTestCase {
                        .parakeetUnified640ms)
         XCTAssertNil(FluidAudioCatalog.variant(for: ModelProfile.nemotron35Streaming.id))
         XCTAssertEqual(FluidAudioCatalog.profile(for: ModelProfile.nemotron35Streaming.id)?.engine,
-                       .nemotronMultilingual(languageDirectory: "latin", chunkMs: 2_240))
+                       .nemotronMultilingual(languageDirectory: "latin", chunkMs: 1_120))
     }
 
     func testMultilingualProfileUsesFluidAudioLanguageTierDirectory() throws {
@@ -66,7 +66,7 @@ final class FluidAudioRecognizerTests: XCTestCase {
         let profile = try XCTUnwrap(
             FluidAudioCatalog.profile(for: ModelProfile.nemotron35Streaming.id))
         XCTAssertEqual(FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: root).path,
-                       "/tmp/superflow-asr-catalog/nemotron-multilingual/latin/2240ms")
+                       "/tmp/superflow-asr-catalog/nemotron-multilingual/latin/1120ms")
     }
 
     func testAvailabilityRequiresEveryArtifact() async throws {

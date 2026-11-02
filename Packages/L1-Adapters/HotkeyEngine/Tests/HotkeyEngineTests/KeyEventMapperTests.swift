@@ -128,6 +128,32 @@ final class KeyEventMapperTests: XCTestCase {
 }
 
 extension KeyEventMapperTests {
+    func testIntelligenceTriggerUsesConfiguredLeftAndRightModifiers() {
+        let cases: [(IntelligenceTriggerKey, Int64, CGEventFlags)] = [
+            (.leftOption, KeyCode.leftOption, .maskAlternate),
+            (.leftControl, KeyCode.leftControl, .maskControl),
+            (.rightOption, KeyCode.rightOption, .maskAlternate),
+            (.rightControl, KeyCode.rightControl, .maskControl),
+        ]
+        for (trigger, code, flags) in cases {
+            var mapper = ModifierEventMapper()
+            let down = mapper.events(keyCode: code, flags: flags, timestampNs: 1,
+                                     dictationKey: .fn, intelligenceTriggerKey: trigger)
+            XCTAssertEqual(down.map(\.kind), [.intelligenceDown], "\(trigger)")
+            let up = mapper.events(keyCode: code, flags: [], timestampNs: 2,
+                                   dictationKey: .fn, intelligenceTriggerKey: trigger)
+            XCTAssertTrue(up.isEmpty, "\(trigger) release must not open another window")
+        }
+    }
+
+    func testIntelligenceTriggerTakesPrecedenceWhenItMatchesDictationKey() {
+        var mapper = ModifierEventMapper()
+        let down = mapper.events(keyCode: KeyCode.rightOption, flags: .maskAlternate,
+                                 timestampNs: 1, dictationKey: .rightOption,
+                                 intelligenceTriggerKey: .rightOption)
+        XCTAssertEqual(down.map(\.kind), [.intelligenceDown])
+    }
+
     func testTapRecoveryDoesNotLoseTheReleaseOfAHeldFnKey() {
         var mapper = ModifierEventMapper()
         _ = mapper.events(keyCode: KeyCode.fn, flags: .maskSecondaryFn, timestampNs: 1, dictationKey: .fn)

@@ -35,6 +35,7 @@ public struct GestureRecognizer: Sendable {
         case .fnUp: return fnUp(at: event.timestampNs)
         case .rightCmdDown: return rightCmdDown(at: event.timestampNs)
         case .rightCmdUp: return rightCmdUp(at: event.timestampNs)
+        case .intelligenceDown: return []
         case .enter: return enter(at: event.timestampNs)
         case .escape: return escape()
         case .otherKeyDown: return otherKey()

@@ -1,5 +1,6 @@
 import SuperflowDesignSystem
 import SuperflowIcons
+import SuperflowKernel
 import SuperflowMeetingIntelligence
 import SuperflowUIComponents
 import SwiftUI
@@ -9,7 +10,7 @@ struct IntelligenceTab: View {
     let query: String
     @AppStorage("intelligence.effort") private var effort = ReasoningEffort.low.rawValue
     @AppStorage("intelligence.mode") private var mode = MeetingMode.normal.rawValue
-    @AppStorage("intelligence.trigger") private var trigger = 59
+    @AppStorage("intelligence.trigger") private var trigger = IntelligenceTriggerKey.leftControl.rawValue
     @AppStorage("intelligence.screenAware") private var screenAware = false
     @AppStorage("intelligence.customInstructions") private var custom = ""
     @State private var key = ""
@@ -49,7 +50,10 @@ struct IntelligenceTab: View {
                     ], label: "Mode")
                 }
                 SettingRow(.keyboard, "Trigger key", filter: query) {
-                    Dropdown(selection: $trigger, options: [.init(value: 59, title: "Left Control"), .init(value: 62, title: "Right Control")], label: "Trigger key")
+                    Dropdown(selection: $trigger,
+                             options: IntelligenceTriggerKey.allCases.map {
+                                 .init(value: $0.rawValue, title: $0.title)
+                             }, label: "Trigger key")
                 }
                 SettingRow(.eyeSlash, "Screen awareness", filter: query) {
                     AppToggle("Screen awareness", isOn: $screenAware)

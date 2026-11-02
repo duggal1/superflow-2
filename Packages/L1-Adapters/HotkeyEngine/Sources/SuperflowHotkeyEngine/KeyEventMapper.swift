@@ -13,6 +13,7 @@ public enum KeyCode {
     public static let rightOption: Int64 = 0x3D
     public static let rightControl: Int64 = 0x3E
     public static let leftOption: Int64 = 0x3A
+    public static let leftControl: Int64 = 0x3B
     public static let enter: Int64 = 0x24
     public static let escape: Int64 = 0x35
 }
@@ -77,7 +78,7 @@ public enum KeyEventMapper {
         }
     }
 
-    private static func modifierIsDown(_ keyCode: Int64, flags: CGEventFlags, tracked: Bool?) -> Bool {
+    static func modifierIsDown(_ keyCode: Int64, flags: CGEventFlags, tracked: Bool?) -> Bool {
         let aggregate: CGEventFlags
         let side: Int32
         let other: Int32
@@ -90,6 +91,8 @@ public enum KeyEventMapper {
             (aggregate, side, other) = (.maskAlternate, NX_DEVICELALTKEYMASK, NX_DEVICERALTKEYMASK)
         case KeyCode.rightShift:
             (aggregate, side, other) = (.maskShift, NX_DEVICERSHIFTKEYMASK, NX_DEVICELSHIFTKEYMASK)
+        case KeyCode.leftControl:
+            (aggregate, side, other) = (.maskControl, NX_DEVICELCTLKEYMASK, NX_DEVICERCTLKEYMASK)
         case KeyCode.rightControl:
             (aggregate, side, other) = (.maskControl, NX_DEVICERCTLKEYMASK, NX_DEVICELCTLKEYMASK)
         default:
@@ -149,12 +152,23 @@ public struct ModifierEventMapper: Sendable {
     }
 
     public mutating func events(keyCode: Int64, flags: CGEventFlags, timestampNs: UInt64,
-                                dictationKey: DictationKey) -> [KeyEvent] {
+                                dictationKey: DictationKey,
+                                intelligenceTriggerKey: IntelligenceTriggerKey? = nil) -> [KeyEvent] {
         let tracked = tracker.isDown(keyCode: keyCode)
-        let mapped = KeyEventMapper.flagsChanged(keyCode: keyCode, flags: flags,
-                                                 isDown: tracked, timestampNs: timestampNs,
-                                                 dictationKey: dictationKey)
         var result: [KeyEvent] = []
+        if let intelligenceTriggerKey,
+           keyCode == Int64(intelligenceTriggerKey.keyCode),
+           KeyEventMapper.modifierIsDown(keyCode, flags: flags, tracked: tracked) {
+            result.append(KeyEvent(kind: .intelligenceDown, timestampNs: timestampNs))
+        }
+        let isIntelligenceTrigger = intelligenceTriggerKey.map {
+            keyCode == Int64($0.keyCode)
+        } ?? false
+        let mapped = isIntelligenceTrigger
+            ? nil
+            : KeyEventMapper.flagsChanged(keyCode: keyCode, flags: flags,
+                                          isDown: tracked, timestampNs: timestampNs,
+                                          dictationKey: dictationKey)
         let physicalCommands = UInt64(NX_DEVICERCMDKEYMASK | NX_DEVICELCMDKEYMASK)
         let nextCommand: Bool?
         if keyCode == KeyCode.rightCommand {

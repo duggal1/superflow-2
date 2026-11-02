@@ -60,7 +60,7 @@ public struct FluidAudioModelHubDownloader: FluidAudioModelDownloading {
         case .nemotronMultilingual(let languageDirectory, let chunkMs):
             // A subdirectory download is saved at `to/<remote path>`, so `to` has to be the
             // repo folder the catalog reads from. Passing the cache root put the tree at
-            // `<cache>/latin/2240ms`, one level above `modelDirectory`, and every completed
+            // `<cache>/latin/1120ms`, one level above `modelDirectory`, and every completed
             // download then failed integrity verification against an empty directory.
             let subdirectory = "\(languageDirectory)/\(chunkMs)ms"
             let repoDirectory = cacheRoot.appendingPathComponent(

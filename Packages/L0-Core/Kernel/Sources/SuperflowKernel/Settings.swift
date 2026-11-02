@@ -180,6 +180,27 @@ public enum DictationKey: String, Codable, Sendable, CaseIterable, Identifiable,
     }
 }
 
+/// The physical modifier that opens the Intelligence page.
+public enum IntelligenceTriggerKey: Int, Sendable, CaseIterable, Identifiable, Hashable {
+    case leftOption = 58
+    case leftControl = 59
+    case rightOption = 61
+    case rightControl = 62
+
+    public var id: Int { rawValue }
+
+    public var title: String {
+        switch self {
+        case .leftOption: "Left option"
+        case .leftControl: "Left control"
+        case .rightOption: "Right option"
+        case .rightControl: "Right control"
+        }
+    }
+
+    public var keyCode: UInt16 { UInt16(rawValue) }
+}
+
 public struct GestureConfig: Codable, Sendable, Equatable {
     public var holdMs: Int = 200
     public var doubleTapMs: Int = 350
@@ -206,6 +227,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var asrProfile: String = ModelProfile.default.id
     public var speechEnhancementEnabled = true
     public var cleanupEnabled = true
+    public var reflectionCleanupEnabled = false
     public var harperEnabled = false
     public var commandsEnabled = true
     public var codeSpeakEnabled = false
@@ -266,6 +288,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
             : ModelProfile.default.id
         speechEnhancementEnabled = try c.decodeIfPresent(Bool.self, forKey: .speechEnhancementEnabled) ?? d.speechEnhancementEnabled
         cleanupEnabled = try c.decodeIfPresent(Bool.self, forKey: .cleanupEnabled) ?? d.cleanupEnabled
+        reflectionCleanupEnabled = try c.decodeIfPresent(Bool.self, forKey: .reflectionCleanupEnabled)
+            ?? d.reflectionCleanupEnabled
         harperEnabled = try c.decodeIfPresent(Bool.self, forKey: .harperEnabled) ?? d.harperEnabled
         commandsEnabled = try c.decodeIfPresent(Bool.self, forKey: .commandsEnabled) ?? d.commandsEnabled
         codeSpeakEnabled = try c.decodeIfPresent(Bool.self, forKey: .codeSpeakEnabled) ?? d.codeSpeakEnabled

@@ -186,7 +186,7 @@ final class FluidAudioModelDownloaderTests: XCTestCase {
     /// `FluidAudioCatalog.modelDirectory`, or the finished download never verifies.
     func testFlatMultilingualCacheMovesUnderTheRepoFolder() throws {
         let root = emptyRoot()
-        let subdirectory = "latin/2240ms"
+        let subdirectory = "latin/1120ms"
         let legacy = root.appendingPathComponent(subdirectory, isDirectory: true)
         try FileManager.default.createDirectory(at: legacy, withIntermediateDirectories: true)
         let weight = legacy.appendingPathComponent("encoder.mlmodelc")
@@ -211,7 +211,7 @@ final class FluidAudioModelDownloaderTests: XCTestCase {
             for: ModelProfile.nemotron35Streaming.id))
         let expected = root
             .appendingPathComponent(Repo.nemotronMultilingual.folderName, isDirectory: true)
-            .appendingPathComponent("latin/2240ms", isDirectory: true)
+            .appendingPathComponent("latin/1120ms", isDirectory: true)
         XCTAssertEqual(FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: root).path,
                        expected.path)
     }

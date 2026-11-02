@@ -26,6 +26,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     /// The physical modifier that counts as the dictation key. Read on the tap
     /// thread, so it lives under the same lock as the taps.
     private var dictationKey: DictationKey = .fn
+    private var intelligenceTriggerKey: IntelligenceTriggerKey = .leftControl
     private var lifecycle = HotkeyLifecycle()
     private var wakeObserver: NSObjectProtocol?
     private var healthTimer: DispatchSourceTimer?
@@ -113,6 +114,10 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     /// need to rebuild the taps. Fn suppression only ever applies to Fn.
     public func setDictationKey(_ key: DictationKey) async {
         lock.withLock { dictationKey = key }
+    }
+
+    public func setIntelligenceTriggerKey(_ key: IntelligenceTriggerKey) async {
+        lock.withLock { intelligenceTriggerKey = key }
     }
 
     // MARK: taps
@@ -282,7 +287,8 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
             let (key, mapped) = lock.withLock { () -> (DictationKey, [KeyEvent]) in
                 (dictationKey, modifierTracker.events(keyCode: keyCode, flags: event.flags,
-                                                       timestampNs: timestamp, dictationKey: dictationKey))
+                                                       timestampNs: timestamp, dictationKey: dictationKey,
+                                                       intelligenceTriggerKey: intelligenceTriggerKey))
             }
             for edge in mapped { continuation.yield(edge) }
             if key == .fn, keyCode == KeyCode.fn, lock.withLock({ suppressFn }) { return nil }

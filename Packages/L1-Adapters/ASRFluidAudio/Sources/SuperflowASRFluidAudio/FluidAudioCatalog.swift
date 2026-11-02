@@ -76,7 +76,7 @@ public enum FluidAudioCatalog {
             hasNativeEndpointing: false),
         FluidAudioProfile(
             id: ModelProfile.nemotron35Streaming.id,
-            engine: .nemotronMultilingual(languageDirectory: "latin", chunkMs: 2_240),
+            engine: .nemotronMultilingual(languageDirectory: "latin", chunkMs: 1_120),
             requiredArtifacts: [
                 ModelNames.NemotronMultilingualStreaming.metadata,
                 ModelNames.NemotronMultilingualStreaming.tokenizer,

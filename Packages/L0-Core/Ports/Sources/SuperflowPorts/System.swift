@@ -7,6 +7,7 @@ public struct KeyEvent: Sendable, Equatable {
         case fnUp
         case rightCmdDown
         case rightCmdUp
+        case intelligenceDown
         case enter
         case escape
         case otherKeyDown(UInt16)
@@ -29,11 +30,13 @@ public protocol HotkeySource: Sendable {
     /// adapter maps it onto the same `.fnDown`/`.fnUp` pair, so the gesture engine
     /// does not need to know that Fn is not always the key.
     func setDictationKey(_ key: DictationKey) async
+    func setIntelligenceTriggerKey(_ key: IntelligenceTriggerKey) async
 }
 
 public extension HotkeySource {
     /// Sources that only emit Fn (test doubles, older adapters) keep Fn.
     func setDictationKey(_ key: DictationKey) async {}
+    func setIntelligenceTriggerKey(_ key: IntelligenceTriggerKey) async {}
 }
 
 public enum Permission: String, Sendable, CaseIterable, Identifiable {

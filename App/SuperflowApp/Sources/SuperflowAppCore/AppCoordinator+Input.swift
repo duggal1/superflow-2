@@ -32,6 +32,8 @@ extension AppCoordinator {
         // The chosen key is applied before `start()` builds the taps, so the very
         // first press is already the right one.
         await environment.hotkeySource.setDictationKey(settings.dictationKey)
+        await environment.hotkeySource.setIntelligenceTriggerKey(selectedIntelligenceTriggerKey())
+        observeIntelligenceTriggerSetting()
         // Fn suppression is what keeps macOS from running its Globe action (Show Emoji & Symbols)
         // over dictation. Swallowing an event needs an active tap, so apply it before `start()`
         // creates the taps, otherwise the first tap is built listen-only.
@@ -150,6 +152,10 @@ extension AppCoordinator {
     }
 
     func handleKeyEvent(_ event: KeyEvent) async {
+        if event.kind == .intelligenceDown {
+            mainWindowController.show(.intelligence)
+            return
+        }
         if event.kind == .escape {
             guard gesture.state != .idle || gestureIsFinishing
                 || menuBarController.sessionState.isActive || menuBarController.meetingState.isActive else { return }
@@ -173,6 +179,24 @@ extension AppCoordinator {
             break
         }
         enqueueGestureActions(actions)
+    }
+
+    private func selectedIntelligenceTriggerKey() -> IntelligenceTriggerKey {
+        let rawValue = UserDefaults.standard.object(forKey: "intelligence.trigger") as? Int
+            ?? IntelligenceTriggerKey.leftControl.rawValue
+        return IntelligenceTriggerKey(rawValue: rawValue) ?? .leftControl
+    }
+
+    private func observeIntelligenceTriggerSetting() {
+        guard intelligenceTriggerObserver == nil else { return }
+        intelligenceTriggerObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, let source = self.environment?.hotkeySource else { return }
+                await source.setIntelligenceTriggerKey(self.selectedIntelligenceTriggerKey())
+            }
+        }
     }
 
     private func enqueueGestureActions(_ actions: [GestureAction]) {
