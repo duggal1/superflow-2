@@ -202,3 +202,30 @@ Supporting doc drift: `docs/architecture/design-token-map.md` points at
    first ~40 pt and fade to glass below?
 
 </details>
+
+## Swift verification blocked by DeepFilterNet concurrency errors
+
+CI fails compiling DeepFilterNet-mlx MLXArray captures under Swift 6.4.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: Actions run 41356842540 at 4914d8e; compiler and runner setup succeeded, make verify failed.
+
+## Cleanup lacks polarity and quantifier protection
+
+Cleanup can accept meaning-changing negation or quantifier deletion in unprotected text.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: CleanGuard.verify has no hard negation or quantifier comparison; solution v2 requires both.
+
+## Recognition buffering silently drops audio on overflow
+
+A full recognition relay discards oldest audio without warning or entering journal recovery.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: consumeCapture uses bufferingNewest(4096); consumeAudio ignores feed.yield's dropped result.
