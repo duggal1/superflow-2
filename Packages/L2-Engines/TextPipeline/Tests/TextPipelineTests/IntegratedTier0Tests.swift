@@ -3,17 +3,17 @@ import SuperflowKernel
 import SuperflowTextPipeline
 
 final class IntegratedTier0Tests: XCTestCase {
-    func testFormattingAndFillerOnlyCleanupWorkWithoutModelAvailability() async {
+    func testUnavailableModelDoesNotRewriteListsOrFillers() async {
         var settings = AppSettings.default
         settings.lineFormat.capitalize = false
         settings.lineFormat.finalPeriod = false
         let pipeline = TextPipelineBuilder.make(settings: settings)
         let context = TextContext(settings: settings)
         let list = await pipeline.run("first install the app second grant access third start dictation", context: context)
-        XCTAssertEqual(list.text.split(separator: "\n").filter { $0.hasPrefix("- ") }.count, 3)
+        XCTAssertEqual(list.text, "first install the app second grant access third start dictation")
         let empty = await pipeline.run("um uh", context: context)
-        XCTAssertEqual(empty.text, "")
-        XCTAssertEqual(empty.draft.cleanupState, .cleaned)
+        XCTAssertEqual(empty.text, "um uh")
+        XCTAssertEqual(empty.draft.cleanupState, .pending)
     }
 
     func testLongPausePreservesRepeatedEmphasis() async {
@@ -40,7 +40,7 @@ final class IntegratedTier0Tests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: settings)
         let context = TextContext(settings: settings)
         let cases: [(String, String)] = [
-            ("extremely extremely extremely important", "extremely important"),
+            ("extremely extremely extremely important", "extremely extremely extremely important"),
             ("he had had enough", "he had had enough"),
             ("a six hundred million-parameter model", "a 600M-parameter model"),
             ("half a million", "0.5M"),

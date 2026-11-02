@@ -43,6 +43,14 @@ private actor FakeRuntime: LlamaRuntime {
 }
 
 final class LlamaCleanerTests: XCTestCase {
+    func testCleanerPreservesRuntimePhaseTimings() async throws {
+        let cleaner = LlamaCleaner(modelProvider: StubProvider(url: URL(fileURLWithPath: "/tmp/s1.gguf")),
+                                   runtime: TimedRuntime())
+        let result = try await cleaner.clean("fixture", options: CleanOptions())
+        XCTAssertEqual(result.prefillMs, 42)
+        XCTAssertEqual(result.generationMs, 81)
+    }
+
     func testSystemPromptMatchesPinnedHash() {
         let data = Data(LlamaPrompt.system(options: CleanOptions()).utf8)
         let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
@@ -257,5 +265,13 @@ final class LlamaCleanerTests: XCTestCase {
                                    runtime: FakeRuntime(response: long))
         let result = try await cleaner.clean("hello", options: CleanOptions(maxNewTokens: 10))
         XCTAssertTrue(result.hitTokenCap)
+    }
+}
+
+private struct TimedRuntime: LlamaRuntime {
+    func load(modelURL: URL, compute: ModelCompute) async throws {}
+    func complete(prompt: String, maxTokens: Int) async throws -> String { "fixture" }
+    func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion {
+        LlamaCompletion(text: "fixture", generatedTokens: 1, prefillMs: 42, generationMs: 81)
     }
 }

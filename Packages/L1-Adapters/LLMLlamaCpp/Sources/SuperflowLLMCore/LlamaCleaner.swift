@@ -118,11 +118,16 @@ public struct LlamaCompletion: Sendable {
     public var text: String
     public var generatedTokens: Int?
     public var hitTokenCap: Bool
+    public var prefillMs: Int?
+    public var generationMs: Int?
 
-    public init(text: String, generatedTokens: Int? = nil, hitTokenCap: Bool = false) {
+    public init(text: String, generatedTokens: Int? = nil, hitTokenCap: Bool = false,
+                prefillMs: Int? = nil, generationMs: Int? = nil) {
         self.text = text
         self.generatedTokens = generatedTokens
         self.hitTokenCap = hitTokenCap
+        self.prefillMs = prefillMs
+        self.generationMs = generationMs
     }
 }
 
@@ -231,7 +236,7 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
                            tokensIn: tokensIn,
                            tokensOut: tokensOut,
                            hitTokenCap: output.hitTokenCap || (!cleaned.isEmpty && tokensOut >= outputCap),
-                           latencyMs: elapsed)
+                           latencyMs: elapsed, prefillMs: output.prefillMs, generationMs: output.generationMs)
     }
 
     static func outputTokenCap(inputTokens: Int, configured: Int) -> Int {

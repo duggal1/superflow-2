@@ -141,6 +141,7 @@ public actor LlamaCppRuntime: LlamaRuntime {
         }
         llama_memory_clear(llama_get_memory(context), true)
         // Prefill uses bounded batches so cancellation is checked between graph evaluations.
+        let prefillStarted = DispatchTime.now().uptimeNanoseconds
         for start in stride(from: 0, to: tokens.count, by: 512) {
             try check()
             let batchTokens = Array(tokens[start..<min(tokens.count, start + 512)])
@@ -153,6 +154,8 @@ public actor LlamaCppRuntime: LlamaRuntime {
                 throw SuperflowError.modelUnavailable("llama.cpp could not evaluate the prompt")
             }
         }
+        let prefillMs = Int((DispatchTime.now().uptimeNanoseconds - prefillStarted) / 1_000_000)
+        let generationStarted = DispatchTime.now().uptimeNanoseconds
         guard let sampler = llama_sampler_chain_init(llama_sampler_chain_default_params()) else {
             throw SuperflowError.modelUnavailable("llama.cpp could not create a sampler")
         }
@@ -169,7 +172,8 @@ public actor LlamaCppRuntime: LlamaRuntime {
             let token = llama_sampler_sample(sampler, context, -1)
             if llama_vocab_is_eog(vocabulary, token) {
                 return LlamaCompletion(text: String(decoding: output, as: UTF8.self),
-                                       generatedTokens: generated)
+                                       generatedTokens: generated, prefillMs: prefillMs,
+                                       generationMs: Int((DispatchTime.now().uptimeNanoseconds - generationStarted) / 1_000_000))
             }
             output.append(contentsOf: try tokenBytes(token, vocabulary: vocabulary))
             generated += 1
@@ -185,7 +189,8 @@ public actor LlamaCppRuntime: LlamaRuntime {
         }
         try check()
         return LlamaCompletion(text: String(decoding: output, as: UTF8.self),
-                               generatedTokens: generated, hitTokenCap: true)
+                               generatedTokens: generated, hitTokenCap: true, prefillMs: prefillMs,
+                               generationMs: Int((DispatchTime.now().uptimeNanoseconds - generationStarted) / 1_000_000))
     }
 
     private static func tokenize(_ text: String, vocabulary: OpaquePointer) throws -> [llama_token] {

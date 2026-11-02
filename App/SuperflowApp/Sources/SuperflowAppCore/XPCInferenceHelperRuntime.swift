@@ -57,13 +57,15 @@ public actor XPCInferenceHelperRuntime: LlamaRuntime {
         return try await withRecovery {
             try await self.request { proxy, finish in
                 proxy.complete(prompt: prompt, maxTokens: maxTokens, deadlineMs: deadlineMs,
-                               interactive: interactive) { text, generatedTokens, hitTokenCap, error in
+                               interactive: interactive) { text, generatedTokens, hitTokenCap, prefill, generation, error in
                     if let error {
                         finish(.failure(.helper(error)))
                     } else if let text {
                         finish(.success(LlamaCompletion(text: text,
                                                        generatedTokens: generatedTokens >= 0 ? generatedTokens : nil,
-                                                       hitTokenCap: hitTokenCap)))
+                                                       hitTokenCap: hitTokenCap,
+                                                       prefillMs: prefill >= 0 ? prefill : nil,
+                                                       generationMs: generation >= 0 ? generation : nil)))
                     } else {
                         finish(.failure(.helper("The inference helper returned no text.")))
                     }

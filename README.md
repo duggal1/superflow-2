@@ -24,7 +24,7 @@ Superflow turns speech into properly formatted text in the app you're already us
 
 ## What makes it different
 
-- **Native, not Electron.** A Swift 6.4 and SwiftUI macOS app, with Rust used for the Harper grammar integration. No bundled Chromium UI.
+- **Native, not Electron.** A Swift 6.4 and SwiftUI macOS app. No bundled Chromium UI.
 - **Streaming by design.** Core ML recognition through FluidAudio emits partial transcripts as you speak. You don't have to wait until the end to see recognition progress.
 - **Runs on your Mac.** Recognition, cleanup, formatting, and transcript storage are local after the models are downloaded. No account or telemetry endpoint.
 - **Small, local text storage.** SQLite stores transcripts, history, dictionary entries, and settings. Transcript data is lightweight; optional saved audio and downloaded AI models take additional disk space.
@@ -65,12 +65,12 @@ Microphone capture + recovery journal
        ↓
 Streaming ASR (Core ML / FluidAudio)
        ↓
-Deterministic text stages + local AI cleanup
+S1-mini cleanup → basic duplicate removal → user text features
        ↓
 Insert at cursor → finalize in SQLite
 ```
 
-The text pipeline applies spoken commands, shortcuts, disfluency handling, numbers and dates, protected dictionary terms, code-aware spans, grammar checks, and final line formatting. A language model is one part of that pipeline, not a substitute for the rest.
+The text pipeline sends raw ASR text to S1-mini, then removes adjacent duplicates conservatively. Spoken commands, shortcuts, number formatting, dictionary terms, code-aware features, and line formatting run afterward. Harper, deterministic grammar cleanup, and prose polish do not run in the active pipeline. If S1-mini is unavailable or its output fails the safety checks, the raw text is retained.
 
 The cleanup model runs in an XPC helper process to isolate inference failures from the main app.
 
@@ -130,4 +130,4 @@ Start reading the code at `App/SuperflowApp/Sources/SuperflowAppCore/AppCoordina
 
 ## Acknowledgments
 
-Superflow builds on [FluidAudio](https://github.com/FluidInference/FluidAudio), [llama.cpp](https://github.com/ggml-org/llama.cpp), [Harper](https://github.com/Automattic/harper), and the **S1-mini** cleanup model by Superwhisper. Licenses and third-party notices are in `docs/licenses/`.
+Superflow builds on [FluidAudio](https://github.com/FluidInference/FluidAudio), [llama.cpp](https://github.com/ggml-org/llama.cpp), and the **S1-mini** cleanup model by Superwhisper. Licenses and third-party notices are in `docs/licenses/`.

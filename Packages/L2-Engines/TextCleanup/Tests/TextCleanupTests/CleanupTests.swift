@@ -10,6 +10,51 @@ final class CleanupTests: XCTestCase {
         CleanupService(cleaner: cleaner, config: config)
     }
 
+    func testReportsChunkOutcomesWithoutTranscriptContent() async {
+        let metrics = FieldMetrics()
+        let good = CleanupService(cleaner: FakeTextCleaner(.identity), metrics: metrics)
+        let bad = CleanupService(cleaner: FakeTextCleaner(.fail), metrics: metrics)
+        _ = await good.clean("sensitive fixture", context: TextContext())
+        _ = await bad.clean("sensitive fixture", context: TextContext())
+        XCTAssertEqual(metrics.events, ["cleanup.chunk.accepted", "cleanup.chunk.runtime_error"])
+        XCTAssertTrue(metrics.records.contains { $0.0 == "cleanup.chunk.ms" })
+        XCTAssertFalse(metrics.fields.flatMap(\.values).contains { $0.contains("sensitive") || $0.contains("fixture") })
+    }
+
+    func testTimeoutIsCountedAsDeadline() async {
+        let metrics = RecordingMetrics()
+        var config = CleanupConfig()
+        config.interactiveDeadlineMs = 10
+        let cleaner = CleanupService(cleaner: FakeTextCleaner(.slow(ms: 200)), config: config, metrics: metrics)
+        _ = await cleaner.clean("hello", context: TextContext())
+        XCTAssertEqual(metrics.events, ["cleanup.chunk.deadline"])
+    }
+
+    func testHelperTimeoutIsCountedAsDeadline() async {
+        let metrics = RecordingMetrics()
+        let cleaner = CleanupService(cleaner: RemoteTimeoutCleaner(), metrics: metrics)
+        _ = await cleaner.clean("hello", context: TextContext())
+        XCTAssertEqual(metrics.events, ["cleanup.chunk.deadline"])
+    }
+
+    func testReportsModelTimingWithoutTranscript() async {
+        let metrics = FieldMetrics()
+        let cleaner = CleanupService(cleaner: TimedCleaner(), metrics: metrics)
+        _ = await cleaner.clean("private text", context: TextContext())
+        XCTAssertEqual(metrics.fields.first?["prefillMs"], "42")
+        XCTAssertEqual(metrics.fields.first?["generationMs"], "81")
+        XCTAssertFalse(metrics.fields.flatMap(\.values).contains { $0.contains("private") || $0.contains("text") })
+    }
+
+    func testGuardRejectionHasSafeReasonTag() async {
+        let metrics = FieldMetrics()
+        let cleaner = CleanupService(cleaner: FakeTextCleaner(.echoPrefix("invented preamble ")), metrics: metrics)
+        let result = await cleaner.clean("send the report today", context: TextContext())
+        XCTAssertEqual(result.state, .fallback)
+        XCTAssertEqual(metrics.events, ["cleanup.chunk.rejected.contentChanged"])
+        XCTAssertFalse(metrics.fields.flatMap(\.values).contains { $0.contains("report") || $0.contains("invented") })
+    }
+
     func testIdentityIsCleaned() async {
         let cleaner = FakeTextCleaner(.identity)
         let outcome = await service(cleaner).clean("hello world. this is fine.", context: TextContext())
@@ -254,5 +299,38 @@ final class CleanupTests: XCTestCase {
         XCTAssertEqual(options[text]?.structure, "lists")
         XCTAssertEqual(options[text]?.styling, "semi-formal")
         XCTAssertEqual(outcome.text, text)
+    }
+}
+
+private struct RemoteTimeoutCleaner: DeadlineManagedTextCleaner {
+    enum Error: Swift.Error { case helper(String) }
+    var isReady: Bool { get async { true } }
+    func countTokens(_ text: String) async -> Int { 1 }
+    func clean(_ text: String, options: CleanOptions) async throws -> CleanResult {
+        throw Error.helper("Timed out: cleanup")
+    }
+}
+
+/// Captures metrics under a lock because cleanup may report from concurrent tasks.
+private final class FieldMetrics: MetricsSink, @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedEvents: [String] = []
+    private var storedRecords: [(String, Double)] = []
+    private var storedFields: [[String: String]] = []
+    var events: [String] { lock.withLock { storedEvents } }
+    var records: [(String, Double)] { lock.withLock { storedRecords } }
+    var fields: [[String: String]] { lock.withLock { storedFields } }
+    func record(_ name: String, valueMs: Double) { lock.withLock { storedRecords.append((name, valueMs)) } }
+    func event(_ name: String, _ fields: [String: String]) {
+        lock.withLock { storedEvents.append(name); storedFields.append(fields) }
+    }
+}
+
+private struct TimedCleaner: DeadlineManagedTextCleaner {
+    var isReady: Bool { get async { true } }
+    func countTokens(_ text: String) async -> Int { 2 }
+    func clean(_ text: String, options: CleanOptions) async throws -> CleanResult {
+        CleanResult(text: text, tokensIn: 5, tokensOut: 2, hitTokenCap: false,
+                    latencyMs: 123, prefillMs: 42, generationMs: 81)
     }
 }

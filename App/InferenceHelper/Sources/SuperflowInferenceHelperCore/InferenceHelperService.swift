@@ -58,9 +58,9 @@ import SuperflowPorts
     }
 
     public func complete(prompt: String, maxTokens: Int, deadlineMs: Int, interactive: Bool,
-                         reply: @escaping (String?, Int, Bool, String?) -> Void) {
+                         reply: @escaping (String?, Int, Bool, Int, Int, String?) -> Void) {
         guard maxTokens > 0, deadlineMs > 0 else {
-            reply(nil, -1, false, "Completion requires a positive token limit and deadline.")
+            reply(nil, -1, false, -1, -1, "Completion requires a positive token limit and deadline.")
             return
         }
         let callback = HelperCallback(reply)
@@ -70,9 +70,9 @@ import SuperflowPorts
                 let output = try await CleanPriority.$current.withValue(interactive ? .interactive : .background) {
                     try await runtime.completion(prompt: prompt, maxTokens: maxTokens, deadlineMs: deadlineMs)
                 }
-                callback.call((output.text, output.generatedTokens ?? -1, output.hitTokenCap, nil))
+                callback.call((output.text, output.generatedTokens ?? -1, output.hitTokenCap, output.prefillMs ?? -1, output.generationMs ?? -1, nil))
             } catch {
-                callback.call((nil, -1, false, error.localizedDescription))
+                callback.call((nil, -1, false, -1, -1, error.localizedDescription))
             }
         }
     }

@@ -10,9 +10,12 @@ public struct ChunkOutcome: Sendable, Equatable {
     public var tokensOut: Int
     public var latencyMs: Int
     public var attempts: Int
+    public var prefillMs: Int?
+    public var generationMs: Int?
     public var reason: String?
     public init(index: Int, text: String, state: CleanupState, tokensIn: Int = 0, tokensOut: Int = 0,
-                latencyMs: Int = 0, attempts: Int = 0, reason: String? = nil) {
+                latencyMs: Int = 0, attempts: Int = 0, reason: String? = nil,
+                prefillMs: Int? = nil, generationMs: Int? = nil) {
         self.index = index
         self.text = text
         self.state = state
@@ -21,6 +24,8 @@ public struct ChunkOutcome: Sendable, Equatable {
         self.latencyMs = latencyMs
         self.attempts = attempts
         self.reason = reason
+        self.prefillMs = prefillMs
+        self.generationMs = generationMs
     }
 }
 
@@ -40,11 +45,13 @@ public struct CleanupOutcome: Sendable, Equatable {
 /// Decorates the unchanged TextCleaner port with deterministic planning and fallback.
 public actor CleanupService {
     private let cleaner: any TextCleaner
+    private let metrics: any MetricsSink
     public let config: CleanupConfig
     private let semaphore: AsyncSemaphore
 
-    public init(cleaner: any TextCleaner, config: CleanupConfig = CleanupConfig()) {
+    public init(cleaner: any TextCleaner, config: CleanupConfig = CleanupConfig(), metrics: any MetricsSink = NoopMetrics()) {
         self.cleaner = cleaner
+        self.metrics = metrics
         self.config = config
         self.semaphore = AsyncSemaphore(config.workers)
     }
@@ -58,6 +65,7 @@ public actor CleanupService {
             return CleanupOutcome(text: tier0, state: .skipped, chunks: [], diagnostics: [])
         }
         guard await cleaner.isReady else {
+            metrics.event("cleanup.chunk.helper_unavailable", [:])
             return CleanupOutcome(text: tier0, state: .fallback, chunks: [],
                                   diagnostics: [Diagnostic(stage: "cleanup", message: "model not ready")])
         }
@@ -65,12 +73,30 @@ public actor CleanupService {
             let output = await self.prose(tier0, protected: protected, context: context,
                                           styling: context.settings.cleanupStyling,
                                           structure: context.settings.cleanupStructure)
+            for chunk in output.chunks {
+                let outcome = self.outcomeTag(chunk)
+                var fields = ["tokensIn": String(chunk.tokensIn), "tokensOut": String(chunk.tokensOut),
+                              "latencyMs": String(chunk.latencyMs), "attempts": String(chunk.attempts)]
+                if let ms = chunk.prefillMs { fields["prefillMs"] = String(ms) }
+                if let ms = chunk.generationMs { fields["generationMs"] = String(ms) }
+                self.metrics.event("cleanup.chunk." + outcome, fields)
+                self.metrics.record("cleanup.chunk.ms", valueMs: Double(chunk.latencyMs))
+            }
             let fallback = output.chunks.contains { $0.state == .fallback }
             return CleanupOutcome(text: output.text, state: fallback ? .fallback : .cleaned,
                                   chunks: output.chunks, diagnostics: output.chunks.compactMap { chunk in
                 chunk.reason.map { Diagnostic(stage: "cleanup[\(chunk.index)]", message: $0) }
             })
         }
+    }
+
+    private func outcomeTag(_ chunk: ChunkOutcome) -> String {
+        guard chunk.state == .fallback else { return "accepted" }
+        let reason = chunk.reason ?? ""
+        if ["truncated", "protectedLost", "contentChanged", "empty"].contains(reason) { return "rejected." + reason }
+        if reason.localizedCaseInsensitiveContains("timeout") || reason.localizedCaseInsensitiveContains("timed out") { return "deadline" }
+        if reason.localizedCaseInsensitiveContains("cancel") { return "cancelled" }
+        return "runtime_error"
     }
 
     private func prose(_ text: String, protected: Protected, context: TextContext,
@@ -117,6 +143,8 @@ public actor CleanupService {
         let cap = min(config.maxNewTokens, Int(1.3 * Double(await cleaner.countTokens(plan.text))) + 32)
         var tokensIn = 0
         var tokensOut = 0
+        var prefillMs: Int?
+        var generationMs: Int?
         do {
             try Task.checkCancellation()
             try await semaphore.acquire(priority: CleanPriority.current)
@@ -134,16 +162,18 @@ public actor CleanupService {
             } catch { await semaphore.release(); throw error }
             tokensIn = result.tokensIn
             tokensOut = result.tokensOut
+            prefillMs = result.prefillMs
+            generationMs = result.generationMs
             if let failure = CleanGuard.verify(input: plan.text, protected: protected, result: result, cap: cap) { throw failure }
             let elapsed = start.duration(to: .now)
             return ChunkOutcome(index: plan.index, text: result.text, state: .cleaned, tokensIn: result.tokensIn,
-                                tokensOut: result.tokensOut, latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000), attempts: 1)
+                                tokensOut: result.tokensOut, latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000), attempts: 1, prefillMs: result.prefillMs, generationMs: result.generationMs)
         } catch {
             let elapsed = start.duration(to: .now)
             return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
                                 tokensIn: tokensIn, tokensOut: tokensOut,
                                 latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000),
-                                attempts: 1, reason: String(describing: error))
+                                attempts: 1, reason: String(describing: error), prefillMs: prefillMs, generationMs: generationMs)
         }
     }
 

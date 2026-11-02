@@ -151,7 +151,7 @@ public final class AppEnvironment {
                 interactiveDeadlineMs: settings.interactiveDeadlineMs,
                 backgroundDeadlineMs: settings.backgroundDeadlineMs,
                 workers: settings.cleanupWorkers
-            )
+            ), metrics: metrics
         )
         return TextPipelineBuilder.make(
             settings: settings,

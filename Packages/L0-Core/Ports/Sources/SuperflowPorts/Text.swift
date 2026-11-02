@@ -29,12 +29,17 @@ public struct CleanResult: Sendable, Equatable {
     public var tokensOut: Int
     public var hitTokenCap: Bool
     public var latencyMs: Int
-    public init(text: String, tokensIn: Int, tokensOut: Int, hitTokenCap: Bool, latencyMs: Int) {
+    public var prefillMs: Int?
+    public var generationMs: Int?
+    public init(text: String, tokensIn: Int, tokensOut: Int, hitTokenCap: Bool, latencyMs: Int,
+                prefillMs: Int? = nil, generationMs: Int? = nil) {
         self.text = text
         self.tokensIn = tokensIn
         self.tokensOut = tokensOut
         self.hitTokenCap = hitTokenCap
         self.latencyMs = latencyMs
+        self.prefillMs = prefillMs
+        self.generationMs = generationMs
     }
 }
 

@@ -5,7 +5,6 @@ import SuperflowTextCleanup
 import SuperflowTextCodeAware
 import SuperflowTextCodeSpeak
 import SuperflowTextCommands
-import SuperflowTextDisfluency
 import SuperflowTextGrammarGate
 import SuperflowTextLexicon
 import SuperflowTextLineFormat
@@ -43,14 +42,12 @@ public enum TextPipelineBuilder {
         if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
             stages.append(CleanupStage(service: cleaner))
         }
+        stages.append(PostDedupeStage())
         if settings.commandsEnabled {
             stages.append(CommandsStage())
         }
         if !dependencies.shortcuts.isEmpty {
             stages.append(ShortcutsStage(entries: dependencies.shortcuts))
-        }
-        if settings.disfluency.enabled {
-            stages.append(DisfluencyAdapter(settings: settings.disfluency))
         }
         stages.append(SpokenCodeStage())
         stages.append(NumbersAdapter())
@@ -62,8 +59,6 @@ public enum TextPipelineBuilder {
             stages.append(CodeAwareStage(settings: settings.codeAware,
                                          project: dependencies.project))
         }
-        stages.append(FinalPolishStage())
-        stages.append(TextStructureStage())
         stages.append(LineFormatStage(settings: settings.lineFormat))
 
         let seed = Set(dependencies.lexiconEntries.filter(\.enabled).map(\.canonical).filter { !$0.isEmpty })

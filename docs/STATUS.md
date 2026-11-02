@@ -2,6 +2,12 @@
 
 Updated: 2026-10-29
 
+## Cleanup v3 status (2026-11-02)
+
+The active pipeline runs S1-mini first, then basic protected duplicate removal, followed by enabled product features (commands, shortcuts, spoken code, numbers, dictionary, code-aware formatting, and line formatting). Numbers and lexicon run after S1-mini. Harper, disfluency, prose polish, and deterministic list-structure stages are not scheduled. S1-mini's trained `lists` control remains available.
+
+Cleanup chunk outcomes and safe token/latency counts are available through Settings → Export Diagnostics. Successful and rejected completions include prefill/generation timings; deadline and runtime errors do not carry those timings. The owner’s five packaged-app takes, runtime parity, reference-based quality, 9/10 score, deadline/fallback rates, and performance sweeps are **UNTESTED**; no quality or speed improvement is claimed. See `work/plan/backend/solution-v3-cleanup.md` for the remaining gate.
+
 ## Milestones
 
 - **Done — S1-mini Q4_K_M download and smoke:** `.models/s1-mini/s1-mini-q4_k_m.gguf`, 484,219,808 bytes. SHA-256 `3b41ebe2502cbd03e811d5d16b022f5ab551eda58d62597d152f89535003c634` matches the Hugging Face LFS digest. `llama-server` loaded it and returned `So I need to send the report by Thursday.` for the model-card prompt; measured prompt evaluation 359.41 tokens/s and generation 100.86 tokens/s on this M1 Air. Model license and required “S1-mini by Superwhisper” attribution were read from the downloaded LICENSE.

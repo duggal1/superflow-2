@@ -18,7 +18,7 @@ final class InferenceHelperServiceTests: XCTestCase {
         func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion {
             self.deadlineMs = deadlineMs
             priority = CleanPriority.current
-            return LlamaCompletion(text: "managed", generatedTokens: 7, hitTokenCap: true)
+            return LlamaCompletion(text: "managed", generatedTokens: 7, hitTokenCap: true, prefillMs: 42, generationMs: 81)
         }
     }
 
@@ -27,10 +27,12 @@ final class InferenceHelperServiceTests: XCTestCase {
         let runtime = ManagedOnlyRuntime()
         let service = InferenceHelperService(runtime: runtime)
         service.complete(prompt: "fixture", maxTokens: 7, deadlineMs: 1_500,
-                         interactive: true) { text, tokens, hitCap, error in
+                         interactive: true) { text, tokens, hitCap, prefill, generation, error in
             XCTAssertEqual(text, "managed")
             XCTAssertEqual(tokens, 7)
             XCTAssertTrue(hitCap)
+            XCTAssertEqual(prefill, 42)
+            XCTAssertEqual(generation, 81)
             XCTAssertNil(error)
             replied.fulfill()
         }
@@ -45,7 +47,7 @@ final class InferenceHelperServiceTests: XCTestCase {
         let service = InferenceHelperService(runtime: ManagedOnlyRuntime())
         for (tokens, deadline) in [(0, 1_500), (7, 0), (-1, -1)] {
             service.complete(prompt: "fixture", maxTokens: tokens, deadlineMs: deadline,
-                             interactive: false) { text, count, hitCap, error in
+                             interactive: false) { text, count, hitCap, _, _, error in
                 XCTAssertNil(text)
                 XCTAssertEqual(count, -1)
                 XCTAssertFalse(hitCap)
@@ -147,7 +149,7 @@ final class InferenceHelperServiceTests: XCTestCase {
         var completion: String?
         var completionError: String?
         service.complete(prompt: "raw text", maxTokens: 100, deadlineMs: 30_000,
-                         interactive: false) { text, _, _, error in
+                         interactive: false) { text, _, _, _, _, error in
             completion = text
             completionError = error
             completionReply.fulfill()
