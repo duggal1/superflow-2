@@ -7,9 +7,7 @@ import SuperflowTechDictionary
 ///
 /// Tier A aliases are always applied. Tier B aliases fire only when the user
 /// pinned them, the project vocabulary contains them, or a dev co-word sits
-/// within ±3 tokens. The active-application gate is intentionally absent until
-/// the pipeline carries the frontmost bundle identifier; omitting it makes the
-/// gate more conservative, never less.
+/// within ±3 tokens, or the supplied active application is a developer tool.
 struct TechDictionaryGate: Sendable {
     private let pinned: Set<String>
     private let projectTokens: Set<String>
@@ -31,7 +29,7 @@ struct TechDictionaryGate: Sendable {
     ]
 
     init(userEntries: [LexiconEntry], project: ProjectContext?) {
-        pinned = Set(userEntries.map { Self.normalized($0.canonical) })
+        pinned = Set(userEntries.filter(\.enabled).map { Self.normalized($0.canonical) })
         let paths = project?.paths ?? []
         projectTokens = Set(paths.flatMap { Self.tokens($0) })
         projectText = paths.joined(separator: " ").lowercased()
@@ -48,7 +46,6 @@ struct TechDictionaryGate: Sendable {
         if rule.tier == .b, Self.normalized(trigger) == "textract" {
             if Self.projectMentionsTextract(context) { return false }
             if !Set(tokens).intersection(Set(rule.neg)).isEmpty { return false }
-            return true
         }
         guard rule.tier == .b else { return true }
 

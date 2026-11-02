@@ -122,7 +122,7 @@ def main() -> int:
         "the cloud model is expensive\tthe Claude model is expensive",
         "use cursor to edit the file\tuse Cursor to edit the file",
         "jason parse the config\tJSON parse the config",
-        "textract for the tech stack\ttech stack for the tech stack",
+        "build textract for the tech stack\tbuild tech stack for the tech stack",
         "tan stack query\tTanStack Query",
         "next jay ess app router\tNext.js app router",
         "claude code hooks\tClaude Code hooks",

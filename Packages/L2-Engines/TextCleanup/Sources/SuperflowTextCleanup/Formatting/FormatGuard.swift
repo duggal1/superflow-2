@@ -10,7 +10,7 @@ public enum FormatGuard {
             of: #"(?<![\w.])\d{1,2}[.)](?=\s)"#, with: " ", options: .regularExpression)
         return noMarkers
             .split(whereSeparator: { !($0.isLetter || $0.isNumber || $0 == "'" || $0 == "’") })
-            .map { $0.lowercased().replacingOccurrences(of: "’", with: "'") }
+            .map { $0.replacingOccurrences(of: "’", with: "'") }
     }
 
     public static func preserves(_ before: String, _ after: String) -> Bool {

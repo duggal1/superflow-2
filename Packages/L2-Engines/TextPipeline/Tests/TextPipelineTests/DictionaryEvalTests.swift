@@ -17,10 +17,8 @@ final class DictionaryEvalTests: XCTestCase {
     }
 
     private func lines(_ name: String) throws -> [String] {
-        guard let url = Bundle.module.url(forResource: name, withExtension: "txt",
-                                          subdirectory: "Resources") else {
-            throw XCTSkip("missing \(name).txt")
-        }
+        let url = try XCTUnwrap(Bundle.module.url(forResource: name, withExtension: "txt",
+                                                  subdirectory: "Resources"))
         return try String(contentsOf: url, encoding: .utf8)
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map(String.init)
@@ -30,9 +28,11 @@ final class DictionaryEvalTests: XCTestCase {
     func testEverydaySentencesAreUntouched() async throws {
         let stage = stage()
         var failures: [String] = []
-        for line in try lines("negatives") {
+        let inputs = try lines("negatives")
+        XCTAssertGreaterThanOrEqual(inputs.count, 300)
+        for line in inputs {
             let output = await stage.apply(TranscriptDraft(text: line),
-                                           context: TextContext()).text
+                                           context: TextContext(activeAppBundleID: "com.apple.iWork.Pages")).text
             if output != line { failures.append("\(line)  ->  \(output)") }
         }
         XCTAssertTrue(failures.isEmpty,
@@ -42,9 +42,11 @@ final class DictionaryEvalTests: XCTestCase {
     func testDeveloperSentencesReplaceAsExpected() async throws {
         let stage = stage()
         var failures: [String] = []
-        for row in try lines("positives") {
+        let inputs = try lines("positives")
+        XCTAssertGreaterThanOrEqual(inputs.count, 300)
+        for row in inputs {
             let parts = row.components(separatedBy: "\t")
-            guard parts.count == 2 else { continue }
+            guard parts.count == 2 else { XCTFail("malformed positive fixture"); continue }
             let output = await stage.apply(TranscriptDraft(text: parts[0]),
                                            context: TextContext()).text
             if output != parts[1] {

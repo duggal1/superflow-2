@@ -323,7 +323,7 @@ next year we should use next js	next year we should use Next.js
 the cloud model is expensive	the Claude model is expensive
 use cursor to edit the file	use Cursor to edit the file
 jason parse the config	JSON parse the config
-textract for the tech stack	tech stack for the tech stack
+build textract for the tech stack	build tech stack for the tech stack
 tan stack query	TanStack Query
 next jay ess app router	Next.js app router
 claude code hooks	Claude Code hooks

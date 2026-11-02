@@ -10,7 +10,8 @@ final class FormatGuardTests: XCTestCase {
                                            "my list\n1. milk\n2. eggs\n3. bread"))
         XCTAssertTrue(FormatGuard.preserves("he said hello world", "he said \"hello world\""))
         XCTAssertTrue(FormatGuard.preserves("a) one\nb", "a) one b"))
-        XCTAssertTrue(FormatGuard.preserves("it’s done", "IT'S DONE"))
+        XCTAssertTrue(FormatGuard.preserves("it’s done", "it's done"))
+        XCTAssertFalse(FormatGuard.preserves("it’s done", "IT'S DONE"))
     }
 
     func testWordChangeDetected() {

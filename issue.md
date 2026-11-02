@@ -233,3 +233,32 @@ Evidence: consumeCapture uses bufferingNewest(4096); consumeAudio ignores feed.y
 Hardening progress: polarity/name/quantifier regression coverage added; overflow now surfaces a notice and blocks incomplete insertion while retaining the journal. Physical overflow/recovery and full v2 acceptance remain unverified, so issues stay Unresolved. CI dependency repair remains outstanding.
 
 Overflow regression: a simulated dropped chunk prevents insertion and retains an unfinished session and journal. Physical overflow and recovery remain unverified.
+
+## Dictionary gate bypasses developer context
+
+Textract replacement bypassed Tier B gating; disabled personal entries incorrectly enabled ambiguous replacements.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: new regressions failed before the fix; developer-context, disabled-pin and AWS-exclusion tests now pass.
+
+## Dictionary migration depends on optional word list
+
+Without wordfreq, migration silently changes alias tiers and fails to reproduce the bundled catalog.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: two isolated migration runs matched each other, preserved source, but differed from bundled v4.
+
+## Developer app gate lacks production context
+
+Production TextContext constructors omit activeAppBundleID, preventing developer-application gating.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: identifier appears in TextContext and gate, but no production caller supplies it. Mixed-language false positives also require policy review.
+
+Latest resolution: Dictionary gate bypasses developer context — failing-before regressions now pass for Textract gating and disabled pins.
