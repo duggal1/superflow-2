@@ -1,5 +1,14 @@
 # Issue
 
+## Meeting intelligence screen OCR stalls
+
+Vision recognition did not return after successful screen capture in native probes on macOS 27.2.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: normal and CPU-only probes reached OCR; both were interrupted. See agents/codex/meeting-intelligence/results/live-validation.md.
+
 ## Settings and Meetings navigation lag
 
 Users report severe lag when opening Settings or Meetings and switching pages.
