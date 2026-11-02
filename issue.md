@@ -1,5 +1,14 @@
 # Issue
 
+## Core ML abort during startup transcription
+
+Starting transcription can abort inside Core ML prediction and report a misleading microphone failure.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: SuperflowApp crash report 2026-11-02-200554 shows SIGABRT in MLE5ExecutionStream prediction; startup trigger remains unverified.
+
 ## Meeting intelligence screen OCR stalls
 
 Vision recognition did not return after successful screen capture in native probes on macOS 27.2.

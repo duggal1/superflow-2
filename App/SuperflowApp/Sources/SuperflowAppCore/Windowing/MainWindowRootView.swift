@@ -148,6 +148,8 @@ public struct MainWindowRootView: View {
             if let model = coordinator.meetingsModel { MeetingsView(model: model) }
         case .models:
             if let model = coordinator.modelsModel { ModelsView(vm: model) }
+        case .intelligence:
+            IntelligenceView()
         case .settings:
             if let model = coordinator.settingsModel { SettingsView(model: model) }
         }

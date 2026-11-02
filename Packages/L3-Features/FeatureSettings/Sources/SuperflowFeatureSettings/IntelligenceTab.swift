@@ -101,3 +101,13 @@ struct IntelligenceTab: View {
         }
     }
 }
+
+public struct IntelligenceView: View {
+    public init() {}
+
+    public var body: some View {
+        Page(title: "Intelligence", subtitle: "Meeting intelligence", width: Layout.narrow) {
+            IntelligenceTab(query: "")
+        }
+    }
+}

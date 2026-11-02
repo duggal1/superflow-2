@@ -10,6 +10,7 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
     case shortcuts
     case meetings
     case models
+    case intelligence
     case settings
 
     public var id: String { rawValue }
@@ -22,6 +23,7 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
         case .shortcuts: "Shortcuts"
         case .meetings: "Meetings"
         case .models: "Models"
+        case .intelligence: "Intelligence"
         case .settings: "Settings"
         }
     }
@@ -35,6 +37,7 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
         case .shortcuts: .shortcuts
         case .meetings: .meetings
         case .models: .models
+        case .intelligence: .models
         case .settings: .settings
         }
     }
