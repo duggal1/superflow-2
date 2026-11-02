@@ -1,0 +1,2216 @@
+alias,canonical,score,reason,pack
+.bash,.bash,2,single common word (canonical),command
+.c,.c,2,single common word (canonical),core
+.cc,.cc,2,single common word (canonical),core
+.conf,.conf,2,single common word (canonical),core
+.cs,.cs,2,single common word (canonical),core
+.css,.css,2,single common word (canonical),web
+.go,.go,2,single common word (canonical),core
+.h,.h,2,single common word (canonical),core
+.html,.html,2,single common word (canonical),web
+.java,.java,2,single common word (canonical),core
+.js,.js,2,single common word (canonical),core
+.kt,.kt,2,single common word (canonical),core
+.less,.less,2,single common word (canonical),core
+.lock,.lock,2,single common word (canonical),core
+.md,.md,2,single common word (canonical),core
+.php,.php,2,single common word (canonical),core
+.rb,.rb,2,single common word (canonical),core
+.rs,.rs,2,single common word (canonical),core
+.sh,.sh,2,single common word (canonical),core
+.sql,.sql,2,single common word (canonical),core
+.swift,.swift,2,single common word (canonical),mobile
+.ts,.ts,2,single common word (canonical),core
+.txt,.txt,2,single common word (canonical),core
+.xml,.xml,2,single common word (canonical),core
+accessibility,Accessibility,2,single common word,core
+Accessibility,Accessibility,2,single common word (canonical),core
+accessible,Accessibility,2,single common word,core
+AMD,AMD,2,single common word (canonical),hardware
+angular,Angular,2,single common word,web
+Angular,Angular,2,single common word (canonical),web
+apache,Apache,2,single common word,core
+Apache,Apache,2,single common word (canonical),core
+api,API,2,single common word,hardware
+API,API,2,single common word (canonical),core
+apollo,Apollo Client,2,single common word,web
+arch,Arch Linux,2,single common word,infra
+aria,ARIA,2,single common word,core
+ARIA,ARIA,2,single common word (canonical),core
+article,article,2,single common word,core
+article,article,2,single common word (canonical),core
+astro,Astro,2,single common word,web
+Astro,Astro,2,single common word (canonical),web
+attention,Attention,2,single common word,core
+Attention,Attention,2,single common word (canonical),core
+aws,AWS,2,single common word,infra
+AWS,AWS,2,single common word (canonical),infra
+azure,Azure,2,single common word,infra
+Azure,Azure,2,single common word (canonical),infra
+bash,bash,2,single common word,command
+bash,bash,2,single common word (canonical),command
+blackwell,Blackwell,2,single common word,hardware
+Blackwell,Blackwell,2,single common word (canonical),core
+boon,Bun,2,single common word,web
+branch,Git branch,2,single common word,command
+brew,Homebrew,2,single common word,command
+bun,Bun,2,single common word,web
+Bun,Bun,2,single common word (canonical),core
+bundle,Bundler,2,single common word,web
+button,button,2,single common word,core
+button,button,2,single common word (canonical),core
+C#,C#,2,single common word (canonical),core
+C++,C++,2,single common word (canonical),core
+cache,Caching,2,single common word,infra
+cargo,Cargo,2,single common word,rust
+Cargo,Cargo,2,single common word (canonical),rust
+claude,Claude,2,single common word,ai-models
+Claude,Claude,2,single common word (canonical),ai-models
+closure,Closure,2,single common word,web
+Closure,Closure,2,single common word (canonical),core
+closures,Closure,2,single common word,web
+cloud,Claude,2,single common word,ai-models
+code,code,2,single common word,core
+code,code,2,single common word (canonical),core
+commit,Git commit,2,single common word,command
+compiler,Compiler,2,single common word,web
+Compiler,Compiler,2,single common word (canonical),core
+container,Container,2,single common word,infra
+Container,Container,2,single common word (canonical),core
+containers,Container,2,single common word,infra
+controller,Controller,2,single common word,core
+Controller,Controller,2,single common word (canonical),core
+cotton,Kotlin,2,single common word,mobile
+cpu,CPU,2,single common word,hardware
+CPU,CPU,2,single common word (canonical),hardware
+csr,CSR,2,single common word,command
+CSR,CSR,2,single common word (canonical),core
+css,CSS,2,single common word,web
+CSS,CSS,2,single common word (canonical),web
+cursor,Cursor,2,single common word,core
+Cursor,Cursor,2,single common word (canonical),core
+cypress,Cypress,2,single common word,core
+Cypress,Cypress,2,single common word (canonical),core
+d3,D3.js,2,single common word,core
+dependencies,Dependency,2,single common word,command
+dependency,Dependency,2,single common word,command
+Dependency,Dependency,2,single common word (canonical),core
+di,Dependency Injection,2,single common word,core
+div,div,2,single common word,core
+div,div,2,single common word (canonical),core
+dive,div,2,single common word,core
+django,Django,2,single common word,hardware
+Django,Django,2,single common word (canonical),python
+dl,Deep Learning,2,single common word,core
+dns,DNS,2,single common word,core
+DNS,DNS,2,single common word (canonical),core
+docker,Docker,2,single common word,infra
+Docker,Docker,2,single common word (canonical),infra
+dom,DOM,2,single common word,core
+DOM,DOM,2,single common word (canonical),core
+drizzle,Drizzle ORM,2,single common word,web
+dry,DRY,2,single common word,core
+DRY,DRY,2,single common word (canonical),core
+dynamo,DynamoDB,2,single common word,core
+elastic,Elasticsearch,2,single common word,core
+electron,Electron,2,single common word,hardware
+Electron,Electron,2,single common word (canonical),core
+embedding,Embedding,2,single common word,ai-models
+Embedding,Embedding,2,single common word (canonical),ai-models
+expo,Expo,2,single common word,web
+Expo,Expo,2,single common word (canonical),core
+fish,fish shell,2,single common word,command
+flask,Flask,2,single common word,hardware
+Flask,Flask,2,single common word (canonical),python
+footer,footer,2,single common word,core
+footer,footer,2,single common word (canonical),core
+form,form,2,single common word,core
+form,form,2,single common word (canonical),core
+framework,Framework,2,single common word,web
+Framework,Framework,2,single common word (canonical),hardware
+gatsby,Gatsby,2,single common word,web
+Gatsby,Gatsby,2,single common word (canonical),core
+gemini,Gemini,2,single common word,ai-models
+Gemini,Gemini,2,single common word (canonical),ai-models
+git,Git,2,single common word,command
+Git,Git,2,single common word (canonical),command
+github,GitHub,2,single common word,command
+GitHub,GitHub,2,single common word (canonical),command
+go,Go,2,single common word,hardware
+Go,Go,2,single common word (canonical),core
+gpu,GPU,2,single common word,hardware
+GPU,GPU,2,single common word (canonical),hardware
+header,header,2,single common word,core
+header,header,2,single common word (canonical),core
+helm,Helm,2,single common word,infra
+Helm,Helm,2,single common word (canonical),infra
+hooks,React Hooks,2,single common word,web
+html,HTML,2,single common word,web
+HTML,HTML,2,single common word (canonical),web
+http,HTTP,2,single common word,core
+HTTP,HTTP,2,single common word (canonical),core
+https,HTTPS,2,single common word,core
+HTTPS,HTTPS,2,single common word (canonical),core
+hydrate,Hydration,2,single common word,web
+hydration,Hydration,2,single common word,web
+Hydration,Hydration,2,single common word (canonical),core
+ide,IDE,2,single common word,core
+IDE,IDE,2,single common word (canonical),core
+index,Index,2,single common word,core
+Index,Index,2,single common word (canonical),core
+inference,Inference,2,single common word,core
+Inference,Inference,2,single common word (canonical),core
+input,input,2,single common word,core
+input,input,2,single common word (canonical),core
+insomnia,Insomnia,2,single common word,core
+Insomnia,Insomnia,2,single common word (canonical),core
+interface,Interface,2,single common word,web
+Interface,Interface,2,single common word (canonical),core
+interfaces,Interface,2,single common word,web
+ip,IP,2,single common word,core
+IP,IP,2,single common word (canonical),core
+Issue,Issue,2,single common word (canonical),core
+jason,JSON,2,single common word,web
+java,Java,2,single common word,hardware
+Java,Java,2,single common word (canonical),core
+javascript,JavaScript,2,single common word,web
+JavaScript,JavaScript,2,single common word (canonical),web
+JAX,JAX,2,single common word (canonical),core
+jest,Jest,2,single common word,core
+Jest,Jest,2,single common word (canonical),core
+js,JavaScript,2,single common word,web
+jupiter,Jupyter,2,single common word,core
+kiss,KISS,2,single common word,core
+KISS,KISS,2,single common word (canonical),core
+label,label,2,single common word,core
+label,label,2,single common word (canonical),core
+lama,Llama,2,single common word,ai-models
+lambda,AWS Lambda,2,single common word,ai-models
+li,li,2,single common word,core
+li,li,2,single common word (canonical),core
+library,Library,2,single common word,web
+Library,Library,2,single common word (canonical),core
+lint,Linter,2,single common word,web
+linux,Linux,2,single common word,infra
+Linux,Linux,2,single common word (canonical),infra
+macos,macOS,2,single common word,hardware
+macOS,macOS,2,single common word (canonical),hardware
+main,main,2,single common word,core
+main,main,2,single common word (canonical),core
+md,Markdown,2,single common word,core
+memo,Memoization,2,single common word,core
+merge,Git merge,2,single common word,command
+ml,Machine Learning,2,single common word,hardware
+moe,MoE,2,single common word,ai-models
+moe,MoE,2,single common word,ai-models
+MoE,MoE,2,single common word (canonical),ai-models
+MoE,MoE,2,single common word (canonical),ai-models
+motion,Motion,2,single common word,web
+Motion,Motion,2,single common word (canonical),core
+mutation,Mutation,2,single common word,web
+Mutation,Mutation,2,single common word (canonical),core
+nav,nav,2,single common word,core
+nav,nav,2,single common word (canonical),core
+neon,Neon,2,single common word,infra
+Neon,Neon,2,single common word (canonical),core
+node,Node.js,2,single common word,web
+nvidia,NVIDIA,2,single common word,hardware
+NVIDIA,NVIDIA,2,single common word (canonical),hardware
+oath,OAuth,2,single common word,core
+ol,ol,2,single common word,core
+ol,ol,2,single common word (canonical),core
+option,option,2,single common word,core
+option,option,2,single common word (canonical),core
+package,Package,2,single common word,command
+Package,Package,2,single common word (canonical),core
+panda,Pandas,2,single common word,python
+pandas,Pandas,2,single common word,python
+Pandas,Pandas,2,single common word (canonical),python
+paypal,PayPal,2,single common word,core
+PayPal,PayPal,2,single common word (canonical),core
+php,PHP,2,single common word,core
+PHP,PHP,2,single common word (canonical),core
+pip,pip,2,single common word,python
+pip,pip,2,single common word (canonical),core
+playwright,Playwright,2,single common word,core
+Playwright,Playwright,2,single common word (canonical),core
+pod,Kubernetes Pod,2,single common word,infra
+poetry,Poetry,2,single common word,python
+Poetry,Poetry,2,single common word (canonical),python
+port,port,2,single common word,core
+port,port,2,single common word (canonical),core
+postman,Postman,2,single common word,core
+Postman,Postman,2,single common word (canonical),core
+pre,pre,2,single common word,core
+pre,pre,2,single common word (canonical),core
+prettier,Prettier,2,single common word,web
+Prettier,Prettier,2,single common word (canonical),core
+prometheus,Prometheus,2,single common word,infra
+Prometheus,Prometheus,2,single common word (canonical),infra
+promise,Promise,2,single common word,web
+Promise,Promise,2,single common word (canonical),core
+promises,Promise,2,single common word,web
+python,Python,2,single common word,hardware
+Python,Python,2,single common word (canonical),python
+Q4,Q4,2,single common word (canonical),core
+queen,Qwen,2,single common word,ai-models
+queries,Query,2,single common word,core
+query,Query,2,single common word,core
+Query,Query,2,single common word (canonical),core
+quick,Qwik,2,single common word,web
+quinn,Qwen,2,single common word,ai-models
+rag,RAG,2,single common word,core
+RAG,RAG,2,single common word (canonical),core
+rails,Ruby on Rails,2,single common word,hardware
+railway,Railway,2,single common word,core
+Railway,Railway,2,single common word (canonical),core
+ram,RAM,2,single common word,hardware
+RAM,RAM,2,single common word (canonical),hardware
+react,React,2,single common word,web
+React,React,2,single common word (canonical),web
+recoil,Recoil,2,single common word,core
+Recoil,Recoil,2,single common word (canonical),core
+remix,Remix,2,single common word,web
+Remix,Remix,2,single common word (canonical),web
+render,Render,2,single common word,core
+Render,Render,2,single common word (canonical),core
+repo,Repository,2,single common word,core
+repository,Repository,2,single common word,core
+Repository,Repository,2,single common word (canonical),core
+ruby,Ruby,2,single common word,hardware
+Ruby,Ruby,2,single common word (canonical),core
+rust,Rust,2,single common word,hardware
+Rust,Rust,2,single common word (canonical),rust
+s3,S3,2,single common word,infra
+S3,S3,2,single common word (canonical),core
+sass,Sass,2,single common word,web
+Sass,Sass,2,single common word (canonical),core
+schema,Database Schema,2,single common word,core
+secret,Secret,2,single common word,core
+Secret,Secret,2,single common word (canonical),core
+secrets,Secret,2,single common word,core
+section,section,2,single common word,core
+section,section,2,single common word (canonical),core
+select,select,2,single common word,core
+select,select,2,single common word (canonical),core
+sentry,Sentry,2,single common word,web
+Sentry,Sentry,2,single common word (canonical),core
+seo,SEO,2,single common word,core
+SEO,SEO,2,single common word (canonical),core
+sequel,SQL,2,single common word,core
+slash,/,2,single common word,core
+solid,SOLID,2,single common word,web
+SOLID,SOLID,2,single common word (canonical),web
+spa,SPA,2,single common word,core
+SPA,SPA,2,single common word (canonical),core
+span,span,2,single common word,core
+span,span,2,single common word (canonical),core
+spread,Spread Operator,2,single common word,core
+spring,Spring Boot,2,single common word,hardware
+sql,SQL,2,single common word,core
+SQL,SQL,2,single common word (canonical),core
+ssh,SSH,2,single common word,command
+SSH,SSH,2,single common word (canonical),core
+ssr,SSR,2,single common word,core
+SSR,SSR,2,single common word (canonical),core
+stash,Git stash,2,single common word,command
+stripe,Stripe,2,single common word,core
+Stripe,Stripe,2,single common word (canonical),core
+suspense,Suspense,2,single common word,web
+Suspense,Suspense,2,single common word (canonical),core
+swagger,Swagger,2,single common word,core
+Swagger,Swagger,2,single common word (canonical),core
+swift,Swift,2,single common word,hardware
+Swift,Swift,2,single common word (canonical),mobile
+table,table,2,single common word,web
+table,table,2,single common word (canonical),core
+tcp,TCP,2,single common word,core
+TCP,TCP,2,single common word (canonical),core
+td,td,2,single common word,core
+td,td,2,single common word (canonical),core
+th,th,2,single common word,core
+th,th,2,single common word (canonical),core
+throttle,Throttle,2,single common word,core
+Throttle,Throttle,2,single common word (canonical),core
+tokyo,Tokio,2,single common word,rust
+tory,Tauri,2,single common word,web
+tr,tr,2,single common word,core
+tr,tr,2,single common word (canonical),core
+transaction,Transaction,2,single common word,core
+Transaction,Transaction,2,single common word (canonical),core
+transformer,Transformer,2,single common word,core
+Transformer,Transformer,2,single common word (canonical),core
+transformers,Transformer,2,single common word,core
+Transformers,Transformers,2,single common word (canonical),core
+ubuntu,Ubuntu,2,single common word,infra
+Ubuntu,Ubuntu,2,single common word (canonical),infra
+ul,ul,2,single common word,core
+ul,ul,2,single common word (canonical),core
+uri,URI,2,single common word,core
+URI,URI,2,single common word (canonical),core
+url,URL,2,single common word,core
+URL,URL,2,single common word (canonical),core
+uv,uv,2,single common word,python
+uv,uv,2,single common word (canonical),python
+view,Vue,2,single common word,web
+warp,Warp,2,single common word,command
+Warp,Warp,2,single common word (canonical),core
+whisper,Whisper,2,single common word,ai-models
+Whisper,Whisper,2,single common word (canonical),ai-models
+windows,Windows,2,single common word,core
+Windows,Windows,2,single common word (canonical),core
+xml,XML,2,single common word,core
+XML,XML,2,single common word (canonical),core
+yarn,Yarn,2,single common word,web
+Yarn,Yarn,2,single common word (canonical),command
+4-bit float,FP4,1,all tokens are common words,core
+a eleven y,Accessibility,1,all tokens are common words,core
+a i agent,AI Agent,1,all tokens are common words,core
+a m d,AMD,1,all tokens are common words,hardware
+a one hundred,A100,1,all tokens are common words,hardware
+a p i,API,1,all tokens are common words,hardware
+a p i key,API Key,1,all tokens are common words,ai-models
+a p u,APU,1,all tokens are common words,core
+a r i a,ARIA,1,all tokens are common words,core
+a s r,ASR,1,all tokens are common words,core
+a w s,AWS,1,all tokens are common words,infra
+a w s lambda,AWS Lambda,1,all tokens are common words,ai-models
+accelerated processing unit,APU,1,all tokens are common words,core
+access token,Access Token,1,all tokens are common words,ai-models
+Access Token,Access Token,1,all tokens are common words (canonical),ai-models
+accessible rich internet applications,ARIA,1,all tokens are common words,core
+act ticks,Actix,1,all tokens are common words,rust
+ai agent,AI Agent,1,all tokens are common words,core
+AI Agent,AI Agent,1,all tokens are common words (canonical),core
+ai inference,Inference,1,all tokens are common words,core
+amazon cloud,AWS,1,all tokens are common words,infra
+amazon lambda,AWS Lambda,1,all tokens are common words,ai-models
+amazon lambda function,AWS Lambda,1,all tokens are common words,ai-models
+amazon s 3,S3,1,all tokens are common words,infra
+amazon s3,S3,1,all tokens are common words,infra
+amazon web service,AWS,1,all tokens are common words,infra
+amazon web services,AWS,1,all tokens are common words,infra
+amazon web services lambda,AWS Lambda,1,all tokens are common words,ai-models
+and pm command,npm,1,all tokens are common words,command
+and pm install,npm,1,all tokens are common words,command
+and pm package manager,npm,1,all tokens are common words,command
+and pm run,npm,1,all tokens are common words,command
+and pm run dev,npm,1,all tokens are common words,command
+angular app,Angular,1,all tokens are common words,web
+angular application,Angular,1,all tokens are common words,web
+angular framework,Angular,1,all tokens are common words,web
+angular js,Angular,1,all tokens are common words,web
+angular project,Angular,1,all tokens are common words,web
+angular web framework,Angular,1,all tokens are common words,web
+apache http server,Apache,1,all tokens are common words,core
+apache server,Apache,1,all tokens are common words,core
+api access token,Access Token,1,all tokens are common words,ai-models
+api controller,Controller,1,all tokens are common words,core
+api key,API Key,1,all tokens are common words,ai-models
+API Key,API Key,1,all tokens are common words (canonical),core
+api rate limit,Rate Limiting,1,all tokens are common words,core
+api route,API Route,1,all tokens are common words,core
+API Route,API Route,1,all tokens are common words (canonical),core
+api route handler,Route Handler,1,all tokens are common words,web
+api routes,API Route,1,all tokens are common words,core
+api secret,Secret,1,all tokens are common words,core
+api token,API Key,1,all tokens are common words,ai-models
+apollo client,Apollo Client,1,all tokens are common words,web
+Apollo Client,Apollo Client,1,all tokens are common words (canonical),web
+apollo graph q l,Apollo Client,1,all tokens are common words,web
+apollo server,Apollo Server,1,all tokens are common words,web
+Apollo Server,Apollo Server,1,all tokens are common words (canonical),web
+app router,Next.js App Router,1,all tokens are common words,web
+apple mac mini,Mac Mini,1,all tokens are common words,hardware
+apple mac studio,Mac Studio,1,all tokens are common words,hardware
+apple macos,macOS,1,all tokens are common words,hardware
+apple silicon,Apple Silicon,1,all tokens are common words,hardware
+Apple Silicon,Apple Silicon,1,all tokens are common words (canonical),hardware
+application cache,Caching,1,all tokens are common words,infra
+application programming interface,API,1,all tokens are common words,hardware
+arch linux,Arch Linux,1,all tokens are common words,infra
+Arch Linux,Arch Linux,1,all tokens are common words (canonical),infra
+arch linux os,Arch Linux,1,all tokens are common words,infra
+aria attributes,ARIA,1,all tokens are common words,core
+article element,article,1,all tokens are common words,core
+article tag,article,1,all tokens are common words,core
+astro framework,Astro,1,all tokens are common words,web
+astro javascript framework,Astro,1,all tokens are common words,web
+astro js,Astro,1,all tokens are common words,web
+astro project,Astro,1,all tokens are common words,web
+astro site framework,Astro,1,all tokens are common words,web
+astro static site framework,Astro,1,all tokens are common words,web
+astro web app,Astro,1,all tokens are common words,web
+astro web framework,Astro,1,all tokens are common words,web
+asus expect center,ASUS ExpertCenter Pro ET900N G3,1,all tokens are common words,core
+asus expect center,ASUS ExpertCenter,1,all tokens are common words,core
+asus expect centre,ASUS ExpertCenter,1,all tokens are common words,core
+asus expert center,ASUS ExpertCenter,1,all tokens are common words,core
+attention mechanism,Attention,1,all tokens are common words,core
+automatic speech recognition,STT,1,all tokens are common words,core
+automatic speech recognition,ASR,1,all tokens are common words,core
+aws lamb da,AWS Lambda,1,all tokens are common words,ai-models
+aws lambda,AWS Lambda,1,all tokens are common words,ai-models
+AWS Lambda,AWS Lambda,1,all tokens are common words (canonical),infra
+aws lambda function,AWS Lambda,1,all tokens are common words,ai-models
+aws lambda functions,AWS Lambda,1,all tokens are common words,ai-models
+aws s three,S3,1,all tokens are common words,infra
+aws s3,S3,1,all tokens are common words,infra
+axe um,Axum,1,all tokens are common words,hardware
+azure cloud,Azure,1,all tokens are common words,infra
+b a s h,bash,1,all tokens are common words,command
+b d d,BDD,1,all tokens are common words,core
+b f sixteen,BF16,1,all tokens are common words,core
+b float sixteen,BF16,1,all tokens are common words,core
+back tick,Backtick,1,all tokens are common words,core
+back ticks,Backtick,1,all tokens are common words,core
+bash shell,bash,1,all tokens are common words,command
+bearer authorization,Bearer Token,1,all tokens are common words,ai-models
+bearer token,Access Token,1,all tokens are common words,ai-models
+bearer token,Bearer Token,1,all tokens are common words,ai-models
+Bearer Token,Bearer Token,1,all tokens are common words (canonical),ai-models
+beat build,Vite,1,all tokens are common words,web
+Beat JS,Vite,1,all tokens are common words,web
+behavior driven development,BDD,1,all tokens are common words,core
+behavior-driven development,BDD,1,all tokens are common words,core
+bf sixteen,BF16,1,all tokens are common words,core
+big round corners,rounded-2xl,1,all tokens are common words,core
+blackwell architecture,Blackwell,1,all tokens are common words,hardware
+blackwell gpu,Blackwell,1,all tokens are common words,hardware
+block quote,blockquote,1,all tokens are common words,core
+boon dev,bun dev,1,all tokens are common words,core
+boon install,bun install,1,all tokens are common words,core
+bourne again shell,bash,1,all tokens are common words,command
+branch protection,Branch Protection,1,all tokens are common words,core
+Branch Protection,Branch Protection,1,all tokens are common words (canonical),core
+branch rules,Branch Protection,1,all tokens are common words,core
+brew install,Homebrew,1,all tokens are common words,command
+browser cache,Caching,1,all tokens are common words,infra
+bug ticket,Issue,1,all tokens are common words,command
+bun dev,bun dev,1,all tokens are common words,core
+bun dev,bun dev,1,all tokens are common words (canonical),core
+bun development,bun dev,1,all tokens are common words,core
+bun i,bun install,1,all tokens are common words,core
+bun install,bun install,1,all tokens are common words,core
+bun install,bun install,1,all tokens are common words (canonical),core
+bun javascript,Bun,1,all tokens are common words,web
+bun js,Bun,1,all tokens are common words,web
+bun package install,bun install,1,all tokens are common words,core
+bun runtime,Bun,1,all tokens are common words,web
+bundle splitting,Code Splitting,1,all tokens are common words,core
+business logic layer,Service Layer,1,all tokens are common words,core
+button element,button,1,all tokens are common words,core
+button tag,button,1,all tokens are common words,core
+c d n,CDN,1,all tokens are common words,core
+c hash,C#,1,all tokens are common words,core
+c hash language,C#,1,all tokens are common words,core
+c i c d,CI/CD,1,all tokens are common words,core
+c l i,CLI,1,all tokens are common words,command
+c o r s,CORS,1,all tokens are common words,core
+c p p,C++,1,all tokens are common words,core
+c p u,CPU,1,all tokens are common words,hardware
+c plus,C++,1,all tokens are common words,core
+c plus plus,C++,1,all tokens are common words,core
+c r u d,CRUD,1,all tokens are common words,core
+c s r,CSR,1,all tokens are common words,command
+c s r f,CSRF,1,all tokens are common words,core
+c s s,CSS,1,all tokens are common words,web
+c sharp,C#,1,all tokens are common words,core
+c sharp language,C#,1,all tokens are common words,core
+c u d a,CUDA,1,all tokens are common words,core
+call back,Callback,1,all tokens are common words,core
+camel case,CamelCase,1,all tokens are common words,core
+camel casing,CamelCase,1,all tokens are common words,core
+canonical link,Canonical URL,1,all tokens are common words,core
+canonical tag,Canonical URL,1,all tokens are common words,core
+canonical url,Canonical URL,1,all tokens are common words,core
+Canonical URL,Canonical URL,1,all tokens are common words (canonical),core
+cargo build,Cargo,1,all tokens are common words,rust
+cargo manifest,Cargo.toml,1,all tokens are common words,rust
+cargo package manager,Cargo,1,all tokens are common words,rust
+cargo run,Cargo,1,all tokens are common words,rust
+cd pipeline,CI/CD,1,all tokens are common words,core
+central processing unit,CPU,1,all tokens are common words,hardware
+century dot io,Sentry,1,all tokens are common words,web
+century error monitoring,Sentry,1,all tokens are common words,web
+century error tracking,Sentry,1,all tokens are common words,web
+century monitoring,Sentry,1,all tokens are common words,web
+century next js,Sentry,1,all tokens are common words,web
+chat g p,ChatGPT,1,all tokens are common words,ai-models
+chat g p t,ChatGPT,1,all tokens are common words,ai-models
+chat g p t ai,ChatGPT,1,all tokens are common words,ai-models
+chat gee p tee,ChatGPT,1,all tokens are common words,ai-models
+checkout branch,git checkout,1,all tokens are common words,command
+cherry pick git,git cherry-pick,1,all tokens are common words,command
+chunk splitting,Code Splitting,1,all tokens are common words,core
+ci cd,CI/CD,1,all tokens are common words,core
+ci pipeline,CI/CD,1,all tokens are common words,core
+CI/CD,CI/CD,1,all tokens are common words (canonical),core
+claude ai,Claude,1,all tokens are common words,ai-models
+claude code,Claude,1,all tokens are common words,ai-models
+claude coding model,Claude,1,all tokens are common words,ai-models
+claude fable 5,Claude Fable 5,1,all tokens are common words,ai-models
+Claude Fable 5,Claude Fable 5,1,all tokens are common words (canonical),ai-models
+claude fable five,Claude Fable 5,1,all tokens are common words,ai-models
+claude haiku 4.5,Claude Haiku 4.5,1,all tokens are common words,ai-models
+Claude Haiku 4.5,Claude Haiku 4.5,1,all tokens are common words (canonical),ai-models
+claude he cows,Claude Haiku 4.5,1,all tokens are common words,ai-models
+claude model,Claude,1,all tokens are common words,ai-models
+claude opus 4,Claude Opus 4,1,all tokens are common words,ai-models
+Claude Opus 4,Claude Opus 4,1,all tokens are common words (canonical),ai-models
+claude opus 4.5,Claude Opus 4.5,1,all tokens are common words,ai-models
+Claude Opus 4.5,Claude Opus 4.5,1,all tokens are common words (canonical),ai-models
+claude opus 5,Claude Opus 5,1,all tokens are common words,ai-models
+Claude Opus 5,Claude Opus 5,1,all tokens are common words (canonical),ai-models
+claude opus five,Claude Opus 5,1,all tokens are common words,ai-models
+claude opus four,Claude Opus 4,1,all tokens are common words,ai-models
+claude opus v,Claude Opus 5,1,all tokens are common words,ai-models
+client component,Client Component,1,all tokens are common words,web
+Client Component,Client Component,1,all tokens are common words (canonical),command
+client components,Client Component,1,all tokens are common words,web
+client side rendering,CSR,1,all tokens are common words,command
+client-side component,Client Component,1,all tokens are common words,web
+client-side rendering,CSR,1,all tokens are common words,command
+clone git repo,git clone,1,all tokens are common words,command
+clone repository,git clone,1,all tokens are common words,command
+cloud flair,Cloudflare,1,all tokens are common words,web
+cloud flare,Cloudflare,1,all tokens are common words,web
+cloud flare worker,Cloudflare,1,all tokens are common words,web
+cloud front,CloudFront,1,all tokens are common words,infra
+code compiler,Compiler,1,all tokens are common words,web
+code element,code,1,all tokens are common words,core
+code fence,Markdown Code Fence,1,all tokens are common words,core
+code library,Library,1,all tokens are common words,web
+code lint,Linter,1,all tokens are common words,web
+code review,Code Review,1,all tokens are common words,core
+code review,code review,1,all tokens are common words,core
+Code Review,Code Review,1,all tokens are common words (canonical),core
+code review,code review,1,all tokens are common words (canonical),core
+code review request,Pull Request,1,all tokens are common words,core
+code reviewer,code review,1,all tokens are common words,core
+code splitting,Code Splitting,1,all tokens are common words,core
+Code Splitting,Code Splitting,1,all tokens are common words (canonical),core
+code tag,code,1,all tokens are common words,core
+code-review,Code Review,1,all tokens are common words,core
+code-splitting,Code Splitting,1,all tokens are common words,core
+command line,CLI,1,all tokens are common words,command
+command line interface,CLI,1,all tokens are common words,command
+common js file,.cjs,1,all tokens are common words,core
+connect x 7,ConnectX-7,1,all tokens are common words,hardware
+connect x 8,ConnectX-8,1,all tokens are common words,hardware
+connect x eight,ConnectX-8,1,all tokens are common words,hardware
+connect x seven,ConnectX-7,1,all tokens are common words,hardware
+connection pool,Connection Pool,1,all tokens are common words,core
+Connection Pool,Connection Pool,1,all tokens are common words (canonical),core
+constant case,SCREAMING_SNAKE_CASE,1,all tokens are common words,core
+container pod,Kubernetes Pod,1,all tokens are common words,infra
+container registry,Docker Registry,1,all tokens are common words,infra
+content delivery network,CDN,1,all tokens are common words,core
+content distribution network,CDN,1,all tokens are common words,core
+context api,Context API,1,all tokens are common words,web
+Context API,Context API,1,all tokens are common words (canonical),core
+context api react,Context API,1,all tokens are common words,web
+context length,Context Window,1,all tokens are common words,ai-models
+context window,Context Window,1,all tokens are common words,ai-models
+Context Window,Context Window,1,all tokens are common words (canonical),core
+context windows,Context Window,1,all tokens are common words,ai-models
+continuous integration and deployment,CI/CD,1,all tokens are common words,core
+continuous integration continuous deployment,CI/CD,1,all tokens are common words,core
+core m l,CoreML,1,all tokens are common words,core
+core ml,CoreML,1,all tokens are common words,core
+create read update and delete,CRUD,1,all tokens are common words,core
+create read update delete,CRUD,1,all tokens are common words,core
+cross origin resource sharing,CORS,1,all tokens are common words,core
+cross site request forgery,CSRF,1,all tokens are common words,core
+cross site scripting,XSS,1,all tokens are common words,core
+cross-origin resource sharing,CORS,1,all tokens are common words,core
+cross-site request forgery,CSRF,1,all tokens are common words,core
+cross-site scripting,XSS,1,all tokens are common words,core
+css file,.css,1,all tokens are common words,web
+css styles,CSS,1,all tokens are common words,web
+cue wen,Qwen,1,all tokens are common words,ai-models
+cue wen ai,Qwen,1,all tokens are common words,ai-models
+cue wen model,Qwen,1,all tokens are common words,ai-models
+cue when ai,Qwen,1,all tokens are common words,ai-models
+cue when model,Qwen,1,all tokens are common words,ai-models
+cursor ai,Cursor,1,all tokens are common words,core
+cursor editor,Cursor,1,all tokens are common words,core
+cursor ide,Cursor,1,all tokens are common words,core
+custom element,Custom Element,1,all tokens are common words,core
+Custom Element,Custom Element,1,all tokens are common words (canonical),core
+custom elements,Web Components,1,all tokens are common words,core
+custom elements,Custom Element,1,all tokens are common words,core
+cy press,Cypress,1,all tokens are common words,core
+cypress test,Cypress,1,all tokens are common words,core
+cypress testing,Cypress,1,all tokens are common words,core
+d 3 js,D3.js,1,all tokens are common words,core
+d g x spark,DGX Spark,1,all tokens are common words,hardware
+d g x station,DGX Station,1,all tokens are common words,hardware
+d g x station,DGX Station,1,all tokens are common words,hardware
+d i,Dependency Injection,1,all tokens are common words,core
+d iv,div,1,all tokens are common words,core
+d l,Deep Learning,1,all tokens are common words,core
+d n s,DNS,1,all tokens are common words,core
+d o m,DOM,1,all tokens are common words,core
+d r y,DRY,1,all tokens are common words,core
+d three,D3.js,1,all tokens are common words,core
+d three js,D3.js,1,all tokens are common words,core
+d3 js,D3.js,1,all tokens are common words,core
+D3.js,D3.js,1,all tokens are common words (canonical),core
+dash case,kebab-case,1,all tokens are common words,core
+data dog,Datadog,1,all tokens are common words,core
+data dog monitoring,Datadog,1,all tokens are common words,core
+data mutation,Mutation,1,all tokens are common words,web
+data repository,Repository,1,all tokens are common words,core
+database connection pool,Connection Pool,1,all tokens are common words,core
+database foreign key,Foreign Key,1,all tokens are common words,core
+database index,Index,1,all tokens are common words,core
+database injection,SQL Injection,1,all tokens are common words,core
+database migration,Database Migration,1,all tokens are common words,core
+Database Migration,Database Migration,1,all tokens are common words (canonical),core
+database migrations,Database Migration,1,all tokens are common words,core
+database primary key,Primary Key,1,all tokens are common words,core
+database query,SQL,1,all tokens are common words,core
+database query,Query,1,all tokens are common words,core
+database schema,Database Schema,1,all tokens are common words,core
+Database Schema,Database Schema,1,all tokens are common words (canonical),core
+database structure,Database Schema,1,all tokens are common words,core
+database transaction,Transaction,1,all tokens are common words,core
+db connection pool,Connection Pool,1,all tokens are common words,core
+db index,Index,1,all tokens are common words,core
+db migration,Database Migration,1,all tokens are common words,core
+db schema,Database Schema,1,all tokens are common words,core
+db transaction,Transaction,1,all tokens are common words,core
+de no,Deno,1,all tokens are common words,web
+dee three js,D3.js,1,all tokens are common words,core
+deep learning,Deep Learning,1,all tokens are common words,core
+Deep Learning,Deep Learning,1,all tokens are common words (canonical),core
+deep sea ai,DeepSeek,1,all tokens are common words,ai-models
+deep sea model,DeepSeek,1,all tokens are common words,ai-models
+deep sea r one,DeepSeek,1,all tokens are common words,ai-models
+deep sea r1,DeepSeek,1,all tokens are common words,ai-models
+deep sea v3,DeepSeek,1,all tokens are common words,ai-models
+deep seat ai,DeepSeek,1,all tokens are common words,ai-models
+deep seat model,DeepSeek,1,all tokens are common words,ai-models
+deep seek,DeepSeek,1,all tokens are common words,ai-models
+deep seek ai,DeepSeek,1,all tokens are common words,ai-models
+deep seek coding model,DeepSeek,1,all tokens are common words,ai-models
+deep seek model,DeepSeek,1,all tokens are common words,ai-models
+deep seek r one,DeepSeek,1,all tokens are common words,ai-models
+deep seek r1,DeepSeek,1,all tokens are common words,ai-models
+deep seek v 4 flash,DeepSeek-V4-Flash,1,all tokens are common words,ai-models
+deep seek v four flash,DeepSeek-V4-Flash,1,all tokens are common words,ai-models
+deep seek v three,DeepSeek,1,all tokens are common words,ai-models
+deep seek v3,DeepSeek,1,all tokens are common words,ai-models
+deep seek v3.2,DeepSeek-V3.2,1,all tokens are common words,ai-models
+deep sick ai,DeepSeek,1,all tokens are common words,ai-models
+deep sick model,DeepSeek,1,all tokens are common words,ai-models
+deep-learning,Deep Learning,1,all tokens are common words,core
+deep-seek,DeepSeek,1,all tokens are common words,ai-models
+dependency graph,Dependency Graph,1,all tokens are common words,core
+Dependency Graph,Dependency Graph,1,all tokens are common words (canonical),core
+dependency injection,Dependency Injection,1,all tokens are common words,core
+Dependency Injection,Dependency Injection,1,all tokens are common words (canonical),core
+dependency tree,Dependency Graph,1,all tokens are common words,core
+dependency-injection,Dependency Injection,1,all tokens are common words,core
+dev tech stack,Tech stack,1,all tokens are common words,core
+developer key,API Key,1,all tokens are common words,ai-models
+development tech stack,Tech stack,1,all tokens are common words,core
+div tag,div,1,all tokens are common words,core
+django framework,Django,1,all tokens are common words,hardware
+docker compose,Docker Compose,1,all tokens are common words,infra
+Docker Compose,Docker Compose,1,all tokens are common words (canonical),infra
+docker compose file,Docker Compose,1,all tokens are common words,infra
+docker composed,Docker Compose,1,all tokens are common words,infra
+docker container,Docker,1,all tokens are common words,infra
+docker container,Docker,1,all tokens are common words,infra
+docker container,Container,1,all tokens are common words,infra
+docker file,Dockerfile,1,all tokens are common words,infra
+docker files,Dockerfile,1,all tokens are common words,infra
+docker image,Docker,1,all tokens are common words,infra
+docker image registry,Docker Registry,1,all tokens are common words,infra
+docker registry,Docker Registry,1,all tokens are common words,infra
+Docker Registry,Docker Registry,1,all tokens are common words (canonical),infra
+docker repo,Docker Registry,1,all tokens are common words,infra
+docker-compose,Docker Compose,1,all tokens are common words,infra
+document object model,DOM,1,all tokens are common words,core
+domain name service,DNS,1,all tokens are common words,core
+domain name system,DNS,1,all tokens are common words,core
+don't repeat yourself,DRY,1,all tokens are common words,core
+dot bash,.bash,1,all tokens are common words,command
+dot c,.c,1,all tokens are common words,core
+dot c c,.cc,1,all tokens are common words,core
+dot c j s,.cjs,1,all tokens are common words,core
+dot c plus plus,.cpp,1,all tokens are common words,core
+dot c s s,.css,1,all tokens are common words,web
+dot c s v,.csv,1,all tokens are common words,core
+dot c sharp file,.cs,1,all tokens are common words,core
+dot conf,.conf,1,all tokens are common words,core
+dot cs,.cs,1,all tokens are common words,core
+dot css,.css,1,all tokens are common words,web
+dot e n v,.env,1,all tokens are common words,core
+dot e n v dot local,.env.local,1,all tokens are common words,core
+dot e n v local,.env.local,1,all tokens are common words,core
+dot go,.go,1,all tokens are common words,core
+dot h,.h,1,all tokens are common words,core
+dot h p p,.hpp,1,all tokens are common words,core
+dot h t m,.htm,1,all tokens are common words,core
+dot html,.html,1,all tokens are common words,web
+dot i n i,.ini,1,all tokens are common words,core
+dot j s,.js,1,all tokens are common words,web
+dot j s x,.jsx,1,all tokens are common words,web
+dot j son,.json,1,all tokens are common words,core
+dot java,.java,1,all tokens are common words,core
+dot js,.js,1,all tokens are common words,web
+dot k t,.kt,1,all tokens are common words,core
+dot k t s,.kts,1,all tokens are common words,core
+dot kt,.kt,1,all tokens are common words,core
+dot less,.less,1,all tokens are common words,core
+dot lock,.lock,1,all tokens are common words,core
+dot m d,.md,1,all tokens are common words,core
+dot m d x,.mdx,1,all tokens are common words,core
+dot m j s,.mjs,1,all tokens are common words,core
+dot md,.md,1,all tokens are common words,core
+dot p y,.py,1,all tokens are common words,python
+dot php,.php,1,all tokens are common words,core
+dot r b,.rb,1,all tokens are common words,core
+dot r s,.rs,1,all tokens are common words,rust
+dot rb,.rb,1,all tokens are common words,core
+dot rs,.rs,1,all tokens are common words,rust
+dot rust,.rs,1,all tokens are common words,rust
+dot s c s s,.scss,1,all tokens are common words,web
+dot s h,.sh,1,all tokens are common words,command
+dot s q l,.sql,1,all tokens are common words,core
+dot s v g,.svg,1,all tokens are common words,core
+dot sh,.sh,1,all tokens are common words,command
+dot sql,.sql,1,all tokens are common words,core
+dot swift,.swift,1,all tokens are common words,mobile
+dot t s,.ts,1,all tokens are common words,web
+dot t s x,.tsx,1,all tokens are common words,web
+dot ts,.ts,1,all tokens are common words,web
+dot txt,.txt,1,all tokens are common words,core
+dot xml,.xml,1,all tokens are common words,core
+dot y m l,.yml,1,all tokens are common words,core
+double question mark operator,Nullish Coalescing,1,all tokens are common words,core
+drizzle database,Drizzle ORM,1,all tokens are common words,web
+drizzle database library,Drizzle ORM,1,all tokens are common words,web
+drizzle library,Drizzle ORM,1,all tokens are common words,web
+drizzle o r m,Drizzle ORM,1,all tokens are common words,web
+drizzle or m,Drizzle ORM,1,all tokens are common words,web
+drizzle schema,Drizzle ORM,1,all tokens are common words,web
+drizzle sql,Drizzle ORM,1,all tokens are common words,web
+dynamic import,Dynamic Import,1,all tokens are common words,core
+Dynamic Import,Dynamic Import,1,all tokens are common words (canonical),core
+dynamic imports,Dynamic Import,1,all tokens are common words,core
+dynamic loading,Lazy Loading,1,all tokens are common words,core
+dynamo d b,DynamoDB,1,all tokens are common words,core
+dynamo database,DynamoDB,1,all tokens are common words,core
+dynamo db,DynamoDB,1,all tokens are common words,core
+e c 2,EC2,1,all tokens are common words,infra
+e c two,EC2,1,all tokens are common words,infra
+e m d,AMD,1,all tokens are common words,hardware
+e s build,esbuild,1,all tokens are common words,web
+e s lint,ESLint,1,all tokens are common words,web
+elastic search,Elasticsearch,1,all tokens are common words,core
+elastic search engine,Elasticsearch,1,all tokens are common words,core
+electron desktop,Electron,1,all tokens are common words,hardware
+electron framework,Electron,1,all tokens are common words,hardware
+electron js,Electron,1,all tokens are common words,hardware
+element tag,HTML Tag,1,all tokens are common words,web
+embedding model,Embedding Model,1,all tokens are common words,ai-models
+Embedding Model,Embedding Model,1,all tokens are common words (canonical),ai-models
+en p m,npm,1,all tokens are common words,command
+en pee em,npm,1,all tokens are common words,command
+engine ex,Nginx,1,all tokens are common words,infra
+engine x,Nginx,1,all tokens are common words,infra
+engine x proxy,Nginx,1,all tokens are common words,infra
+engine x server,Nginx,1,all tokens are common words,infra
+engine-x,Nginx,1,all tokens are common words,infra
+environment file,.env,1,all tokens are common words,core
+environment local file,.env.local,1,all tokens are common words,core
+environment secret,Secret,1,all tokens are common words,core
+environment variable,Environment Variable,1,all tokens are common words,core
+Environment Variable,Environment Variable,1,all tokens are common words (canonical),core
+environment variables,Environment Variable,1,all tokens are common words,core
+environment variables file,.env,1,all tokens are common words,core
+error boundaries,Error Boundary,1,all tokens are common words,web
+error boundary,Error Boundary,1,all tokens are common words,web
+Error Boundary,Error Boundary,1,all tokens are common words (canonical),core
+es build,esbuild,1,all tokens are common words,web
+es lint,ESLint,1,all tokens are common words,web
+es lint js,ESLint,1,all tokens are common words,web
+es lint rules,ESLint,1,all tokens are common words,web
+evil x 2,EVO-X2,1,all tokens are common words,core
+evil x 3,EVO-X3,1,all tokens are common words,core
+evil x2,EVO-X2,1,all tokens are common words,core
+evil x3,EVO-X3,1,all tokens are common words,core
+evo x 2,EVO-X2,1,all tokens are common words,core
+evo x 3,EVO-X3,1,all tokens are common words,core
+evo x2,EVO-X2,1,all tokens are common words,core
+evo x3,EVO-X3,1,all tokens are common words,core
+EVO-X2,EVO-X2,1,all tokens are common words (canonical),core
+EVO-X3,EVO-X3,1,all tokens are common words (canonical),core
+ex code,Xcode,1,all tokens are common words,hardware
+expo react native,Expo,1,all tokens are common words,web
+express dot js,Express.js,1,all tokens are common words,web
+express framework,Express.js,1,all tokens are common words,web
+express j s,Express.js,1,all tokens are common words,web
+express javascript,Express.js,1,all tokens are common words,web
+express js,Express.js,1,all tokens are common words,web
+express server,Express.js,1,all tokens are common words,web
+Express.js,Express.js,1,all tokens are common words (canonical),core
+extra round,rounded-2xl,1,all tokens are common words,core
+f key,Foreign Key,1,all tokens are common words,core
+f p 4,FP4,1,all tokens are common words,core
+f p sixteen,FP16,1,all tokens are common words,core
+f p thirty two,FP32,1,all tokens are common words,core
+fable 5,Claude Fable 5,1,all tokens are common words,ai-models
+fable five,Claude Fable 5,1,all tokens are common words,ai-models
+fast a p i,FastAPI,1,all tokens are common words,python
+fast a pee,FastAPI,1,all tokens are common words,python
+fast api,FastAPI,1,all tokens are common words,python
+fast api python,FastAPI,1,all tokens are common words,python
+fast if i,Fastify,1,all tokens are common words,web
+fast if y,Fastify,1,all tokens are common words,web
+fetch git,git fetch,1,all tokens are common words,command
+fig ma,Figma,1,all tokens are common words,core
+file-name,fileName,1,all tokens are common words,core
+fine tuned,Fine-tuning,1,all tokens are common words,core
+fine tuning,Fine-tuning,1,all tokens are common words,core
+fine-tuning,Fine-tuning,1,all tokens are common words,core
+Fine-tuning,Fine-tuning,1,all tokens are common words (canonical),core
+fire base,Firebase,1,all tokens are common words,web
+fish shell,fish shell,1,all tokens are common words,command
+fish shell,fish shell,1,all tokens are common words,command
+fish shell,fish shell,1,all tokens are common words (canonical),command
+fish terminal,fish shell,1,all tokens are common words,command
+five one seven three port,port 5173,1,all tokens are common words,core
+flask framework,Flask,1,all tokens are common words,hardware
+flask python,Flask,1,all tokens are common words,hardware
+floating 0.4,FP4,1,all tokens are common words,core
+floating point 4,FP4,1,all tokens are common words,core
+footer element,footer,1,all tokens are common words,core
+footer tag,footer,1,all tokens are common words,core
+foreign key,Foreign Key,1,all tokens are common words,core
+Foreign Key,Foreign Key,1,all tokens are common words (canonical),core
+foreign-key,Foreign Key,1,all tokens are common words,core
+form element,form,1,all tokens are common words,core
+form label,label,1,all tokens are common words,core
+form tag,form,1,all tokens are common words,core
+forward slash,/,1,all tokens are common words,core
+fourteen twenty port,port 1420,1,all tokens are common words,core
+fp sixteen,FP16,1,all tokens are common words,core
+fp thirty two,FP32,1,all tokens are common words,core
+full stack tech stack,Tech stack,1,all tokens are common words,core
+g c p,GCP,1,all tokens are common words,infra
+g g m l,GGML,1,all tokens are common words,core
+g g u f,GGUF,1,all tokens are common words,ai-models
+g l m 4.7,GLM-4.7,1,all tokens are common words,ai-models
+g l m 5.2,GLM-5.2,1,all tokens are common words,ai-models
+g l m 5.3,GLM-5.3,1,all tokens are common words,ai-models
+g l m five,GLM-5,1,all tokens are common words,ai-models
+g l m five point one,GLM-5.1,1,all tokens are common words,ai-models
+g l m five point three,GLM-5.3,1,all tokens are common words,ai-models
+g l m five point two,GLM-5.2,1,all tokens are common words,ai-models
+g l m four point five,GLM-4.5,1,all tokens are common words,ai-models
+g m k tech,GMKtec,1,all tokens are common words,core
+g p t,GPT,1,all tokens are common words,ai-models
+g p t 4,GPT-4,1,all tokens are common words,ai-models
+g p t 4 o,GPT-4o,1,all tokens are common words,ai-models
+g p t 5,GPT-5,1,all tokens are common words,ai-models
+g p t api,GPT,1,all tokens are common words,ai-models
+g p t five,GPT-5,1,all tokens are common words,ai-models
+g p t four,GPT-4,1,all tokens are common words,ai-models
+g p t four o,GPT-4o,1,all tokens are common words,ai-models
+g p t model,GPT,1,all tokens are common words,ai-models
+g p u,GPU,1,all tokens are common words,hardware
+g r p c,gRPC,1,all tokens are common words,command
+g r p c api,gRPC,1,all tokens are common words,command
+gatsby app,Gatsby,1,all tokens are common words,web
+gatsby framework,Gatsby,1,all tokens are common words,web
+gatsby js,Gatsby,1,all tokens are common words,web
+gatsby project,Gatsby,1,all tokens are common words,web
+gatsby react framework,Gatsby,1,all tokens are common words,web
+gatsby site framework,Gatsby,1,all tokens are common words,web
+gatsby static site framework,Gatsby,1,all tokens are common words,web
+gb three hundred,GB300,1,all tokens are common words,hardware
+gee c p,GCP,1,all tokens are common words,infra
+gee p tee,GPT,1,all tokens are common words,ai-models
+gee pee tee five,GPT-5,1,all tokens are common words,ai-models
+gee r p c,gRPC,1,all tokens are common words,command
+gem in eye ai,Gemini,1,all tokens are common words,ai-models
+gem in eye model,Gemini,1,all tokens are common words,ai-models
+gemini 2 point 5 pro,Gemini 2.5 Pro,1,all tokens are common words,ai-models
+gemini 2.5 flash,Gemini 2.5 Flash,1,all tokens are common words,ai-models
+Gemini 2.5 Flash,Gemini 2.5 Flash,1,all tokens are common words (canonical),ai-models
+gemini 2.5 pro,Gemini 2.5 Pro,1,all tokens are common words,ai-models
+Gemini 2.5 Pro,Gemini 2.5 Pro,1,all tokens are common words (canonical),ai-models
+gemini 3 flash,Gemini 3 Flash,1,all tokens are common words,ai-models
+Gemini 3 Flash,Gemini 3 Flash,1,all tokens are common words (canonical),ai-models
+gemini 3.5 flash,Gemini 3 Flash,1,all tokens are common words,ai-models
+gemini ai,Gemini,1,all tokens are common words,ai-models
+gemini coding model,Gemini,1,all tokens are common words,ai-models
+gemini flash model,Gemini,1,all tokens are common words,ai-models
+gemini google,Gemini,1,all tokens are common words,ai-models
+gemini model,Gemini,1,all tokens are common words,ai-models
+gemini pro model,Gemini,1,all tokens are common words,ai-models
+gemini three flash,Gemini 3 Flash,1,all tokens are common words,ai-models
+gemini three point five flash,Gemini 3 Flash,1,all tokens are common words,ai-models
+gemini two point five flash,Gemini 2.5 Flash,1,all tokens are common words,ai-models
+gemini two point five pro,Gemini 2.5 Pro,1,all tokens are common words,ai-models
+gen a i,Generative AI,1,all tokens are common words,hardware
+gen ai,Generative AI,1,all tokens are common words,hardware
+generic type,Generics,1,all tokens are common words,web
+generic types,Generics,1,all tokens are common words,web
+get user by i d,getUserById,1,all tokens are common words,core
+get user by id,getUserById,1,all tokens are common words,core
+ghost tea,Ghostty,1,all tokens are common words,core
+ghost terminal,Ghostty,1,all tokens are common words,core
+git branch,Git branch,1,all tokens are common words,command
+Git branch,Git branch,1,all tokens are common words (canonical),command
+git branches,Git branch,1,all tokens are common words,command
+git changes,git diff,1,all tokens are common words,command
+git check out,git checkout,1,all tokens are common words,command
+git checkout,git checkout,1,all tokens are common words,command
+git checkout,git checkout,1,all tokens are common words (canonical),command
+git cherry pick,git cherry-pick,1,all tokens are common words,command
+git cherry-pick,git cherry-pick,1,all tokens are common words (canonical),command
+git cherry-pick commit,git cherry-pick,1,all tokens are common words,command
+git clone,git clone,1,all tokens are common words,command
+git clone,git clone,1,all tokens are common words (canonical),command
+git commit,Git commit,1,all tokens are common words,command
+Git commit,Git commit,1,all tokens are common words (canonical),command
+git commit history,git log,1,all tokens are common words,command
+git commits,Git commit,1,all tokens are common words,command
+git diff,git diff,1,all tokens are common words,command
+git diff,git diff,1,all tokens are common words (canonical),command
+git difference,git diff,1,all tokens are common words,command
+git fetch,git fetch,1,all tokens are common words,command
+git fetch,git fetch,1,all tokens are common words (canonical),command
+git fetch and merge,git pull,1,all tokens are common words,command
+git fetch origin,git fetch,1,all tokens are common words,command
+git hard reset,git reset,1,all tokens are common words,command
+git history,git log,1,all tokens are common words,command
+git hub,GitHub,1,all tokens are common words,command
+git hub,GitHub,1,all tokens are common words,command
+git hub action,GitHub Actions,1,all tokens are common words,command
+git hub actions,GitHub Actions,1,all tokens are common words,command
+git hub repo,GitHub,1,all tokens are common words,command
+git hub workflow,GitHub Actions,1,all tokens are common words,command
+git ignore,.gitignore,1,all tokens are common words,command
+git ignore file,.gitignore,1,all tokens are common words,command
+git ignore file,.gitignore,1,all tokens are common words,command
+git lab,GitLab,1,all tokens are common words,command
+git lab c i,GitLab CI,1,all tokens are common words,command
+git lab repo,GitLab,1,all tokens are common words,command
+git log,git log,1,all tokens are common words,command
+git log,git log,1,all tokens are common words (canonical),command
+git merge,Git merge,1,all tokens are common words,command
+Git merge,Git merge,1,all tokens are common words (canonical),command
+git pull,git pull,1,all tokens are common words,command
+git pull,git pull,1,all tokens are common words (canonical),command
+git push,git push,1,all tokens are common words,command
+git push,git push,1,all tokens are common words (canonical),command
+git push origin,git push,1,all tokens are common words,command
+git re basing,Git rebase,1,all tokens are common words,command
+git repo,Git,1,all tokens are common words,command
+git repository,Git,1,all tokens are common words,command
+git reset,git reset,1,all tokens are common words,command
+git reset,git reset,1,all tokens are common words (canonical),command
+git soft reset,git reset,1,all tokens are common words,command
+git stash,Git stash,1,all tokens are common words,command
+Git stash,Git stash,1,all tokens are common words (canonical),command
+git stats,git status,1,all tokens are common words,command
+git status,git status,1,all tokens are common words,command
+git status,git status,1,all tokens are common words (canonical),command
+git switch,git switch,1,all tokens are common words,command
+git switch,git switch,1,all tokens are common words (canonical),command
+git switch branch,git switch,1,all tokens are common words,command
+git version control,Git,1,all tokens are common words,command
+github action,GitHub Actions,1,all tokens are common words,command
+github actions,GitHub Actions,1,all tokens are common words,command
+GitHub Actions,GitHub Actions,1,all tokens are common words (canonical),command
+github issue,Issue,1,all tokens are common words,command
+github repo,GitHub,1,all tokens are common words,command
+gl m 5.3,GLM-5.3,1,all tokens are common words,ai-models
+go lang,Go,1,all tokens are common words,hardware
+go lang,Golang,1,all tokens are common words,core
+go language,Go,1,all tokens are common words,hardware
+go language,Golang,1,all tokens are common words,core
+go programming language,Go,1,all tokens are common words,hardware
+go-lang,Golang,1,all tokens are common words,core
+google cloud,GCP,1,all tokens are common words,infra
+google cloud platform,GCP,1,all tokens are common words,infra
+google gemini,Gemini,1,all tokens are common words,ai-models
+graph q l,GraphQL,1,all tokens are common words,web
+graph q l yoga,GraphQL Yoga,1,all tokens are common words,web
+graph q language,GraphQL,1,all tokens are common words,web
+graph query,GraphQL,1,all tokens are common words,web
+graph query language,GraphQL,1,all tokens are common words,web
+graph query yoga,GraphQL Yoga,1,all tokens are common words,web
+graphics processing unit,GPU,1,all tokens are common words,hardware
+grave accent,Backtick,1,all tokens are common words,core
+h b m,HBM,1,all tokens are common words,core
+h g x,HGX,1,all tokens are common words,core
+h m r,Hot Module Replacement,1,all tokens are common words,core
+h one hundred,H100,1,all tokens are common words,hardware
+h t m l,HTML,1,all tokens are common words,web
+h t m l file,.html,1,all tokens are common words,web
+h t m l five,HTML,1,all tokens are common words,web
+h t p,HTTP,1,all tokens are common words,core
+h t t p,HTTP,1,all tokens are common words,core
+h t t p s,HTTPS,1,all tokens are common words,core
+h t t p s secure,HTTPS,1,all tokens are common words,core
+h two hundred,H200,1,all tokens are common words,hardware
+haiku 4.5,Claude Haiku 4.5,1,all tokens are common words,ai-models
+hash heading,Markdown Heading,1,all tokens are common words,core
+he cow 4.5,Claude Haiku 4.5,1,all tokens are common words,ai-models
+he cows 4.5,Claude Haiku 4.5,1,all tokens are common words,ai-models
+he cows four point five,Claude Haiku 4.5,1,all tokens are common words,ai-models
+header element,header,1,all tokens are common words,core
+header tag,header,1,all tokens are common words,core
+helm chart,Helm,1,all tokens are common words,infra
+helm charts,Helm,1,all tokens are common words,infra
+hero ku,Heroku,1,all tokens are common words,core
+hf transformers,Transformers,1,all tokens are common words,hardware
+high bandwidth memory,HBM,1,all tokens are common words,core
+high coup 4.5,Claude Haiku 4.5,1,all tokens are common words,ai-models
+high coup four point five,Claude Haiku 4.5,1,all tokens are common words,ai-models
+high-bandwidth memory,HBM,1,all tokens are common words,core
+ho no,Hono,1,all tokens are common words,web
+home brew,Homebrew,1,all tokens are common words,command
+hot module reload,Hot Module Replacement,1,all tokens are common words,core
+hot module replacement,Hot Module Replacement,1,all tokens are common words,core
+Hot Module Replacement,Hot Module Replacement,1,all tokens are common words (canonical),core
+hot reload,Hot Module Replacement,1,all tokens are common words,core
+html file,.html,1,all tokens are common words,web
+html five,HTML,1,all tokens are common words,web
+html meta tags,Meta Tags,1,all tokens are common words,web
+html table,table,1,all tokens are common words,web
+html tag,HTML Tag,1,all tokens are common words,web
+HTML Tag,HTML Tag,1,all tokens are common words (canonical),web
+html tags,HTML Tag,1,all tokens are common words,web
+http cache,Caching,1,all tokens are common words,infra
+http proxy,Reverse Proxy,1,all tokens are common words,core
+http secure,HTTPS,1,all tokens are common words,core
+hugging face,Hugging Face,1,all tokens are common words,core
+Hugging Face,Hugging Face,1,all tokens are common words (canonical),core
+hugging face hub,Hugging Face,1,all tokens are common words,core
+hugging face transformer library,Transformers,1,all tokens are common words,hardware
+hugging face transformers,Transformers,1,all tokens are common words,hardware
+hugging face transformers,Hugging Face,1,all tokens are common words,core
+hugging faces,Hugging Face,1,all tokens are common words,core
+hydration error,Hydration Mismatch,1,all tokens are common words,web
+hydration mismatch,Hydration Mismatch,1,all tokens are common words,web
+Hydration Mismatch,Hydration Mismatch,1,all tokens are common words (canonical),core
+hyper text markup language,HTML,1,all tokens are common words,web
+i d e,IDE,1,all tokens are common words,core
+i n t eight,INT8,1,all tokens are common words,core
+i p,IP,1,all tokens are common words,core
+i p v 4,IPv4,1,all tokens are common words,core
+i p v 6,IPv6,1,all tokens are common words,core
+i p v four,IPv4,1,all tokens are common words,core
+i p v six,IPv6,1,all tokens are common words,core
+i q 2 m,IQ2_M,1,all tokens are common words,core
+i s r,ISR,1,all tokens are common words,core
+i term,iTerm2,1,all tokens are common words,core
+i term 2,iTerm2,1,all tokens are common words,core
+i term terminal,iTerm2,1,all tokens are common words,core
+i term two,iTerm2,1,all tokens are common words,core
+incremental static regeneration,ISR,1,all tokens are common words,core
+inference runtime,Inference,1,all tokens are common words,core
+inferred type,Type Inference,1,all tokens are common words,web
+input element,input,1,all tokens are common words,core
+input tag,input,1,all tokens are common words,core
+insomnia api,Insomnia,1,all tokens are common words,core
+insomnia rest,Insomnia,1,all tokens are common words,core
+int 8,INT8,1,all tokens are common words,core
+int eight,INT8,1,all tokens are common words,core
+integer eight,INT8,1,all tokens are common words,core
+integrated development environment,IDE,1,all tokens are common words,core
+internet protocol,IP,1,all tokens are common words,core
+intersection type,Intersection Type,1,all tokens are common words,web
+Intersection Type,Intersection Type,1,all tokens are common words (canonical),core
+intersection types,Intersection Type,1,all tokens are common words,web
+inversion of control,Dependency Injection,1,all tokens are common words,core
+ip address,IP,1,all tokens are common words,core
+ip version 4,IPv4,1,all tokens are common words,core
+ip version 6,IPv6,1,all tokens are common words,core
+iq two m,IQ2_M,1,all tokens are common words,core
+j a x,JAX,1,all tokens are common words,core
+j s,JavaScript,1,all tokens are common words,web
+j s x,JSX,1,all tokens are common words,web
+j son,JSON,1,all tokens are common words,web
+j son,JSON,1,all tokens are common words,web
+j son l,JSONL,1,all tokens are common words,core
+j son schema,JSON Schema,1,all tokens are common words,core
+j v m,Java Virtual Machine,1,all tokens are common words,hardware
+j w t,JWT,1,all tokens are common words,ai-models
+j w t token,JWT Token,1,all tokens are common words,ai-models
+jason file,.json,1,all tokens are common words,core
+jason schema,JSON Schema,1,all tokens are common words,core
+java language,Java,1,all tokens are common words,hardware
+java programming,Java,1,all tokens are common words,hardware
+java script,JavaScript,1,all tokens are common words,web
+java script language,JavaScript,1,all tokens are common words,web
+java scripted,JavaScript,1,all tokens are common words,web
+java scripts,JavaScript,1,all tokens are common words,web
+java virtual machine,Java Virtual Machine,1,all tokens are common words,hardware
+Java Virtual Machine,Java Virtual Machine,1,all tokens are common words (canonical),hardware
+java vm,Java Virtual Machine,1,all tokens are common words,hardware
+java-script,JavaScript,1,all tokens are common words,web
+javascript closure,Closure,1,all tokens are common words,web
+javascript compiler,Compiler,1,all tokens are common words,web
+javascript file,.js,1,all tokens are common words,web
+javascript framework,Framework,1,all tokens are common words,web
+javascript library,Library,1,all tokens are common words,web
+javascript object notation,JSON,1,all tokens are common words,web
+javascript promise,Promise,1,all tokens are common words,web
+javascript react file,.jsx,1,all tokens are common words,web
+javascript xml,JSX,1,all tokens are common words,web
+jay son,JSON,1,all tokens are common words,web
+jensen hong,Jensen Huang,1,all tokens are common words,core
+Jensen Huang,Jensen Huang,1,all tokens are common words (canonical),core
+jensen juan,Jensen Huang,1,all tokens are common words,core
+jest js,Jest,1,all tokens are common words,core
+jest test,Jest,1,all tokens are common words,core
+jest testing,Jest,1,all tokens are common words,core
+jest tests,Jest,1,all tokens are common words,core
+jet brain,JetBrains,1,all tokens are common words,core
+jet brains,JetBrains,1,all tokens are common words,core
+jo tie,Jotai,1,all tokens are common words,core
+joe tie,Jotai,1,all tokens are common words,core
+js file,.js,1,all tokens are common words,web
+js test runner,Jest,1,all tokens are common words,core
+jupiter notebook,Jupyter,1,all tokens are common words,core
+k 8 s,Kubernetes,1,all tokens are common words,infra
+k eight s,Kubernetes,1,all tokens are common words,infra
+k i s s,KISS,1,all tokens are common words,core
+k v cache,KV Cache,1,all tokens are common words,core
+kebab case,kebab-case,1,all tokens are common words,core
+kebab-case,kebab-case,1,all tokens are common words,core
+kebab-case,kebab-case,1,all tokens are common words (canonical),core
+keep it simple stupid,KISS,1,all tokens are common words,core
+key value cache,KV Cache,1,all tokens are common words,core
+kimi k 2,Kimi K2,1,all tokens are common words,ai-models
+kimi k 2.5,Kimi K2.5,1,all tokens are common words,ai-models
+kimi k 3,Kimi K3,1,all tokens are common words,ai-models
+kimi k three,Kimi K3,1,all tokens are common words,ai-models
+kimi k two,Kimi K2,1,all tokens are common words,ai-models
+kimi k two point five,Kimi K2.5,1,all tokens are common words,ai-models
+kimi k two point seven code,Kimi K2.7 Code,1,all tokens are common words,ai-models
+kimi k two point six,Kimi K2.6,1,all tokens are common words,ai-models
+kimi k2,Kimi K2,1,all tokens are common words,ai-models
+Kimi K2,Kimi K2,1,all tokens are common words (canonical),ai-models
+kimi k2.5,Kimi K2.5,1,all tokens are common words,ai-models
+Kimi K2.5,Kimi K2.5,1,all tokens are common words (canonical),ai-models
+kimi k2.6,Kimi K2.6,1,all tokens are common words,ai-models
+Kimi K2.6,Kimi K2.6,1,all tokens are common words (canonical),ai-models
+kimi k2.7 code,Kimi K2.7 Code,1,all tokens are common words,ai-models
+Kimi K2.7 Code,Kimi K2.7 Code,1,all tokens are common words (canonical),ai-models
+kv cache,KV Cache,1,all tokens are common words,core
+KV Cache,KV Cache,1,all tokens are common words (canonical),core
+l i,li,1,all tokens are common words,core
+l l m,LLM,1,all tokens are common words,core
+l o r a,LoRA,1,all tokens are common words,ai-models
+label tag,label,1,all tokens are common words,core
+lama ai,Llama,1,all tokens are common words,ai-models
+lama model,Llama,1,all tokens are common words,ai-models
+lambda aws function,AWS Lambda,1,all tokens are common words,ai-models
+lambda function,AWS Lambda,1,all tokens are common words,ai-models
+lambda function aws,AWS Lambda,1,all tokens are common words,ai-models
+lambda functions aws,AWS Lambda,1,all tokens are common words,ai-models
+lambda on aws,AWS Lambda,1,all tokens are common words,ai-models
+lang chain,LangChain,1,all tokens are common words,web
+lang chain ai,LangChain,1,all tokens are common words,web
+lang chain framework,LangChain,1,all tokens are common words,web
+lang graph,LangGraph,1,all tokens are common words,core
+lang graph ai,LangGraph,1,all tokens are common words,core
+lang graph js,LangGraph,1,all tokens are common words,core
+lang smith,LangSmith,1,all tokens are common words,core
+lang smith ai,LangSmith,1,all tokens are common words,core
+language model,LLM,1,all tokens are common words,core
+large language model,LLM,1,all tokens are common words,core
+large language models,LLM,1,all tokens are common words,core
+lazy import,Dynamic Import,1,all tokens are common words,core
+lazy load,Lazy Loading,1,all tokens are common words,core
+lazy loading,Lazy Loading,1,all tokens are common words,core
+Lazy Loading,Lazy Loading,1,all tokens are common words (canonical),core
+lazy-load,Lazy Loading,1,all tokens are common words,core
+linn ux,Linux,1,all tokens are common words,infra
+linux os,Linux,1,all tokens are common words,infra
+list item,li,1,all tokens are common words,core
+load balance,Load Balancer,1,all tokens are common words,core
+local host,localhost,1,all tokens are common words,core
+local host five one seven three,localhost:5173,1,all tokens are common words,core
+local host port,localhost,1,all tokens are common words,core
+local host port five one seven three,localhost:5173,1,all tokens are common words,core
+local host port three thousand,localhost:3000,1,all tokens are common words,core
+local host server,localhost,1,all tokens are common words,core
+local host three thousand,localhost:3000,1,all tokens are common words,core
+m c p,MCP,1,all tokens are common words,command
+m d x,MDX,1,all tokens are common words,web
+m l,Machine Learning,1,all tokens are common words,hardware
+m l x,MLX,1,all tokens are common words,core
+m o e,MoE,1,all tokens are common words,ai-models
+m o e,MoE,1,all tokens are common words,ai-models
+m v c,MVC,1,all tokens are common words,core
+m v v m,MVVM,1,all tokens are common words,core
+mac mini,Mac Mini,1,all tokens are common words,hardware
+Mac Mini,Mac Mini,1,all tokens are common words (canonical),hardware
+mac o s,macOS,1,all tokens are common words,hardware
+mac os,macOS,1,all tokens are common words,hardware
+mac os ten,macOS,1,all tokens are common words,hardware
+mac os x,macOS,1,all tokens are common words,hardware
+mac studio,Mac Studio,1,all tokens are common words,hardware
+Mac Studio,Mac Studio,1,all tokens are common words (canonical),hardware
+mac studios,Mac Studio,1,all tokens are common words,hardware
+machine learning,Machine Learning,1,all tokens are common words,hardware
+Machine Learning,Machine Learning,1,all tokens are common words (canonical),hardware
+machine-learning,Machine Learning,1,all tokens are common words,hardware
+main element,main,1,all tokens are common words,core
+main tag,main,1,all tokens are common words,core
+mark down,Markdown,1,all tokens are common words,core
+markup tag,HTML Tag,1,all tokens are common words,web
+md file,.md,1,all tokens are common words,core
+md heading,Markdown Heading,1,all tokens are common words,core
+md link,Markdown Link,1,all tokens are common words,core
+meta lama model,Llama,1,all tokens are common words,ai-models
+meta muse glimmer,Muse Glimmer,1,all tokens are common words,ai-models
+meta muse spark,Muse Spark,1,all tokens are common words,ai-models
+meta tag,Meta Tags,1,all tokens are common words,web
+meta tags,Meta Tags,1,all tokens are common words,web
+Meta Tags,Meta Tags,1,all tokens are common words (canonical),core
+micro services,Microservices,1,all tokens are common words,core
+micro-service architecture,Microservices,1,all tokens are common words,core
+microsoft azure,Azure,1,all tokens are common words,infra
+microsoft windows,Windows,1,all tokens are common words,core
+middle ware,Middleware,1,all tokens are common words,core
+mixture of experts,MoE,1,all tokens are common words,ai-models
+mixture of experts,MoE,1,all tokens are common words,ai-models
+mixture-of-experts,MoE,1,all tokens are common words,ai-models
+mixture-of-experts,MoE,1,all tokens are common words,ai-models
+mob ex,MobX,1,all tokens are common words,core
+mob x,MobX,1,all tokens are common words,core
+mob x state,MobX,1,all tokens are common words,core
+model context protocol,MCP,1,all tokens are common words,command
+model context protocol client,MCP,1,all tokens are common words,command
+model context protocol server,MCP,1,all tokens are common words,command
+model context window,Context Window,1,all tokens are common words,ai-models
+model fine tuning,Fine-tuning,1,all tokens are common words,core
+model inference,Inference,1,all tokens are common words,core
+model view controller,MVC,1,all tokens are common words,core
+model-view-controller,MVC,1,all tokens are common words,core
+module graph,Dependency Graph,1,all tokens are common words,core
+module js,.mjs,1,all tokens are common words,core
+mono repo,Monorepo,1,all tokens are common words,core
+mono-repo,Monorepo,1,all tokens are common words,core
+monolithic repo,Monorepo,1,all tokens are common words,core
+moose glimmer,Muse Glimmer,1,all tokens are common words,ai-models
+moose park,Muse Spark,1,all tokens are common words,ai-models
+moose park 1.2,Muse Spark 1.2,1,all tokens are common words,ai-models
+moose park one point one,Muse Spark 1.1,1,all tokens are common words,ai-models
+moose park one point two,Muse Spark 1.2,1,all tokens are common words,ai-models
+moose spark,Muse Spark,1,all tokens are common words,ai-models
+moose spark 1.1,Muse Spark 1.1,1,all tokens are common words,ai-models
+moose spark 1.2,Muse Spark 1.2,1,all tokens are common words,ai-models
+moose spark one point two,Muse Spark 1.2,1,all tokens are common words,ai-models
+motion animation library,Motion (Previously framer-motion),1,all tokens are common words,web
+motion dot dev,Motion (Previously framer-motion),1,all tokens are common words,web
+motion for react,Motion (Previously framer-motion),1,all tokens are common words,web
+motion for react,Motion,1,all tokens are common words,web
+motion javascript library,Motion (Previously framer-motion),1,all tokens are common words,web
+motion js,Motion,1,all tokens are common words,web
+motion library,Framer Motion,1,all tokens are common words,web
+motion library,Motion,1,all tokens are common words,web
+motion one,Motion (Previously framer-motion),1,all tokens are common words,web
+motion one library,Motion (Previously framer-motion),1,all tokens are common words,web
+motion react,Framer Motion,1,all tokens are common words,web
+motion react,Motion,1,all tokens are common words,web
+motion react library,Motion (Previously framer-motion),1,all tokens are common words,web
+motion.dev,Motion (Previously framer-motion),1,all tokens are common words,web
+muse glimmer,Muse Glimmer,1,all tokens are common words,ai-models
+Muse Glimmer,Muse Glimmer,1,all tokens are common words (canonical),ai-models
+muse park 1.2,Muse Spark 1.2,1,all tokens are common words,ai-models
+muse spark,Muse Spark,1,all tokens are common words,ai-models
+Muse Spark,Muse Spark,1,all tokens are common words (canonical),ai-models
+muse spark 1.1,Muse Spark 1.1,1,all tokens are common words,ai-models
+Muse Spark 1.1,Muse Spark 1.1,1,all tokens are common words (canonical),ai-models
+muse spark 1.2,Muse Spark 1.2,1,all tokens are common words,ai-models
+Muse Spark 1.2,Muse Spark 1.2,1,all tokens are common words (canonical),ai-models
+muse spark model,Muse Spark,1,all tokens are common words,ai-models
+muse spark one point one,Muse Spark 1.1,1,all tokens are common words,ai-models
+muse spark one point two,Muse Spark 1.2,1,all tokens are common words,ai-models
+my s q l,MySQL,1,all tokens are common words,core
+my sequel,MySQL,1,all tokens are common words,core
+my sql,MySQL,1,all tokens are common words,core
+my sql database,MySQL,1,all tokens are common words,core
+n g i n x,Nginx,1,all tokens are common words,infra
+n gin x,Nginx,1,all tokens are common words,infra
+n p m,npm,1,all tokens are common words,command
+n p m install,npm,1,all tokens are common words,command
+n p m install,npm install,1,all tokens are common words,command
+n p m r c,.npmrc,1,all tokens are common words,command
+n p m run dev,npm run dev,1,all tokens are common words,command
+n v top,nvtop,1,all tokens are common words,core
+n vid ee uh,NVIDIA,1,all tokens are common words,hardware
+n x,Nx,1,all tokens are common words,core
+n x build system,Nx,1,all tokens are common words,core
+nav tag,nav,1,all tokens are common words,core
+navigation tag,nav,1,all tokens are common words,core
+nemo tron,Nemotron,1,all tokens are common words,ai-models
+nemo tron ai,Nemotron,1,all tokens are common words,ai-models
+neon database,Neon,1,all tokens are common words,infra
+neon sql,Neon,1,all tokens are common words,infra
+nest framework,NestJS,1,all tokens are common words,web
+nest gs,Next.js,1,all tokens are common words,web
+nest j s,NestJS,1,all tokens are common words,web
+nest javascript,NestJS,1,all tokens are common words,web
+nest js,Next.js,1,all tokens are common words,web
+nest js,NestJS,1,all tokens are common words,web
+nest js framework,NestJS,1,all tokens are common words,web
+network port,port,1,all tokens are common words,core
+neural net,Neural Network,1,all tokens are common words,core
+neural nets,Neural Network,1,all tokens are common words,core
+neural network,Neural Network,1,all tokens are common words,core
+Neural Network,Neural Network,1,all tokens are common words (canonical),core
+neural networks,Neural Network,1,all tokens are common words,core
+next app router,Next.js App Router,1,all tokens are common words,web
+next configuration,next.config.js,1,all tokens are common words,web
+next dot j s,Next.js,1,all tokens are common words,web
+next dot js,Next.js,1,all tokens are common words,web
+next j s,Next.js,1,all tokens are common words,web
+next javascript,Next.js,1,all tokens are common words,web
+next jays,Next.js,1,all tokens are common words,web
+next jazz,Next.js,1,all tokens are common words,web
+next js,Next.js,1,all tokens are common words,web
+next js app router,Next.js App Router,1,all tokens are common words,web
+next js framework,Next.js,1,all tokens are common words,web
+next js pages router,Next.js Pages Router,1,all tokens are common words,web
+next pages,Next.js Pages Router,1,all tokens are common words,web
+next pages router,Next.js Pages Router,1,all tokens are common words,web
+next route handler,Route Handler,1,all tokens are common words,web
+next router,Next.js App Router,1,all tokens are common words,web
+next server action,Server Action,1,all tokens are common words,web
+next year,Next.js,1,all tokens are common words,web
+next year js,Next.js,1,all tokens are common words,web
+next year's,Next.js,1,all tokens are common words,web
+next years,Next.js,1,all tokens are common words,web
+Next.js,Next.js,1,all tokens are common words (canonical),web
+Next.js App Router,Next.js App Router,1,all tokens are common words (canonical),web
+Next.js Pages Router,Next.js Pages Router,1,all tokens are common words (canonical),web
+node dot js,Node.js,1,all tokens are common words,web
+node j s,Node.js,1,all tokens are common words,web
+node javascript,Node.js,1,all tokens are common words,web
+node js,Node.js,1,all tokens are common words,web
+node package,Package,1,all tokens are common words,command
+node package manager,npm,1,all tokens are common words,command
+node runtime,Node.js,1,all tokens are common words,web
+node server,Node.js,1,all tokens are common words,web
+Node.js,Node.js,1,all tokens are common words (canonical),core
+num p y,NumPy,1,all tokens are common words,python
+num pie,NumPy,1,all tokens are common words,python
+nvidia blackwell,Blackwell,1,all tokens are common words,hardware
+nvidia floating point 4,NVFP4,1,all tokens are common words,hardware
+o c u link,OCuLink,1,all tokens are common words,core
+o four mini,o4-mini,1,all tokens are common words,core
+o i d c,OIDC,1,all tokens are common words,core
+o l,ol,1,all tokens are common words,core
+o n n x,ONNX,1,all tokens are common words,core
+o r m,ORM,1,all tokens are common words,core
+o three mini,o3-mini,1,all tokens are common words,core
+object relational mapping,ORM,1,all tokens are common words,core
+og metadata,Open Graph,1,all tokens are common words,core
+og tags,Open Graph,1,all tokens are common words,core
+oo boon too,Ubuntu,1,all tokens are common words,infra
+oo bun too,Ubuntu,1,all tokens are common words,infra
+open a i,OpenAI,1,all tokens are common words,ai-models
+open a p i,OpenAPI,1,all tokens are common words,core
+open ai,OpenAI,1,all tokens are common words,ai-models
+open ai api,OpenAI,1,all tokens are common words,ai-models
+open api,OpenAPI,1,all tokens are common words,core
+open api spec,OpenAPI,1,all tokens are common words,core
+open eye,OpenAI,1,all tokens are common words,ai-models
+open graph,Open Graph,1,all tokens are common words,core
+Open Graph,Open Graph,1,all tokens are common words (canonical),core
+open id connect,OIDC,1,all tokens are common words,core
+open search,OpenSearch,1,all tokens are common words,core
+open search engine,OpenSearch,1,all tokens are common words,core
+open-graph,Open Graph,1,all tokens are common words,core
+operas five,Claude Opus 5,1,all tokens are common words,ai-models
+option tag,option,1,all tokens are common words,core
+optional chain,Optional Chaining,1,all tokens are common words,core
+opus 4,Claude Opus 4,1,all tokens are common words,ai-models
+opus 4.5,Claude Opus 4.5,1,all tokens are common words,ai-models
+opus 5,Claude Opus 5,1,all tokens are common words,ai-models
+opus five,Claude Opus 5,1,all tokens are common words,ai-models
+opus four,Claude Opus 4,1,all tokens are common words,ai-models
+opus four point five,Claude Opus 4.5,1,all tokens are common words,ai-models
+opus v,Claude Opus 5,1,all tokens are common words,ai-models
+ordered list,ol,1,all tokens are common words,core
+p c i e,PCIe,1,all tokens are common words,core
+p g sql,PostgreSQL,1,all tokens are common words,infra
+p h p,PHP,1,all tokens are common words,core
+p i p,pip,1,all tokens are common words,python
+p key,Primary Key,1,all tokens are common words,core
+p n p m,pnpm,1,all tokens are common words,command
+p n p m dev,pnpm dev,1,all tokens are common words,command
+p n p m eye,pnpm install,1,all tokens are common words,command
+p n p m install,pnpm,1,all tokens are common words,command
+p n p m install,pnpm install,1,all tokens are common words,command
+p w a,PWA,1,all tokens are common words,core
+package dependency,Dependency,1,all tokens are common words,command
+package dependency graph,Dependency Graph,1,all tokens are common words,core
+package j son,package.json,1,all tokens are common words,command
+pages router,Next.js Pages Router,1,all tokens are common words,web
+pandas library,Pandas,1,all tokens are common words,python
+para kit,Parakeet,1,all tokens are common words,core
+pascal case,PascalCase,1,all tokens are common words,core
+pascal casing,PascalCase,1,all tokens are common words,core
+pay pal,PayPal,1,all tokens are common words,core
+paypal api,PayPal,1,all tokens are common words,core
+pci e,PCIe,1,all tokens are common words,core
+pci express,PCIe,1,all tokens are common words,core
+pee en pee em,pnpm,1,all tokens are common words,command
+pee h p,PHP,1,all tokens are common words,core
+php language,PHP,1,all tokens are common words,core
+pie torch,PyTorch,1,all tokens are common words,hardware
+pie torch framework,PyTorch,1,all tokens are common words,hardware
+pine cone,Pinecone,1,all tokens are common words,core
+pine cone database,Pinecone,1,all tokens are common words,core
+pip install,pip,1,all tokens are common words,python
+pip package manager,pip,1,all tokens are common words,python
+plain javascript,Vanilla JavaScript,1,all tokens are common words,web
+plain js,Vanilla JavaScript,1,all tokens are common words,web
+planet database,PlanetScale,1,all tokens are common words,core
+planet scale,PlanetScale,1,all tokens are common words,core
+planet scales,PlanetScale,1,all tokens are common words,core
+planet sql,PlanetScale,1,all tokens are common words,core
+play right,Playwright,1,all tokens are common words,core
+play right js,Playwright,1,all tokens are common words,core
+play rite,Playwright,1,all tokens are common words,core
+play write,Playwright,1,all tokens are common words,core
+playwright testing,Playwright,1,all tokens are common words,core
+poetry package manager,Poetry,1,all tokens are common words,python
+poetry python,Poetry,1,all tokens are common words,python
+port five one seven three,port 5173,1,all tokens are common words,core
+port fourteen twenty,port 1420,1,all tokens are common words,core
+port one four two zero,port 1420,1,all tokens are common words,core
+port three thousand,port 3000,1,all tokens are common words,core
+post c s s,PostCSS,1,all tokens are common words,web
+post css,PostCSS,1,all tokens are common words,web
+post css processor,PostCSS,1,all tokens are common words,web
+post grass,PostgreSQL,1,all tokens are common words,infra
+post gray sql,PostgreSQL,1,all tokens are common words,infra
+post grey sql,PostgreSQL,1,all tokens are common words,infra
+post man,Postman,1,all tokens are common words,core
+postman api,Postman,1,all tokens are common words,core
+postman testing,Postman,1,all tokens are common words,core
+pre fill,prefill,1,all tokens are common words,core
+pre tag,pre,1,all tokens are common words,core
+pre-fill,prefill,1,all tokens are common words,core
+pre-fill throughput,prefill,1,all tokens are common words,core
+prettier formatting,Prettier,1,all tokens are common words,web
+prettier javascript,Prettier,1,all tokens are common words,web
+prettier js,Prettier,1,all tokens are common words,web
+primary key,Primary Key,1,all tokens are common words,core
+Primary Key,Primary Key,1,all tokens are common words (canonical),core
+primary-key,Primary Key,1,all tokens are common words,core
+progressive web app,PWA,1,all tokens are common words,core
+progressive web application,PWA,1,all tokens are common words,core
+prometheus metrics,Prometheus,1,all tokens are common words,infra
+prometheus monitoring,Prometheus,1,all tokens are common words,infra
+prompt design,Prompt Engineering,1,all tokens are common words,core
+prompt engineer,Prompt Engineering,1,all tokens are common words,core
+prompt engineering,Prompt Engineering,1,all tokens are common words,core
+Prompt Engineering,Prompt Engineering,1,all tokens are common words (canonical),core
+prompt engineering ai,Prompt Engineering,1,all tokens are common words,core
+protected branch,Branch Protection,1,all tokens are common words,core
+proto buffer,Protocol Buffers,1,all tokens are common words,core
+proto buffers,Protocol Buffers,1,all tokens are common words,core
+protocol buffer,Protocol Buffers,1,all tokens are common words,core
+protocol buffers,Protocol Buffers,1,all tokens are common words,core
+Protocol Buffers,Protocol Buffers,1,all tokens are common words (canonical),core
+proxy server,Reverse Proxy,1,all tokens are common words,core
+pull git,git pull,1,all tokens are common words,command
+pull request,Pull Request,1,all tokens are common words,core
+pull request,pull request,1,all tokens are common words,command
+Pull Request,Pull Request,1,all tokens are common words (canonical),core
+pull request,pull request,1,all tokens are common words (canonical),core
+pull request github,pull request,1,all tokens are common words,command
+pull request review,Code Review,1,all tokens are common words,core
+pull-request,Pull Request,1,all tokens are common words,core
+pure javascript,Vanilla JavaScript,1,all tokens are common words,web
+pure js,Vanilla JavaScript,1,all tokens are common words,web
+push git,git push,1,all tokens are common words,command
+push to git,git push,1,all tokens are common words,command
+python file,.py,1,all tokens are common words,python
+python language,Python,1,all tokens are common words,hardware
+python pandas,Pandas,1,all tokens are common words,python
+python pip,pip,1,all tokens are common words,python
+python poetry,Poetry,1,all tokens are common words,python
+python programming,Python,1,all tokens are common words,hardware
+python torch,PyTorch,1,all tokens are common words,hardware
+q 4,Q4,1,all tokens are common words,core
+q 4 k m,Q4_K_M,1,all tokens are common words,core
+q 8,Q8,1,all tokens are common words,core
+q 8 0,Q8_0,1,all tokens are common words,core
+q eight,Q8,1,all tokens are common words,core
+q eight zero,Q8_0,1,all tokens are common words,core
+q five k m,Q5_K_M,1,all tokens are common words,core
+q four,Q4,1,all tokens are common words,core
+q four k m,Q4_K_M,1,all tokens are common words,core
+q four k x l,Q4_K_XL,1,all tokens are common words,core
+q six k,Q6_K,1,all tokens are common words,core
+q wen,Qwen,1,all tokens are common words,ai-models
+q when,Qwen,1,all tokens are common words,ai-models
+q when 3.7,Qwen3.7,1,all tokens are common words,ai-models
+q when ai,Qwen,1,all tokens are common words,ai-models
+q when model,Qwen,1,all tokens are common words,ai-models
+q4 k m,Q4_K_M,1,all tokens are common words,core
+q4 k xl,Q4_K_XL,1,all tokens are common words,core
+Q4_K_M,Q4_K_M,1,all tokens are common words (canonical),core
+Q4_K_XL,Q4_K_XL,1,all tokens are common words (canonical),core
+queen 2.5,Qwen2.5,1,all tokens are common words,ai-models
+queen 3,Qwen,1,all tokens are common words,ai-models
+queen 3.7,Qwen3.7,1,all tokens are common words,ai-models
+queen 3.7 max,Qwen3.7-Max,1,all tokens are common words,ai-models
+queen 3.7 plus,Qwen3.7-Plus,1,all tokens are common words,ai-models
+queen 3.8 max,Qwen3.8-Max,1,all tokens are common words,ai-models
+question dot operator,Optional Chaining,1,all tokens are common words,core
+queue wen ai,Qwen,1,all tokens are common words,ai-models
+queue wen model,Qwen,1,all tokens are common words,ai-models
+quick js,Qwik,1,all tokens are common words,web
+quick js framework,Qwik,1,all tokens are common words,web
+quinn 3,Qwen,1,all tokens are common words,ai-models
+quinn 3.7,Qwen3.7,1,all tokens are common words,ai-models
+quinn 3.7 max,Qwen3.7-Max,1,all tokens are common words,ai-models
+quinn 3.7 plus,Qwen3.7-Plus,1,all tokens are common words,ai-models
+quinn 3.8 max,Qwen3.8-Max,1,all tokens are common words,ai-models
+quinn ai,Qwen,1,all tokens are common words,ai-models
+quinn model,Qwen,1,all tokens are common words,ai-models
+quinn three point seven,Qwen3.7,1,all tokens are common words,ai-models
+quote tag,blockquote,1,all tokens are common words,core
+r a g,RAG,1,all tokens are common words,core
+r a m,RAM,1,all tokens are common words,hardware
+r c c l,RCCL,1,all tokens are common words,core
+r d s,RDS,1,all tokens are common words,infra
+r e p l,REPL,1,all tokens are common words,core
+r e s t api,REST API,1,all tokens are common words,core
+r o c m,ROCm,1,all tokens are common words,core
+r o c m s m i,rocm-smi,1,all tokens are common words,core
+r s c,React Server Components,1,all tokens are common words,web
+r t k,Redux Toolkit,1,all tokens are common words,web
+r t l,Testing Library,1,all tokens are common words,web
+rabbit m q,RabbitMQ,1,all tokens are common words,infra
+rabbit message queue,RabbitMQ,1,all tokens are common words,infra
+rabbit queue,RabbitMQ,1,all tokens are common words,infra
+rag pipeline,RAG,1,all tokens are common words,core
+rag system,RAG,1,all tokens are common words,core
+rail way,Railway,1,all tokens are common words,core
+rails app,Ruby on Rails,1,all tokens are common words,hardware
+rails framework,Ruby on Rails,1,all tokens are common words,hardware
+railway deploy,Railway,1,all tokens are common words,core
+railway hosting,Railway,1,all tokens are common words,core
+rate limit,Rate Limiting,1,all tokens are common words,core
+rate limiting,Rate Limiting,1,all tokens are common words,core
+Rate Limiting,Rate Limiting,1,all tokens are common words (canonical),core
+re act,React,1,all tokens are common words,web
+re coil,Recoil,1,all tokens are common words,core
+re dis,Redis,1,all tokens are common words,infra
+re ducks,Redux,1,all tokens are common words,web
+react client component,Client Component,1,all tokens are common words,web
+react context,Context API,1,all tokens are common words,web
+react context api,Context API,1,all tokens are common words,web
+react d o m,React DOM,1,all tokens are common words,web
+react document object model,React DOM,1,all tokens are common words,web
+react dom,React DOM,1,all tokens are common words,web
+React DOM,React DOM,1,all tokens are common words (canonical),web
+react dom library,React DOM,1,all tokens are common words,web
+react error boundary,Error Boundary,1,all tokens are common words,web
+react form,React Hook Form,1,all tokens are common words,web
+react framework,React,1,all tokens are common words,web
+react hook,React Hooks,1,all tokens are common words,web
+react hook form,React Hook Form,1,all tokens are common words,web
+React Hook Form,React Hook Form,1,all tokens are common words (canonical),web
+react hook form library,React Hook Form,1,all tokens are common words,web
+react hook forms,React Hook Form,1,all tokens are common words,web
+react hooks,React Hooks,1,all tokens are common words,web
+React Hooks,React Hooks,1,all tokens are common words (canonical),web
+react hooks api,React Hooks,1,all tokens are common words,web
+react hooks form,React Hook Form,1,all tokens are common words,web
+react hydration,Hydration,1,all tokens are common words,web
+react hydration error,Hydration Mismatch,1,all tokens are common words,web
+react j s,React,1,all tokens are common words,web
+react javascript,React,1,all tokens are common words,web
+react js,React,1,all tokens are common words,web
+react library,React,1,all tokens are common words,web
+react native,React Native,1,all tokens are common words,web
+React Native,React Native,1,all tokens are common words (canonical),web
+react native javascript,React Native,1,all tokens are common words,web
+react native js,React Native,1,all tokens are common words,web
+react queries,TanStack Query,1,all tokens are common words,web
+react query,TanStack Query,1,all tokens are common words,web
+react route,React Router,1,all tokens are common words,web
+react route er,React Router,1,all tokens are common words,web
+react router,React Router,1,all tokens are common words,web
+React Router,React Router,1,all tokens are common words (canonical),web
+react router dom,React Router,1,all tokens are common words,web
+react routing,React Router,1,all tokens are common words,web
+react server component,Server Component,1,all tokens are common words,web
+react server component,React Server Components,1,all tokens are common words,web
+react server components,React Server Components,1,all tokens are common words,web
+React Server Components,React Server Components,1,all tokens are common words (canonical),web
+react suspense,Suspense,1,all tokens are common words,web
+react testing library,Testing Library,1,all tokens are common words,web
+react-hook-form,React Hook Form,1,all tokens are common words,web
+react-query,TanStack Query,1,all tokens are common words,web
+react-router,React Router,1,all tokens are common words,web
+read me,README,1,all tokens are common words,core
+read me file,README,1,all tokens are common words,core
+really round,rounded-2xl,1,all tokens are common words,core
+recoil state,Recoil,1,all tokens are common words,core
+refresh token,Refresh Token,1,all tokens are common words,ai-models
+Refresh Token,Refresh Token,1,all tokens are common words (canonical),ai-models
+refresh-token,Refresh Token,1,all tokens are common words,ai-models
+reg ex,regex,1,all tokens are common words,core
+reg ex pattern,regex,1,all tokens are common words,core
+regular expression,regex,1,all tokens are common words,core
+regular expressions,regex,1,all tokens are common words,core
+remix app,Remix,1,all tokens are common words,web
+remix framework,Remix,1,all tokens are common words,web
+remix full stack framework,Remix,1,all tokens are common words,web
+remix javascript framework,Remix,1,all tokens are common words,web
+remix js,Remix,1,all tokens are common words,web
+remix project,Remix,1,all tokens are common words,web
+remix react framework,Remix,1,all tokens are common words,web
+remix web framework,Remix,1,all tokens are common words,web
+render cloud,Render,1,all tokens are common words,core
+render deploy,Render,1,all tokens are common words,core
+render hosting,Render,1,all tokens are common words,core
+repository layer,Repository,1,all tokens are common words,core
+repository status,git status,1,all tokens are common words,command
+reset git,git reset,1,all tokens are common words,command
+rest api,REST API,1,all tokens are common words,core
+REST API,REST API,1,all tokens are common words (canonical),core
+rest service,REST API,1,all tokens are common words,core
+retrieval augmented generation,RAG,1,all tokens are common words,core
+reverse proxy,Reverse Proxy,1,all tokens are common words,core
+Reverse Proxy,Reverse Proxy,1,all tokens are common words (canonical),core
+reverse-proxy,Reverse Proxy,1,all tokens are common words,core
+review code,code review,1,all tokens are common words,core
+review the code,Code Review,1,all tokens are common words,core
+review the pull request,code review,1,all tokens are common words,core
+robot txt,robots.txt,1,all tokens are common words,core
+robots dot txt,robots.txt,1,all tokens are common words,core
+robots file,robots.txt,1,all tokens are common words,core
+robots txt,robots.txt,1,all tokens are common words,core
+robots.txt,robots.txt,1,all tokens are common words (canonical),core
+rock m,ROCm,1,all tokens are common words,core
+roll up,Rollup,1,all tokens are common words,web
+route controller,Controller,1,all tokens are common words,core
+route handler,Route Handler,1,all tokens are common words,web
+Route Handler,Route Handler,1,all tokens are common words (canonical),core
+route handlers,Route Handler,1,all tokens are common words,web
+ruby language,Ruby,1,all tokens are common words,hardware
+ruby on rails,Ruby on Rails,1,all tokens are common words,hardware
+Ruby on Rails,Ruby on Rails,1,all tokens are common words (canonical),core
+ruby programming,Ruby,1,all tokens are common words,hardware
+ruby rails,Ruby on Rails,1,all tokens are common words,hardware
+rust cargo,Cargo,1,all tokens are common words,rust
+rust file,.rs,1,all tokens are common words,rust
+rust lang,Rust,1,all tokens are common words,hardware
+rust language,Rust,1,all tokens are common words,hardware
+rust programming,Rust,1,all tokens are common words,hardware
+rust programming language,Rust,1,all tokens are common words,hardware
+s 3,S3,1,all tokens are common words,infra
+s 3 bucket,S3,1,all tokens are common words,infra
+s a s s,Sass,1,all tokens are common words,web
+s c s s,SCSS,1,all tokens are common words,web
+s css,SCSS,1,all tokens are common words,web
+s d k,SDK,1,all tokens are common words,core
+s double u c,SWC,1,all tokens are common words,web
+s e o,SEO,1,all tokens are common words,core
+s p a,SPA,1,all tokens are common words,core
+s p a n,span,1,all tokens are common words,core
+s q l,SQL,1,all tokens are common words,core
+s q l lite,SQLite,1,all tokens are common words,infra
+s q lite,SQLite,1,all tokens are common words,infra
+s s g,SSG,1,all tokens are common words,core
+s s h,SSH,1,all tokens are common words,command
+s s r,SSR,1,all tokens are common words,core
+s t t,STT,1,all tokens are common words,core
+s three,S3,1,all tokens are common words,infra
+s tree,S3,1,all tokens are common words,infra
+s w c,SWC,1,all tokens are common words,web
+s3 bucket,S3,1,all tokens are common words,infra
+safe tensor,Safetensors,1,all tokens are common words,hardware
+sass css,Sass,1,all tokens are common words,web
+sass css,SCSS,1,all tokens are common words,web
+schema migration,Database Migration,1,all tokens are common words,core
+sci kit learn,scikit-learn,1,all tokens are common words,core
+sci p y,SciPy,1,all tokens are common words,core
+screaming snake case,SCREAMING_SNAKE_CASE,1,all tokens are common words,core
+SCREAMING_SNAKE_CASE,SCREAMING_SNAKE_CASE,1,all tokens are common words (canonical),core
+search engine optimization,SEO,1,all tokens are common words,core
+search optimization,SEO,1,all tokens are common words,core
+secret key,Secret,1,all tokens are common words,core
+section element,section,1,all tokens are common words,core
+section tag,section,1,all tokens are common words,core
+secure http,HTTPS,1,all tokens are common words,core
+secure shell,SSH,1,all tokens are common words,command
+see eye see dee,CI/CD,1,all tokens are common words,core
+see plus plus,C++,1,all tokens are common words,core
+see sharp,C#,1,all tokens are common words,core
+select element,select,1,all tokens are common words,core
+select option,option,1,all tokens are common words,core
+select tag,select,1,all tokens are common words,core
+self attention,Attention,1,all tokens are common words,core
+self-attention,Attention,1,all tokens are common words,core
+semantic embedding,Embedding,1,all tokens are common words,ai-models
+sentry crash reporting,Sentry,1,all tokens are common words,web
+sentry dot io,Sentry,1,all tokens are common words,web
+sentry error monitoring,Sentry,1,all tokens are common words,web
+sentry error tracking,Sentry,1,all tokens are common words,web
+sentry integration,Sentry,1,all tokens are common words,web
+sentry io,Sentry,1,all tokens are common words,web
+sentry javascript,Sentry,1,all tokens are common words,web
+sentry logs,Sentry,1,all tokens are common words,web
+sentry monitoring,Sentry,1,all tokens are common words,web
+sentry next js,Sentry,1,all tokens are common words,web
+sentry performance monitoring,Sentry,1,all tokens are common words,web
+sentry react,Sentry,1,all tokens are common words,web
+sentry tracing,Sentry,1,all tokens are common words,web
+seo canonical,Canonical URL,1,all tokens are common words,core
+seo meta tags,Meta Tags,1,all tokens are common words,web
+seo robots,robots.txt,1,all tokens are common words,core
+sequel alchemy,SQLAlchemy,1,all tokens are common words,core
+sequel eyes,Sequelize,1,all tokens are common words,core
+sequel file,.sql,1,all tokens are common words,core
+sequel injection,SQL Injection,1,all tokens are common words,core
+sequel language,SQL,1,all tokens are common words,core
+sequel lite,SQLite,1,all tokens are common words,infra
+ser day,Serde,1,all tokens are common words,rust
+server action,Server Action,1,all tokens are common words,web
+Server Action,Server Action,1,all tokens are common words (canonical),core
+server actions,Server Action,1,all tokens are common words,web
+server client mismatch,Hydration Mismatch,1,all tokens are common words,web
+server component,Server Component,1,all tokens are common words,web
+Server Component,Server Component,1,all tokens are common words (canonical),core
+server components,Server Component,1,all tokens are common words,web
+server components react,React Server Components,1,all tokens are common words,web
+server hydration,Hydration,1,all tokens are common words,web
+server less,Serverless,1,all tokens are common words,infra
+server port,port,1,all tokens are common words,core
+server port three thousand,port 3000,1,all tokens are common words,core
+server side rendering,SSR,1,all tokens are common words,core
+server-side action,Server Action,1,all tokens are common words,web
+server-side component,Server Component,1,all tokens are common words,web
+server-side rendering,SSR,1,all tokens are common words,core
+service layer,Service Layer,1,all tokens are common words,core
+Service Layer,Service Layer,1,all tokens are common words (canonical),core
+service-layer,Service Layer,1,all tokens are common words,core
+shadow c n,shadcn/ui,1,all tokens are common words,web
+shadow cn,shadcn/ui,1,all tokens are common words,web
+shadow cn ui,shadcn/ui,1,all tokens are common words,web
+shadow d o m,Shadow DOM,1,all tokens are common words,core
+shadow dom,Shadow DOM,1,all tokens are common words,core
+Shadow DOM,Shadow DOM,1,all tokens are common words (canonical),core
+shed cn,shadcn/ui,1,all tokens are common words,web
+shed scene,shadcn/ui,1,all tokens are common words,web
+shell script file,.sh,1,all tokens are common words,command
+sigh kit learn,scikit-learn,1,all tokens are common words,core
+sigh pie,SciPy,1,all tokens are common words,core
+sigh press,Cypress,1,all tokens are common words,core
+single page application,SPA,1,all tokens are common words,core
+single-page application,SPA,1,all tokens are common words,core
+sir dee,Serde,1,all tokens are common words,rust
+site map,Sitemap,1,all tokens are common words,core
+sk learn,scikit-learn,1,all tokens are common words,core
+sky kit learn,scikit-learn,1,all tokens are common words,core
+snake case,snake_case,1,all tokens are common words,core
+snake casing,snake_case,1,all tokens are common words,core
+snake_case,snake_case,1,all tokens are common words,core
+snake_case,snake_case,1,all tokens are common words (canonical),core
+software development kit,SDK,1,all tokens are common words,core
+software library,Library,1,all tokens are common words,web
+software package,Package,1,all tokens are common words,command
+software tech stack,Tech stack,1,all tokens are common words,core
+solid design principles,SOLID,1,all tokens are common words,web
+solid javascript,SolidJS,1,all tokens are common words,web
+solid js,SolidJS,1,all tokens are common words,web
+solid js app,SolidJS,1,all tokens are common words,web
+solid js framework,SolidJS,1,all tokens are common words,web
+solid js solid start,SolidStart,1,all tokens are common words,web
+solid principles,SOLID,1,all tokens are common words,web
+solid programming,SOLID,1,all tokens are common words,web
+solid start,SolidStart,1,all tokens are common words,web
+solid start app,SolidStart,1,all tokens are common words,web
+solid start framework,SolidStart,1,all tokens are common words,web
+solid start project,SolidStart,1,all tokens are common words,web
+solid start web framework,SolidStart,1,all tokens are common words,web
+solid web framework,SolidJS,1,all tokens are common words,web
+source control branch,Git branch,1,all tokens are common words,command
+source control commit,Git commit,1,all tokens are common words,command
+span tag,span,1,all tokens are common words,core
+speech recognition,STT,1,all tokens are common words,core
+speech recognition model,ASR,1,all tokens are common words,core
+speech synthesis,TTS,1,all tokens are common words,core
+speech to text,STT,1,all tokens are common words,core
+speech-to-text,STT,1,all tokens are common words,core
+spread operator,Spread Operator,1,all tokens are common words,core
+Spread Operator,Spread Operator,1,all tokens are common words (canonical),core
+spread syntax,Spread Operator,1,all tokens are common words,core
+spring boot,Spring Boot,1,all tokens are common words,hardware
+Spring Boot,Spring Boot,1,all tokens are common words (canonical),core
+spring boot java,Spring Boot,1,all tokens are common words,hardware
+spring framework,Spring Boot,1,all tokens are common words,hardware
+sq lite,SQLite,1,all tokens are common words,infra
+sql alchemy,SQLAlchemy,1,all tokens are common words,core
+sql alchemy,SQLAlchemy,1,all tokens are common words,core
+sql alchemy library,SQLAlchemy,1,all tokens are common words,core
+sql file,.sql,1,all tokens are common words,core
+sql index,Index,1,all tokens are common words,core
+sql inject,SQL Injection,1,all tokens are common words,core
+sql injection,SQL Injection,1,all tokens are common words,core
+SQL Injection,SQL Injection,1,all tokens are common words (canonical),core
+sql lite,SQLite,1,all tokens are common words,infra
+sql migration,Database Migration,1,all tokens are common words,core
+sql query,SQL,1,all tokens are common words,core
+sql query,Query,1,all tokens are common words,core
+sql schema,Database Schema,1,all tokens are common words,core
+sql transaction,Transaction,1,all tokens are common words,core
+ssh connection,SSH,1,all tokens are common words,command
+stan state library,Zustand,1,all tokens are common words,web
+stan store library,Zustand,1,all tokens are common words,web
+static site generation,SSG,1,all tokens are common words,core
+static site generator,SSG,1,all tokens are common words,core
+story book,Storybook,1,all tokens are common words,core
+story book js,Storybook,1,all tokens are common words,core
+story books,Storybook,1,all tokens are common words,core
+story desktop app,Tauri,1,all tokens are common words,web
+story desktop framework,Tauri,1,all tokens are common words,web
+story rust app,Tauri,1,all tokens are common words,web
+story rust framework,Tauri,1,all tokens are common words,web
+stripe api,Stripe,1,all tokens are common words,core
+stripe payments,Stripe,1,all tokens are common words,core
+strips halo,Strix Halo,1,all tokens are common words,core
+super base,Supabase,1,all tokens are common words,web
+super bass,Supabase,1,all tokens are common words,web
+super flow panel,SuperflowPanel,1,all tokens are common words,core
+super nic,Super NIC,1,all tokens are common words,core
+Super NIC,Super NIC,1,all tokens are common words (canonical),core
+suspense boundary,Suspense,1,all tokens are common words,web
+swagger api,Swagger,1,all tokens are common words,core
+swagger docs,Swagger,1,all tokens are common words,core
+swagger documentation,Swagger,1,all tokens are common words,core
+swagger ui,Swagger,1,all tokens are common words,core
+swift lang,Swift,1,all tokens are common words,hardware
+swift language,Swift,1,all tokens are common words,hardware
+swift programming,Swift,1,all tokens are common words,hardware
+swift u i,SwiftUI,1,all tokens are common words,hardware
+swift ui,SwiftUI,1,all tokens are common words,hardware
+swift ui framework,SwiftUI,1,all tokens are common words,hardware
+switch branch,git switch,1,all tokens are common words,command
+system memory,RAM,1,all tokens are common words,hardware
+t body,tbody,1,all tokens are common words,core
+t c p,TCP,1,all tokens are common words,core
+t d,td,1,all tokens are common words,core
+t d d,TDD,1,all tokens are common words,core
+t foot,tfoot,1,all tokens are common words,core
+t h,th,1,all tokens are common words,core
+t head,thead,1,all tokens are common words,core
+t r,tr,1,all tokens are common words,core
+t r p c,tRPC,1,all tokens are common words,web
+t r p c api,tRPC,1,all tokens are common words,web
+t s c,TypeScript Compiler,1,all tokens are common words,web
+t s c,tsc,1,all tokens are common words,web
+t s compiler,tsc,1,all tokens are common words,web
+t s x,TSX,1,all tokens are common words,web
+t t s,TTS,1,all tokens are common words,core
+table body,tbody,1,all tokens are common words,core
+table data cell,td,1,all tokens are common words,core
+table footer,tfoot,1,all tokens are common words,core
+table head,thead,1,all tokens are common words,core
+table header cell,th,1,all tokens are common words,core
+table row,tr,1,all tokens are common words,core
+table tag,table,1,all tokens are common words,web
+tail wind,Tailwind CSS,1,all tokens are common words,web
+tail wind css,Tailwind CSS,1,all tokens are common words,web
+tail wind merge,Tailwind Merge,1,all tokens are common words,web
+tail wind merge library,Tailwind Merge,1,all tokens are common words,web
+tail wind merge package,Tailwind Merge,1,all tokens are common words,web
+tail wind s,Tailwind CSS,1,all tokens are common words,web
+tail wind variant,Tailwind Variants,1,all tokens are common words,web
+tail wind variants,Tailwind Variants,1,all tokens are common words,web
+tail winds,Tailwind CSS,1,all tokens are common words,web
+tail winds css,Tailwind CSS,1,all tokens are common words,web
+tail wins,Tailwind CSS,1,all tokens are common words,web
+tan get query,TanStack Query,1,all tokens are common words,web
+tan stack,TanStack Query,1,all tokens are common words,web
+tan stack data,TanStack Query,1,all tokens are common words,web
+tan stack data query,TanStack Query,1,all tokens are common words,web
+tan stack q,TanStack Query,1,all tokens are common words,web
+tan stack quarry,TanStack Query,1,all tokens are common words,web
+tan stack queries,TanStack Query,1,all tokens are common words,web
+tan stack query,TanStack Query,1,all tokens are common words,web
+tan stack query js,TanStack Query,1,all tokens are common words,web
+tan stack query library,TanStack Query,1,all tokens are common words,web
+tan stack query react,TanStack Query,1,all tokens are common words,web
+tan stack react query,TanStack Query,1,all tokens are common words,web
+tan stack route,TanStack Router,1,all tokens are common words,web
+tan stack router,TanStack Router,1,all tokens are common words,web
+tan stack routing,TanStack Router,1,all tokens are common words,web
+tan stack table,TanStack Table,1,all tokens are common words,web
+tan stack tables,TanStack Table,1,all tokens are common words,web
+tan stake query,TanStack Query,1,all tokens are common words,web
+tan stake router,TanStack Router,1,all tokens are common words,web
+tan stake table,TanStack Table,1,all tokens are common words,web
+tan star query,TanStack Query,1,all tokens are common words,web
+tan stat query,TanStack Query,1,all tokens are common words,web
+tan-stack query,TanStack Query,1,all tokens are common words,web
+tec stack,Tech stack,1,all tokens are common words,core
+tech stack,Tech stack,1,all tokens are common words,core
+Tech stack,Tech stack,1,all tokens are common words (canonical),core
+tech stock,Tech stack,1,all tokens are common words,core
+tech tack,Tech stack,1,all tokens are common words,core
+tech track,Tech stack,1,all tokens are common words,core
+tech-stack,Tech stack,1,all tokens are common words,core
+technology stack,Tech stack,1,all tokens are common words,core
+ten stack query,TanStack Query,1,all tokens are common words,web
+ten stack router,TanStack Router,1,all tokens are common words,web
+ten stack table,TanStack Table,1,all tokens are common words,web
+tensor flow,TensorFlow,1,all tokens are common words,hardware
+tensor flows,TensorFlow,1,all tokens are common words,hardware
+tensor-flow,TensorFlow,1,all tokens are common words,hardware
+test driven development,TDD,1,all tokens are common words,core
+test-driven development,TDD,1,all tokens are common words,core
+testing library,Testing Library,1,all tokens are common words,web
+Testing Library,Testing Library,1,all tokens are common words (canonical),core
+testing library react,Testing Library,1,all tokens are common words,web
+testing-library,Testing Library,1,all tokens are common words,web
+text area,textarea,1,all tokens are common words,core
+text embedding,Embedding,1,all tokens are common words,ai-models
+text stack,Tech stack,1,all tokens are common words,core
+text tack,Tech stack,1,all tokens are common words,core
+text to speech,TTS,1,all tokens are common words,core
+text track,Tech stack,1,all tokens are common words,core
+text-to-speech,TTS,1,all tokens are common words,core
+three dot js,Three.js,1,all tokens are common words,web
+three dots operator,Spread Operator,1,all tokens are common words,core
+three j s,Three.js,1,all tokens are common words,web
+three javascript,Three.js,1,all tokens are common words,web
+three js,Three.js,1,all tokens are common words,web
+three thousand port,port 3000,1,all tokens are common words,core
+Three.js,Three.js,1,all tokens are common words (canonical),core
+throttle function,Throttle,1,all tokens are common words,core
+toe kee o,Tokio,1,all tokens are common words,rust
+toe mel,TOML,1,all tokens are common words,core
+token context,Context Window,1,all tokens are common words,ai-models
+tom l,TOML,1,all tokens are common words,core
+tom mel,TOML,1,all tokens are common words,core
+tom mel file,.toml,1,all tokens are common words,core
+tori desktop app,Tauri,1,all tokens are common words,web
+tory desktop app,Tauri,1,all tokens are common words,web
+trans compiler,Transpiler,1,all tokens are common words,web
+transformer architecture,Transformer,1,all tokens are common words,core
+transformer library,Transformers,1,all tokens are common words,hardware
+transformer model,Transformer,1,all tokens are common words,core
+transformer package,Transformers,1,all tokens are common words,hardware
+transformer python library,Transformers,1,all tokens are common words,hardware
+transformers framework,Transformers,1,all tokens are common words,hardware
+transformers library,Transformers,1,all tokens are common words,hardware
+transformers model library,Transformers,1,all tokens are common words,hardware
+transformers package,Transformers,1,all tokens are common words,hardware
+transformers python,Transformers,1,all tokens are common words,hardware
+transmission control protocol,TCP,1,all tokens are common words,core
+tree shake,Tree Shaking,1,all tokens are common words,core
+tree shaker,Tree Shaking,1,all tokens are common words,core
+tree shaking,Tree Shaking,1,all tokens are common words,core
+Tree Shaking,Tree Shaking,1,all tokens are common words (canonical),core
+tree-shaking,Tree Shaking,1,all tokens are common words,core
+ts compiler,TypeScript Compiler,1,all tokens are common words,web
+ts file,.ts,1,all tokens are common words,web
+turbo pack,Turbopack,1,all tokens are common words,web
+turbo pack js,Turbopack,1,all tokens are common words,web
+turbo package,Turbopack,1,all tokens are common words,web
+turbo packer,Turbopack,1,all tokens are common words,web
+turbo repo,Turborepo,1,all tokens are common words,web
+turbo repository,Turborepo,1,all tokens are common words,web
+turbo-repo,Turborepo,1,all tokens are common words,web
+type alias,Type Alias,1,all tokens are common words,web
+Type Alias,Type Alias,1,all tokens are common words (canonical),core
+type guard,Type Guard,1,all tokens are common words,web
+Type Guard,Type Guard,1,all tokens are common words (canonical),core
+type guards,Type Guard,1,all tokens are common words,web
+type inference,Type Inference,1,all tokens are common words,web
+Type Inference,Type Inference,1,all tokens are common words (canonical),core
+type interface,Interface,1,all tokens are common words,web
+type script,TypeScript,1,all tokens are common words,web
+type script compiler,TypeScript Compiler,1,all tokens are common words,web
+type script javascript,TypeScript,1,all tokens are common words,web
+type script js,TypeScript,1,all tokens are common words,web
+type skip,TypeScript,1,all tokens are common words,web
+type-script,TypeScript,1,all tokens are common words,web
+types script,TypeScript,1,all tokens are common words,web
+u d p,UDP,1,all tokens are common words,hardware
+u d q four k x l,UD-Q4_K_XL,1,all tokens are common words,core
+u l,ul,1,all tokens are common words,core
+u r i,URI,1,all tokens are common words,core
+u r l,URL,1,all tokens are common words,core
+u u i d,UUID,1,all tokens are common words,core
+u v,uv,1,all tokens are common words,python
+ubuntu linux,Ubuntu,1,all tokens are common words,infra
+ud q4 k xl,UD-Q4_K_XL,1,all tokens are common words,core
+UD-Q4_K_XL,UD-Q4_K_XL,1,all tokens are common words (canonical),core
+uniform resource identifier,URI,1,all tokens are common words,core
+uniform resource locator,URL,1,all tokens are common words,core
+union type,Union Type,1,all tokens are common words,web
+Union Type,Union Type,1,all tokens are common words (canonical),core
+union types,Union Type,1,all tokens are common words,web
+unique identifier,UUID,1,all tokens are common words,core
+universal unique identifier,UUID,1,all tokens are common words,core
+upper snake case,SCREAMING_SNAKE_CASE,1,all tokens are common words,core
+url address,URL,1,all tokens are common words,core
+use context,useContext,1,all tokens are common words,core
+use context hook,useContext,1,all tokens are common words,core
+use deferred hook,useDeferredValue,1,all tokens are common words,core
+use deferred value,useDeferredValue,1,all tokens are common words,core
+use effect,useEffect,1,all tokens are common words,web
+use effect hook,useEffect,1,all tokens are common words,web
+use effect react,useEffect,1,all tokens are common words,web
+use id,useId,1,all tokens are common words,core
+use id hook,useId,1,all tokens are common words,core
+use imperative handle,useImperativeHandle,1,all tokens are common words,core
+use imperative handle hook,useImperativeHandle,1,all tokens are common words,core
+use layout effect,useLayoutEffect,1,all tokens are common words,core
+use layout effect hook,useLayoutEffect,1,all tokens are common words,core
+use memo,useMemo,1,all tokens are common words,core
+use memo hook,useMemo,1,all tokens are common words,core
+use ref,useRef,1,all tokens are common words,core
+use ref hook,useRef,1,all tokens are common words,core
+use state,useState,1,all tokens are common words,web
+use state hook,useState,1,all tokens are common words,web
+use state react,useState,1,all tokens are common words,web
+use transition,useTransition,1,all tokens are common words,core
+use transition hook,useTransition,1,all tokens are common words,core
+use-effect,useEffect,1,all tokens are common words,web
+use-state,useState,1,all tokens are common words,web
+uv package manager,uv,1,all tokens are common words,python
+uv python,uv,1,all tokens are common words,python
+v l l m,vLLM,1,all tokens are common words,ai-models
+v r a m,VRAM,1,all tokens are common words,hardware
+v ram,VRAM,1,all tokens are common words,hardware
+v test,Vitest,1,all tokens are common words,web
+v test runner,Vitest,1,all tokens are common words,web
+vanilla j s,Vanilla JavaScript,1,all tokens are common words,web
+vanilla javascript,Vanilla JavaScript,1,all tokens are common words,web
+Vanilla JavaScript,Vanilla JavaScript,1,all tokens are common words (canonical),web
+vanilla javascript app,Vanilla JavaScript,1,all tokens are common words,web
+vanilla javascript project,Vanilla JavaScript,1,all tokens are common words,web
+vanilla js,Vanilla JavaScript,1,all tokens are common words,web
+vanilla js project,Vanilla JavaScript,1,all tokens are common words,web
+vector d b,Vector Database,1,all tokens are common words,core
+vector database,Vector Database,1,all tokens are common words,core
+Vector Database,Vector Database,1,all tokens are common words (canonical),core
+vector db,Vector Database,1,all tokens are common words,core
+vector embedding,Embedding,1,all tokens are common words,ai-models
+vector file,.svg,1,all tokens are common words,core
+vector store,Vector Database,1,all tokens are common words,core
+vee test,Vitest,1,all tokens are common words,web
+vee test runner,Vitest,1,all tokens are common words,web
+ver sell,Vercel,1,all tokens are common words,web
+very round,rounded-2xl,1,all tokens are common words,core
+video ram,VRAM,1,all tokens are common words,hardware
+vie test,Vitest,1,all tokens are common words,web
+view js framework,Vue,1,all tokens are common words,web
+virtual d o m,Virtual DOM,1,all tokens are common words,core
+virtual document object model,Virtual DOM,1,all tokens are common words,core
+virtual dom,Virtual DOM,1,all tokens are common words,core
+Virtual DOM,Virtual DOM,1,all tokens are common words (canonical),core
+visual studio,VS Code,1,all tokens are common words,core
+visual studio code,VS Code,1,all tokens are common words,core
+vs code,VS Code,1,all tokens are common words,core
+VS Code,VS Code,1,all tokens are common words (canonical),core
+vs code editor,VS Code,1,all tokens are common words,core
+vulcan api,Vulkan,1,all tokens are common words,core
+w a s m,WebAssembly,1,all tokens are common words,rust
+w a s m,WASM,1,all tokens are common words,rust
+w a s m runtime,WASM,1,all tokens are common words,rust
+wai aria,ARIA,1,all tokens are common words,core
+warp terminal,Warp,1,all tokens are common words,command
+weave ate,Weaviate,1,all tokens are common words,core
+weave eight,Weaviate,1,all tokens are common words,core
+web accessibility,Accessibility,1,all tokens are common words,core
+web assembly,WebAssembly,1,all tokens are common words,rust
+web assembly,WASM,1,all tokens are common words,rust
+web assembly runtime,WebAssembly,1,all tokens are common words,rust
+web component,Web Components,1,all tokens are common words,core
+web component shadow dom,Shadow DOM,1,all tokens are common words,core
+web components,Web Components,1,all tokens are common words,core
+Web Components,Web Components,1,all tokens are common words (canonical),core
+web components api,Web Components,1,all tokens are common words,core
+web custom element,Custom Element,1,all tokens are common words,core
+web framework,Framework,1,all tokens are common words,web
+web g l,WebGL,1,all tokens are common words,core
+web g l graphics,WebGL,1,all tokens are common words,core
+web g p u,WebGPU,1,all tokens are common words,hardware
+web gpu,WebGPU,1,all tokens are common words,hardware
+web graphics library,WebGL,1,all tokens are common words,core
+web graphics processing unit,WebGPU,1,all tokens are common words,hardware
+web hook,Webhooks,1,all tokens are common words,core
+web hooks,Webhooks,1,all tokens are common words,core
+web pack,Webpack,1,all tokens are common words,web
+web pack js,Webpack,1,all tokens are common words,web
+web r t c,WebRTC,1,all tokens are common words,core
+web real time communication,WebRTC,1,all tokens are common words,core
+web socket,WebSocket,1,all tokens are common words,core
+web socket,WebSockets,1,all tokens are common words,core
+web socket connection,WebSocket,1,all tokens are common words,core
+web sockets,WebSocket,1,all tokens are common words,core
+web url,URL,1,all tokens are common words,core
+wheat build,Vite,1,all tokens are common words,web
+wheat dev server,Vite,1,all tokens are common words,web
+wheat js,Vite,1,all tokens are common words,web
+whisper ai,Whisper,1,all tokens are common words,ai-models
+whisper speech recognition,Whisper,1,all tokens are common words,ai-models
+windows os,Windows,1,all tokens are common words,core
+x code,Xcode,1,all tokens are common words,hardware
+x m l,XML,1,all tokens are common words,core
+x s s,XSS,1,all tokens are common words,core
+y a g n i,YAGNI,1,all tokens are common words,core
+ya ml,YAML,1,all tokens are common words,core
+yam el,YAML,1,all tokens are common words,core
+yam l,YAML,1,all tokens are common words,core
+yam l file,.yaml,1,all tokens are common words,core
+yan add,Yarn,1,all tokens are common words,web
+yan command,Yarn,1,all tokens are common words,web
+yan install,Yarn,1,all tokens are common words,web
+yan package manager,Yarn,1,all tokens are common words,web
+yarn add,Yarn,1,all tokens are common words,web
+yarn build,Yarn,1,all tokens are common words,web
+yarn command,Yarn,1,all tokens are common words,web
+yarn commands,Yarn,1,all tokens are common words,web
+yarn dev,Yarn,1,all tokens are common words,web
+yarn install,Yarn,1,all tokens are common words,web
+yarn javascript package manager,Yarn,1,all tokens are common words,web
+yarn lock,Yarn,1,all tokens are common words,web
+yarn package manager,Yarn,1,all tokens are common words,web
+yarn remove,Yarn,1,all tokens are common words,web
+yarn run,Yarn,1,all tokens are common words,web
+you bun too,Ubuntu,1,all tokens are common words,infra
+z e s h,zsh,1,all tokens are common words,command
+z shell,zsh,1,all tokens are common words,command
+z-shell,zsh,1,all tokens are common words,command
+zoo stan,Zustand,1,all tokens are common words,web
+zoo stan state,Zustand,1,all tokens are common words,web
+zoo stan store,Zustand,1,all tokens are common words,web
+zoo stand,Zustand,1,all tokens are common words,web
+zoo stand js,Zustand,1,all tokens are common words,web
+zoo stand react,Zustand,1,all tokens are common words,web
+zoo stand state,Zustand,1,all tokens are common words,web
+zoo stand store,Zustand,1,all tokens are common words,web
+zoo standoff,Zustand,1,all tokens are common words,web
+zu stand,Zustand,1,all tokens are common words,web
+zu stand state,Zustand,1,all tokens are common words,web
+zu stand store,Zustand,1,all tokens are common words,web

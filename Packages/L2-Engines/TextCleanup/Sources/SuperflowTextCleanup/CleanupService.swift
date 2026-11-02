@@ -107,7 +107,7 @@ public actor CleanupService {
                        styling: String, structure: String) async -> (text: String, chunks: [ChunkOutcome]) {
         let count = await cleaner.countTokens(text)
         var plans: [ChunkPlan]
-        if count <= config.hardTokenCap {
+        if count <= min(config.softTokenTarget, config.hardTokenCap) {
             plans = [ChunkPlan(index: 0, text: text, tokens: count)]
         } else {
             let words = WordTimingProjection.apply(to: Tokenizer.words(text, protected: protected), timings: context.wordTimings)
@@ -172,7 +172,10 @@ public actor CleanupService {
         let configured = context.interactive ? context.settings.interactiveDeadlineMs : context.settings.backgroundDeadlineMs
         let ceiling = context.interactive ? config.interactiveDeadlineMs : config.backgroundDeadlineMs
         let deadline = min(max(1, configured), max(1, ceiling))
-        let cap = min(config.maxNewTokens, Int(1.3 * Double(await cleaner.countTokens(plan.text))) + 32)
+        let measuredTokens: Int
+        if plan.tokens > 0 { measuredTokens = plan.tokens }
+        else { measuredTokens = await cleaner.countTokens(plan.text) }
+        let cap = min(config.maxNewTokens, Int(1.3 * Double(measuredTokens)) + 32)
         var tokensIn = 0
         var tokensOut = 0
         var prefillMs: Int?

@@ -1,0 +1,13 @@
+metric,value
+entries,687
+aliases,3405
+identity_alias_percent,16.5
+pack:ai-models,87
+pack:command,47
+pack:core,308
+pack:hardware,62
+pack:infra,34
+pack:mobile,2
+pack:python,7
+pack:rust,9
+pack:web,131

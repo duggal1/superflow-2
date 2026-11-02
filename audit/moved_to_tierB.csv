@@ -1,0 +1,334 @@
+alias,canonical,reason
+next js,Next.js,ambiguous or common-word alias
+next j s,Next.js,ambiguous or common-word alias
+next dot js,Next.js,ambiguous or common-word alias
+next jazz,Next.js,ambiguous or common-word alias
+next jays,Next.js,ambiguous or common-word alias
+next javascript,Next.js,ambiguous or common-word alias
+next year js,Next.js,ambiguous or common-word alias
+next year,Next.js,ambiguous or common-word alias
+next years,Next.js,ambiguous or common-word alias
+nexts years,Next.js,ambiguous or common-word alias
+nexts year,Next.js,ambiguous or common-word alias
+nest gs,Next.js,ambiguous or common-word alias
+nest js,Next.js,ambiguous or common-word alias
+next year's,Next.js,ambiguous or common-word alias
+next dot j s,Next.js,ambiguous or common-word alias
+astro js,Astro,ambiguous or common-word alias
+astro,Astro,ambiguous or common-word alias
+remix js,Remix,ambiguous or common-word alias
+remix,Remix,ambiguous or common-word alias
+quick js framework,Qwik,ambiguous or common-word alias
+quick,Qwik,ambiguous or common-word alias
+quick js,Qwik,ambiguous or common-word alias
+angular application,Angular,ambiguous or common-word alias
+angular,Angular,ambiguous or common-word alias
+angular js,Angular,ambiguous or common-word alias
+view js framework,Vue,ambiguous or common-word alias
+view,Vue,ambiguous or common-word alias
+gatsby js,Gatsby,ambiguous or common-word alias
+gatsby,Gatsby,ambiguous or common-word alias
+wheat js,Vite,ambiguous or common-word alias
+Beat JS,Vite,ambiguous or common-word alias
+wheat build,Vite,ambiguous or common-word alias
+wheat dev server,Vite,ambiguous or common-word alias
+beat build,Vite,ambiguous or common-word alias
+re act,React,ambiguous or common-word alias
+react js,React,ambiguous or common-word alias
+react j s,React,ambiguous or common-word alias
+react javascript,React,ambiguous or common-word alias
+react,React,ambiguous or common-word alias
+node js,Node.js,ambiguous or common-word alias
+node j s,Node.js,ambiguous or common-word alias
+node dot js,Node.js,ambiguous or common-word alias
+node javascript,Node.js,ambiguous or common-word alias
+node runtime,Node.js,ambiguous or common-word alias
+node server,Node.js,ambiguous or common-word alias
+node,Node.js,ambiguous or common-word alias
+express js,Express.js,ambiguous or common-word alias
+express j s,Express.js,ambiguous or common-word alias
+express dot js,Express.js,ambiguous or common-word alias
+express javascript,Express.js,ambiguous or common-word alias
+express server,Express.js,ambiguous or common-word alias
+express framework,Express.js,ambiguous or common-word alias
+fast if i,Fastify,ambiguous or common-word alias
+fast if y,Fastify,ambiguous or common-word alias
+ho no,Hono,ambiguous or common-word alias
+de no,Deno,ambiguous or common-word alias
+bun,Bun,ambiguous or common-word alias
+boon,Bun,ambiguous or common-word alias
+web pack,Webpack,ambiguous or common-word alias
+web pack js,Webpack,ambiguous or common-word alias
+roll up,Rollup,ambiguous or common-word alias
+es build,esbuild,ambiguous or common-word alias
+e s build,esbuild,ambiguous or common-word alias
+re ducks,Redux,ambiguous or common-word alias
+zoo stand,Zustand,ambiguous or common-word alias
+zoo stan,Zustand,ambiguous or common-word alias
+zoo stand store,Zustand,ambiguous or common-word alias
+zoo stand state,Zustand,ambiguous or common-word alias
+zoo stand js,Zustand,ambiguous or common-word alias
+zu stand,Zustand,ambiguous or common-word alias
+zu stand store,Zustand,ambiguous or common-word alias
+zu stand state,Zustand,ambiguous or common-word alias
+zoo stand react,Zustand,ambiguous or common-word alias
+zoo stan store,Zustand,ambiguous or common-word alias
+zoo stan state,Zustand,ambiguous or common-word alias
+stan store library,Zustand,ambiguous or common-word alias
+stan state library,Zustand,ambiguous or common-word alias
+zoo standoff,Zustand,ambiguous or common-word alias
+jo tie,Jotai,ambiguous or common-word alias
+joe tie,Jotai,ambiguous or common-word alias
+re coil,Recoil,ambiguous or common-word alias
+shadow cn,shadcn/ui,ambiguous or common-word alias
+shadow c n,shadcn/ui,ambiguous or common-word alias
+shed scene,shadcn/ui,ambiguous or common-word alias
+shadow cn ui,shadcn/ui,ambiguous or common-word alias
+shed cn,shadcn/ui,ambiguous or common-word alias
+story book,Storybook,ambiguous or common-word alias
+story books,Storybook,ambiguous or common-word alias
+story book js,Storybook,ambiguous or common-word alias
+play right js,Playwright,ambiguous or common-word alias
+play right,Playwright,ambiguous or common-word alias
+play rite,Playwright,ambiguous or common-word alias
+play write,Playwright,ambiguous or common-word alias
+cy press,Cypress,ambiguous or common-word alias
+sigh press,Cypress,ambiguous or common-word alias
+v test,Vitest,ambiguous or common-word alias
+vee test,Vitest,ambiguous or common-word alias
+vie test,Vitest,ambiguous or common-word alias
+v test runner,Vitest,ambiguous or common-word alias
+vee test runner,Vitest,ambiguous or common-word alias
+js test runner,Jest,ambiguous or common-word alias
+fig ma,Figma,ambiguous or common-word alias
+motion react,Framer Motion,ambiguous or common-word alias
+framer,Framer Motion,ambiguous or common-word alias
+motion library,Framer Motion,ambiguous or common-word alias
+tech stack,tech stack,ambiguous or common-word alias
+tec stack,tech stack,ambiguous or common-word alias
+tech tack,tech stack,ambiguous or common-word alias
+tech stock,tech stack,ambiguous or common-word alias
+text stack,tech stack,ambiguous or common-word alias
+text tack,tech stack,ambiguous or common-word alias
+text track,tech stack,ambiguous or common-word alias
+tech track,tech stack,ambiguous or common-word alias
+technology stack,tech stack,ambiguous or common-word alias
+software tech stack,tech stack,ambiguous or common-word alias
+development tech stack,tech stack,ambiguous or common-word alias
+dev tech stack,tech stack,ambiguous or common-word alias
+full stack tech stack,tech stack,ambiguous or common-word alias
+textract,tech stack,ambiguous or common-word alias
+cue wen model,Qwen,ambiguous or common-word alias
+cue wen ai,Qwen,ambiguous or common-word alias
+cue when model,Qwen,ambiguous or common-word alias
+cue when ai,Qwen,ambiguous or common-word alias
+queue wen model,Qwen,ambiguous or common-word alias
+queue wen ai,Qwen,ambiguous or common-word alias
+quinn model,Qwen,ambiguous or common-word alias
+quinn ai,Qwen,ambiguous or common-word alias
+q when model,Qwen,ambiguous or common-word alias
+q when ai,Qwen,ambiguous or common-word alias
+quinn,Qwen,ambiguous or common-word alias
+queen,Qwen,ambiguous or common-word alias
+q wen,Qwen,ambiguous or common-word alias
+q when,Qwen,ambiguous or common-word alias
+cue wen,Qwen,ambiguous or common-word alias
+transformer library,Transformers,ambiguous or common-word alias
+transformers package,Transformers,ambiguous or common-word alias
+transformer package,Transformers,ambiguous or common-word alias
+hf transformers,Transformers,ambiguous or common-word alias
+Transformers,Transformers,ambiguous or common-word canonical
+drizzle,Drizzle ORM,ambiguous or common-word alias
+tori desktop app,Tauri,ambiguous or common-word alias
+tory desktop app,Tauri,ambiguous or common-word alias
+story desktop app,Tauri,ambiguous or common-word alias
+story rust app,Tauri,ambiguous or common-word alias
+story desktop framework,Tauri,ambiguous or common-word alias
+tory,Tauri,ambiguous or common-word alias
+tari,Tauri,ambiguous or common-word alias
+en pee em,npm,ambiguous or common-word alias
+en p m,npm,ambiguous or common-word alias
+and pm package manager,npm,ambiguous or common-word alias
+and pm install,npm,ambiguous or common-word alias
+and pm run,npm,ambiguous or common-word alias
+and pm run dev,npm,ambiguous or common-word alias
+and pm command,npm,ambiguous or common-word alias
+node package manager,npm,ambiguous or common-word alias
+n p m install,npm,ambiguous or common-word alias
+yan package manager,Yarn,ambiguous or common-word alias
+yan install,Yarn,ambiguous or common-word alias
+yan add,Yarn,ambiguous or common-word alias
+yan command,Yarn,ambiguous or common-word alias
+engine x,Nginx,ambiguous or common-word alias
+engine ex,Nginx,ambiguous or common-word alias
+engine x server,Nginx,ambiguous or common-word alias
+engine x proxy,Nginx,ambiguous or common-word alias
+n gin x,Nginx,ambiguous or common-word alias
+lambda function,AWS Lambda,ambiguous or common-word alias
+lambda,AWS Lambda,ambiguous or common-word alias
+sentry,Sentry,ambiguous or common-word alias
+sentry io,Sentry,ambiguous or common-word alias
+sentry dot io,Sentry,ambiguous or common-word alias
+sentry javascript,Sentry,ambiguous or common-word alias
+sentry next js,Sentry,ambiguous or common-word alias
+sentry monitoring,Sentry,ambiguous or common-word alias
+sentry error monitoring,Sentry,ambiguous or common-word alias
+sentry error tracking,Sentry,ambiguous or common-word alias
+sentry crash reporting,Sentry,ambiguous or common-word alias
+sentry performance monitoring,Sentry,ambiguous or common-word alias
+sentry tracing,Sentry,ambiguous or common-word alias
+sentry logs,Sentry,ambiguous or common-word alias
+sentry integration,Sentry,ambiguous or common-word alias
+century monitoring,Sentry,ambiguous or common-word alias
+century error tracking,Sentry,ambiguous or common-word alias
+century error monitoring,Sentry,ambiguous or common-word alias
+century dot io,Sentry,ambiguous or common-word alias
+century next js,Sentry,ambiguous or common-word alias
+claude,Claude,ambiguous or common-word alias
+cloud,Claude,ambiguous or common-word alias
+google gemini,Gemini,ambiguous or common-word alias
+gemini google,Gemini,ambiguous or common-word alias
+gem in eye model,Gemini,ambiguous or common-word alias
+gem in eye ai,Gemini,ambiguous or common-word alias
+gemini,Gemini,ambiguous or common-word alias
+lama model,Llama,ambiguous or common-word alias
+lama ai,Llama,ambiguous or common-word alias
+meta lama model,Llama,ambiguous or common-word alias
+lama,Llama,ambiguous or common-word alias
+apollo,Apollo Client,ambiguous or common-word alias
+jason,JSON,ambiguous or common-word alias
+sequel,SQL,ambiguous or common-word alias
+mongo,MongoDB,ambiguous or common-word alias
+re dis,Redis,ambiguous or common-word alias
+dynamo,DynamoDB,ambiguous or common-word alias
+super base,Supabase,ambiguous or common-word alias
+super bass,Supabase,ambiguous or common-word alias
+fire base,Firebase,ambiguous or common-word alias
+neon,Neon,ambiguous or common-word alias
+sequel eyes,Sequelize,ambiguous or common-word alias
+cloud flare,Cloudflare,ambiguous or common-word alias
+cloud flair,Cloudflare,ambiguous or common-word alias
+cloud flare worker,Cloudflare,ambiguous or common-word alias
+ver sell,Vercel,ambiguous or common-word alias
+rail way,Railway,ambiguous or common-word alias
+render,Render,ambiguous or common-word alias
+hero ku,Heroku,ambiguous or common-word alias
+k eight s,Kubernetes,ambiguous or common-word alias
+helm,Helm,ambiguous or common-word alias
+git,Git,ambiguous or common-word alias
+git version control,Git,ambiguous or common-word alias
+git repo,Git,ambiguous or common-word alias
+git repository,Git,ambiguous or common-word alias
+pee en pee em,pnpm,ambiguous or common-word alias
+p n p m install,pnpm,ambiguous or common-word alias
+uv,uv,ambiguous or common-word alias
+uv package manager,uv,ambiguous or common-word alias
+panda,Pandas,ambiguous or common-word alias
+sci kit learn,scikit-learn,ambiguous or common-word alias
+sigh kit learn,scikit-learn,ambiguous or common-word alias
+sky kit learn,scikit-learn,ambiguous or common-word alias
+sk learn,scikit-learn,ambiguous or common-word alias
+jupiter,Jupyter,ambiguous or common-word alias
+jupiter notebook,Jupyter,ambiguous or common-word alias
+rust,Rust,ambiguous or common-word alias
+toe kee o,Tokio,ambiguous or common-word alias
+tokyo,Tokio,ambiguous or common-word alias
+axe um,Axum,ambiguous or common-word alias
+act ticks,Actix,ambiguous or common-word alias
+sir dee,Serde,ambiguous or common-word alias
+ser day,Serde,ambiguous or common-word alias
+ruby,Ruby,ambiguous or common-word alias
+rails,Ruby on Rails,ambiguous or common-word alias
+java,Java,ambiguous or common-word alias
+spring,Spring Boot,ambiguous or common-word alias
+cotton,Kotlin,ambiguous or common-word alias
+swift,Swift,ambiguous or common-word alias
+dot c,C++,ambiguous or common-word alias
+elastic search,Elasticsearch,ambiguous or common-word alias
+elastic,Elasticsearch,ambiguous or common-word alias
+elastic search engine,Elasticsearch,ambiguous or common-word alias
+data dog,Datadog,ambiguous or common-word alias
+data dog monitoring,Datadog,ambiguous or common-word alias
+post man,Postman,ambiguous or common-word alias
+para kit,Parakeet,ambiguous or common-word alias
+nemo tron,Nemotron,ambiguous or common-word alias
+nemo tron ai,Nemotron,ambiguous or common-word alias
+pre-fill,prefill,ambiguous or common-word alias
+pre-fill throughput,prefill,ambiguous or common-word alias
+pine cone,Pinecone,ambiguous or common-word alias
+pine cone database,Pinecone,ambiguous or common-word alias
+weave eight,Weaviate,ambiguous or common-word alias
+weave ate,Weaviate,ambiguous or common-word alias
+chroma,Chroma,ambiguous or common-word alias
+jot,JWT,ambiguous or common-word alias
+oath,OAuth,ambiguous or common-word alias
+local host,localhost,ambiguous or common-word alias
+local host server,localhost,ambiguous or common-word alias
+local host port,localhost,ambiguous or common-word alias
+cursor,Cursor,ambiguous or common-word alias
+cursor editor,Cursor,ambiguous or common-word alias
+ex code,Xcode,ambiguous or common-word alias
+x code,Xcode,ambiguous or common-word alias
+ghost tea,Ghostty,ambiguous or common-word alias
+ghost terminal,Ghostty,ambiguous or common-word alias
+warp,Warp,ambiguous or common-word alias
+warp terminal,Warp,ambiguous or common-word alias
+z shell,zsh,ambiguous or common-word alias
+bash,bash,ambiguous or common-word alias
+bash shell,bash,ambiguous or common-word alias
+bourne again shell,bash,ambiguous or common-word alias
+dot bash,bash,ambiguous or common-word alias
+fish shell,fish shell,ambiguous or common-word alias
+fish,fish shell,ambiguous or common-word alias
+fish terminal,fish shell,ambiguous or common-word alias
+linn ux,Linux,ambiguous or common-word alias
+oo boon too,Ubuntu,ambiguous or common-word alias
+arch,Arch Linux,ambiguous or common-word alias
+home brew,Homebrew,ambiguous or common-word alias
+brew,Homebrew,ambiguous or common-word alias
+brew install,Homebrew,ambiguous or common-word alias
+n x build system,Nx,ambiguous or common-word alias
+reg ex,regex,ambiguous or common-word alias
+regular expression,regex,ambiguous or common-word alias
+regular expressions,regex,ambiguous or common-word alias
+reg ex pattern,regex,ambiguous or common-word alias
+web hooks,Webhooks,ambiguous or common-word alias
+web hook,Webhooks,ambiguous or common-word alias
+mark down,Markdown,ambiguous or common-word alias
+md,Markdown,ambiguous or common-word alias
+package j son,package.json,ambiguous or common-word alias
+next configuration,next.config.js,ambiguous or common-word alias
+robots txt,robots.txt,ambiguous or common-word alias
+robots dot txt,robots.txt,ambiguous or common-word alias
+robots file,robots.txt,ambiguous or common-word alias
+robot txt,robots.txt,ambiguous or common-word alias
+seo robots,robots.txt,ambiguous or common-word alias
+app router,Next.js App Router,ambiguous or common-word alias
+suspense,Suspense,ambiguous or common-word alias
+react suspense,Suspense,ambiguous or common-word alias
+suspense boundary,Suspense,ambiguous or common-word alias
+t s compiler,tsc,ambiguous or common-word alias
+n p m install,npm install,ambiguous or common-word alias
+n p m run dev,npm run dev,ambiguous or common-word alias
+p n p m install,pnpm install,ambiguous or common-word alias
+p n p m eye,pnpm install,ambiguous or common-word alias
+p n p m dev,pnpm dev,ambiguous or common-word alias
+boon install,bun install,ambiguous or common-word alias
+boon dev,bun dev,ambiguous or common-word alias
+the zod,Zod,ambiguous or common-word alias
+o four mini,o4-mini,ambiguous or common-word alias
+hpm,HBM,ambiguous or common-word alias
+n v top,nvtop,ambiguous or common-word alias
+vulcan api,Vulkan,ambiguous or common-word alias
+windows,Windows,ambiguous or common-word alias
+safe tensor,Safetensors,ambiguous or common-word alias
+go,Go,ambiguous or common-word alias
+go lang,Go,ambiguous or common-word alias
+go language,Go,ambiguous or common-word alias
+go programming language,Go,ambiguous or common-word alias
+dot go,Go,ambiguous or common-word alias
+motion,Motion,ambiguous or common-word alias
+motion js,Motion,ambiguous or common-word alias
+motion.dev,Motion,ambiguous or common-word alias
+motion dot dev,Motion,ambiguous or common-word alias
+motion one,Motion,ambiguous or common-word alias

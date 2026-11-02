@@ -16,6 +16,9 @@ public struct LexiconWarning: Sendable, Equatable {
 /// triggers are allowed, the longest match wins, and each line is rewritten in
 /// a single pass. Terms normalize away case, spacing, hyphens, dots and the
 /// spoken word "dot". Corrections map a model output form to the user's form.
+public typealias LexiconFilter = @Sendable (_ trigger: String, _ canonical: String,
+                                             _ line: String, _ context: TextContext) -> Bool
+
 public struct LexiconStage: ExplainingTextStage {
     public let id: String
     public let warnings: [LexiconWarning]
@@ -23,8 +26,11 @@ public struct LexiconStage: ExplainingTextStage {
     private let trie: LexiconTrie
     private let canonicals: [String]
     private let ruleIDs: [String]
+    private let triggerTexts: [String]
+    private let filter: LexiconFilter?
 
-    public init(entries: [LexiconEntry], id: String = "lexicon") {
+    public init(entries: [LexiconEntry], id: String = "lexicon",
+                includeCanonical: Bool = true, filter: LexiconFilter? = nil) {
         self.id = id
         let ordered = entries.filter { $0.enabled && !$0.canonical.isEmpty }
             .enumerated()
@@ -39,6 +45,7 @@ public struct LexiconStage: ExplainingTextStage {
         var trie = LexiconTrie()
         var canonicals: [String] = []
         var ruleIDs: [String] = []
+        var triggerTexts: [String] = []
         var owner: [String: Int] = [:]
         var seenWarnings = Set<String>()
         var warnings: [LexiconWarning] = []
@@ -50,7 +57,7 @@ public struct LexiconStage: ExplainingTextStage {
 
         for entry in ordered {
             var triggers = entry.triggers
-            if entry.kind == .term { triggers.append(entry.canonical) }
+            if includeCanonical, entry.kind == .term { triggers.append(entry.canonical) }
             for trigger in triggers {
                 let key = LexiconNormalizer.key(trigger)
                 guard !key.isEmpty else { continue }
@@ -65,6 +72,7 @@ public struct LexiconStage: ExplainingTextStage {
                 owner[key] = canonicals.count
                 canonicals.append(entry.canonical)
                 ruleIDs.append(entry.id)
+                triggerTexts.append(trigger)
                 trie.insert(Array(key), entry: canonicals.count - 1)
             }
             for trigger in triggers where CommonWords.isRisky(trigger: trigger) {
@@ -76,6 +84,8 @@ public struct LexiconStage: ExplainingTextStage {
         self.trie = trie
         self.canonicals = canonicals
         self.ruleIDs = ruleIDs
+        self.triggerTexts = triggerTexts
+        self.filter = filter
         self.entryCount = ordered.count
         self.warnings = warnings
     }
@@ -84,7 +94,7 @@ public struct LexiconStage: ExplainingTextStage {
         var output = draft
         var found = Set<String>()
         output.text = draft.text.split(separator: "\n", omittingEmptySubsequences: false)
-            .map { replaceLine(String($0), protected: draft.protected, found: &found) }
+            .map { replaceLine(String($0), protected: draft.protected, context: context, found: &found) }
             .joined(separator: "\n")
         output.protected.literals.formUnion(found)
         for warning in warnings {
@@ -94,7 +104,8 @@ public struct LexiconStage: ExplainingTextStage {
         return output
     }
 
-    private func replaceLine(_ line: String, protected: Protected, found: inout Set<String>,
+    private func replaceLine(_ line: String, protected: Protected, context: TextContext,
+                             found: inout Set<String>,
                              record: ((Range<String.Index>, String, String, Int) -> Void)? = nil) -> String {
         let stream = LexiconStream.build(line)
         guard !stream.tokens.isEmpty else { return line }
@@ -117,19 +128,32 @@ public struct LexiconStage: ExplainingTextStage {
                 let last = stream.endToken[match.end - 1]
                 if last >= index {
                     let slice = stream.tokens[index...last]
+                    let canonical = canonicals[match.entry]
+                    let trigger = triggerTexts[match.entry]
+                    // Version tokens such as "4.5" are protected so generic
+                    // stages leave numeric literals alone. A digit-bearing
+                    // trigger ("claude sonnet 4.5", "mistral 7b") intentionally
+                    // spans them.
+                    let span = stream.tokens[index].range.lowerBound
+                        ..< stream.tokens[last].range.upperBound
+                    let spansNumbers = trigger.contains { $0.isNumber }
                     let blocked = ranges.contains { range in
-                        slice.contains { $0.range.overlaps(range) }
+                        guard slice.contains(where: { $0.range.overlaps(range) }) else { return false }
+                        return !(spansNumbers && span.lowerBound <= range.lowerBound
+                                 && range.upperBound <= span.upperBound)
                     }
                     if !blocked {
-                        let canonical = canonicals[match.entry]
-                        let lead = stream.tokens[index].lead
-                        let trail = stream.tokens[last].trail
-                        let startOffset = append(lead + canonical + trail)
-                        record?(stream.tokens[index].range.lowerBound..<stream.tokens[last].range.upperBound,
-                                canonical, ruleIDs[match.entry], startOffset + lead.utf16.count)
-                        found.insert(canonical)
-                        index = last + 1
-                        continue
+                        let accepts = filter?(trigger, canonical, line, context) ?? true
+                        if accepts {
+                            let lead = stream.tokens[index].lead
+                            let trail = stream.tokens[last].trail
+                            let startOffset = append(lead + canonical + trail)
+                            record?(stream.tokens[index].range.lowerBound..<stream.tokens[last].range.upperBound,
+                                    canonical, ruleIDs[match.entry], startOffset + lead.utf16.count)
+                            found.insert(canonical)
+                            index = last + 1
+                            continue
+                        }
                     }
                 }
             }
@@ -150,7 +174,7 @@ public struct LexiconStage: ExplainingTextStage {
 
         for (lineIndex, line) in lines.enumerated() {
             var recorded: [(TextSpan, TextSpan, String)] = []
-            let rewritten = replaceLine(line, protected: before.protected, found: &found) {
+            let rewritten = replaceLine(line, protected: before.protected, context: context, found: &found) {
                 input, canonical, ruleID, outputStart in
                 let local = NSRange(input, in: line)
                 recorded.append((TextSpan(location: inputLineStart + local.location, length: local.length),

@@ -228,8 +228,9 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
                                                   deadlineMs: options.deadlineMs)
         let cleaned = LlamaPrompt.sanitize(output.text)
         let elapsed = Int((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000)
-        let retokenized = await runtime.countTokens(cleaned) ?? 0
-        let tokensOut = output.generatedTokens ?? retokenized
+        let tokensOut: Int
+        if let generated = output.generatedTokens { tokensOut = generated }
+        else { tokensOut = await runtime.countTokens(cleaned) ?? 0 }
         let tokensIn = await runtime.countTokens(prompt) ?? 0
         // Filler-only input legitimately normalizes to an empty string.
         return CleanResult(text: cleaned,

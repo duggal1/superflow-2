@@ -51,6 +51,26 @@ final class LlamaCleanerTests: XCTestCase {
         XCTAssertEqual(result.generationMs, 81)
     }
 
+    func testGeneratedTokenMetadataAvoidsRedundantOutputTokenization() async throws {
+        let provider = StubProvider(url: URL(fileURLWithPath: "/tmp/s1.gguf"))
+        let runtime = CountingRuntime(reportsGenerated: true)
+        let cleaner = LlamaCleaner(modelProvider: provider, runtime: runtime)
+        let result = try await cleaner.clean("hello", options: CleanOptions())
+        let calls = await runtime.countCalls
+        XCTAssertEqual(result.tokensOut, 1)
+        XCTAssertEqual(calls, 2)
+    }
+
+    func testMissingGeneratedCountStillTokenizesOutput() async throws {
+        let provider = StubProvider(url: URL(fileURLWithPath: "/tmp/s1.gguf"))
+        let runtime = CountingRuntime(reportsGenerated: false)
+        let cleaner = LlamaCleaner(modelProvider: provider, runtime: runtime)
+        let result = try await cleaner.clean("hello", options: CleanOptions())
+        let calls = await runtime.countCalls
+        XCTAssertEqual(result.tokensOut, 1)
+        XCTAssertEqual(calls, 3)
+    }
+
     func testSystemPromptMatchesPinnedHash() {
         let data = Data(LlamaPrompt.system(options: CleanOptions()).utf8)
         let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
@@ -273,5 +293,17 @@ private struct TimedRuntime: LlamaRuntime {
     func complete(prompt: String, maxTokens: Int) async throws -> String { "fixture" }
     func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion {
         LlamaCompletion(text: "fixture", generatedTokens: 1, prefillMs: 42, generationMs: 81)
+    }
+}
+
+private actor CountingRuntime: LlamaRuntime {
+    let reportsGenerated: Bool
+    private(set) var countCalls = 0
+    init(reportsGenerated: Bool) { self.reportsGenerated = reportsGenerated }
+    func load(modelURL: URL, compute: ModelCompute) async throws {}
+    func countTokens(_ text: String) async -> Int? { countCalls += 1; return 1 }
+    func complete(prompt: String, maxTokens: Int) async throws -> String { "hello" }
+    func completion(prompt: String, maxTokens: Int, deadlineMs: Int) async throws -> LlamaCompletion {
+        LlamaCompletion(text: "hello", generatedTokens: reportsGenerated ? 1 : nil)
     }
 }

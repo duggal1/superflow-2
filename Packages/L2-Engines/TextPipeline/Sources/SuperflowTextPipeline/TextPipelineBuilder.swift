@@ -63,8 +63,16 @@ public enum TextPipelineBuilder {
         }
         stages.append(LineFormatStage(settings: settings.lineFormat))
         // Final deterministic layer. The dictionary is loaded once and is never
-        // exposed to ASR or the cleanup model.
-        stages.append(LexiconStage(entries: TechDictionary.entries, id: "techDictionary"))
+        // exposed to ASR or the cleanup model. Tier B aliases are context-gated.
+        let gate = TechDictionaryGate(userEntries: dependencies.lexiconEntries,
+                                      project: dependencies.project)
+        stages.append(LexiconStage(entries: TechDictionary.lexiconEntries(),
+                                   id: "techDictionary",
+                                   includeCanonical: false,
+                                   filter: { trigger, canonical, line, context in
+                                       gate.accepts(trigger: trigger, canonical: canonical,
+                                                    line: line, context: context)
+                                   }))
 
         let seed = Set(dependencies.lexiconEntries.filter(\.enabled).map(\.canonical).filter { !$0.isEmpty })
         let tokenCounter: (@Sendable (String) async -> Int)?

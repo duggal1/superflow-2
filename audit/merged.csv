@@ -1,0 +1,32 @@
+from,into,reason
+C#,C++,duplicate canonical form
+.json,JSON,duplicate canonical form
+.yaml,YAML,duplicate canonical form
+.toml,TOML,duplicate canonical form
+.sql,SQL,duplicate canonical form
+.mdx,MDX,duplicate canonical form
+.css,CSS,duplicate canonical form
+.scss,SCSS,duplicate canonical form
+.html,HTML,duplicate canonical form
+JSX,.jsx,duplicate canonical form
+TSX,.tsx,duplicate canonical form
+pull request,Pull Request,duplicate canonical form
+code review,Code Review,duplicate canonical form
+.go,Go,duplicate canonical form
+.java,Java,duplicate canonical form
+.swift,Swift,duplicate canonical form
+.php,PHP,duplicate canonical form
+.c,C++,duplicate canonical form
+.xml,XML,duplicate canonical form
+.bash,bash,duplicate canonical form
+.zsh,zsh,duplicate canonical form
+DeepSeek-V4-Flash,DeepSeek-V4-Flash,duplicate canonical form
+RTX 5080,RTX 5080,duplicate canonical form
+RTX PRO 6000,RTX PRO 6000,duplicate canonical form
+Radeon 8060S,Radeon 8060S,duplicate canonical form
+MoE,MoE,duplicate canonical form
+DGX Station,DGX Station,duplicate canonical form
+GB300,GB300,duplicate canonical form
+Golang,Go,explicit merge group
+WebSockets,WebSocket,explicit merge group
+Motion (Previously framer-motion),Motion,explicit merge group

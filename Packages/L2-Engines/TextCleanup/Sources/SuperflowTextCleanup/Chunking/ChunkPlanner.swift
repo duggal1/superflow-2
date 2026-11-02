@@ -22,7 +22,7 @@ public struct CleanupConfig: Sendable, Equatable {
     /// off except list and paragraph shaping after cleanup.
     public var format: FormatConfig
 
-    public init(softTokenTarget: Int = 500, hardTokenCap: Int = 600, interactiveDeadlineMs: Int = 1_500,
+    public init(softTokenTarget: Int = 250, hardTokenCap: Int = 600, interactiveDeadlineMs: Int = 1_500,
                 backgroundDeadlineMs: Int = 30_000, workers: Int = 3, ratioFloor: Double = 0.6,
                 retryDepth: Int = 3, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_024,
                 overlapPercent: Double = 0.12, format: FormatConfig = FormatConfig()) {
@@ -75,7 +75,7 @@ public struct ChunkPlanner: Sendable {
         let target = min(hard, max(1, config.softTokenTarget))
         let fullText = Tokenizer.join(words)
         let total = await count(fullText)
-        if total <= hard { return [ChunkPlan(index: 0, text: fullText, tokens: total)] }
+        if total <= target { return [ChunkPlan(index: 0, text: fullText, tokens: total)] }
         var prefix = [0]
         prefix.reserveCapacity(words.count + 1)
         for word in words { prefix.append(prefix[prefix.count - 1] + Self.weight(word)) }
@@ -89,7 +89,14 @@ public struct ChunkPlanner: Sendable {
             var end = Self.bestCut(words, lo: lower, hi: limit) ?? limit
             let candidate = Tokenizer.join(words[start..<end])
             var measured = await count(candidate)
-            while measured > hard, let shorter = Self.previousCut(words, before: end, after: start) {
+            while measured > target {
+                // Scale the cut using the real tokenizer count; stepping one word
+                // at a time can otherwise require hundreds of helper round trips.
+                let estimate = max(1, Int(Double(end - start) * Double(target) / Double(measured)))
+                let desired = min(end - 1, start + estimate)
+                let shorter = Self.previousCut(words, before: desired + 1, after: start)
+                    ?? (start + 1..<end).first { !words[$0 - 1].glue }
+                guard let shorter else { break }
                 end = shorter
                 measured = await count(Tokenizer.join(words[start..<end]))
             }

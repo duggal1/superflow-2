@@ -1,0 +1,1335 @@
+alias,canonical,reason
+a p i key,API Key,alias extends 'a p i' (API); suffix is dropped
+a w s lambda,AWS Lambda,alias extends 'a w s' (AWS); suffix is dropped
+a100 gpu,A100,alias extends its own canonical; suffix is dropped
+accessible rich internet applications,ARIA,alias extends 'accessible' (Accessibility); suffix is dropped
+actix rust,Actix,alias extends its own canonical; suffix is dropped
+actix web,Actix,alias extends its own canonical; suffix is dropped
+amazon web services lambda,AWS Lambda,alias extends 'amazon web services' (AWS); suffix is dropped
+amd radeon 8060s,Radeon 8060S,alias extends 'amd' (AMD); suffix is dropped
+angular app,Angular,alias extends its own canonical; suffix is dropped
+angular application,Angular,alias extends its own canonical; suffix is dropped
+angular framework,Angular,alias extends its own canonical; suffix is dropped
+angular frontend framework,Angular,alias extends its own canonical; suffix is dropped
+angular js,Angular,alias extends its own canonical; suffix is dropped
+angular project,Angular,alias extends its own canonical; suffix is dropped
+angular typescript,Angular,alias extends its own canonical; suffix is dropped
+angular typescript framework,Angular,alias extends its own canonical; suffix is dropped
+angular web framework,Angular,alias extends its own canonical; suffix is dropped
+ansible automation,Ansible,alias extends its own canonical; suffix is dropped
+anthropic ai,Anthropic,alias extends its own canonical; suffix is dropped
+anthropic api,Anthropic,alias extends its own canonical; suffix is dropped
+anthropic claude,Claude,alias extends 'anthropic' (Anthropic); suffix is dropped
+anthropic claude model,Claude,alias extends 'anthropic' (Anthropic); suffix is dropped
+apache http server,Apache,alias extends its own canonical; suffix is dropped
+apache kafka,Kafka,alias extends 'apache' (Apache); suffix is dropped
+apache server,Apache,alias extends its own canonical; suffix is dropped
+api access token,Access Token,alias extends 'api' (API); suffix is dropped
+api controller,Controller,alias extends 'api' (API); suffix is dropped
+api endpoint,API,alias extends its own canonical; suffix is dropped
+api key,API Key,alias extends 'api' (API); suffix is dropped
+api rate limit,Rate Limiting,alias extends 'api' (API); suffix is dropped
+api route,API Route,alias extends 'api' (API); suffix is dropped
+api route handler,Route Handler,alias extends 'api' (API); suffix is dropped
+api routes,API Route,alias extends 'api' (API); suffix is dropped
+api secret,Secret,alias extends 'api' (API); suffix is dropped
+api token,API Key,alias extends 'api' (API); suffix is dropped
+apollo backend,Apollo Server,alias extends 'apollo' (Apollo Client); suffix is dropped
+apollo client graphql,Apollo Client,alias extends its own canonical; suffix is dropped
+apollo graphql server,Apollo Server,alias extends 'apollo' (Apollo Client); suffix is dropped
+apollo server,Apollo Server,alias extends 'apollo' (Apollo Client); suffix is dropped
+arch linux os,Arch Linux,alias extends its own canonical; suffix is dropped
+aria attributes,ARIA,alias extends its own canonical; suffix is dropped
+article element,article,alias extends its own canonical; suffix is dropped
+article tag,article,alias extends its own canonical; suffix is dropped
+astro framework,Astro,alias extends its own canonical; suffix is dropped
+astro javascript framework,Astro,alias extends its own canonical; suffix is dropped
+astro js,Astro,alias extends its own canonical; suffix is dropped
+astro project,Astro,alias extends its own canonical; suffix is dropped
+astro site framework,Astro,alias extends its own canonical; suffix is dropped
+astro static site framework,Astro,alias extends its own canonical; suffix is dropped
+astro web app,Astro,alias extends its own canonical; suffix is dropped
+astro web framework,Astro,alias extends its own canonical; suffix is dropped
+asus expect center pro et900n g3,ASUS ExpertCenter Pro ET900N G3,alias extends 'asus expect center' (ASUS ExpertCenter); suffix is dropped
+asus expert center pro et900n g3,ASUS ExpertCenter Pro ET900N G3,alias extends 'asus expert center' (ASUS ExpertCenter); suffix is dropped
+asus expertcenter pro et900n g3,ASUS ExpertCenter Pro ET900N G3,alias extends 'asus expertcenter' (ASUS ExpertCenter); suffix is dropped
+async await javascript,Async Await,alias extends its own canonical; suffix is dropped
+attention mechanism,Attention,alias extends its own canonical; suffix is dropped
+aws cloudfront,CloudFront,alias extends 'aws' (AWS); suffix is dropped
+aws ec2,EC2,alias extends 'aws' (AWS); suffix is dropped
+aws lam bda,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+aws lamb da,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+aws lambda,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+aws lambda function,AWS Lambda,alias extends its own canonical; suffix is dropped
+aws lambda functions,AWS Lambda,alias extends its own canonical; suffix is dropped
+aws lambda serverless,AWS Lambda,alias extends its own canonical; suffix is dropped
+aws lamda,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+aws lamda function,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+aws llama da,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+aws llama da function,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+aws llama function,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+aws rds,RDS,alias extends 'aws' (AWS); suffix is dropped
+aws s three,S3,alias extends 'aws' (AWS); suffix is dropped
+aws s3,S3,alias extends 'aws' (AWS); suffix is dropped
+aws serverless lambda,AWS Lambda,alias extends 'aws' (AWS); suffix is dropped
+axum framework,Axum,alias extends its own canonical; suffix is dropped
+axum rust,Axum,alias extends its own canonical; suffix is dropped
+azure cloud,Azure,alias extends its own canonical; suffix is dropped
+babel compiler,Babel,alias extends its own canonical; suffix is dropped
+babel javascript,Babel,alias extends its own canonical; suffix is dropped
+babel js,Babel,alias extends its own canonical; suffix is dropped
+bash shell,bash,alias extends its own canonical; suffix is dropped
+blackwell architecture,Blackwell,alias extends its own canonical; suffix is dropped
+blackwell gpu,Blackwell,alias extends its own canonical; suffix is dropped
+boon dev,bun dev,alias extends 'boon' (Bun); suffix is dropped
+boon install,bun install,alias extends 'boon' (Bun); suffix is dropped
+branch protection,Branch Protection,alias extends 'branch' (Git branch); suffix is dropped
+branch rules,Branch Protection,alias extends 'branch' (Git branch); suffix is dropped
+bun dev,bun dev,alias extends 'bun' (Bun); suffix is dropped
+bun development,bun dev,alias extends 'bun' (Bun); suffix is dropped
+bun i,bun install,alias extends 'bun' (Bun); suffix is dropped
+bun install,bun install,alias extends 'bun' (Bun); suffix is dropped
+bun javascript,Bun,alias extends its own canonical; suffix is dropped
+bun js,Bun,alias extends its own canonical; suffix is dropped
+bun package install,bun install,alias extends 'bun' (Bun); suffix is dropped
+bun runtime,Bun,alias extends its own canonical; suffix is dropped
+bundle splitting,Code Splitting,alias extends 'bundle' (Bundler); suffix is dropped
+button element,button,alias extends its own canonical; suffix is dropped
+button tag,button,alias extends its own canonical; suffix is dropped
+c d n,CDN,alias extends 'c' (C#); suffix is dropped
+c hash,C#,alias extends its own canonical; suffix is dropped
+c hash language,C#,alias extends its own canonical; suffix is dropped
+c i c d,CI/CD,alias extends 'c' (C#); suffix is dropped
+c l i,CLI,alias extends 'c' (C#); suffix is dropped
+c o r s,CORS,alias extends 'c' (C#); suffix is dropped
+c p p,C++,alias extends its own canonical; suffix is dropped
+c p u,CPU,alias extends 'c' (C#); suffix is dropped
+c plus,C++,alias extends its own canonical; suffix is dropped
+c plus plus,C++,alias extends its own canonical; suffix is dropped
+c plusplus,C++,alias extends its own canonical; suffix is dropped
+c r u d,CRUD,alias extends 'c' (C#); suffix is dropped
+c s r,CSR,alias extends 'c' (C#); suffix is dropped
+c s r f,CSRF,alias extends 'c' (C#); suffix is dropped
+c s s,CSS,alias extends 'c' (C#); suffix is dropped
+c sharp,C#,alias extends its own canonical; suffix is dropped
+c sharp language,C#,alias extends its own canonical; suffix is dropped
+c u d a,CUDA,alias extends 'c' (C#); suffix is dropped
+callback function,Callback,alias extends its own canonical; suffix is dropped
+cargo build,Cargo,alias extends its own canonical; suffix is dropped
+cargo config,Cargo.toml,alias extends 'cargo' (Cargo); suffix is dropped
+cargo dot toml,Cargo.toml,alias extends 'cargo' (Cargo); suffix is dropped
+cargo manifest,Cargo.toml,alias extends 'cargo' (Cargo); suffix is dropped
+cargo package manager,Cargo,alias extends its own canonical; suffix is dropped
+cargo run,Cargo,alias extends its own canonical; suffix is dropped
+cargo toml,Cargo.toml,alias extends 'cargo' (Cargo); suffix is dropped
+chatgpt 5.5,GPT-5.5,alias extends 'chatgpt' (ChatGPT); suffix is dropped
+chatgpt 5.6 luna,GPT-5.6 Luna,alias extends 'chatgpt' (ChatGPT); suffix is dropped
+chatgpt 5.6 seoul,GPT-5.6 Sol,alias extends 'chatgpt' (ChatGPT); suffix is dropped
+chatgpt 5.6 sol,GPT-5.6 Sol,alias extends 'chatgpt' (ChatGPT); suffix is dropped
+chatgpt 5.6 soul,GPT-5.6 Sol,alias extends 'chatgpt' (ChatGPT); suffix is dropped
+chatgpt 5.6 terra,GPT-5.6 Terra,alias extends 'chatgpt' (ChatGPT); suffix is dropped
+chatgpt 5.6 terror,GPT-5.6 Terra,alias extends 'chatgpt' (ChatGPT); suffix is dropped
+chatgpt five point five,GPT-5.5,alias extends 'chatgpt' (ChatGPT); suffix is dropped
+chroma database,Chroma,alias extends its own canonical; suffix is dropped
+chroma db,Chroma,alias extends its own canonical; suffix is dropped
+chroma vector database,Chroma,alias extends its own canonical; suffix is dropped
+cjs file,.cjs,alias extends its own canonical; suffix is dropped
+claude ai,Claude,alias extends its own canonical; suffix is dropped
+claude code,Claude,alias extends its own canonical; suffix is dropped
+claude coding model,Claude,alias extends its own canonical; suffix is dropped
+claude fable 5,Claude Fable 5,alias extends 'claude' (Claude); suffix is dropped
+claude fable five,Claude Fable 5,alias extends 'claude' (Claude); suffix is dropped
+claude haiku 4.5,Claude Haiku 4.5,alias extends 'claude' (Claude); suffix is dropped
+claude he cows,Claude Haiku 4.5,alias extends 'claude' (Claude); suffix is dropped
+claude hikau,Claude Haiku 4.5,alias extends 'claude' (Claude); suffix is dropped
+claude llm,Claude,alias extends its own canonical; suffix is dropped
+claude model,Claude,alias extends its own canonical; suffix is dropped
+claude mythos 5,Claude Mythos 5,alias extends 'claude' (Claude); suffix is dropped
+claude mythos five,Claude Mythos 5,alias extends 'claude' (Claude); suffix is dropped
+claude opers five,Claude Opus 5,alias extends 'claude' (Claude); suffix is dropped
+claude opus 4,Claude Opus 4,alias extends 'claude' (Claude); suffix is dropped
+claude opus 4.5,Claude Opus 4.5,alias extends 'claude' (Claude); suffix is dropped
+claude opus 5,Claude Opus 5,alias extends 'claude' (Claude); suffix is dropped
+claude opus five,Claude Opus 5,alias extends 'claude' (Claude); suffix is dropped
+claude opus four,Claude Opus 4,alias extends 'claude' (Claude); suffix is dropped
+claude opus v,Claude Opus 5,alias extends 'claude' (Claude); suffix is dropped
+claude sonnet 4,Claude Sonnet 4,alias extends 'claude' (Claude); suffix is dropped
+claude sonnet 4.5,Claude Sonnet 4.5,alias extends 'claude' (Claude); suffix is dropped
+claude sonnet 5,Claude Sonnet 5,alias extends 'claude' (Claude); suffix is dropped
+claude sonnet five,Claude Sonnet 5,alias extends 'claude' (Claude); suffix is dropped
+claude sonnet four,Claude Sonnet 4,alias extends 'claude' (Claude); suffix is dropped
+cloud flair,Cloudflare,alias extends 'cloud' (Claude); suffix is dropped
+cloud flare,Cloudflare,alias extends 'cloud' (Claude); suffix is dropped
+cloud flare worker,Cloudflare,alias extends 'cloud' (Claude); suffix is dropped
+cloud front,CloudFront,alias extends 'cloud' (Claude); suffix is dropped
+cloud front cdn,CloudFront,alias extends 'cloud' (Claude); suffix is dropped
+cloudflare worker,Cloudflare,alias extends its own canonical; suffix is dropped
+code compiler,Compiler,alias extends 'code' (code); suffix is dropped
+code element,code,alias extends its own canonical; suffix is dropped
+code fence,Markdown Code Fence,alias extends 'code' (code); suffix is dropped
+code formatter,Formatter,alias extends 'code' (code); suffix is dropped
+code library,Library,alias extends 'code' (code); suffix is dropped
+code lint,Linter,alias extends 'code' (code); suffix is dropped
+code review,Code Review,alias extends 'code' (code); suffix is dropped
+code review,code review,alias extends 'code' (code); suffix is dropped
+code review request,Pull Request,alias extends 'code review' (code review); suffix is dropped
+code reviewer,code review,alias extends 'code' (code); suffix is dropped
+code splitting,Code Splitting,alias extends 'code' (code); suffix is dropped
+code stral,Codestral,alias extends 'code' (code); suffix is dropped
+code tag,code,alias extends its own canonical; suffix is dropped
+code transpiler,Transpiler,alias extends 'code' (code); suffix is dropped
+code-review,Code Review,alias extends 'code' (code); suffix is dropped
+code-splitting,Code Splitting,alias extends 'code' (code); suffix is dropped
+container pod,Kubernetes Pod,alias extends 'container' (Container); suffix is dropped
+container registry,Docker Registry,alias extends 'container' (Container); suffix is dropped
+context api react,Context API,alias extends its own canonical; suffix is dropped
+css file,.css,alias extends its own canonical; suffix is dropped
+css styles,CSS,alias extends its own canonical; suffix is dropped
+css stylesheet,CSS,alias extends its own canonical; suffix is dropped
+csv file,.csv,alias extends its own canonical; suffix is dropped
+cursor ai,Cursor,alias extends its own canonical; suffix is dropped
+cursor editor,Cursor,alias extends its own canonical; suffix is dropped
+cursor ide,Cursor,alias extends its own canonical; suffix is dropped
+cypress test,Cypress,alias extends its own canonical; suffix is dropped
+cypress testing,Cypress,alias extends its own canonical; suffix is dropped
+datadog monitoring,Datadog,alias extends its own canonical; suffix is dropped
+debounce function,Debounce,alias extends its own canonical; suffix is dropped
+deep seek v 4 flash,DeepSeek-V4-Flash,alias extends 'deep seek' (DeepSeek); suffix is dropped
+deep seek v four flash,DeepSeek-V4-Flash,alias extends 'deep seek' (DeepSeek); suffix is dropped
+deep seek v3.2,DeepSeek-V3.2,alias extends 'deep seek' (DeepSeek); suffix is dropped
+deep seek v4,DeepSeek-V4,alias extends 'deep seek' (DeepSeek); suffix is dropped
+deep seek v4 flash,DeepSeek-V4-Flash,alias extends 'deep seek' (DeepSeek); suffix is dropped
+deep seek v4 flash,DeepSeek-V4-Flash,alias extends 'deep seek' (DeepSeek); suffix is dropped
+deep seek v4 pro,DeepSeek-V4-Pro,alias extends 'deep seek' (DeepSeek); suffix is dropped
+deepseek ai,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek coder,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek coding model,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek llm,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek model,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek r one,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek r1,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek v 4 flash,DeepSeek-V4-Flash,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v four,DeepSeek-V4,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v four flash,DeepSeek-V4-Flash,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v four pro,DeepSeek-V4-Pro,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v three,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek v three point two,DeepSeek-V3.2,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v3,DeepSeek,alias extends its own canonical; suffix is dropped
+deepseek v3.2,DeepSeek-V3.2,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v4,DeepSeek-V4,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v4 flash,DeepSeek-V4-Flash,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v4 flash,DeepSeek-V4-Flash,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek v4 flash model,DeepSeek-V4-Flash,alias extends its own canonical; suffix is dropped
+deepseek v4 pro,DeepSeek-V4-Pro,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek version 4 flash,DeepSeek-V4-Flash,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deepseek version four,DeepSeek-V4,alias extends 'deepseek' (DeepSeek); suffix is dropped
+deno javascript,Deno,alias extends its own canonical; suffix is dropped
+deno js,Deno,alias extends its own canonical; suffix is dropped
+deno runtime,Deno,alias extends its own canonical; suffix is dropped
+dependency graph,Dependency Graph,alias extends 'dependency' (Dependency); suffix is dropped
+dependency injection,Dependency Injection,alias extends 'dependency' (Dependency); suffix is dropped
+dependency tree,Dependency Graph,alias extends 'dependency' (Dependency); suffix is dropped
+dependency-injection,Dependency Injection,alias extends 'dependency' (Dependency); suffix is dropped
+div tag,div,alias extends its own canonical; suffix is dropped
+django framework,Django,alias extends its own canonical; suffix is dropped
+docker compose,Docker Compose,alias extends 'docker' (Docker); suffix is dropped
+docker compose file,Docker Compose,alias extends its own canonical; suffix is dropped
+docker composed,Docker Compose,alias extends 'docker' (Docker); suffix is dropped
+docker container,Container,alias extends 'docker' (Docker); suffix is dropped
+docker container,Docker,alias extends its own canonical; suffix is dropped
+docker container,Docker,alias extends its own canonical; suffix is dropped
+docker file,Dockerfile,alias extends 'docker' (Docker); suffix is dropped
+docker file config,Dockerfile,alias extends 'docker' (Docker); suffix is dropped
+docker files,Dockerfile,alias extends 'docker' (Docker); suffix is dropped
+docker image,Docker,alias extends its own canonical; suffix is dropped
+docker image registry,Docker Registry,alias extends 'docker' (Docker); suffix is dropped
+docker registry,Docker Registry,alias extends 'docker' (Docker); suffix is dropped
+docker repo,Docker Registry,alias extends 'docker' (Docker); suffix is dropped
+docker-compose,Docker Compose,alias extends 'docker' (Docker); suffix is dropped
+dot c c,.cc,alias extends 'dot c' (.c); suffix is dropped
+dot c j s,.cjs,alias extends 'dot c' (.c); suffix is dropped
+dot c plus plus,.cpp,alias extends 'dot c' (.c); suffix is dropped
+dot c s s,.css,alias extends 'dot c' (.c); suffix is dropped
+dot c s v,.csv,alias extends 'dot c' (.c); suffix is dropped
+dot c sharp file,.cs,alias extends 'dot c' (.c); suffix is dropped
+dot e n v dot local,.env.local,alias extends 'dot e n v' (.env); suffix is dropped
+dot e n v local,.env.local,alias extends 'dot e n v' (.env); suffix is dropped
+dot env dot local,.env.local,alias extends 'dot env' (.env); suffix is dropped
+dot env local,.env.local,alias extends 'dot env' (.env); suffix is dropped
+dot h p p,.hpp,alias extends 'dot h' (.h); suffix is dropped
+dot h t m,.htm,alias extends 'dot h' (.h); suffix is dropped
+dot j s x,.jsx,alias extends 'dot j s' (.js); suffix is dropped
+dot k t s,.kts,alias extends 'dot k t' (.kt); suffix is dropped
+dot m d x,.mdx,alias extends 'dot m d' (.md); suffix is dropped
+dot t s x,.tsx,alias extends 'dot t s' (.ts); suffix is dropped
+drizzle orm database,Drizzle ORM,alias extends its own canonical; suffix is dropped
+drizzle orm library,Drizzle ORM,alias extends its own canonical; suffix is dropped
+ec2 instance,EC2,alias extends its own canonical; suffix is dropped
+electron desktop,Electron,alias extends its own canonical; suffix is dropped
+electron framework,Electron,alias extends its own canonical; suffix is dropped
+electron js,Electron,alias extends its own canonical; suffix is dropped
+embedding model,Embedding Model,alias extends 'embedding' (Embedding); suffix is dropped
+embeddings model,Embedding Model,alias extends 'embeddings' (Embedding); suffix is dropped
+env file,.env,alias extends its own canonical; suffix is dropped
+env local,.env.local,alias extends 'env' (.env); suffix is dropped
+env variable,Environment Variable,alias extends 'env' (.env); suffix is dropped
+env vars,Environment Variable,alias extends 'env' (.env); suffix is dropped
+environment variables file,.env,alias extends 'environment variables' (Environment Variable); suffix is dropped
+eslint check,ESLint,alias extends its own canonical; suffix is dropped
+eslint config,ESLint,alias extends its own canonical; suffix is dropped
+eslint configuration,ESLint,alias extends its own canonical; suffix is dropped
+eslint flat config,ESLint,alias extends its own canonical; suffix is dropped
+eslint formatter,ESLint,alias extends its own canonical; suffix is dropped
+eslint javascript,ESLint,alias extends its own canonical; suffix is dropped
+eslint js,ESLint,alias extends its own canonical; suffix is dropped
+eslint linter,ESLint,alias extends its own canonical; suffix is dropped
+eslint plugin,ESLint,alias extends its own canonical; suffix is dropped
+eslint plugins,ESLint,alias extends its own canonical; suffix is dropped
+eslint rule,ESLint,alias extends its own canonical; suffix is dropped
+eslint rules,ESLint,alias extends its own canonical; suffix is dropped
+eslint typescript,ESLint,alias extends its own canonical; suffix is dropped
+expo cli,Expo,alias extends its own canonical; suffix is dropped
+expo react native,Expo,alias extends its own canonical; suffix is dropped
+fastapi python,FastAPI,alias extends its own canonical; suffix is dropped
+fastify javascript,Fastify,alias extends its own canonical; suffix is dropped
+fastify js,Fastify,alias extends its own canonical; suffix is dropped
+fastify server,Fastify,alias extends its own canonical; suffix is dropped
+figma design,Figma,alias extends its own canonical; suffix is dropped
+figma file,Figma,alias extends its own canonical; suffix is dropped
+figma ui,Figma,alias extends its own canonical; suffix is dropped
+firebase backend,Firebase,alias extends its own canonical; suffix is dropped
+firebase database,Firebase,alias extends its own canonical; suffix is dropped
+flask framework,Flask,alias extends its own canonical; suffix is dropped
+flask python,Flask,alias extends its own canonical; suffix is dropped
+footer element,footer,alias extends its own canonical; suffix is dropped
+footer tag,footer,alias extends its own canonical; suffix is dropped
+form element,form,alias extends its own canonical; suffix is dropped
+form label,label,alias extends 'form' (form); suffix is dropped
+form tag,form,alias extends its own canonical; suffix is dropped
+forward slash,/,alias extends its own canonical; suffix is dropped
+framer motion react,Framer Motion,alias extends its own canonical; suffix is dropped
+g l m five point one,GLM-5.1,alias extends 'g l m five' (GLM-5); suffix is dropped
+g l m five point three,GLM-5.3,alias extends 'g l m five' (GLM-5); suffix is dropped
+g l m five point two,GLM-5.2,alias extends 'g l m five' (GLM-5); suffix is dropped
+g p t 4,GPT-4,alias extends 'g p t' (GPT); suffix is dropped
+g p t 4 o,GPT-4o,alias extends 'g p t' (GPT); suffix is dropped
+g p t 5,GPT-5,alias extends 'g p t' (GPT); suffix is dropped
+g p t five,GPT-5,alias extends 'g p t' (GPT); suffix is dropped
+g p t four,GPT-4,alias extends 'g p t' (GPT); suffix is dropped
+g p t four o,GPT-4o,alias extends 'g p t' (GPT); suffix is dropped
+gatsby app,Gatsby,alias extends its own canonical; suffix is dropped
+gatsby framework,Gatsby,alias extends its own canonical; suffix is dropped
+gatsby js,Gatsby,alias extends its own canonical; suffix is dropped
+gatsby project,Gatsby,alias extends its own canonical; suffix is dropped
+gatsby react framework,Gatsby,alias extends its own canonical; suffix is dropped
+gatsby site framework,Gatsby,alias extends its own canonical; suffix is dropped
+gatsby static site framework,Gatsby,alias extends its own canonical; suffix is dropped
+gemini 2 point 5 pro,Gemini 2.5 Pro,alias extends 'gemini' (Gemini); suffix is dropped
+gemini 2.5 flash,Gemini 2.5 Flash,alias extends 'gemini' (Gemini); suffix is dropped
+gemini 2.5 pro,Gemini 2.5 Pro,alias extends 'gemini' (Gemini); suffix is dropped
+gemini 3 flash,Gemini 3 Flash,alias extends 'gemini' (Gemini); suffix is dropped
+gemini 3.5 flash,Gemini 3 Flash,alias extends 'gemini' (Gemini); suffix is dropped
+gemini ai,Gemini,alias extends its own canonical; suffix is dropped
+gemini coding model,Gemini,alias extends its own canonical; suffix is dropped
+gemini flash model,Gemini,alias extends its own canonical; suffix is dropped
+gemini google,Gemini,alias extends its own canonical; suffix is dropped
+gemini jamnia,Gemini,alias extends its own canonical; suffix is dropped
+gemini llm,Gemini,alias extends its own canonical; suffix is dropped
+gemini model,Gemini,alias extends its own canonical; suffix is dropped
+gemini pro model,Gemini,alias extends its own canonical; suffix is dropped
+gemini three flash,Gemini 3 Flash,alias extends 'gemini' (Gemini); suffix is dropped
+gemini three point five flash,Gemini 3 Flash,alias extends 'gemini' (Gemini); suffix is dropped
+gemini two point five flash,Gemini 2.5 Flash,alias extends 'gemini' (Gemini); suffix is dropped
+gemini two point five pro,Gemini 2.5 Pro,alias extends 'gemini' (Gemini); suffix is dropped
+ghostty terminal,Ghostty,alias extends its own canonical; suffix is dropped
+git branch,Git branch,alias extends 'git' (Git); suffix is dropped
+git branches,Git branch,alias extends 'git' (Git); suffix is dropped
+git changes,git diff,alias extends 'git' (Git); suffix is dropped
+git check out,git checkout,alias extends 'git' (Git); suffix is dropped
+git checkout,git checkout,alias extends 'git' (Git); suffix is dropped
+git cherry pick,git cherry-pick,alias extends 'git' (Git); suffix is dropped
+git cherry-pick commit,git cherry-pick,alias extends its own canonical; suffix is dropped
+git clone,git clone,alias extends 'git' (Git); suffix is dropped
+git commit,Git commit,alias extends 'git' (Git); suffix is dropped
+git commit history,git log,alias extends 'git' (Git); suffix is dropped
+git commits,Git commit,alias extends 'git' (Git); suffix is dropped
+git diff,git diff,alias extends 'git' (Git); suffix is dropped
+git difference,git diff,alias extends 'git' (Git); suffix is dropped
+git fetch,git fetch,alias extends 'git' (Git); suffix is dropped
+git fetch and merge,git pull,alias extends 'git' (Git); suffix is dropped
+git fetch origin,git fetch,alias extends its own canonical; suffix is dropped
+git hard reset,git reset,alias extends 'git' (Git); suffix is dropped
+git history,git log,alias extends 'git' (Git); suffix is dropped
+git hub,GitHub,alias extends 'git' (Git); suffix is dropped
+git hub,GitHub,alias extends 'git' (Git); suffix is dropped
+git hub action,GitHub Actions,alias extends 'git' (Git); suffix is dropped
+git hub actions,GitHub Actions,alias extends 'git' (Git); suffix is dropped
+git hub repo,GitHub,alias extends 'git' (Git); suffix is dropped
+git hub workflow,GitHub Actions,alias extends 'git' (Git); suffix is dropped
+git ignore,.gitignore,alias extends 'git' (Git); suffix is dropped
+git ignore file,.gitignore,alias extends 'git' (Git); suffix is dropped
+git ignore file,.gitignore,alias extends 'git' (Git); suffix is dropped
+git lab,GitLab,alias extends 'git' (Git); suffix is dropped
+git lab c i,GitLab CI,alias extends 'git' (Git); suffix is dropped
+git lab repo,GitLab,alias extends 'git' (Git); suffix is dropped
+git log,git log,alias extends 'git' (Git); suffix is dropped
+git merge,Git merge,alias extends 'git' (Git); suffix is dropped
+git merges,Git merge,alias extends 'git' (Git); suffix is dropped
+git pull,git pull,alias extends 'git' (Git); suffix is dropped
+git push,git push,alias extends 'git' (Git); suffix is dropped
+git push origin,git push,alias extends its own canonical; suffix is dropped
+git re basing,Git rebase,alias extends 'git' (Git); suffix is dropped
+git rebase,Git rebase,alias extends 'git' (Git); suffix is dropped
+git repo,Git,alias extends its own canonical; suffix is dropped
+git repository,Git,alias extends its own canonical; suffix is dropped
+git reset,git reset,alias extends 'git' (Git); suffix is dropped
+git soft reset,git reset,alias extends 'git' (Git); suffix is dropped
+git stash,Git stash,alias extends 'git' (Git); suffix is dropped
+git stashed changes,Git stash,alias extends 'git' (Git); suffix is dropped
+git stats,git status,alias extends 'git' (Git); suffix is dropped
+git status,git status,alias extends 'git' (Git); suffix is dropped
+git switch,git switch,alias extends 'git' (Git); suffix is dropped
+git switch branch,git switch,alias extends its own canonical; suffix is dropped
+git version control,Git,alias extends its own canonical; suffix is dropped
+github action,GitHub Actions,alias extends 'github' (GitHub); suffix is dropped
+github actions,GitHub Actions,alias extends 'github' (GitHub); suffix is dropped
+github issue,Issue,alias extends 'github' (GitHub); suffix is dropped
+github repo,GitHub,alias extends its own canonical; suffix is dropped
+github workflows,GitHub Actions,alias extends 'github' (GitHub); suffix is dropped
+gitlab ci,GitLab CI,alias extends 'gitlab' (GitLab); suffix is dropped
+gitlab continuous integration,GitLab CI,alias extends 'gitlab' (GitLab); suffix is dropped
+gitlab issue,Issue,alias extends 'gitlab' (GitLab); suffix is dropped
+gitlab see eye,GitLab CI,alias extends 'gitlab' (GitLab); suffix is dropped
+glm 5.1,GLM-5.1,alias extends 'glm 5' (GLM-5); suffix is dropped
+glm 5.2,GLM-5.2,alias extends 'glm 5' (GLM-5); suffix is dropped
+glm 5.3,GLM-5.3,alias extends 'glm 5' (GLM-5); suffix is dropped
+glm five point one,GLM-5.1,alias extends 'glm five' (GLM-5); suffix is dropped
+glm five point three,GLM-5.3,alias extends 'glm five' (GLM-5); suffix is dropped
+glm five point two,GLM-5.2,alias extends 'glm five' (GLM-5); suffix is dropped
+go lang,Go,alias extends its own canonical; suffix is dropped
+go lang,Golang,alias extends 'go' (.go); suffix is dropped
+go language,Go,alias extends its own canonical; suffix is dropped
+go language,Golang,alias extends 'go' (.go); suffix is dropped
+go programming language,Go,alias extends its own canonical; suffix is dropped
+go-lang,Golang,alias extends 'go' (.go); suffix is dropped
+gpt 4,GPT-4,alias extends 'gpt' (GPT); suffix is dropped
+gpt 4o,GPT-4o,alias extends 'gpt' (GPT); suffix is dropped
+gpt 5,GPT-5,alias extends 'gpt' (GPT); suffix is dropped
+gpt 5 ai,GPT-5,alias extends its own canonical; suffix is dropped
+gpt 5 model,GPT-5,alias extends its own canonical; suffix is dropped
+gpt 5 point 6 sol,GPT-5.6 Sol,alias extends 'gpt 5' (GPT-5); suffix is dropped
+gpt 5.5,GPT-5.5,alias extends 'gpt 5' (GPT-5); suffix is dropped
+gpt 5.6 luna,GPT-5.6 Luna,alias extends 'gpt 5' (GPT-5); suffix is dropped
+gpt 5.6 seoul,GPT-5.6 Sol,alias extends 'gpt 5' (GPT-5); suffix is dropped
+gpt 5.6 sol,GPT-5.6 Sol,alias extends 'gpt 5' (GPT-5); suffix is dropped
+gpt 5.6 soul,GPT-5.6 Sol,alias extends 'gpt 5' (GPT-5); suffix is dropped
+gpt 5.6 terra,GPT-5.6 Terra,alias extends 'gpt 5' (GPT-5); suffix is dropped
+gpt 5.6 terror,GPT-5.6 Terra,alias extends 'gpt 5' (GPT-5); suffix is dropped
+gpt five,GPT-5,alias extends 'gpt' (GPT); suffix is dropped
+gpt five ai,GPT-5,alias extends 'gpt' (GPT); suffix is dropped
+gpt five dot five,GPT-5.5,alias extends 'gpt five' (GPT-5); suffix is dropped
+gpt five model,GPT-5,alias extends 'gpt' (GPT); suffix is dropped
+gpt five point five,GPT-5.5,alias extends 'gpt five' (GPT-5); suffix is dropped
+gpt five point six luna,GPT-5.6 Luna,alias extends 'gpt five' (GPT-5); suffix is dropped
+gpt five point six sol,GPT-5.6 Sol,alias extends 'gpt five' (GPT-5); suffix is dropped
+gpt five point six terra,GPT-5.6 Terra,alias extends 'gpt five' (GPT-5); suffix is dropped
+gpt four,GPT-4,alias extends 'gpt' (GPT); suffix is dropped
+gpt four oh,GPT-4o,alias extends 'gpt' (GPT); suffix is dropped
+gpt-5,GPT-5,alias extends 'gpt' (GPT); suffix is dropped
+grafana dashboard,Grafana,alias extends its own canonical; suffix is dropped
+graph q l yoga,GraphQL Yoga,alias extends 'graph q l' (GraphQL); suffix is dropped
+graph query yoga,GraphQL Yoga,alias extends 'graph query' (GraphQL); suffix is dropped
+graphql api,GraphQL,alias extends its own canonical; suffix is dropped
+graphql client,GraphQL,alias extends its own canonical; suffix is dropped
+graphql mutation,Mutation,alias extends 'graphql' (GraphQL); suffix is dropped
+graphql server,GraphQL,alias extends its own canonical; suffix is dropped
+graphql yoga,GraphQL Yoga,alias extends 'graphql' (GraphQL); suffix is dropped
+graphql yoga server,GraphQL Yoga,alias extends its own canonical; suffix is dropped
+grock 4.6,Grok 4.6,alias extends 'grock 4' (Grok 4); suffix is dropped
+grok 4 point 6,Grok 4.6,alias extends 'grok 4' (Grok 4); suffix is dropped
+grok 4.6,Grok 4.6,alias extends 'grok 4' (Grok 4); suffix is dropped
+grok four point six,Grok 4.6,alias extends 'grok four' (Grok 4); suffix is dropped
+grpc client,gRPC,alias extends its own canonical; suffix is dropped
+grpc server,gRPC,alias extends its own canonical; suffix is dropped
+grpc service,gRPC,alias extends its own canonical; suffix is dropped
+h 100,H100,alias extends 'h' (.h); suffix is dropped
+h 200,H200,alias extends 'h' (.h); suffix is dropped
+h b m,HBM,alias extends 'h' (.h); suffix is dropped
+h g x,HGX,alias extends 'h' (.h); suffix is dropped
+h m r,Hot Module Replacement,alias extends 'h' (.h); suffix is dropped
+h one hundred,H100,alias extends 'h' (.h); suffix is dropped
+h t m l,HTML,alias extends 'h' (.h); suffix is dropped
+h t m l file,.html,alias extends 'h' (.h); suffix is dropped
+h t m l five,HTML,alias extends 'h' (.h); suffix is dropped
+h t p,HTTP,alias extends 'h' (.h); suffix is dropped
+h t t p,HTTP,alias extends 'h' (.h); suffix is dropped
+h t t p s,HTTPS,alias extends 'h t t p' (HTTP); suffix is dropped
+h t t p s secure,HTTPS,alias extends 'h t t p' (HTTP); suffix is dropped
+h two hundred,H200,alias extends 'h' (.h); suffix is dropped
+h100 gpu,H100,alias extends its own canonical; suffix is dropped
+h200 gpu,H200,alias extends its own canonical; suffix is dropped
+header element,header,alias extends its own canonical; suffix is dropped
+header tag,header,alias extends its own canonical; suffix is dropped
+helm chart,Helm,alias extends its own canonical; suffix is dropped
+helm charts,Helm,alias extends its own canonical; suffix is dropped
+heroku cloud,Heroku,alias extends its own canonical; suffix is dropped
+homebrew package manager,Homebrew,alias extends its own canonical; suffix is dropped
+hono framework,Hono,alias extends its own canonical; suffix is dropped
+hono javascript,Hono,alias extends its own canonical; suffix is dropped
+hono js,Hono,alias extends its own canonical; suffix is dropped
+html file,.html,alias extends its own canonical; suffix is dropped
+html five,HTML,alias extends its own canonical; suffix is dropped
+html meta tags,Meta Tags,alias extends 'html' (.html); suffix is dropped
+html table,table,alias extends 'html' (.html); suffix is dropped
+html tag,HTML Tag,alias extends 'html' (.html); suffix is dropped
+html tags,HTML Tag,alias extends 'html' (.html); suffix is dropped
+http cache,Caching,alias extends 'http' (HTTP); suffix is dropped
+http proxy,Reverse Proxy,alias extends 'http' (HTTP); suffix is dropped
+http secure,HTTPS,alias extends 'http' (HTTP); suffix is dropped
+hugging face hub,Hugging Face,alias extends its own canonical; suffix is dropped
+hugging face transformer library,Transformers,alias extends 'hugging face' (Hugging Face); suffix is dropped
+hugging face transformers,Hugging Face,alias extends its own canonical; suffix is dropped
+hugging face transformers,Transformers,alias extends 'hugging face' (Hugging Face); suffix is dropped
+huggingface transformers,Transformers,alias extends 'huggingface' (Hugging Face); suffix is dropped
+hydration error,Hydration Mismatch,alias extends 'hydration' (Hydration); suffix is dropped
+hydration mismatch,Hydration Mismatch,alias extends 'hydration' (Hydration); suffix is dropped
+i p v 4,IPv4,alias extends 'i p' (IP); suffix is dropped
+i p v 6,IPv6,alias extends 'i p' (IP); suffix is dropped
+i p v four,IPv4,alias extends 'i p' (IP); suffix is dropped
+i p v six,IPv6,alias extends 'i p' (IP); suffix is dropped
+inference runtime,Inference,alias extends its own canonical; suffix is dropped
+ingress controller,Ingress,alias extends its own canonical; suffix is dropped
+input element,input,alias extends its own canonical; suffix is dropped
+input tag,input,alias extends its own canonical; suffix is dropped
+insomnia api,Insomnia,alias extends its own canonical; suffix is dropped
+insomnia rest,Insomnia,alias extends its own canonical; suffix is dropped
+intellij idea,IntelliJ,alias extends its own canonical; suffix is dropped
+ip address,IP,alias extends its own canonical; suffix is dropped
+ip version 4,IPv4,alias extends 'ip' (IP); suffix is dropped
+ip version 6,IPv6,alias extends 'ip' (IP); suffix is dropped
+j s x,JSX,alias extends 'j s' (JavaScript); suffix is dropped
+j son l,JSONL,alias extends 'j son' (JSON); suffix is dropped
+j son schema,JSON Schema,alias extends 'j son' (JSON); suffix is dropped
+j w t token,JWT Token,alias extends 'j w t' (JWT); suffix is dropped
+jason schema,JSON Schema,alias extends 'jason' (JSON); suffix is dropped
+java language,Java,alias extends its own canonical; suffix is dropped
+java programming,Java,alias extends its own canonical; suffix is dropped
+java script,JavaScript,alias extends 'java' (Java); suffix is dropped
+java script language,JavaScript,alias extends 'java' (Java); suffix is dropped
+java scripted,JavaScript,alias extends 'java' (Java); suffix is dropped
+java scripts,JavaScript,alias extends 'java' (Java); suffix is dropped
+java virtual machine,Java Virtual Machine,alias extends 'java' (Java); suffix is dropped
+java vm,Java Virtual Machine,alias extends 'java' (Java); suffix is dropped
+java-script,JavaScript,alias extends 'java' (Java); suffix is dropped
+javascript bundler,Bundler,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript closure,Closure,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript compiler,Compiler,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript file,.js,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript formatter,Formatter,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript framework,Framework,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript hoisting,Hoisting,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript library,Library,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript linter,Linter,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript object notation,JSON,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript promise,Promise,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript react file,.jsx,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript transpiler,Transpiler,alias extends 'javascript' (JavaScript); suffix is dropped
+javascript xml,JSX,alias extends 'javascript' (JavaScript); suffix is dropped
+jest js,Jest,alias extends its own canonical; suffix is dropped
+jest test,Jest,alias extends its own canonical; suffix is dropped
+jest testing,Jest,alias extends its own canonical; suffix is dropped
+jest tests,Jest,alias extends its own canonical; suffix is dropped
+jetbrains ide,JetBrains,alias extends its own canonical; suffix is dropped
+jot eye,Jotai,alias extends 'jot' (JWT); suffix is dropped
+jotai state,Jotai,alias extends its own canonical; suffix is dropped
+js file,.js,alias extends its own canonical; suffix is dropped
+js test runner,Jest,alias extends 'js' (JavaScript); suffix is dropped
+json file,.json,alias extends its own canonical; suffix is dropped
+json l,JSONL,alias extends 'json' (JSON); suffix is dropped
+json lines,JSONL,alias extends 'json' (JSON); suffix is dropped
+json lines format,JSONL,alias extends 'json' (JSON); suffix is dropped
+json schema,JSON Schema,alias extends 'json' (JSON); suffix is dropped
+json schemas,JSON Schema,alias extends 'json' (JSON); suffix is dropped
+json specification,JSON Schema,alias extends 'json' (JSON); suffix is dropped
+json web token,JWT,alias extends 'json' (JSON); suffix is dropped
+json web token,JWT Token,alias extends 'json' (JSON); suffix is dropped
+json web tokens,JWT,alias extends 'json' (JSON); suffix is dropped
+jsx file,.jsx,alias extends its own canonical; suffix is dropped
+jupyter lab,Jupyter,alias extends its own canonical; suffix is dropped
+jupyter notebook,Jupyter,alias extends its own canonical; suffix is dropped
+jwt token,JWT Token,alias extends 'jwt' (JWT); suffix is dropped
+k8s deployment,Kubernetes Deployment,alias extends 'k8s' (Kubernetes); suffix is dropped
+k8s pod,Kubernetes Pod,alias extends 'k8s' (Kubernetes); suffix is dropped
+k8s service,Kubernetes Service,alias extends 'k8s' (Kubernetes); suffix is dropped
+kafka broker,Kafka,alias extends its own canonical; suffix is dropped
+kafka streaming,Kafka,alias extends its own canonical; suffix is dropped
+kimi k 2.5,Kimi K2.5,alias extends 'kimi k 2' (Kimi K2); suffix is dropped
+kimi k two point five,Kimi K2.5,alias extends 'kimi k two' (Kimi K2); suffix is dropped
+kimi k two point seven code,Kimi K2.7 Code,alias extends 'kimi k two' (Kimi K2); suffix is dropped
+kimi k two point six,Kimi K2.6,alias extends 'kimi k two' (Kimi K2); suffix is dropped
+kimi k2.5,Kimi K2.5,alias extends 'kimi k2' (Kimi K2); suffix is dropped
+kimi k2.6,Kimi K2.6,alias extends 'kimi k2' (Kimi K2); suffix is dropped
+kimi k2.7 code,Kimi K2.7 Code,alias extends 'kimi k2' (Kimi K2); suffix is dropped
+kotlin android,Kotlin,alias extends its own canonical; suffix is dropped
+kotlin language,Kotlin,alias extends its own canonical; suffix is dropped
+kube deployment,Kubernetes Deployment,alias extends 'kube' (Kubernetes); suffix is dropped
+kube pod,Kubernetes Pod,alias extends 'kube' (Kubernetes); suffix is dropped
+kube service,Kubernetes Service,alias extends 'kube' (Kubernetes); suffix is dropped
+kubernetes deployment,Kubernetes Deployment,alias extends 'kubernetes' (Kubernetes); suffix is dropped
+kubernetes helm,Helm,alias extends 'kubernetes' (Kubernetes); suffix is dropped
+kubernetes ingress,Ingress,alias extends 'kubernetes' (Kubernetes); suffix is dropped
+kubernetes pod,Kubernetes Pod,alias extends 'kubernetes' (Kubernetes); suffix is dropped
+kubernetes service,Kubernetes Service,alias extends 'kubernetes' (Kubernetes); suffix is dropped
+label tag,label,alias extends its own canonical; suffix is dropped
+langchain javascript,LangChain,alias extends its own canonical; suffix is dropped
+langchain js,LangChain,alias extends its own canonical; suffix is dropped
+langsmith tracing,LangSmith,alias extends its own canonical; suffix is dropped
+laravel framework,Laravel,alias extends its own canonical; suffix is dropped
+laravel php,Laravel,alias extends its own canonical; suffix is dropped
+linux os,Linux,alias extends its own canonical; suffix is dropped
+llama 3 model,Llama,alias extends its own canonical; suffix is dropped
+llama 4 maverick,Llama 4 Maverick,alias extends 'llama' (Llama); suffix is dropped
+llama 4 model,Llama,alias extends its own canonical; suffix is dropped
+llama 4 scout,Llama 4 Scout,alias extends 'llama' (Llama); suffix is dropped
+llama ai,Llama,alias extends its own canonical; suffix is dropped
+llama c plus plus,llama.cpp,alias extends 'llama' (Llama); suffix is dropped
+llama c plus plus project,llama.cpp,alias extends 'llama' (Llama); suffix is dropped
+llama c++,llama.cpp,alias extends 'llama' (Llama); suffix is dropped
+llama coder,Llama,alias extends its own canonical; suffix is dropped
+llama cpp,llama.cpp,alias extends 'llama' (Llama); suffix is dropped
+llama dot cpp,llama.cpp,alias extends 'llama' (Llama); suffix is dropped
+llama four maverick,Llama 4 Maverick,alias extends 'llama' (Llama); suffix is dropped
+llama four model,Llama,alias extends its own canonical; suffix is dropped
+llama four scout,Llama 4 Scout,alias extends 'llama' (Llama); suffix is dropped
+llama language model,Llama,alias extends its own canonical; suffix is dropped
+llama llm,Llama,alias extends its own canonical; suffix is dropped
+llama model,Llama,alias extends its own canonical; suffix is dropped
+llama three model,Llama,alias extends its own canonical; suffix is dropped
+local host five one seven three,localhost:5173,alias extends 'local host' (localhost); suffix is dropped
+local host port five one seven three,localhost:5173,alias extends 'local host' (localhost); suffix is dropped
+local host port three thousand,localhost:3000,alias extends 'local host' (localhost); suffix is dropped
+local host three thousand,localhost:3000,alias extends 'local host' (localhost); suffix is dropped
+localhost 3000,localhost:3000,alias extends 'localhost' (localhost); suffix is dropped
+localhost 5173,localhost:5173,alias extends 'localhost' (localhost); suffix is dropped
+localhost port,port,alias extends 'localhost' (localhost); suffix is dropped
+localhost three thousand,localhost:3000,alias extends 'localhost' (localhost); suffix is dropped
+m l x,MLX,alias extends 'm l' (Machine Learning); suffix is dropped
+main element,main,alias extends its own canonical; suffix is dropped
+main tag,main,alias extends its own canonical; suffix is dropped
+markdown backticks,Markdown Code Fence,alias extends 'markdown' (Markdown); suffix is dropped
+markdown code fence,Markdown Code Fence,alias extends 'markdown' (Markdown); suffix is dropped
+markdown file,.md,alias extends 'markdown' (Markdown); suffix is dropped
+markdown file,Markdown,alias extends its own canonical; suffix is dropped
+markdown header,Markdown Heading,alias extends 'markdown' (Markdown); suffix is dropped
+markdown heading,Markdown Heading,alias extends 'markdown' (Markdown); suffix is dropped
+markdown hyperlink,Markdown Link,alias extends 'markdown' (Markdown); suffix is dropped
+markdown js,MDX,alias extends 'markdown' (Markdown); suffix is dropped
+markdown jsx,MDX,alias extends 'markdown' (Markdown); suffix is dropped
+markdown link,Markdown Link,alias extends 'markdown' (Markdown); suffix is dropped
+markdown syntax,Markdown,alias extends its own canonical; suffix is dropped
+md file,.md,alias extends its own canonical; suffix is dropped
+md heading,Markdown Heading,alias extends 'md' (Markdown); suffix is dropped
+md link,Markdown Link,alias extends 'md' (Markdown); suffix is dropped
+mdx file,.mdx,alias extends its own canonical; suffix is dropped
+middleware function,Middleware,alias extends its own canonical; suffix is dropped
+mistral 7b,Mistral,alias extends its own canonical; suffix is dropped
+mistral ai,Mistral,alias extends its own canonical; suffix is dropped
+mistral code model,Mistral,alias extends its own canonical; suffix is dropped
+mistral coder,Mistral,alias extends its own canonical; suffix is dropped
+mistral language model,Mistral,alias extends its own canonical; suffix is dropped
+mistral llm,Mistral,alias extends its own canonical; suffix is dropped
+mistral model,Mistral,alias extends its own canonical; suffix is dropped
+mistral seven b,Mistral,alias extends its own canonical; suffix is dropped
+mjs file,.mjs,alias extends its own canonical; suffix is dropped
+mobx store,MobX,alias extends its own canonical; suffix is dropped
+mongo use,Mongoose,alias extends 'mongo' (MongoDB); suffix is dropped
+mongoose library,Mongoose,alias extends its own canonical; suffix is dropped
+mongoose orm,Mongoose,alias extends its own canonical; suffix is dropped
+moose park 1.2,Muse Spark 1.2,alias extends 'moose park' (Muse Spark); suffix is dropped
+moose park one point one,Muse Spark 1.1,alias extends 'moose park' (Muse Spark); suffix is dropped
+moose park one point two,Muse Spark 1.2,alias extends 'moose park' (Muse Spark); suffix is dropped
+moose spark 1.1,Muse Spark 1.1,alias extends 'moose spark' (Muse Spark); suffix is dropped
+moose spark 1.2,Muse Spark 1.2,alias extends 'moose spark' (Muse Spark); suffix is dropped
+moose spark one point two,Muse Spark 1.2,alias extends 'moose spark' (Muse Spark); suffix is dropped
+motion animation library,Motion (Previously framer-motion),alias extends 'motion' (Motion); suffix is dropped
+motion dot dev,Motion (Previously framer-motion),alias extends 'motion' (Motion); suffix is dropped
+motion for react,Motion,alias extends its own canonical; suffix is dropped
+motion for react,Motion (Previously framer-motion),alias extends 'motion' (Motion); suffix is dropped
+motion javascript library,Motion (Previously framer-motion),alias extends 'motion' (Motion); suffix is dropped
+motion js,Motion,alias extends its own canonical; suffix is dropped
+motion library,Framer Motion,alias extends 'motion' (Motion); suffix is dropped
+motion library,Motion,alias extends its own canonical; suffix is dropped
+motion one,Motion (Previously framer-motion),alias extends 'motion' (Motion); suffix is dropped
+motion one library,Motion (Previously framer-motion),alias extends 'motion' (Motion); suffix is dropped
+motion react,Framer Motion,alias extends 'motion' (Motion); suffix is dropped
+motion react,Motion,alias extends its own canonical; suffix is dropped
+motion react library,Motion (Previously framer-motion),alias extends 'motion react' (Motion); suffix is dropped
+motion.dev,Motion (Previously framer-motion),alias extends 'motion' (Motion); suffix is dropped
+muse spark 1.1,Muse Spark 1.1,alias extends 'muse spark' (Muse Spark); suffix is dropped
+muse spark 1.2,Muse Spark 1.2,alias extends 'muse spark' (Muse Spark); suffix is dropped
+muse spark model,Muse Spark,alias extends its own canonical; suffix is dropped
+muse spark one point one,Muse Spark 1.1,alias extends 'muse spark' (Muse Spark); suffix is dropped
+muse spark one point two,Muse Spark 1.2,alias extends 'muse spark' (Muse Spark); suffix is dropped
+n p m install,npm install,alias extends 'n p m' (npm); suffix is dropped
+n p m r c,.npmrc,alias extends 'n p m' (npm); suffix is dropped
+n p m run dev,npm run dev,alias extends 'n p m' (npm); suffix is dropped
+nav tag,nav,alias extends its own canonical; suffix is dropped
+nemo tron 3 super 120b,Nemotron 3 Super 120B,alias extends 'nemo tron' (Nemotron); suffix is dropped
+nemotron 120 b,Nemotron 3 Super 120B,alias extends 'nemotron' (Nemotron); suffix is dropped
+nemotron 120b,Nemotron 3 Super 120B,alias extends 'nemotron' (Nemotron); suffix is dropped
+nemotron 3 super 120 b,Nemotron 3 Super 120B,alias extends 'nemotron' (Nemotron); suffix is dropped
+nemotron 3 super 120b,Nemotron 3 Super 120B,alias extends 'nemotron' (Nemotron); suffix is dropped
+nemotron three super 120b,Nemotron 3 Super 120B,alias extends 'nemotron' (Nemotron); suffix is dropped
+neon database,Neon,alias extends its own canonical; suffix is dropped
+neon postgres,Neon,alias extends its own canonical; suffix is dropped
+neon postgresql,Neon,alias extends its own canonical; suffix is dropped
+neon sql,Neon,alias extends its own canonical; suffix is dropped
+nest js framework,NestJS,alias extends 'nest js' (Next.js); suffix is dropped
+netlify deploy,Netlify,alias extends its own canonical; suffix is dropped
+netlify hosting,Netlify,alias extends its own canonical; suffix is dropped
+next js app router,Next.js App Router,alias extends 'next js' (Next.js); suffix is dropped
+next js framework,Next.js,alias extends its own canonical; suffix is dropped
+next js pages router,Next.js Pages Router,alias extends 'next js' (Next.js); suffix is dropped
+nextjs app router,Next.js App Router,alias extends 'nextjs' (Next.js); suffix is dropped
+nginx config,Nginx,alias extends its own canonical; suffix is dropped
+nginx configuration,Nginx,alias extends its own canonical; suffix is dropped
+nginx container,Nginx,alias extends its own canonical; suffix is dropped
+nginx docker,Nginx,alias extends its own canonical; suffix is dropped
+nginx ingress,Nginx,alias extends its own canonical; suffix is dropped
+nginx load balancer,Nginx,alias extends its own canonical; suffix is dropped
+nginx proxy,Nginx,alias extends its own canonical; suffix is dropped
+nginx reverse proxy,Nginx,alias extends its own canonical; suffix is dropped
+nginx server,Nginx,alias extends its own canonical; suffix is dropped
+nginx web server,Nginx,alias extends its own canonical; suffix is dropped
+node package,Package,alias extends 'node' (Node.js); suffix is dropped
+node package manager,npm,alias extends 'node' (Node.js); suffix is dropped
+npm ci,npm,alias extends its own canonical; suffix is dropped
+npm cli,npm,alias extends its own canonical; suffix is dropped
+npm command,npm,alias extends its own canonical; suffix is dropped
+npm commands,npm,alias extends its own canonical; suffix is dropped
+npm config file,.npmrc,alias extends 'npm' (npm); suffix is dropped
+npm dependencies,npm,alias extends its own canonical; suffix is dropped
+npm dependency,Dependency,alias extends 'npm' (npm); suffix is dropped
+npm dependency,npm,alias extends its own canonical; suffix is dropped
+npm dev,npm run dev,alias extends 'npm' (npm); suffix is dropped
+npm eye,npm install,alias extends 'npm' (npm); suffix is dropped
+npm i,npm install,alias extends 'npm' (npm); suffix is dropped
+npm init,npm,alias extends its own canonical; suffix is dropped
+npm install,npm,alias extends its own canonical; suffix is dropped
+npm install,npm install,alias extends 'npm' (npm); suffix is dropped
+npm package,Package,alias extends 'npm' (npm); suffix is dropped
+npm package,npm,alias extends its own canonical; suffix is dropped
+npm package json,package.json,alias extends 'npm' (npm); suffix is dropped
+npm package manager,npm,alias extends its own canonical; suffix is dropped
+npm packages,npm,alias extends its own canonical; suffix is dropped
+npm rc,.npmrc,alias extends 'npm' (npm); suffix is dropped
+npm registry,npm,alias extends its own canonical; suffix is dropped
+npm run,npm,alias extends its own canonical; suffix is dropped
+npm run build,npm,alias extends its own canonical; suffix is dropped
+npm run dev,npm,alias extends its own canonical; suffix is dropped
+npm run dev,npm run dev,alias extends 'npm' (npm); suffix is dropped
+npm run development,npm run dev,alias extends 'npm' (npm); suffix is dropped
+npm script,npm,alias extends its own canonical; suffix is dropped
+npm scripts,npm,alias extends its own canonical; suffix is dropped
+npm start,npm,alias extends its own canonical; suffix is dropped
+numpy python,NumPy,alias extends its own canonical; suffix is dropped
+nuxt app,Nuxt,alias extends its own canonical; suffix is dropped
+nuxt framework,Nuxt,alias extends its own canonical; suffix is dropped
+nuxt js,Nuxt,alias extends its own canonical; suffix is dropped
+nuxt project,Nuxt,alias extends its own canonical; suffix is dropped
+nuxt vue framework,Nuxt,alias extends its own canonical; suffix is dropped
+nuxt web framework,Nuxt,alias extends its own canonical; suffix is dropped
+nvidia a100,A100,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia blackwell,Blackwell,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia connectx 7,ConnectX-7,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia connectx 8,ConnectX-8,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia dgx station,DGX Station,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia floating point 4,NVFP4,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia fp4,NVFP4,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia gb300,GB300,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia h100,H100,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia h200,H200,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia nemotron,Nemotron,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia nemotron 3 super 120b,Nemotron 3 Super 120B,alias extends 'nvidia nemotron' (Nemotron); suffix is dropped
+nvidia rtx 3080,RTX 3080,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx 3090,RTX 3090,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx 4000,RTX 4000,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx 4080,RTX 4080,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx 4090,RTX 4090,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx 5000,RTX 5000,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx 5080,RTX 5080,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx 5090,RTX 5090,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx 6000,RTX 6000,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nvidia rtx pro 6000,RTX PRO 6000,alias extends 'nvidia' (NVIDIA); suffix is dropped
+nx workspace,Nx,alias extends its own canonical; suffix is dropped
+oauth 2,OAuth,alias extends its own canonical; suffix is dropped
+oauth 2.0,OAuth,alias extends its own canonical; suffix is dropped
+oauth two,OAuth,alias extends its own canonical; suffix is dropped
+ollama ai,Ollama,alias extends its own canonical; suffix is dropped
+ollama runtime,Ollama,alias extends its own canonical; suffix is dropped
+open ai gpt 5,GPT-5,alias extends 'open ai' (OpenAI); suffix is dropped
+open ai gpt five,GPT-5,alias extends 'open ai' (OpenAI); suffix is dropped
+openai gpt 5,GPT-5,alias extends 'openai' (OpenAI); suffix is dropped
+openai gpt five,GPT-5,alias extends 'openai' (OpenAI); suffix is dropped
+openai whisper,Whisper,alias extends 'openai' (OpenAI); suffix is dropped
+openapi specification,OpenAPI,alias extends its own canonical; suffix is dropped
+option tag,option,alias extends its own canonical; suffix is dropped
+opus 4.5,Claude Opus 4.5,alias extends 'opus 4' (Claude Opus 4); suffix is dropped
+opus four point five,Claude Opus 4.5,alias extends 'opus four' (Claude Opus 4); suffix is dropped
+orm library,ORM,alias extends its own canonical; suffix is dropped
+p n p m dev,pnpm dev,alias extends 'p n p m' (pnpm); suffix is dropped
+p n p m eye,pnpm install,alias extends 'p n p m' (pnpm); suffix is dropped
+p n p m install,pnpm install,alias extends 'p n p m' (pnpm); suffix is dropped
+package dependency,Dependency,alias extends 'package' (Package); suffix is dropped
+package dependency graph,Dependency Graph,alias extends 'package dependency' (Dependency); suffix is dropped
+package dot json,package.json,alias extends 'package' (Package); suffix is dropped
+package j son,package.json,alias extends 'package' (Package); suffix is dropped
+package json,package.json,alias extends 'package' (Package); suffix is dropped
+pandas library,Pandas,alias extends its own canonical; suffix is dropped
+parakeet ai,Parakeet,alias extends its own canonical; suffix is dropped
+parakeet speech recognition,Parakeet,alias extends its own canonical; suffix is dropped
+paypal api,PayPal,alias extends its own canonical; suffix is dropped
+php language,PHP,alias extends its own canonical; suffix is dropped
+pinecone vector database,Pinecone,alias extends its own canonical; suffix is dropped
+pip install,pip,alias extends its own canonical; suffix is dropped
+pip package manager,pip,alias extends its own canonical; suffix is dropped
+playwright testing,Playwright,alias extends its own canonical; suffix is dropped
+pnpm dev,pnpm dev,alias extends 'pnpm' (pnpm); suffix is dropped
+pnpm development,pnpm dev,alias extends 'pnpm' (pnpm); suffix is dropped
+pnpm i,pnpm install,alias extends 'pnpm' (pnpm); suffix is dropped
+pnpm install,pnpm,alias extends its own canonical; suffix is dropped
+pnpm install,pnpm install,alias extends 'pnpm' (pnpm); suffix is dropped
+pnpm package manager,pnpm,alias extends its own canonical; suffix is dropped
+poetry package manager,Poetry,alias extends its own canonical; suffix is dropped
+poetry python,Poetry,alias extends its own canonical; suffix is dropped
+port 1420,port 1420,alias extends 'port' (port); suffix is dropped
+port 3000,port 3000,alias extends 'port' (port); suffix is dropped
+port 5173,port 5173,alias extends 'port' (port); suffix is dropped
+port five one seven three,port 5173,alias extends 'port' (port); suffix is dropped
+port fourteen twenty,port 1420,alias extends 'port' (port); suffix is dropped
+port one four two zero,port 1420,alias extends 'port' (port); suffix is dropped
+port three thousand,port 3000,alias extends 'port' (port); suffix is dropped
+postman api,Postman,alias extends its own canonical; suffix is dropped
+postman testing,Postman,alias extends its own canonical; suffix is dropped
+pre fill,prefill,alias extends 'pre' (pre); suffix is dropped
+pre tag,pre,alias extends its own canonical; suffix is dropped
+pre-fill,prefill,alias extends 'pre' (pre); suffix is dropped
+pre-fill throughput,prefill,alias extends 'pre' (pre); suffix is dropped
+prefill throughput,prefill,alias extends its own canonical; suffix is dropped
+prettier code formatter,Prettier,alias extends its own canonical; suffix is dropped
+prettier formatter,Formatter,alias extends 'prettier' (Prettier); suffix is dropped
+prettier formatter,Prettier,alias extends its own canonical; suffix is dropped
+prettier formatting,Prettier,alias extends its own canonical; suffix is dropped
+prettier javascript,Prettier,alias extends its own canonical; suffix is dropped
+prettier js,Prettier,alias extends its own canonical; suffix is dropped
+prisma client,Prisma,alias extends its own canonical; suffix is dropped
+prisma database,Prisma,alias extends its own canonical; suffix is dropped
+prisma o r m,Prisma,alias extends its own canonical; suffix is dropped
+prisma orm,Prisma,alias extends its own canonical; suffix is dropped
+prisma schema,Prisma,alias extends its own canonical; suffix is dropped
+prometheus metrics,Prometheus,alias extends its own canonical; suffix is dropped
+prometheus monitoring,Prometheus,alias extends its own canonical; suffix is dropped
+prompt engineering ai,Prompt Engineering,alias extends its own canonical; suffix is dropped
+pull request github,pull request,alias extends its own canonical; suffix is dropped
+pull request review,Code Review,alias extends 'pull request' (Pull Request); suffix is dropped
+py torch,PyTorch,alias extends 'py' (.py); suffix is dropped
+py torch framework,PyTorch,alias extends 'py' (.py); suffix is dropped
+py torch library,PyTorch,alias extends 'py' (.py); suffix is dropped
+py tos,PyTorch,alias extends 'py' (.py); suffix is dropped
+py-torch,PyTorch,alias extends 'py' (.py); suffix is dropped
+python file,.py,alias extends 'python' (Python); suffix is dropped
+python language,Python,alias extends its own canonical; suffix is dropped
+python pandas,Pandas,alias extends 'python' (Python); suffix is dropped
+python pip,pip,alias extends 'python' (Python); suffix is dropped
+python poetry,Poetry,alias extends 'python' (Python); suffix is dropped
+python programming,Python,alias extends its own canonical; suffix is dropped
+python torch,PyTorch,alias extends 'python' (Python); suffix is dropped
+pytorch cuda,PyTorch,alias extends its own canonical; suffix is dropped
+pytorch framework,PyTorch,alias extends its own canonical; suffix is dropped
+pytorch gpu,PyTorch,alias extends its own canonical; suffix is dropped
+pytorch library,PyTorch,alias extends its own canonical; suffix is dropped
+pytorch model,PyTorch,alias extends its own canonical; suffix is dropped
+pytorch python,PyTorch,alias extends its own canonical; suffix is dropped
+pytorch tensor,PyTorch,alias extends its own canonical; suffix is dropped
+q 4 k m,Q4_K_M,alias extends 'q 4' (Q4); suffix is dropped
+q 8 0,Q8_0,alias extends 'q 8' (Q8); suffix is dropped
+q eight zero,Q8_0,alias extends 'q eight' (Q8); suffix is dropped
+q four k m,Q4_K_M,alias extends 'q four' (Q4); suffix is dropped
+q four k x l,Q4_K_XL,alias extends 'q four' (Q4); suffix is dropped
+q when 3.7,Qwen3.7,alias extends 'q when' (Qwen); suffix is dropped
+q4 k m,Q4_K_M,alias extends 'q4' (Q4); suffix is dropped
+q4 k xl,Q4_K_XL,alias extends 'q4' (Q4); suffix is dropped
+q4 underscore k underscore m,Q4_K_M,alias extends 'q4' (Q4); suffix is dropped
+q4 underscore k underscore xl,Q4_K_XL,alias extends 'q4' (Q4); suffix is dropped
+q8 0,Q8_0,alias extends 'q8' (Q8); suffix is dropped
+queen 2.5,Qwen2.5,alias extends 'queen' (Qwen); suffix is dropped
+queen 3.7,Qwen3.7,alias extends 'queen' (Qwen); suffix is dropped
+queen 3.7 max,Qwen3.7-Max,alias extends 'queen' (Qwen); suffix is dropped
+queen 3.7 plus,Qwen3.7-Plus,alias extends 'queen' (Qwen); suffix is dropped
+queen 3.8 max,Qwen3.8-Max,alias extends 'queen' (Qwen); suffix is dropped
+quen 2.5,Qwen2.5,alias extends 'quen' (Qwen); suffix is dropped
+quen 3.5,Qwen3.5,alias extends 'quen' (Qwen); suffix is dropped
+quen three point five,Qwen3.5,alias extends 'quen' (Qwen); suffix is dropped
+quen two point five,Qwen2.5,alias extends 'quen' (Qwen); suffix is dropped
+quinn 3.7,Qwen3.7,alias extends 'quinn' (Qwen); suffix is dropped
+quinn 3.7 max,Qwen3.7-Max,alias extends 'quinn' (Qwen); suffix is dropped
+quinn 3.7 plus,Qwen3.7-Plus,alias extends 'quinn' (Qwen); suffix is dropped
+quinn 3.8 max,Qwen3.8-Max,alias extends 'quinn' (Qwen); suffix is dropped
+quinn three point seven,Qwen3.7,alias extends 'quinn' (Qwen); suffix is dropped
+qwen 2.5,Qwen2.5,alias extends 'qwen' (Qwen); suffix is dropped
+qwen 3,Qwen,alias extends its own canonical; suffix is dropped
+qwen 3 235 b,Qwen,alias extends its own canonical; suffix is dropped
+qwen 3 235b,Qwen,alias extends its own canonical; suffix is dropped
+qwen 3 coder,Qwen3-Coder,alias extends 'qwen' (Qwen); suffix is dropped
+qwen 3.5,Qwen3.5,alias extends 'qwen' (Qwen); suffix is dropped
+qwen 3.6 plus,Qwen3.6-Plus,alias extends 'qwen' (Qwen); suffix is dropped
+qwen 3.7,Qwen3.7,alias extends 'qwen' (Qwen); suffix is dropped
+qwen 3.7 max,Qwen3.7-Max,alias extends 'qwen' (Qwen); suffix is dropped
+qwen 3.7 plus,Qwen3.7-Plus,alias extends 'qwen' (Qwen); suffix is dropped
+qwen 3.8 max,Qwen3.8-Max,alias extends 'qwen' (Qwen); suffix is dropped
+qwen ai,Qwen,alias extends its own canonical; suffix is dropped
+qwen audio 3.0,Qwen-Audio 3.0,alias extends 'qwen' (Qwen); suffix is dropped
+qwen audio three,Qwen-Audio 3.0,alias extends 'qwen' (Qwen); suffix is dropped
+qwen audio three point zero,Qwen-Audio 3.0,alias extends 'qwen' (Qwen); suffix is dropped
+qwen code,Qwen,alias extends its own canonical; suffix is dropped
+qwen code model,Qwen,alias extends its own canonical; suffix is dropped
+qwen coder,Qwen,alias extends its own canonical; suffix is dropped
+qwen coder model,Qwen,alias extends its own canonical; suffix is dropped
+qwen coding model,Qwen,alias extends its own canonical; suffix is dropped
+qwen llm,Qwen,alias extends its own canonical; suffix is dropped
+qwen model,Qwen,alias extends its own canonical; suffix is dropped
+qwen three coder,Qwen3-Coder,alias extends 'qwen' (Qwen); suffix is dropped
+qwen three point eight max,Qwen3.8-Max,alias extends 'qwen' (Qwen); suffix is dropped
+qwen three point five,Qwen3.5,alias extends 'qwen' (Qwen); suffix is dropped
+qwen three point seven,Qwen3.7,alias extends 'qwen' (Qwen); suffix is dropped
+qwen three point six plus,Qwen3.6-Plus,alias extends 'qwen' (Qwen); suffix is dropped
+qwen two point five,Qwen2.5,alias extends 'qwen' (Qwen); suffix is dropped
+qwen3.7 max,Qwen3.7-Max,alias extends 'qwen3 7' (Qwen3.7); suffix is dropped
+qwen3.7 plus,Qwen3.7-Plus,alias extends 'qwen3 7' (Qwen3.7); suffix is dropped
+qwik app,Qwik,alias extends its own canonical; suffix is dropped
+qwik framework,Qwik,alias extends its own canonical; suffix is dropped
+qwik javascript,Qwik,alias extends its own canonical; suffix is dropped
+qwik js,Qwik,alias extends its own canonical; suffix is dropped
+qwik project,Qwik,alias extends its own canonical; suffix is dropped
+qwik web app,Qwik,alias extends its own canonical; suffix is dropped
+qwik web framework,Qwik,alias extends its own canonical; suffix is dropped
+r o c m s m i,rocm-smi,alias extends 'r o c m' (ROCm); suffix is dropped
+rag pipeline,RAG,alias extends its own canonical; suffix is dropped
+rag system,RAG,alias extends its own canonical; suffix is dropped
+railway deploy,Railway,alias extends its own canonical; suffix is dropped
+railway hosting,Railway,alias extends its own canonical; suffix is dropped
+rds database,RDS,alias extends its own canonical; suffix is dropped
+react client component,Client Component,alias extends 'react' (React); suffix is dropped
+react context,Context API,alias extends 'react' (React); suffix is dropped
+react context api,Context API,alias extends 'react' (React); suffix is dropped
+react d o m,React DOM,alias extends 'react' (React); suffix is dropped
+react document object model,React DOM,alias extends 'react' (React); suffix is dropped
+react dom,React DOM,alias extends 'react' (React); suffix is dropped
+react dom library,React DOM,alias extends its own canonical; suffix is dropped
+react domm,React DOM,alias extends 'react' (React); suffix is dropped
+react error boundary,Error Boundary,alias extends 'react' (React); suffix is dropped
+react form,React Hook Form,alias extends 'react' (React); suffix is dropped
+react framework,React,alias extends its own canonical; suffix is dropped
+react hook,React Hooks,alias extends 'react' (React); suffix is dropped
+react hook form,React Hook Form,alias extends 'react' (React); suffix is dropped
+react hook form library,React Hook Form,alias extends its own canonical; suffix is dropped
+react hook forms,React Hook Form,alias extends 'react' (React); suffix is dropped
+react hooks,React Hooks,alias extends 'react' (React); suffix is dropped
+react hooks api,React Hooks,alias extends its own canonical; suffix is dropped
+react hooks form,React Hook Form,alias extends 'react' (React); suffix is dropped
+react hydration,Hydration,alias extends 'react' (React); suffix is dropped
+react hydration error,Hydration Mismatch,alias extends 'react' (React); suffix is dropped
+react j s,React,alias extends its own canonical; suffix is dropped
+react javascript,React,alias extends its own canonical; suffix is dropped
+react jay ess,React,alias extends its own canonical; suffix is dropped
+react js,React,alias extends its own canonical; suffix is dropped
+react jsx,JSX,alias extends 'react' (React); suffix is dropped
+react library,React,alias extends its own canonical; suffix is dropped
+react native,React Native,alias extends 'react' (React); suffix is dropped
+react native javascript,React Native,alias extends its own canonical; suffix is dropped
+react native js,React Native,alias extends its own canonical; suffix is dropped
+react natively,React Native,alias extends 'react' (React); suffix is dropped
+react queries,TanStack Query,alias extends 'react' (React); suffix is dropped
+react query,TanStack Query,alias extends 'react' (React); suffix is dropped
+react route,React Router,alias extends 'react' (React); suffix is dropped
+react route er,React Router,alias extends 'react' (React); suffix is dropped
+react router,React Router,alias extends 'react' (React); suffix is dropped
+react router dom,React Router,alias extends its own canonical; suffix is dropped
+react routing,React Router,alias extends 'react' (React); suffix is dropped
+react server component,React Server Components,alias extends 'react' (React); suffix is dropped
+react server component,Server Component,alias extends 'react' (React); suffix is dropped
+react server components,React Server Components,alias extends 'react' (React); suffix is dropped
+react suspense,Suspense,alias extends 'react' (React); suffix is dropped
+react testing library,Testing Library,alias extends 'react' (React); suffix is dropped
+react-hook-form,React Hook Form,alias extends 'react' (React); suffix is dropped
+react-query,TanStack Query,alias extends 'react' (React); suffix is dropped
+react-router,React Router,alias extends 'react' (React); suffix is dropped
+readme file,README,alias extends its own canonical; suffix is dropped
+recoil state,Recoil,alias extends its own canonical; suffix is dropped
+redis cache,Caching,alias extends 'redis' (Redis); suffix is dropped
+redis cache,Redis,alias extends its own canonical; suffix is dropped
+redis database,Redis,alias extends its own canonical; suffix is dropped
+redux javascript,Redux,alias extends its own canonical; suffix is dropped
+redux js,Redux,alias extends its own canonical; suffix is dropped
+redux rtk,Redux Toolkit,alias extends 'redux' (Redux); suffix is dropped
+redux state,Redux,alias extends its own canonical; suffix is dropped
+redux store,Redux,alias extends its own canonical; suffix is dropped
+redux tool kit,Redux Toolkit,alias extends 'redux' (Redux); suffix is dropped
+redux toolkit,Redux Toolkit,alias extends 'redux' (Redux); suffix is dropped
+redux toolkit js,Redux Toolkit,alias extends its own canonical; suffix is dropped
+redux tools,Redux Toolkit,alias extends 'redux' (Redux); suffix is dropped
+remix app,Remix,alias extends its own canonical; suffix is dropped
+remix framework,Remix,alias extends its own canonical; suffix is dropped
+remix full stack framework,Remix,alias extends its own canonical; suffix is dropped
+remix javascript framework,Remix,alias extends its own canonical; suffix is dropped
+remix js,Remix,alias extends its own canonical; suffix is dropped
+remix project,Remix,alias extends its own canonical; suffix is dropped
+remix react framework,Remix,alias extends its own canonical; suffix is dropped
+remix web framework,Remix,alias extends its own canonical; suffix is dropped
+render cloud,Render,alias extends its own canonical; suffix is dropped
+render deploy,Render,alias extends its own canonical; suffix is dropped
+render hosting,Render,alias extends its own canonical; suffix is dropped
+repository layer,Repository,alias extends its own canonical; suffix is dropped
+repository status,git status,alias extends 'repository' (Repository); suffix is dropped
+rest api endpoint,REST API,alias extends its own canonical; suffix is dropped
+rocm smi,rocm-smi,alias extends 'rocm' (ROCm); suffix is dropped
+rollup bundler,Rollup,alias extends its own canonical; suffix is dropped
+rollup js,Rollup,alias extends its own canonical; suffix is dropped
+ruby language,Ruby,alias extends its own canonical; suffix is dropped
+ruby on rails,Ruby on Rails,alias extends 'ruby' (Ruby); suffix is dropped
+ruby programming,Ruby,alias extends its own canonical; suffix is dropped
+ruby rails,Ruby on Rails,alias extends 'ruby' (Ruby); suffix is dropped
+rust cargo,Cargo,alias extends 'rust' (Rust); suffix is dropped
+rust file,.rs,alias extends 'rust' (Rust); suffix is dropped
+rust lang,Rust,alias extends its own canonical; suffix is dropped
+rust language,Rust,alias extends its own canonical; suffix is dropped
+rust programming,Rust,alias extends its own canonical; suffix is dropped
+rust programming language,Rust,alias extends its own canonical; suffix is dropped
+rust serde,Serde,alias extends 'rust' (Rust); suffix is dropped
+rust tokio,Tokio,alias extends 'rust' (Rust); suffix is dropped
+s p a n,span,alias extends 's p a' (SPA); suffix is dropped
+s q l lite,SQLite,alias extends 's q l' (SQL); suffix is dropped
+s3 bucket,S3,alias extends its own canonical; suffix is dropped
+sass css,SCSS,alias extends 'sass' (Sass); suffix is dropped
+sass css,Sass,alias extends its own canonical; suffix is dropped
+sass preprocessor,Sass,alias extends its own canonical; suffix is dropped
+sass stylesheet,Sass,alias extends its own canonical; suffix is dropped
+schema migration,Database Migration,alias extends 'schema' (Database Schema); suffix is dropped
+scss file,.scss,alias extends its own canonical; suffix is dropped
+scss styles,SCSS,alias extends its own canonical; suffix is dropped
+sdk library,SDK,alias extends its own canonical; suffix is dropped
+sdk package,SDK,alias extends its own canonical; suffix is dropped
+secret key,Secret,alias extends its own canonical; suffix is dropped
+section element,section,alias extends its own canonical; suffix is dropped
+section tag,section,alias extends its own canonical; suffix is dropped
+select element,select,alias extends its own canonical; suffix is dropped
+select option,option,alias extends 'select' (select); suffix is dropped
+select tag,select,alias extends its own canonical; suffix is dropped
+sentry crash reporting,Sentry,alias extends its own canonical; suffix is dropped
+sentry dot io,Sentry,alias extends its own canonical; suffix is dropped
+sentry error monitoring,Sentry,alias extends its own canonical; suffix is dropped
+sentry error tracking,Sentry,alias extends its own canonical; suffix is dropped
+sentry integration,Sentry,alias extends its own canonical; suffix is dropped
+sentry io,Sentry,alias extends its own canonical; suffix is dropped
+sentry javascript,Sentry,alias extends its own canonical; suffix is dropped
+sentry logs,Sentry,alias extends its own canonical; suffix is dropped
+sentry monitoring,Sentry,alias extends its own canonical; suffix is dropped
+sentry next js,Sentry,alias extends its own canonical; suffix is dropped
+sentry performance monitoring,Sentry,alias extends its own canonical; suffix is dropped
+sentry react,Sentry,alias extends its own canonical; suffix is dropped
+sentry sdk,Sentry,alias extends its own canonical; suffix is dropped
+sentry tracing,Sentry,alias extends its own canonical; suffix is dropped
+sentry typescript,Sentry,alias extends its own canonical; suffix is dropped
+seo canonical,Canonical URL,alias extends 'seo' (SEO); suffix is dropped
+seo meta tags,Meta Tags,alias extends 'seo' (SEO); suffix is dropped
+seo robots,robots.txt,alias extends 'seo' (SEO); suffix is dropped
+sequel alchemy,SQLAlchemy,alias extends 'sequel' (SQL); suffix is dropped
+sequel eyes,Sequelize,alias extends 'sequel' (SQL); suffix is dropped
+sequel injection,SQL Injection,alias extends 'sequel' (SQL); suffix is dropped
+sequel izer,Sequelize,alias extends 'sequel' (SQL); suffix is dropped
+sequel lite,SQLite,alias extends 'sequel' (SQL); suffix is dropped
+sequelize orm,Sequelize,alias extends its own canonical; suffix is dropped
+server components react,React Server Components,alias extends 'server components' (Server Component); suffix is dropped
+server port three thousand,port 3000,alias extends 'server port' (port); suffix is dropped
+serverless architecture,Serverless,alias extends its own canonical; suffix is dropped
+serverless functions,Serverless,alias extends its own canonical; suffix is dropped
+sitemap xml,Sitemap,alias extends its own canonical; suffix is dropped
+slash,/,alias extends its own canonical; suffix is dropped
+solid design principles,SOLID,alias extends its own canonical; suffix is dropped
+solid javascript,SolidJS,alias extends 'solid' (SOLID); suffix is dropped
+solid jay ess,SolidJS,alias extends 'solid' (SOLID); suffix is dropped
+solid js,SolidJS,alias extends 'solid' (SOLID); suffix is dropped
+solid js app,SolidJS,alias extends 'solid' (SOLID); suffix is dropped
+solid js framework,SolidJS,alias extends 'solid' (SOLID); suffix is dropped
+solid js solid start,SolidStart,alias extends 'solid js' (SolidJS); suffix is dropped
+solid principles,SOLID,alias extends its own canonical; suffix is dropped
+solid programming,SOLID,alias extends its own canonical; suffix is dropped
+solid start,SolidStart,alias extends 'solid' (SOLID); suffix is dropped
+solid start app,SolidStart,alias extends 'solid' (SOLID); suffix is dropped
+solid start framework,SolidStart,alias extends 'solid' (SOLID); suffix is dropped
+solid start project,SolidStart,alias extends 'solid' (SOLID); suffix is dropped
+solid start web framework,SolidStart,alias extends 'solid' (SOLID); suffix is dropped
+solid web framework,SolidJS,alias extends 'solid' (SOLID); suffix is dropped
+solidjs framework,SolidJS,alias extends its own canonical; suffix is dropped
+solidjs solid start,SolidStart,alias extends 'solidjs' (SolidJS); suffix is dropped
+sonnet 4.5,Claude Sonnet 4.5,alias extends 'sonnet 4' (Claude Sonnet 4); suffix is dropped
+sonnet four point five,Claude Sonnet 4.5,alias extends 'sonnet four' (Claude Sonnet 4); suffix is dropped
+span tag,span,alias extends its own canonical; suffix is dropped
+speech recognition model,ASR,alias extends 'speech recognition' (STT); suffix is dropped
+spring boot java,Spring Boot,alias extends its own canonical; suffix is dropped
+sql alchemy,SQLAlchemy,alias extends 'sql' (SQL); suffix is dropped
+sql alchemy,SQLAlchemy,alias extends 'sql' (SQL); suffix is dropped
+sql alchemy library,SQLAlchemy,alias extends 'sql' (SQL); suffix is dropped
+sql alchemy orm,SQLAlchemy,alias extends 'sql' (SQL); suffix is dropped
+sql file,.sql,alias extends its own canonical; suffix is dropped
+sql index,Index,alias extends 'sql' (SQL); suffix is dropped
+sql inject,SQL Injection,alias extends 'sql' (SQL); suffix is dropped
+sql injection,SQL Injection,alias extends 'sql' (SQL); suffix is dropped
+sql lite,SQLite,alias extends 'sql' (SQL); suffix is dropped
+sql migration,Database Migration,alias extends 'sql' (SQL); suffix is dropped
+sql query,Query,alias extends 'sql' (SQL); suffix is dropped
+sql query,SQL,alias extends its own canonical; suffix is dropped
+sql schema,Database Schema,alias extends 'sql' (SQL); suffix is dropped
+sql transaction,Transaction,alias extends 'sql' (SQL); suffix is dropped
+sqlite database,SQLite,alias extends its own canonical; suffix is dropped
+ssh connection,SSH,alias extends its own canonical; suffix is dropped
+storybook components,Storybook,alias extends its own canonical; suffix is dropped
+storybook js,Storybook,alias extends its own canonical; suffix is dropped
+storybook ui,Storybook,alias extends its own canonical; suffix is dropped
+stripe api,Stripe,alias extends its own canonical; suffix is dropped
+stripe payments,Stripe,alias extends its own canonical; suffix is dropped
+stripe sdk,Stripe,alias extends its own canonical; suffix is dropped
+supabase backend,Supabase,alias extends its own canonical; suffix is dropped
+supabase database,Supabase,alias extends its own canonical; suffix is dropped
+suspense boundary,Suspense,alias extends its own canonical; suffix is dropped
+svelt kit,SvelteKit,alias extends 'svelt' (Svelte); suffix is dropped
+svelte app,Svelte,alias extends its own canonical; suffix is dropped
+svelte framework,Svelte,alias extends its own canonical; suffix is dropped
+svelte javascript,Svelte,alias extends its own canonical; suffix is dropped
+svelte js,Svelte,alias extends its own canonical; suffix is dropped
+svelte kit,SvelteKit,alias extends 'svelte' (Svelte); suffix is dropped
+svelte kit app,SvelteKit,alias extends 'svelte' (Svelte); suffix is dropped
+svelte kit framework,SvelteKit,alias extends 'svelte' (Svelte); suffix is dropped
+svelte kit js,SvelteKit,alias extends 'svelte' (Svelte); suffix is dropped
+svelte kit project,SvelteKit,alias extends 'svelte' (Svelte); suffix is dropped
+svelte kit web framework,SvelteKit,alias extends 'svelte' (Svelte); suffix is dropped
+svelte kits,SvelteKit,alias extends 'svelte' (Svelte); suffix is dropped
+svelte project,Svelte,alias extends its own canonical; suffix is dropped
+svelte web framework,Svelte,alias extends its own canonical; suffix is dropped
+sveltekit framework,SvelteKit,alias extends its own canonical; suffix is dropped
+svg file,.svg,alias extends its own canonical; suffix is dropped
+swagger api,Swagger,alias extends its own canonical; suffix is dropped
+swagger docs,Swagger,alias extends its own canonical; suffix is dropped
+swagger documentation,Swagger,alias extends its own canonical; suffix is dropped
+swagger ui,Swagger,alias extends its own canonical; suffix is dropped
+swc compiler,SWC,alias extends its own canonical; suffix is dropped
+swc javascript,SWC,alias extends its own canonical; suffix is dropped
+swift lang,Swift,alias extends its own canonical; suffix is dropped
+swift language,Swift,alias extends its own canonical; suffix is dropped
+swift programming,Swift,alias extends its own canonical; suffix is dropped
+swift u i,SwiftUI,alias extends 'swift' (Swift); suffix is dropped
+swift ui,SwiftUI,alias extends 'swift' (Swift); suffix is dropped
+swift ui framework,SwiftUI,alias extends 'swift' (Swift); suffix is dropped
+t d d,TDD,alias extends 't d' (td); suffix is dropped
+t r p c,tRPC,alias extends 't r' (tr); suffix is dropped
+t r p c api,tRPC,alias extends 't r' (tr); suffix is dropped
+table body,tbody,alias extends 'table' (table); suffix is dropped
+table data cell,td,alias extends 'table' (table); suffix is dropped
+table footer,tfoot,alias extends 'table' (table); suffix is dropped
+table head,thead,alias extends 'table' (table); suffix is dropped
+table header cell,th,alias extends 'table' (table); suffix is dropped
+table row,tr,alias extends 'table' (table); suffix is dropped
+table tag,table,alias extends its own canonical; suffix is dropped
+tail wind merge,Tailwind Merge,alias extends 'tail wind' (Tailwind CSS); suffix is dropped
+tail wind merge library,Tailwind Merge,alias extends 'tail wind' (Tailwind CSS); suffix is dropped
+tail wind merge package,Tailwind Merge,alias extends 'tail wind' (Tailwind CSS); suffix is dropped
+tail wind variant,Tailwind Variants,alias extends 'tail wind' (Tailwind CSS); suffix is dropped
+tail wind variants,Tailwind Variants,alias extends 'tail wind' (Tailwind CSS); suffix is dropped
+tailwind merge,Tailwind Merge,alias extends 'tailwind' (Tailwind CSS); suffix is dropped
+tailwind merge library,Tailwind Merge,alias extends its own canonical; suffix is dropped
+tailwind merge package,Tailwind Merge,alias extends its own canonical; suffix is dropped
+tailwind variant,Tailwind Variants,alias extends 'tailwind' (Tailwind CSS); suffix is dropped
+tailwind variants,Tailwind Variants,alias extends 'tailwind' (Tailwind CSS); suffix is dropped
+tailwind variants library,Tailwind Variants,alias extends its own canonical; suffix is dropped
+tan stack route,TanStack Router,alias extends 'tan stack' (TanStack Query); suffix is dropped
+tan stack router,TanStack Router,alias extends 'tan stack' (TanStack Query); suffix is dropped
+tan stack routing,TanStack Router,alias extends 'tan stack' (TanStack Query); suffix is dropped
+tan stack table,TanStack Table,alias extends 'tan stack' (TanStack Query); suffix is dropped
+tan stack tables,TanStack Table,alias extends 'tan stack' (TanStack Query); suffix is dropped
+tanstack query js,TanStack Query,alias extends its own canonical; suffix is dropped
+tanstack query library,TanStack Query,alias extends its own canonical; suffix is dropped
+tanstack query react,TanStack Query,alias extends its own canonical; suffix is dropped
+tanstack route,TanStack Router,alias extends 'tanstack' (TanStack Query); suffix is dropped
+tanstack router,TanStack Router,alias extends 'tanstack' (TanStack Query); suffix is dropped
+tanstack routing,TanStack Router,alias extends 'tanstack' (TanStack Query); suffix is dropped
+tanstack table,TanStack Table,alias extends 'tanstack' (TanStack Query); suffix is dropped
+tanstack tables,TanStack Table,alias extends 'tanstack' (TanStack Query); suffix is dropped
+tauri app,Tauri,alias extends its own canonical; suffix is dropped
+tauri application,Tauri,alias extends its own canonical; suffix is dropped
+tauri c l i,Tauri CLI,alias extends 'tauri' (Tauri); suffix is dropped
+tauri cli,Tauri CLI,alias extends 'tauri' (Tauri); suffix is dropped
+tauri command line,Tauri CLI,alias extends 'tauri' (Tauri); suffix is dropped
+tauri command line interface,Tauri CLI,alias extends 'tauri' (Tauri); suffix is dropped
+tauri desktop,Tauri,alias extends its own canonical; suffix is dropped
+tauri desktop app,Tauri,alias extends its own canonical; suffix is dropped
+tauri framework,Tauri,alias extends its own canonical; suffix is dropped
+tauri javascript,Tauri,alias extends its own canonical; suffix is dropped
+tauri js,Tauri,alias extends its own canonical; suffix is dropped
+tauri rust,Tauri,alias extends its own canonical; suffix is dropped
+tauri rust app,Tauri,alias extends its own canonical; suffix is dropped
+tauri rust desktop,Tauri,alias extends its own canonical; suffix is dropped
+tauri two,Tauri,alias extends its own canonical; suffix is dropped
+tauri typescript,Tauri,alias extends its own canonical; suffix is dropped
+tauri v 2,Tauri,alias extends its own canonical; suffix is dropped
+tauri v2,Tauri,alias extends its own canonical; suffix is dropped
+terraform cloud,Terraform,alias extends its own canonical; suffix is dropped
+terraform infrastructure,Terraform,alias extends its own canonical; suffix is dropped
+testing library react,Testing Library,alias extends its own canonical; suffix is dropped
+textarea tag,textarea,alias extends its own canonical; suffix is dropped
+throttle function,Throttle,alias extends its own canonical; suffix is dropped
+tokenization model,Tokenization,alias extends its own canonical; suffix is dropped
+tokenizer library,Tokenizer,alias extends its own canonical; suffix is dropped
+toml config,TOML,alias extends its own canonical; suffix is dropped
+toml file,.toml,alias extends its own canonical; suffix is dropped
+transformer architecture,Transformer,alias extends its own canonical; suffix is dropped
+transformer library,Transformers,alias extends 'transformer' (Transformer); suffix is dropped
+transformer model,Transformer,alias extends its own canonical; suffix is dropped
+transformer package,Transformers,alias extends 'transformer' (Transformer); suffix is dropped
+transformer python library,Transformers,alias extends 'transformer' (Transformer); suffix is dropped
+transformers framework,Transformers,alias extends its own canonical; suffix is dropped
+transformers library,Transformers,alias extends its own canonical; suffix is dropped
+transformers model library,Transformers,alias extends its own canonical; suffix is dropped
+transformers package,Transformers,alias extends its own canonical; suffix is dropped
+transformers python,Transformers,alias extends its own canonical; suffix is dropped
+trpc api,tRPC,alias extends its own canonical; suffix is dropped
+trpc client,tRPC,alias extends its own canonical; suffix is dropped
+trpc server,tRPC,alias extends its own canonical; suffix is dropped
+ts compiler,TypeScript Compiler,alias extends 'ts' (.ts); suffix is dropped
+ts config dot json,tsconfig.json,alias extends 'ts' (.ts); suffix is dropped
+ts config json,tsconfig.json,alias extends 'ts' (.ts); suffix is dropped
+ts file,.ts,alias extends its own canonical; suffix is dropped
+tsx file,.tsx,alias extends its own canonical; suffix is dropped
+turso database,Turso,alias extends its own canonical; suffix is dropped
+turso db,Turso,alias extends its own canonical; suffix is dropped
+twilio api,Twilio,alias extends its own canonical; suffix is dropped
+twilio sms,Twilio,alias extends its own canonical; suffix is dropped
+twilio voice,Twilio,alias extends its own canonical; suffix is dropped
+type script compiler,TypeScript Compiler,alias extends 'type script' (TypeScript); suffix is dropped
+type script jsx,TSX,alias extends 'type script' (TypeScript); suffix is dropped
+typescript compiler,Compiler,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript compiler,TypeScript Compiler,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript compiler,tsc,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript config,tsconfig.json,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript configuration,tsconfig.json,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript file,.ts,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript generics,Generics,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript inference,Type Inference,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript interface,Interface,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript intersection,Intersection Type,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript jsx,.tsx,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript jsx,TSX,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript react file,.tsx,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript type alias,Type Alias,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript type guard,Type Guard,alias extends 'typescript' (TypeScript); suffix is dropped
+typescript union,Union Type,alias extends 'typescript' (TypeScript); suffix is dropped
+ubuntu linux,Ubuntu,alias extends its own canonical; suffix is dropped
+url address,URL,alias extends its own canonical; suffix is dropped
+uv package manager,uv,alias extends its own canonical; suffix is dropped
+uv python,uv,alias extends its own canonical; suffix is dropped
+vanilla javascript app,Vanilla JavaScript,alias extends its own canonical; suffix is dropped
+vanilla javascript project,Vanilla JavaScript,alias extends its own canonical; suffix is dropped
+veat light test runner,Vitest,alias extends 'veat' (Vite); suffix is dropped
+veat light testing,Vitest,alias extends 'veat' (Vite); suffix is dropped
+veat test,Vitest,alias extends 'veat' (Vite); suffix is dropped
+veat test runner,Vitest,alias extends 'veat' (Vite); suffix is dropped
+veet test,Vitest,alias extends 'veet' (Vite); suffix is dropped
+veet test runner,Vitest,alias extends 'veet' (Vite); suffix is dropped
+vercel deploy,Vercel,alias extends its own canonical; suffix is dropped
+vercel hosting,Vercel,alias extends its own canonical; suffix is dropped
+vight test,Vitest,alias extends 'vight' (Vite); suffix is dropped
+vite app,Vite,alias extends its own canonical; suffix is dropped
+vite build,Vite,alias extends its own canonical; suffix is dropped
+vite build tool,Vite,alias extends its own canonical; suffix is dropped
+vite builder,Vite,alias extends its own canonical; suffix is dropped
+vite bundler,Vite,alias extends its own canonical; suffix is dropped
+vite config,vite.config.ts,alias extends 'vite' (Vite); suffix is dropped
+vite config dot ts,vite.config.ts,alias extends 'vite' (Vite); suffix is dropped
+vite config ts,vite.config.ts,alias extends 'vite' (Vite); suffix is dropped
+vite configuration,vite.config.ts,alias extends 'vite' (Vite); suffix is dropped
+vite dev,Vite Dev Server,alias extends 'vite' (Vite); suffix is dropped
+vite dev server,Vite,alias extends its own canonical; suffix is dropped
+vite dev server,Vite Dev Server,alias extends 'vite' (Vite); suffix is dropped
+vite development server,Vite,alias extends its own canonical; suffix is dropped
+vite development server,Vite Dev Server,alias extends 'vite' (Vite); suffix is dropped
+vite framework,Vite,alias extends its own canonical; suffix is dropped
+vite frontend,Vite,alias extends its own canonical; suffix is dropped
+vite j s,Vite,alias extends its own canonical; suffix is dropped
+vite jay ess,Vite,alias extends its own canonical; suffix is dropped
+vite js,Vite,alias extends its own canonical; suffix is dropped
+vite project,Vite,alias extends its own canonical; suffix is dropped
+vite react,Vite,alias extends its own canonical; suffix is dropped
+vite react app,Vite,alias extends its own canonical; suffix is dropped
+vite server,Vite Dev Server,alias extends 'vite' (Vite); suffix is dropped
+vite test,Vitest,alias extends 'vite' (Vite); suffix is dropped
+vite test runner,Vitest,alias extends 'vite' (Vite); suffix is dropped
+vite testing,Vitest,alias extends 'vite' (Vite); suffix is dropped
+vite tool,Vite,alias extends its own canonical; suffix is dropped
+vitest framework,Vitest,alias extends its own canonical; suffix is dropped
+vitest js,Vitest,alias extends its own canonical; suffix is dropped
+vitest runner,Vitest,alias extends its own canonical; suffix is dropped
+vitest test,Vitest,alias extends its own canonical; suffix is dropped
+vitest testing,Vitest,alias extends its own canonical; suffix is dropped
+vitest typescript,Vitest,alias extends its own canonical; suffix is dropped
+vitest unit test,Vitest,alias extends its own canonical; suffix is dropped
+vitest unit testing,Vitest,alias extends its own canonical; suffix is dropped
+vs code editor,VS Code,alias extends its own canonical; suffix is dropped
+vue app,Vue,alias extends its own canonical; suffix is dropped
+vue framework,Vue,alias extends its own canonical; suffix is dropped
+vue javascript,Vue,alias extends its own canonical; suffix is dropped
+vue js,Vue,alias extends its own canonical; suffix is dropped
+vue project,Vue,alias extends its own canonical; suffix is dropped
+vue web framework,Vue,alias extends its own canonical; suffix is dropped
+w a s m runtime,WASM,alias extends 'w a s m' (WebAssembly); suffix is dropped
+warp cli,Warp,alias extends its own canonical; suffix is dropped
+warp terminal,Warp,alias extends its own canonical; suffix is dropped
+weaviate database,Weaviate,alias extends its own canonical; suffix is dropped
+web assembly runtime,WebAssembly,alias extends 'web assembly' (WASM); suffix is dropped
+web component shadow dom,Shadow DOM,alias extends 'web component' (Web Components); suffix is dropped
+web components api,Web Components,alias extends its own canonical; suffix is dropped
+web socket connection,WebSocket,alias extends 'web socket' (WebSockets); suffix is dropped
+webpack bundler,Webpack,alias extends its own canonical; suffix is dropped
+webpack js,Webpack,alias extends its own canonical; suffix is dropped
+websocket connection,WebSocket,alias extends its own canonical; suffix is dropped
+whisper ai,Whisper,alias extends its own canonical; suffix is dropped
+whisper speech recognition,Whisper,alias extends its own canonical; suffix is dropped
+whisper stt,Whisper,alias extends its own canonical; suffix is dropped
+windows os,Windows,alias extends its own canonical; suffix is dropped
+xml sitemap,Sitemap,alias extends 'xml' (XML); suffix is dropped
+yaml file,.yaml,alias extends its own canonical; suffix is dropped
+yaml file,.yml,alias extends 'yaml' (.yaml); suffix is dropped
+yaml file,YAML,alias extends its own canonical; suffix is dropped
+yarn add,Yarn,alias extends its own canonical; suffix is dropped
+yarn build,Yarn,alias extends its own canonical; suffix is dropped
+yarn cli,Yarn,alias extends its own canonical; suffix is dropped
+yarn command,Yarn,alias extends its own canonical; suffix is dropped
+yarn commands,Yarn,alias extends its own canonical; suffix is dropped
+yarn dev,Yarn,alias extends its own canonical; suffix is dropped
+yarn install,Yarn,alias extends its own canonical; suffix is dropped
+yarn javascript package manager,Yarn,alias extends its own canonical; suffix is dropped
+yarn lock,Yarn,alias extends its own canonical; suffix is dropped
+yarn lockfile,Yarn,alias extends its own canonical; suffix is dropped
+yarn package manager,Yarn,alias extends its own canonical; suffix is dropped
+yarn pkg,Yarn,alias extends its own canonical; suffix is dropped
+yarn remove,Yarn,alias extends its own canonical; suffix is dropped
+yarn run,Yarn,alias extends its own canonical; suffix is dropped
+yarn workspace,Yarn,alias extends its own canonical; suffix is dropped
+yarn workspaces,Yarn,alias extends its own canonical; suffix is dropped
+yml file,.yml,alias extends its own canonical; suffix is dropped
+zhipu glm 5.3,GLM-5.3,alias extends 'zhipu glm 5' (GLM-5); suffix is dropped
+zustand js,Zustand,alias extends its own canonical; suffix is dropped
+zustand library,Zustand,alias extends its own canonical; suffix is dropped
+zustand react,Zustand,alias extends its own canonical; suffix is dropped
+zustand state,Zustand,alias extends its own canonical; suffix is dropped
+zustand state management,Zustand,alias extends its own canonical; suffix is dropped
+zustand state manager,Zustand,alias extends its own canonical; suffix is dropped
+zustand store,Zustand,alias extends its own canonical; suffix is dropped

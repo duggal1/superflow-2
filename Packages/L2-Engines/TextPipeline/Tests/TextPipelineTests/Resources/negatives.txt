@@ -1,0 +1,312 @@
+Let's do it next year at the park.
+Let's do it next year at the store.
+Let's do it next year at the office.
+Let's do it next year at the beach.
+Let's do it next year at the museum.
+Let's do it next year at the library.
+Let's do it next year at the station.
+Let's do it next year at the market.
+Let's do it next year at the garden.
+Let's do it next year at the airport.
+Let's do it next year at the river.
+Let's do it next year at the mountain.
+Let's do it next year at the coast.
+Let's do it next year at the village.
+Let's do it next year at the city.
+The cloud over the beach is cheap today.
+The cloud over the museum is cheap today.
+The cloud over the library is cheap today.
+The cloud over the station is cheap today.
+The cloud over the market is cheap today.
+The cloud over the garden is cheap today.
+The cloud over the airport is cheap today.
+The cloud over the river is cheap today.
+The cloud over the mountain is cheap today.
+The cloud over the coast is cheap today.
+The cloud over the village is cheap today.
+The cloud over the city is cheap today.
+The cloud over the farm is cheap today.
+The cloud over the lake is cheap today.
+The cloud over the forest is cheap today.
+Take a quick look at the report.
+Take a quick look at the letter.
+Take a quick look at the email.
+Take a quick look at the garden.
+Take a quick look at the car.
+Take a quick look at the kitchen.
+Take a quick look at the floor.
+Take a quick look at the windows.
+Take a quick look at the curtains.
+Take a quick look at the groceries.
+Take a quick look at the room.
+Take a quick look at the table.
+Take a quick look at the chairs.
+Take a quick look at the sofa.
+Take a quick look at the bed.
+View the letter from the airport.
+View the email from the river.
+View the garden from the mountain.
+View the car from the coast.
+View the kitchen from the village.
+View the floor from the city.
+View the windows from the farm.
+View the curtains from the lake.
+View the groceries from the forest.
+View the room from the island.
+View the table from the valley.
+View the chairs from the park.
+View the sofa from the store.
+View the bed from the office.
+View the door from the beach.
+Chen called me from the coast.
+Priya called me from the village.
+Omar called me from the city.
+Sofia called me from the farm.
+Liam called me from the lake.
+Noah called me from the forest.
+Emma called me from the island.
+Olivia called me from the valley.
+Mateo called me from the park.
+Ava called me from the store.
+Ethan called me from the office.
+Mia called me from the beach.
+Lucas called me from the museum.
+Zara called me from the library.
+Hugo called me from the station.
+I go to the farm.
+I go to the lake.
+I go to the forest.
+I go to the island.
+I go to the valley.
+I go to the park.
+I go to the store.
+I go to the office.
+I go to the beach.
+I go to the museum.
+I go to the library.
+I go to the station.
+I go to the market.
+I go to the garden.
+I go to the airport.
+Render the fat slowly in the car.
+Render the fat slowly in the kitchen.
+Render the fat slowly in the floor.
+Render the fat slowly in the windows.
+Render the fat slowly in the curtains.
+Render the fat slowly in the groceries.
+Render the fat slowly in the room.
+Render the fat slowly in the table.
+Render the fat slowly in the chairs.
+Render the fat slowly in the sofa.
+Render the fat slowly in the bed.
+Render the fat slowly in the door.
+Render the fat slowly in the hallway.
+Render the fat slowly in the balcony.
+Render the fat slowly in the laundry.
+The queen arrived at the store.
+The queen arrived at the office.
+The queen arrived at the beach.
+The queen arrived at the museum.
+The queen arrived at the library.
+The queen arrived at the station.
+The queen arrived at the market.
+The queen arrived at the garden.
+The queen arrived at the airport.
+The queen arrived at the river.
+The queen arrived at the mountain.
+The queen arrived at the coast.
+The queen arrived at the village.
+The queen arrived at the city.
+The queen arrived at the farm.
+Tech stocks fell after the news from the museum.
+Tech stocks fell after the news from the library.
+Tech stocks fell after the news from the station.
+Tech stocks fell after the news from the market.
+Tech stocks fell after the news from the garden.
+Tech stocks fell after the news from the airport.
+Tech stocks fell after the news from the river.
+Tech stocks fell after the news from the mountain.
+Tech stocks fell after the news from the coast.
+Tech stocks fell after the news from the village.
+Tech stocks fell after the news from the city.
+Tech stocks fell after the news from the farm.
+Tech stocks fell after the news from the lake.
+Tech stocks fell after the news from the forest.
+Tech stocks fell after the news from the island.
+Spring is here at the market.
+Spring is here at the garden.
+Spring is here at the airport.
+Spring is here at the river.
+Spring is here at the mountain.
+Spring is here at the coast.
+Spring is here at the village.
+Spring is here at the city.
+Spring is here at the farm.
+Spring is here at the lake.
+Spring is here at the forest.
+Spring is here at the island.
+Spring is here at the valley.
+Spring is here at the park.
+Spring is here at the store.
+It's drizzling outside the river.
+It's drizzling outside the mountain.
+It's drizzling outside the coast.
+It's drizzling outside the village.
+It's drizzling outside the city.
+It's drizzling outside the farm.
+It's drizzling outside the lake.
+It's drizzling outside the forest.
+It's drizzling outside the island.
+It's drizzling outside the valley.
+It's drizzling outside the park.
+It's drizzling outside the store.
+It's drizzling outside the office.
+It's drizzling outside the beach.
+It's drizzling outside the museum.
+Move the cursor to the left of the groceries.
+Move the cursor to the left of the room.
+Move the cursor to the left of the table.
+Move the cursor to the left of the chairs.
+Move the cursor to the left of the sofa.
+Move the cursor to the left of the bed.
+Move the cursor to the left of the door.
+Move the cursor to the left of the hallway.
+Move the cursor to the left of the balcony.
+Move the cursor to the left of the laundry.
+Move the cursor to the left of the dishes.
+Move the cursor to the left of the report.
+Move the cursor to the left of the letter.
+Move the cursor to the left of the email.
+Move the cursor to the left of the garden.
+The oath of office was long at the lake.
+The oath of office was long at the forest.
+The oath of office was long at the island.
+The oath of office was long at the valley.
+The oath of office was long at the park.
+The oath of office was long at the store.
+The oath of office was long at the office.
+The oath of office was long at the beach.
+The oath of office was long at the museum.
+The oath of office was long at the library.
+The oath of office was long at the station.
+The oath of office was long at the market.
+The oath of office was long at the garden.
+The oath of office was long at the airport.
+The oath of office was long at the river.
+Jot this down on the table.
+Jot this down on the chairs.
+Jot this down on the sofa.
+Jot this down on the bed.
+Jot this down on the door.
+Jot this down on the hallway.
+Jot this down on the balcony.
+Jot this down on the laundry.
+Jot this down on the dishes.
+Jot this down on the report.
+Jot this down on the letter.
+Jot this down on the email.
+Jot this down on the garden.
+Jot this down on the car.
+Jot this down on the kitchen.
+We flew to Tokyo from the office.
+We flew to Tokyo from the beach.
+We flew to Tokyo from the museum.
+We flew to Tokyo from the library.
+We flew to Tokyo from the station.
+We flew to Tokyo from the market.
+We flew to Tokyo from the garden.
+We flew to Tokyo from the airport.
+We flew to Tokyo from the river.
+We flew to Tokyo from the mountain.
+We flew to Tokyo from the coast.
+We flew to Tokyo from the village.
+We flew to Tokyo from the city.
+We flew to Tokyo from the farm.
+We flew to Tokyo from the lake.
+The sequel was better than the sofa.
+The sequel was better than the bed.
+The sequel was better than the door.
+The sequel was better than the hallway.
+The sequel was better than the balcony.
+The sequel was better than the laundry.
+The sequel was better than the dishes.
+The sequel was better than the report.
+The sequel was better than the letter.
+The sequel was better than the email.
+The sequel was better than the garden.
+The sequel was better than the car.
+The sequel was better than the kitchen.
+The sequel was better than the floor.
+The sequel was better than the windows.
+Dry the bed before the garden.
+Dry the door before the airport.
+Dry the hallway before the river.
+Dry the balcony before the mountain.
+Dry the laundry before the coast.
+Dry the dishes before the village.
+Dry the report before the city.
+Dry the letter before the farm.
+Dry the email before the lake.
+Dry the garden before the forest.
+Dry the car before the island.
+Dry the kitchen before the valley.
+Dry the floor before the park.
+Dry the windows before the store.
+Dry the curtains before the office.
+That's a solid plan for the mountain.
+That's a solid plan for the coast.
+That's a solid plan for the village.
+That's a solid plan for the city.
+That's a solid plan for the farm.
+That's a solid plan for the lake.
+That's a solid plan for the forest.
+That's a solid plan for the island.
+That's a solid plan for the valley.
+That's a solid plan for the park.
+That's a solid plan for the store.
+That's a solid plan for the office.
+That's a solid plan for the beach.
+That's a solid plan for the museum.
+That's a solid plan for the library.
+Express delivery arrived at the city.
+Express delivery arrived at the farm.
+Express delivery arrived at the lake.
+Express delivery arrived at the forest.
+Express delivery arrived at the island.
+Express delivery arrived at the valley.
+Express delivery arrived at the park.
+Express delivery arrived at the store.
+Express delivery arrived at the office.
+Express delivery arrived at the beach.
+Express delivery arrived at the museum.
+Express delivery arrived at the library.
+Express delivery arrived at the station.
+Express delivery arrived at the market.
+Express delivery arrived at the garden.
+There is a node in the graph near the forest.
+There is a node in the graph near the island.
+There is a node in the graph near the valley.
+There is a node in the graph near the park.
+There is a node in the graph near the store.
+There is a node in the graph near the office.
+There is a node in the graph near the beach.
+There is a node in the graph near the museum.
+There is a node in the graph near the library.
+There is a node in the graph near the station.
+There is a node in the graph near the market.
+There is a node in the graph near the garden.
+There is a node in the graph near the airport.
+There is a node in the graph near the river.
+There is a node in the graph near the mountain.
+Use textract to parse the PDF.
+AWS Textract can read the scanned document.
+Cloud storage is cheap.
+Cloud code is a Google product.
+The cursor is a blinking line.
+A node in the graph has no children.
+The dry cleaner lost my shirt.
+The spring in the mattress broke.
+A quick fox jumped over the fence.
+Jason's report is on the table.
+The queen's oath was long.
+Render the image at full resolution.

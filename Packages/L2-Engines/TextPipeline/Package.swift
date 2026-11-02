@@ -18,6 +18,7 @@ let package = Package(
         .package(path: "../../L2-Engines/TextCleanup"),
         .package(path: "../../L2-Engines/TextGrammarGate"),
         .package(path: "../../L2-Engines/TextLineFormat"),
+        .package(path: "../../L2-Engines/catalog"),
     ],
     targets: [
         .target(
@@ -34,6 +35,7 @@ let package = Package(
                 .product(name: "SuperflowTextCleanup", package: "TextCleanup"),
                 .product(name: "SuperflowTextGrammarGate", package: "TextGrammarGate"),
                 .product(name: "SuperflowTextLineFormat", package: "TextLineFormat"),
+                .product(name: "SuperflowTechDictionary", package: "catalog"),
             ]
         ),
         .testTarget(
@@ -51,9 +53,11 @@ let package = Package(
                 .product(name: "SuperflowTextCleanup", package: "TextCleanup"),
                 .product(name: "SuperflowTextGrammarGate", package: "TextGrammarGate"),
                 .product(name: "SuperflowTextLineFormat", package: "TextLineFormat"),
+                .product(name: "SuperflowTechDictionary", package: "catalog"),
                 .product(name: "SuperflowTestKit", package: "TestKit"),
             ],
-            path: "Tests/TextPipelineTests"
+            path: "Tests/TextPipelineTests",
+            resources: [.copy("Resources")]
         ),
     ],
     swiftLanguageModes: [.v6]

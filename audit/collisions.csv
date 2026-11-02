@@ -1,0 +1,119 @@
+alias,canonical,other_canonicals
+asus expect center,ASUS ExpertCenter,ASUS ExpertCenter Pro ET900N G3
+asus expect center,ASUS ExpertCenter Pro ET900N G3,ASUS ExpertCenter
+asus expertcenter,ASUS ExpertCenter Pro ET900N G3,ASUS ExpertCenter
+automatic speech recognition,ASR,STT
+automatic speech recognition,STT,ASR
+bash,bash,.bash
+bearer token,Access Token,Bearer Token
+bearer token,Bearer Token,Access Token
+code review,Code Review,code review
+code review,code review,Code Review
+code-review,Code Review,code review
+cpp,C++,.cpp
+css,CSS,.css
+custom elements,Custom Element,Web Components
+custom elements,Web Components,Custom Element
+database query,Query,SQL
+database query,SQL,Query
+docker container,Container,Docker
+docker container,Docker,Container
+docker container,Docker,Container
+dockerfile,Docker,Dockerfile
+dockerfile,Dockerfile,Docker
+go,Go,.go
+go lang,Go,Golang
+go lang,Golang,Go
+go language,Go,Golang
+go language,Golang,Go
+go-lang,Golang,Go
+golang,Go,Golang
+golang,Golang,Go
+html,HTML,.html
+hugging face transformers,Hugging Face,Transformers
+hugging face transformers,Transformers,Hugging Face
+java,Java,.java
+js,JavaScript,.js
+json,JSON,.json
+json web token,JWT,JWT Token
+json web token,JWT Token,JWT
+jsx,JSX,.jsx
+markdown file,.md,Markdown
+markdown file,Markdown,.md
+md,Markdown,.md
+mdx,MDX,.mdx
+motion for react,Motion,Motion (Previously framer-motion)
+motion for react,Motion (Previously framer-motion),Motion
+motion library,Framer Motion,Motion
+motion library,Motion,Framer Motion
+motion react,Framer Motion,Motion
+motion react,Motion,Framer Motion
+n p m install,npm,npm install
+n p m install,npm install,npm
+nest js,NestJS,Next.js
+nest js,Next.js,NestJS
+npm dependency,Dependency,npm
+npm dependency,npm,Dependency
+npm install,npm,npm install
+npm install,npm install,npm
+npm package,Package,npm
+npm package,npm,Package
+npm run dev,npm,npm run dev
+npm run dev,npm run dev,npm
+p n p m install,pnpm,pnpm install
+p n p m install,pnpm install,pnpm
+php,PHP,.php
+pnpm install,pnpm,pnpm install
+pnpm install,pnpm install,pnpm
+prettier formatter,Formatter,Prettier
+prettier formatter,Prettier,Formatter
+pull req,Pull Request,pull request
+pull req,pull request,Pull Request
+pull request,Pull Request,pull request
+pull request,pull request,Pull Request
+pull-request,Pull Request,pull request
+react server component,React Server Components,Server Component
+react server component,Server Component,React Server Components
+redis cache,Caching,Redis
+redis cache,Redis,Caching
+sass css,SCSS,Sass
+sass css,Sass,SCSS
+scss,SCSS,.scss
+sql,SQL,.sql
+sql query,Query,SQL
+sql query,SQL,Query
+swift,Swift,.swift
+t s c,TypeScript Compiler,tsc
+t s c,tsc,TypeScript Compiler
+throttling,Rate Limiting,Throttle
+throttling,Throttle,Rate Limiting
+tokenizer,Tokenization,Tokenizer
+tokenizer,Tokenizer,Tokenization
+toml,TOML,.toml
+transformers,Transformer,Transformers
+tsc,TypeScript Compiler,tsc
+tsc,tsc,TypeScript Compiler
+tsx,TSX,.tsx
+typescript compiler,Compiler,TypeScript Compiler; tsc
+typescript compiler,TypeScript Compiler,Compiler; tsc
+typescript compiler,tsc,Compiler; TypeScript Compiler
+typescript jsx,.tsx,TSX
+typescript jsx,TSX,.tsx
+vite dev server,Vite,Vite Dev Server
+vite dev server,Vite Dev Server,Vite
+vite development server,Vite,Vite Dev Server
+vite development server,Vite Dev Server,Vite
+w a s m,WASM,WebAssembly
+w a s m,WebAssembly,WASM
+wasm,WASM,WebAssembly
+wasm,WebAssembly,WASM
+web assembly,WASM,WebAssembly
+web assembly,WebAssembly,WASM
+web socket,WebSocket,WebSockets
+web socket,WebSockets,WebSocket
+xml,XML,.xml
+yaml,YAML,.yaml
+yaml file,.yaml,.yml; YAML
+yaml file,.yml,.yaml; YAML
+yaml file,YAML,.yaml; .yml
+zsh,zsh,.zsh

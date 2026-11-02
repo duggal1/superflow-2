@@ -1,0 +1,593 @@
+canonical,alias,reason
+Embedding,,ordinary English / generic CS concept
+Vector Database,,ordinary English / generic CS concept
+Monorepo,,ordinary English / generic CS concept
+MVC,,ordinary English / generic CS concept
+MVVM,,ordinary English / generic CS concept
+TDD,,ordinary English / generic CS concept
+BDD,,ordinary English / generic CS concept
+SOLID,,ordinary English / generic CS concept
+DRY,,ordinary English / generic CS concept
+KISS,,ordinary English / generic CS concept
+YAGNI,,ordinary English / generic CS concept
+CRUD,,ordinary English / generic CS concept
+Microservices,,ordinary English / generic CS concept
+Serverless,,ordinary English / generic CS concept
+Container,,ordinary English / generic CS concept
+Kubernetes Pod,,ordinary English / generic CS concept
+Kubernetes Deployment,,ordinary English / generic CS concept
+Kubernetes Service,,ordinary English / generic CS concept
+Ingress,,ordinary English / generic CS concept
+JWT Token,,ordinary English / generic CS concept
+Access Token,,ordinary English / generic CS concept
+Refresh Token,,ordinary English / generic CS concept
+Bearer Token,,ordinary English / generic CS concept
+Rate Limiting,,ordinary English / generic CS concept
+Load Balancer,,ordinary English / generic CS concept
+Reverse Proxy,,ordinary English / generic CS concept
+Caching,,ordinary English / generic CS concept
+Memoization,,ordinary English / generic CS concept
+Debounce,,ordinary English / generic CS concept
+Throttle,,ordinary English / generic CS concept
+Promise,,ordinary English / generic CS concept
+Async Await,,ordinary English / generic CS concept
+Callback,,ordinary English / generic CS concept
+Closure,,ordinary English / generic CS concept
+Hoisting,,ordinary English / generic CS concept
+Destructuring,,ordinary English / generic CS concept
+Spread Operator,,ordinary English / generic CS concept
+Optional Chaining,,ordinary English / generic CS concept
+Nullish Coalescing,,ordinary English / generic CS concept
+Generics,,ordinary English / generic CS concept
+Interface,,ordinary English / generic CS concept
+Type Alias,,ordinary English / generic CS concept
+Union Type,,ordinary English / generic CS concept
+Intersection Type,,ordinary English / generic CS concept
+Type Guard,,ordinary English / generic CS concept
+Type Inference,,ordinary English / generic CS concept
+Generative AI,,ordinary English / generic CS concept
+Machine Learning,,ordinary English / generic CS concept
+Deep Learning,,ordinary English / generic CS concept
+Neural Network,,ordinary English / generic CS concept
+Transformer,,ordinary English / generic CS concept
+Attention,,ordinary English / generic CS concept
+Fine-tuning,,ordinary English / generic CS concept
+Quantization,,ordinary English / generic CS concept
+Inference,,ordinary English / generic CS concept
+Prompt Engineering,,ordinary English / generic CS concept
+Context Window,,ordinary English / generic CS concept
+Tokenization,,ordinary English / generic CS concept
+Tokenizer,,ordinary English / generic CS concept
+.ts,,"junk, extension or personal entry"
+.tsx,,"junk, extension or personal entry"
+.js,,"junk, extension or personal entry"
+.jsx,,"junk, extension or personal entry"
+.mjs,,"junk, extension or personal entry"
+.cjs,,"junk, extension or personal entry"
+.env,,"junk, extension or personal entry"
+.env.local,,"junk, extension or personal entry"
+.gitignore,,"junk, extension or personal entry"
+.npmrc,,"junk, extension or personal entry"
+.yml,,"junk, extension or personal entry"
+.md,,"junk, extension or personal entry"
+.svg,,"junk, extension or personal entry"
+.csv,,"junk, extension or personal entry"
+Git branch,,ordinary English / generic CS concept
+Git commit,,ordinary English / generic CS concept
+Git merge,,ordinary English / generic CS concept
+Git rebase,,ordinary English / generic CS concept
+Git stash,,ordinary English / generic CS concept
+Issue,,ordinary English / generic CS concept
+Branch Protection,,ordinary English / generic CS concept
+Environment Variable,,ordinary English / generic CS concept
+Secret,,ordinary English / generic CS concept
+API Key,,ordinary English / generic CS concept
+Database Migration,,ordinary English / generic CS concept
+Database Schema,,ordinary English / generic CS concept
+Primary Key,,ordinary English / generic CS concept
+Foreign Key,,ordinary English / generic CS concept
+Index,,ordinary English / generic CS concept
+Transaction,,ordinary English / generic CS concept
+Connection Pool,,ordinary English / generic CS concept
+Query,,ordinary English / generic CS concept
+Mutation,,ordinary English / generic CS concept
+Middleware,,ordinary English / generic CS concept
+Controller,,ordinary English / generic CS concept
+Repository,,ordinary English / generic CS concept
+Service Layer,,ordinary English / generic CS concept
+Dependency Injection,,ordinary English / generic CS concept
+Dependency,,ordinary English / generic CS concept
+Package,,ordinary English / generic CS concept
+Library,,ordinary English / generic CS concept
+Framework,,ordinary English / generic CS concept
+Compiler,,ordinary English / generic CS concept
+Bundler,,ordinary English / generic CS concept
+Transpiler,,ordinary English / generic CS concept
+Linter,,ordinary English / generic CS concept
+Formatter,,ordinary English / generic CS concept
+Dependency Graph,,ordinary English / generic CS concept
+Hot Module Replacement,,ordinary English / generic CS concept
+Tree Shaking,,ordinary English / generic CS concept
+Code Splitting,,ordinary English / generic CS concept
+Lazy Loading,,ordinary English / generic CS concept
+Dynamic Import,,ordinary English / generic CS concept
+Server Component,,ordinary English / generic CS concept
+Client Component,,ordinary English / generic CS concept
+Server Action,,ordinary English / generic CS concept
+API Route,,ordinary English / generic CS concept
+Route Handler,,ordinary English / generic CS concept
+Hydration,,ordinary English / generic CS concept
+Hydration Mismatch,,ordinary English / generic CS concept
+Virtual DOM,,ordinary English / generic CS concept
+Shadow DOM,,ordinary English / generic CS concept
+Web Components,,ordinary English / generic CS concept
+Custom Element,,ordinary English / generic CS concept
+Accessibility,,ordinary English / generic CS concept
+Open Graph,,ordinary English / generic CS concept
+Meta Tags,,ordinary English / generic CS concept
+Canonical URL,,ordinary English / generic CS concept
+Sitemap,,ordinary English / generic CS concept
+HTML Tag,,ordinary English / generic CS concept
+div,,bare HTML tag
+span,,bare HTML tag
+section,,bare HTML tag
+article,,bare HTML tag
+header,,bare HTML tag
+footer,,bare HTML tag
+main,,bare HTML tag
+nav,,bare HTML tag
+button,,bare HTML tag
+input,,bare HTML tag
+textarea,,bare HTML tag
+form,,bare HTML tag
+label,,bare HTML tag
+select,,bare HTML tag
+option,,bare HTML tag
+table,,bare HTML tag
+thead,,bare HTML tag
+tbody,,bare HTML tag
+tfoot,,bare HTML tag
+tr,,bare HTML tag
+td,,bare HTML tag
+th,,bare HTML tag
+ul,,bare HTML tag
+ol,,bare HTML tag
+li,,bare HTML tag
+pre,,bare HTML tag
+code,,bare HTML tag
+blockquote,,bare HTML tag
+Markdown Heading,,ordinary English / generic CS concept
+Markdown Link,,ordinary English / generic CS concept
+Markdown Code Fence,,ordinary English / generic CS concept
+Backtick,,ordinary English / generic CS concept
+CamelCase,,ordinary English / generic CS concept
+PascalCase,,ordinary English / generic CS concept
+snake_case,,ordinary English / generic CS concept
+kebab-case,,ordinary English / generic CS concept
+SCREAMING_SNAKE_CASE,,ordinary English / generic CS concept
+port,,ordinary English / generic CS concept
+port 3000,,ordinary English / generic CS concept
+port 5173,,ordinary English / generic CS concept
+port 1420,,ordinary English / generic CS concept
+React Server Components,,ordinary English / generic CS concept
+React Hooks,,ordinary English / generic CS concept
+getUserById,,"junk, extension or personal entry"
+fileName,,"junk, extension or personal entry"
+SuperflowPanel,,"junk, extension or personal entry"
+Context API,,ordinary English / generic CS concept
+TypeScript Compiler,,ordinary English / generic CS concept
+git push,,ordinary English / generic CS concept
+git pull,,ordinary English / generic CS concept
+git clone,,ordinary English / generic CS concept
+git fetch,,ordinary English / generic CS concept
+git checkout,,ordinary English / generic CS concept
+git switch,,ordinary English / generic CS concept
+git log,,ordinary English / generic CS concept
+git diff,,ordinary English / generic CS concept
+git status,,ordinary English / generic CS concept
+git reset,,ordinary English / generic CS concept
+git cherry-pick,,ordinary English / generic CS concept
+/,,"junk, extension or personal entry"
+.rs,,"junk, extension or personal entry"
+.py,,"junk, extension or personal entry"
+.rb,,"junk, extension or personal entry"
+.kt,,"junk, extension or personal entry"
+.kts,,"junk, extension or personal entry"
+.cs,,"junk, extension or personal entry"
+.cpp,,"junk, extension or personal entry"
+.cc,,"junk, extension or personal entry"
+.h,,"junk, extension or personal entry"
+.hpp,,"junk, extension or personal entry"
+.txt,,"junk, extension or personal entry"
+.less,,"junk, extension or personal entry"
+.htm,,"junk, extension or personal entry"
+.ini,,"junk, extension or personal entry"
+.cfg,,"junk, extension or personal entry"
+.conf,,"junk, extension or personal entry"
+.sh,,"junk, extension or personal entry"
+.lock,,"junk, extension or personal entry"
+rounded-2xl,,"junk, extension or personal entry"
+Pull Request,,ordinary English / generic CS concept
+Code Review,,ordinary English / generic CS concept
+Next.js,next js framework,destructive suffix alias
+Astro,astro framework,destructive suffix alias
+Astro,astro web framework,destructive suffix alias
+Astro,astro javascript framework,destructive suffix alias
+Astro,astro site framework,destructive suffix alias
+Astro,astro static site framework,destructive suffix alias
+Astro,astro project,destructive suffix alias
+Astro,astro web app,destructive suffix alias
+Vanilla JavaScript,vanilla javascript app,destructive suffix alias
+Vanilla JavaScript,vanilla javascript project,destructive suffix alias
+Svelte,svelte framework,destructive suffix alias
+Svelte,svelte web framework,destructive suffix alias
+Svelte,svelte app,destructive suffix alias
+Svelte,svelte project,destructive suffix alias
+SvelteKit,sveltekit framework,destructive suffix alias
+Nuxt,nuxt framework,destructive suffix alias
+Nuxt,nuxt vue framework,destructive suffix alias
+Nuxt,nuxt web framework,destructive suffix alias
+Nuxt,nuxt app,destructive suffix alias
+Nuxt,nuxt project,destructive suffix alias
+Remix,remix framework,destructive suffix alias
+Remix,remix web framework,destructive suffix alias
+Remix,remix react framework,destructive suffix alias
+Remix,remix app,destructive suffix alias
+Remix,remix project,destructive suffix alias
+Remix,remix javascript framework,destructive suffix alias
+Remix,remix full stack framework,destructive suffix alias
+SolidJS,solidjs framework,destructive suffix alias
+Qwik,qwik framework,destructive suffix alias
+Qwik,qwik web framework,destructive suffix alias
+Qwik,qwik app,destructive suffix alias
+Qwik,qwik project,destructive suffix alias
+Qwik,qwik web app,destructive suffix alias
+Angular,angular framework,destructive suffix alias
+Angular,angular web framework,destructive suffix alias
+Angular,angular typescript framework,destructive suffix alias
+Angular,angular app,destructive suffix alias
+Angular,angular project,destructive suffix alias
+Angular,angular frontend framework,destructive suffix alias
+Vue,vue framework,destructive suffix alias
+Vue,vue web framework,destructive suffix alias
+Vue,vue app,destructive suffix alias
+Vue,vue project,destructive suffix alias
+Gatsby,gatsby framework,destructive suffix alias
+Gatsby,gatsby react framework,destructive suffix alias
+Gatsby,gatsby site framework,destructive suffix alias
+Gatsby,gatsby static site framework,destructive suffix alias
+Gatsby,gatsby app,destructive suffix alias
+Gatsby,gatsby project,destructive suffix alias
+Vite,vite framework,destructive suffix alias
+Vite,vite app,destructive suffix alias
+Vite,vite project,destructive suffix alias
+Vite,vite react app,destructive suffix alias
+Vite,vite development server,destructive suffix alias
+Vite,vite dev server,destructive suffix alias
+Vite,vite react,destructive suffix alias
+React,react framework,destructive suffix alias
+React,react library,destructive suffix alias
+React DOM,react dom library,destructive suffix alias
+Tailwind Merge,tailwind merge library,destructive suffix alias
+Tailwind Variants,tailwind variants library,destructive suffix alias
+Fastify,fastify server,destructive suffix alias
+Hono,hono framework,destructive suffix alias
+SWC,s double u c,wrong-direction acronym expansion
+ESLint,eslint config,destructive suffix alias
+ESLint,eslint flat config,destructive suffix alias
+Prettier,prettier code formatter,destructive suffix alias
+SCSS,scss file,destructive suffix alias
+TanStack Query,tanstack query library,destructive suffix alias
+TanStack Query,tanstack query react,destructive suffix alias
+Zustand,zustand react,destructive suffix alias
+Zustand,zustand library,destructive suffix alias
+React Hook Form,react hook form library,destructive suffix alias
+Vitest,vitest framework,destructive suffix alias
+Testing Library,testing library react,destructive suffix alias
+Figma,figma file,destructive suffix alias
+Framer Motion,framer motion react,destructive suffix alias
+DeepSeek,deepseek ai,destructive suffix alias
+DeepSeek,deepseek model,destructive suffix alias
+DeepSeek,deepseek coder,destructive suffix alias
+DeepSeek,deepseek coding model,destructive suffix alias
+DeepSeek,deepseek r1,destructive suffix alias
+DeepSeek,deepseek v3,destructive suffix alias
+Qwen,qwen ai,destructive suffix alias
+Qwen,qwen model,destructive suffix alias
+Qwen,qwen coder,destructive suffix alias
+Qwen,qwen coding model,destructive suffix alias
+Qwen,qwen code,destructive suffix alias
+Qwen,qwen coder model,destructive suffix alias
+Qwen,qwen code model,destructive suffix alias
+Qwen,qwen 3,destructive suffix alias
+Qwen,qwen 3 235b,destructive suffix alias
+Qwen,qwen 3 235 b,destructive suffix alias
+GPT-5,g p t five,wrong-direction acronym expansion
+GPT-5,gee pee tee five,wrong-direction acronym expansion
+GPT-5,openai gpt 5,wrong-direction acronym expansion
+GPT-5,open ai gpt 5,wrong-direction acronym expansion
+GPT-5,openai gpt five,wrong-direction acronym expansion
+GPT-5,open ai gpt five,wrong-direction acronym expansion
+GPT-5,gpt five model,wrong-direction acronym expansion
+GPT-5,gpt 5 model,wrong-direction acronym expansion
+GPT-5,gpt five ai,wrong-direction acronym expansion
+GPT-5,gpt 5 ai,wrong-direction acronym expansion
+Transformers,transformers library,destructive suffix alias
+Transformers,transformers model library,destructive suffix alias
+Transformers,transformers framework,destructive suffix alias
+PyTorch,pytorch framework,destructive suffix alias
+PyTorch,pytorch library,destructive suffix alias
+PyTorch,pytorch model,destructive suffix alias
+Drizzle ORM,drizzle orm library,destructive suffix alias
+Tauri,tauri app,destructive suffix alias
+Tauri,tauri desktop,destructive suffix alias
+Tauri,tauri desktop app,destructive suffix alias
+Tauri,tauri framework,destructive suffix alias
+Tauri,tauri rust,destructive suffix alias
+Tauri,tauri rust app,destructive suffix alias
+Tauri,tauri rust desktop,destructive suffix alias
+Tauri,tauri v2,destructive suffix alias
+Tauri,tauri v 2,destructive suffix alias
+npm,npm cli,destructive suffix alias
+Yarn,yarn cli,destructive suffix alias
+Nginx,nginx server,destructive suffix alias
+Nginx,nginx web server,destructive suffix alias
+Nginx,nginx config,destructive suffix alias
+Sentry,sentry react,destructive suffix alias
+Claude,claude ai,destructive suffix alias
+Claude,claude model,destructive suffix alias
+Claude,claude code,destructive suffix alias
+Claude,claude coding model,destructive suffix alias
+Gemini,gemini ai,destructive suffix alias
+Gemini,gemini model,destructive suffix alias
+Gemini,gemini coding model,destructive suffix alias
+Gemini,gemini pro model,destructive suffix alias
+Gemini,gemini flash model,destructive suffix alias
+Llama,llama model,destructive suffix alias
+Llama,llama ai,destructive suffix alias
+Llama,llama language model,destructive suffix alias
+Llama,llama coder,destructive suffix alias
+Llama,llama three model,destructive suffix alias
+Llama,llama 3 model,destructive suffix alias
+Llama,llama four model,destructive suffix alias
+Llama,llama 4 model,destructive suffix alias
+Mistral,mistral ai,destructive suffix alias
+Mistral,mistral model,destructive suffix alias
+Mistral,mistral language model,destructive suffix alias
+Mistral,mistral coder,destructive suffix alias
+Mistral,mistral code model,destructive suffix alias
+WASM,w a s m runtime,wrong-direction acronym expansion
+Expo,expo react native,destructive suffix alias
+Expo,expo cli,destructive suffix alias
+Electron,electron framework,destructive suffix alias
+Electron,electron desktop,destructive suffix alias
+tRPC,trpc api,destructive suffix alias
+tRPC,trpc server,destructive suffix alias
+GraphQL,graphql api,destructive suffix alias
+GraphQL,graphql server,destructive suffix alias
+GraphQL Yoga,graphql yoga server,destructive suffix alias
+API,a p i endpoint,wrong-direction acronym expansion
+API,application programming interface,wrong-direction acronym expansion
+SDK,software development kit,wrong-direction acronym expansion
+SDK,sdk library,destructive suffix alias
+CLI,command line interface,wrong-direction acronym expansion
+gRPC,grpc server,destructive suffix alias
+Swagger,swagger api,destructive suffix alias
+JSON,javascript object notation,wrong-direction acronym expansion
+JSON,dot j son,wrong-direction acronym expansion
+JSON,json file,destructive suffix alias
+YAML,yaml file,destructive suffix alias
+YAML,yaml file,destructive suffix alias
+YAML,yam l file,wrong-direction acronym expansion
+TOML,toml config,destructive suffix alias
+TOML,toml file,destructive suffix alias
+TOML,tom mel file,wrong-direction acronym expansion
+XML,extensible markup language,wrong-direction acronym expansion
+HTML,h t m l five,wrong-direction acronym expansion
+HTML,hyper text markup language,wrong-direction acronym expansion
+HTML,html file,destructive suffix alias
+HTML,h t m l file,wrong-direction acronym expansion
+CSS,see ess ess,wrong-direction acronym expansion
+CSS,cascading style sheets,wrong-direction acronym expansion
+CSS,css file,destructive suffix alias
+SQL,sql file,destructive suffix alias
+Mongoose,mongoose library,destructive suffix alias
+ORM,object relational mapping,wrong-direction acronym expansion
+ORM,object relational mapper,wrong-direction acronym expansion
+ORM,orm library,destructive suffix alias
+AWS,amazon web services,wrong-direction acronym expansion
+AWS,amazon web service,wrong-direction acronym expansion
+GCP,google cloud platform,wrong-direction acronym expansion
+GCP,gee c p,wrong-direction acronym expansion
+EC2,e c two,wrong-direction acronym expansion
+Docker Compose,docker compose file,destructive suffix alias
+Apache,apache server,destructive suffix alias
+Apache,apache http server,destructive suffix alias
+CI/CD,see eye see dee,wrong-direction acronym expansion
+CI/CD,continuous integration continuous deployment,wrong-direction acronym expansion
+CI/CD,continuous integration and deployment,wrong-direction acronym expansion
+Django,django framework,destructive suffix alias
+Flask,flask framework,destructive suffix alias
+Pandas,pandas library,destructive suffix alias
+Axum,axum rust,destructive suffix alias
+Axum,axum framework,destructive suffix alias
+Actix,actix web,destructive suffix alias
+Actix,actix rust,destructive suffix alias
+PHP,pee h p,wrong-direction acronym expansion
+Laravel,laravel framework,destructive suffix alias
+Postman,postman api,destructive suffix alias
+Insomnia,insomnia api,destructive suffix alias
+Stripe,stripe api,destructive suffix alias
+PayPal,paypal api,destructive suffix alias
+Twilio,twilio api,destructive suffix alias
+Anthropic,anthropic ai,destructive suffix alias
+Anthropic,anthropic api,destructive suffix alias
+GPT,gee p tee,wrong-direction acronym expansion
+GPT,g p t model,wrong-direction acronym expansion
+GPT,g p t api,wrong-direction acronym expansion
+GPT-4,g p t four,wrong-direction acronym expansion
+Ollama,ollama ai,destructive suffix alias
+Whisper,whisper ai,destructive suffix alias
+Parakeet,parakeet ai,destructive suffix alias
+RTX 5090,rtx 5 0 9 0,wrong-direction acronym expansion
+RTX 5090,geforce rtx 5090,wrong-direction acronym expansion
+RTX 5090,nvidia rtx 5090,wrong-direction acronym expansion
+RTX 4090,rtx 4 0 9 0,wrong-direction acronym expansion
+RTX 4090,geforce rtx 4090,wrong-direction acronym expansion
+RTX 4090,nvidia rtx 4090,wrong-direction acronym expansion
+RTX 4080,rtx 4 0 8 0,wrong-direction acronym expansion
+RTX 4080,geforce rtx 4080,wrong-direction acronym expansion
+RTX 4080,nvidia rtx 4080,wrong-direction acronym expansion
+RTX 3090,rtx 3 0 9 0,wrong-direction acronym expansion
+RTX 3090,geforce rtx 3090,wrong-direction acronym expansion
+RTX 3090,nvidia rtx 3090,wrong-direction acronym expansion
+RTX 3080,rtx 3 0 8 0,wrong-direction acronym expansion
+RTX 3080,geforce rtx 3080,wrong-direction acronym expansion
+RTX 3080,nvidia rtx 3080,wrong-direction acronym expansion
+RTX 6000,rtx 6 0 0 0,wrong-direction acronym expansion
+RTX 6000,nvidia rtx 6000,wrong-direction acronym expansion
+RTX 6000,quadro rtx 6000,wrong-direction acronym expansion
+RTX 5000,rtx 5 0 0 0,wrong-direction acronym expansion
+RTX 5000,nvidia rtx 5000,wrong-direction acronym expansion
+RTX 5000,quadro rtx 5000,wrong-direction acronym expansion
+RTX 4000,rtx 4 0 0 0,wrong-direction acronym expansion
+RTX 4000,nvidia rtx 4000,wrong-direction acronym expansion
+RTX 4000,quadro rtx 4000,wrong-direction acronym expansion
+LLM,large language model,wrong-direction acronym expansion
+LLM,large language models,wrong-direction acronym expansion
+STT,speech to text,wrong-direction acronym expansion
+STT,speech-to-text,wrong-direction acronym expansion
+STT,automatic speech recognition,wrong-direction acronym expansion
+TTS,text to speech,wrong-direction acronym expansion
+TTS,text-to-speech,wrong-direction acronym expansion
+ASR,automatic speech recognition,wrong-direction acronym expansion
+ASR,speech recognition model,wrong-direction acronym expansion
+RAG,retrieval augmented generation,wrong-direction acronym expansion
+RAG,retrieval augmented generative,wrong-direction acronym expansion
+JWT,json web token,wrong-direction acronym expansion
+JWT,json web tokens,wrong-direction acronym expansion
+OAuth,oauth 2,destructive suffix alias
+OAuth,oauth 2.0,destructive suffix alias
+OIDC,open id connect,wrong-direction acronym expansion
+HTTP,hypertext transfer protocol,wrong-direction acronym expansion
+HTTPS,h t t p s secure,wrong-direction acronym expansion
+DNS,domain name system,wrong-direction acronym expansion
+DNS,domain name service,wrong-direction acronym expansion
+CDN,content delivery network,wrong-direction acronym expansion
+CDN,content distribution network,wrong-direction acronym expansion
+TCP,transmission control protocol,wrong-direction acronym expansion
+UDP,user datagram protocol,wrong-direction acronym expansion
+Cursor,cursor ai,destructive suffix alias
+Warp,warp cli,destructive suffix alias
+PWA,progressive web app,wrong-direction acronym expansion
+PWA,progressive web application,wrong-direction acronym expansion
+SSR,server side rendering,wrong-direction acronym expansion
+SSR,server-side rendering,wrong-direction acronym expansion
+SSG,static site generation,wrong-direction acronym expansion
+SSG,static site generator,wrong-direction acronym expansion
+ISR,incremental static regeneration,wrong-direction acronym expansion
+CSR,client side rendering,wrong-direction acronym expansion
+CSR,client-side rendering,wrong-direction acronym expansion
+SPA,single page application,wrong-direction acronym expansion
+SPA,single-page application,wrong-direction acronym expansion
+UUID,universal unique identifier,wrong-direction acronym expansion
+URL,uniform resource locator,wrong-direction acronym expansion
+URI,uniform resource identifier,wrong-direction acronym expansion
+CORS,cross origin resource sharing,wrong-direction acronym expansion
+CORS,cross-origin resource sharing,wrong-direction acronym expansion
+CSRF,cross site request forgery,wrong-direction acronym expansion
+CSRF,cross-site request forgery,wrong-direction acronym expansion
+XSS,cross site scripting,wrong-direction acronym expansion
+XSS,cross-site scripting,wrong-direction acronym expansion
+MCP,model context protocol,wrong-direction acronym expansion
+MCP,model context protocol server,wrong-direction acronym expansion
+MCP,model context protocol client,wrong-direction acronym expansion
+IDE,integrated development environment,wrong-direction acronym expansion
+REPL,read eval print loop,wrong-direction acronym expansion
+JSONL,j son l,wrong-direction acronym expansion
+JSONL,json lines format,wrong-direction acronym expansion
+Markdown,markdown file,destructive suffix alias
+MDX,mdx file,destructive suffix alias
+README,read me file,wrong-direction acronym expansion
+README,readme file,destructive suffix alias
+DOM,document object model,wrong-direction acronym expansion
+ARIA,accessible rich internet applications,wrong-direction acronym expansion
+SEO,search engine optimization,wrong-direction acronym expansion
+GPT-5.5,chatgpt 5.5,wrong-direction acronym expansion
+GPT-5.5,gpt five point five,wrong-direction acronym expansion
+GPT-5.5,chatgpt five point five,wrong-direction acronym expansion
+GPT-5.5,gpt five dot five,wrong-direction acronym expansion
+GLM-5.3,glm five point three,wrong-direction acronym expansion
+GLM-5.3,g l m five point three,wrong-direction acronym expansion
+GLM-5.3,gl m 5.3,wrong-direction acronym expansion
+GLM-5.3,zhipu glm 5.3,wrong-direction acronym expansion
+GLM-5,g l m five,wrong-direction acronym expansion
+GLM-5,zhipu glm 5,wrong-direction acronym expansion
+GLM-4.5,glm four point five,wrong-direction acronym expansion
+GLM-4.5,g l m four point five,wrong-direction acronym expansion
+Muse Spark,muse spark model,destructive suffix alias
+GLM-5.2,glm five point two,wrong-direction acronym expansion
+GLM-5.2,gln 5.2,wrong-direction acronym expansion
+GLM-5.2,g l m five point two,wrong-direction acronym expansion
+GLM-5.1,glm five point one,wrong-direction acronym expansion
+GLM-5.1,g l m five point one,wrong-direction acronym expansion
+EVO-X2,evo x 2,wrong-direction acronym expansion
+EVO-X2,evil x 2,wrong-direction acronym expansion
+EVO-X3,evo x 3,wrong-direction acronym expansion
+EVO-X3,evil x 3,wrong-direction acronym expansion
+NVIDIA,n vid ee uh,wrong-direction acronym expansion
+HBM,high bandwidth memory,wrong-direction acronym expansion
+HBM,high-bandwidth memory,wrong-direction acronym expansion
+LPDDR5X,low power ddr5x,wrong-direction acronym expansion
+FP4,floating point 4,wrong-direction acronym expansion
+FP4,4-bit float,wrong-direction acronym expansion
+FP4,floating 0.4,wrong-direction acronym expansion
+NVFP4,nvidia floating point 4,wrong-direction acronym expansion
+AES-256,a e s 256,wrong-direction acronym expansion
+GPU,graphics processing unit,wrong-direction acronym expansion
+CPU,central processing unit,wrong-direction acronym expansion
+APU,accelerated processing unit,wrong-direction acronym expansion
+BF16,b f sixteen,wrong-direction acronym expansion
+BF16,b float sixteen,wrong-direction acronym expansion
+BF16,b f 16,wrong-direction acronym expansion
+INT8,i n t eight,wrong-direction acronym expansion
+FP16,f p sixteen,wrong-direction acronym expansion
+FP16,f p 16,wrong-direction acronym expansion
+FP32,f p thirty two,wrong-direction acronym expansion
+FP32,f p 32,wrong-direction acronym expansion
+FP32,fp thirty two,wrong-direction acronym expansion
+Q5_K_M,q five k m,wrong-direction acronym expansion
+Q6_K,q six k,wrong-direction acronym expansion
+Q4_K_M,q four k m,wrong-direction acronym expansion
+Q4_K_M,q4 underscore k underscore m,wrong-direction acronym expansion
+Q4_K_XL,q four k x l,wrong-direction acronym expansion
+Q4_K_XL,q4 underscore k underscore xl,wrong-direction acronym expansion
+UD-Q4_K_XL,u d q four k x l,wrong-direction acronym expansion
+UD-Q4_K_XL,ug q4k xl,wrong-direction acronym expansion
+IQ2_M,iq two m,wrong-direction acronym expansion
+IQ2_M,iq tower 2ms,wrong-direction acronym expansion
+GLM-4.7,glm four point seven,wrong-direction acronym expansion
+Motion,motion react,destructive suffix alias
+Motion,motion library,destructive suffix alias
+Motion,motion for react,destructive suffix alias
+Motion,motion react library,destructive suffix alias
+Motion,motion animation library,destructive suffix alias
+Motion,motion for react,destructive suffix alias
+Motion,motion one library,destructive suffix alias
+Motion,motion javascript library,destructive suffix alias
+DeepSeek-V4-Flash,deepseek v4 flash model,destructive suffix alias
+GB300,g b 300,wrong-direction acronym expansion
+GB300,gb 300 platform,wrong-direction acronym expansion
+GB300,g b 300,wrong-direction acronym expansion
+GB300,gb three hundred,wrong-direction acronym expansion
+RTX 5080,rtx 5 0 8 0,wrong-direction acronym expansion
+RTX 5080,geforce rtx 5080,wrong-direction acronym expansion
+RTX 5080,nvidia rtx 5080,wrong-direction acronym expansion
+RTX 5080,"rtx 5,080",wrong-direction acronym expansion
+RTX 5080,r t x 5080,wrong-direction acronym expansion
+RTX 5080,"r t x 5,080",wrong-direction acronym expansion
+RTX PRO 6000,rtx pro 6 0 0 0,wrong-direction acronym expansion
+RTX PRO 6000,nvidia rtx pro 6000,wrong-direction acronym expansion
+RTX PRO 6000,rtx professional 6000,wrong-direction acronym expansion
+RTX PRO 6000,"rtx pro 6,000",wrong-direction acronym expansion
+RTX PRO 6000,"pro 6,000",wrong-direction acronym expansion
