@@ -12,6 +12,7 @@ public enum Icon: String, CaseIterable, Sendable {
     case meetings = "person.2.wave.2"
     case settings = "gearshape"
     case models = "brain"
+    case intelligence = "sparkles"
 
     // Actions and state
     case search = "magnifyingglass"

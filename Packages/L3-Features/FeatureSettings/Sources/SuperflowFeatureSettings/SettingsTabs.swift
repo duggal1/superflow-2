@@ -2,6 +2,7 @@ import AppKit
 import SuperflowDesignSystem
 import SuperflowIcons
 import SuperflowKernel
+import SuperflowMeetingIntelligence
 import SuperflowUIComponents
 import SwiftUI
 
@@ -37,16 +38,20 @@ struct GeneralTab: View {
 
 struct DictationTab: View {
     @Environment(\.openModels) private var openModels
-    nonisolated static let titles = ["Speech model", "Clean up with S1-mini", "Noise suppression", "Dictation key",
+    nonisolated static let titles = ["Speech model", "Noise suppression", "Clean up dictation",
+                                     "Reflection cleanup", "Dictation key",
                                      "Show live text", "Hold to talk", "Double-tap window",
                                      "Meeting hold"]
 
     @ObservedObject var model: SettingsViewModel
     let query: String
+    @State private var reflectionKeyConnected = false
+    @State private var reflectionKeyStatus = "Checking API key…"
+    private let reflectionCredentials = ReflectionCredentials()
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.lg) {
-            SettingsCard(titles: Array(Self.titles.prefix(3)), query: query) {
+            SettingsCard(titles: Array(Self.titles.prefix(4)), query: query) {
                 SettingRow(.speechModel, "Speech model", filter: query) {
                     HStack(spacing: 8) {
                         if !model.asrReady {
@@ -69,13 +74,33 @@ struct DictationTab: View {
                         AppToggle("Noise suppression", isOn: $model.settings.speechEnhancementEnabled)
                     }
                 }
-                SettingRow(.cleanup, "Clean up with S1-mini", filter: query) {
+                SettingRow(.cleanup, "Clean up dictation", filter: query) {
                     HStack(spacing: 12) {
-                        if !model.cleanupModelInstalled {
+                        if !model.cleanupModelInstalled && !model.settings.reflectionCleanupEnabled {
                             AppButton("Get model", kind: .quiet, height: 28) { openModels() }
                         }
-                        AppToggle("Clean up with S1-mini", isOn: $model.settings.cleanupEnabled)
-                            .disabled(!model.cleanupModelInstalled)
+                        AppToggle("Clean up dictation", isOn: $model.settings.cleanupEnabled)
+                            .disabled(!model.cleanupModelInstalled && !reflectionKeyConnected && !model.settings.cleanupEnabled)
+                    }
+                }
+                SettingRow(.cleanup, "Reflection cleanup", filter: query) {
+                    VStack(alignment: .trailing, spacing: Space.xs) {
+                        AppToggle("Use Reflection", isOn: Binding(
+                            get: { model.settings.reflectionCleanupEnabled },
+                            set: { enabled in
+                                model.settings.reflectionCleanupEnabled = enabled
+                                if enabled { model.settings.cleanupEnabled = true }
+                            }
+                        ))
+                        .disabled(!reflectionKeyConnected && !model.settings.reflectionCleanupEnabled)
+                        Text(reflectionKeyStatus)
+                            .appType(.caption)
+                            .foregroundStyle(Tok.text2)
+                        if reflectionKeyConnected {
+                            Text("Dictation text is sent to Reflection while enabled.")
+                                .appType(.caption)
+                                .foregroundStyle(Tok.text2)
+                        }
                     }
                 }
             }
@@ -100,6 +125,19 @@ struct DictationTab: View {
                     ms(\.meetingHoldMs, in: SettingsValidation.meetingHoldRange)
                 }
             }
+        }
+        .task { refreshReflectionKeyStatus() }
+    }
+
+    private func refreshReflectionKeyStatus() {
+        do {
+            reflectionKeyConnected = try reflectionCredentials.load()?.isEmpty == false
+            reflectionKeyStatus = reflectionKeyConnected
+                ? "API key connected"
+                : "Add an API key in Intelligence settings"
+        } catch {
+            reflectionKeyConnected = false
+            reflectionKeyStatus = "Couldn't read the API key from Keychain"
         }
     }
 

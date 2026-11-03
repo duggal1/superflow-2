@@ -43,7 +43,6 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
             guard runtime.hopSize == 480, runtime.sampleRate == 48_000 else {
                 throw SuperflowError.modelUnavailable("Unexpected DeepFilterNet 3 streaming format.")
             }
-            for _ in 0..<10 { _ = try runtime.processHop([Float](repeating: 0, count: 480)) }
             runtime.reset()
             streamer = runtime
         }
@@ -53,10 +52,9 @@ public actor DeepFilterNetEnhancer: SpeechEnhancer {
     }
 
     public func begin() async throws {
-        guard await store.isAvailable() else {
-            throw SuperflowError.modelUnavailable("Download DeepFilterNet 3 in Models, or turn off noise suppression in Settings.")
+        guard streamer != nil else {
+            throw SuperflowError.modelUnavailable("Noise suppression is preparing; using the raw microphone for this recording.")
         }
-        try await load()
         await reset()
     }
 

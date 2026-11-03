@@ -71,7 +71,7 @@ final class ModelsViewTests: XCTestCase {
     }
 
     func testSpeechRowNameComesFromTheProfileRegistry() throws {
-        let profile = ModelProfile.parakeetEOU120M
+        let profile = ModelProfile.default
         let vm = ModelsViewModel(asrProfile: profile.id)
         let speech = try XCTUnwrap(vm.items.first { $0.kind == .speech })
         XCTAssertEqual(speech.name, profile.displayName)
@@ -101,6 +101,27 @@ final class ModelsViewTests: XCTestCase {
         XCTAssertTrue(speech.isActive)
         XCTAssertEqual(vm.missingCount, 1)
         XCTAssertFalse(vm.isChecking)
+    }
+
+    func testSpeechRowShowsOtherRuntimeInstallAndTracksTheSelectedRuntime() async throws {
+        let vm = ModelsViewModel(
+            models: FakeModelProvider(asrURL: nil, llmURL: nil),
+            asrModelsByRuntime: [
+                .audioCpp: InstalledASRProvider(installed: true),
+                .sherpaOnnx: InstalledASRProvider(installed: false),
+            ], asrRuntime: .sherpaOnnx)
+
+        await vm.refresh()
+        let sherpaSpeech = try XCTUnwrap(vm.items.first { $0.kind == .speech })
+        XCTAssertEqual(sherpaSpeech.state, .installed)
+        XCTAssertFalse(sherpaSpeech.isActive)
+        XCTAssertTrue(sherpaSpeech.detail.contains("audio.cpp"))
+
+        await vm.updateASRSelection(runtime: .audioCpp, profile: ModelProfile.default.id)
+
+        let fluidSpeech = try XCTUnwrap(vm.items.first { $0.kind == .speech })
+        XCTAssertEqual(fluidSpeech.state, .installed)
+        XCTAssertTrue(fluidSpeech.detail.contains("audio.cpp"))
     }
 
     /// A row offers Download only after the disk has answered, so a page visit

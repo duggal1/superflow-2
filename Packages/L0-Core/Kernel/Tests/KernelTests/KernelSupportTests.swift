@@ -63,6 +63,28 @@ final class KernelSupportTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: encoded), settings)
     }
 
+    func testASRRuntimeDefaultsToAudioCppAndMigratesLegacySettings() throws {
+        let legacy = try JSONDecoder().decode(AppSettings.self, from: Data("{}".utf8))
+        XCTAssertEqual(legacy.asrRuntime, .audioCpp)
+
+        let legacyFluid = try JSONDecoder().decode(
+            AppSettings.self,
+            from: Data(#"{"asrRuntime":"fluidAudio","asrProfile":"parakeet-unified-0.6b"}"#.utf8))
+        XCTAssertEqual(legacyFluid.asrProfile, ModelProfile.default.id)
+
+        let sherpaWithUnsupportedProfile = try JSONDecoder().decode(
+            AppSettings.self,
+            from: Data(#"{"asrRuntime":"sherpaOnnx","asrProfile":"parakeet-unified-0.6b"}"#.utf8))
+        XCTAssertEqual(sherpaWithUnsupportedProfile.asrRuntime, .audioCpp)
+        XCTAssertEqual(sherpaWithUnsupportedProfile.asrProfile, ModelProfile.default.id)
+
+        var settings = legacy
+        settings.asrRuntime = .audioCpp
+        let encoded = try JSONEncoder().encode(settings)
+        XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: encoded).asrRuntime,
+                       .audioCpp)
+    }
+
     /// The dictation key is a stored setting, so an old row without the key must
     /// keep Fn and the choice must survive a save/load cycle.
     func testDictationKeyDefaultsToFnAndRoundTrips() throws {
@@ -125,41 +147,24 @@ final class KernelSupportTests: XCTestCase {
     }
 
     func testModelProfileLookupFallsBackToNemotron35() {
-        XCTAssertEqual(ModelProfile.byID(ModelProfile.parakeetEOU120M.id),
-                       ModelProfile.parakeetEOU120M)
+        XCTAssertEqual(ModelProfile.byID("parakeet-eou-120m"),
+                       ModelProfile.default)
         XCTAssertEqual(ModelProfile.byID("does-not-exist"), .nemotron35Streaming)
         XCTAssertEqual(ModelProfile.default, .nemotron35Streaming)
         XCTAssertEqual(ModelProfile.all.map(\.id), ModelProfile.all.map(\.id).uniqued())
     }
 
     func testBatchProfilesAreNeverSelectableForDictation() {
-        XCTAssertFalse(ModelProfile.streamingProfiles.contains(.parakeetTDTV3))
+        XCTAssertTrue(ModelProfile.streamingProfiles.allSatisfy(\.streaming))
         XCTAssertTrue(ModelProfile.streamingProfiles.contains(.nemotron35Streaming))
     }
 
-    func testNVIDIAProfilesExposeStreamingAndBatchModels() {
-        let ids = Set(ModelProfile.all.map(\.id))
-        XCTAssertTrue(ids.contains(ModelProfile.parakeetUnified.id))
-        XCTAssertTrue(ids.contains(ModelProfile.nemotron35Streaming.id))
-        XCTAssertTrue(ids.contains(ModelProfile.parakeetTDTV3.id))
-        XCTAssertTrue(ModelProfile.all.allSatisfy { $0.vendor == "NVIDIA" })
-        XCTAssertTrue(ModelProfile.all.allSatisfy { $0.upstreamRepo.hasPrefix("nvidia/") })
-
-        XCTAssertEqual(ModelProfile.parakeetUnified.upstreamRepo,
-                       "nvidia/parakeet-unified-en-0.6b")
-        XCTAssertEqual(ModelProfile.nemotron35Streaming.upstreamRepo,
-                       "nvidia/nemotron-3.5-asr-streaming-0.6b")
-        XCTAssertTrue(ModelProfile.parakeetUnified.supportsLiveDictation)
-        XCTAssertTrue(ModelProfile.nemotron35Streaming.supportsLiveDictation)
-        XCTAssertEqual(ModelProfile.parakeetUnified.formatLabel, "Streaming")
-        XCTAssertEqual(ModelProfile.parakeetUnified.latencyLabel, "640 ms chunks")
-
-        XCTAssertFalse(ModelProfile.parakeetTDTV3.streaming)
-        XCTAssertFalse(ModelProfile.parakeetTDTV3.supportsLiveDictation)
-        XCTAssertEqual(ModelProfile.parakeetTDTV3.formatLabel, "Batch")
-        XCTAssertEqual(ModelProfile.parakeetTDTV3.latencyLabel, "15 s windows")
-        XCTAssertEqual(ModelProfile.parakeetTDTV3.upstreamRepo,
-                       "nvidia/parakeet-tdt-0.6b-v3")
+    func testNVIDIAProfilesExposeOnlyTheSupportedStreamingModel() {
+        XCTAssertEqual(ModelProfile.all, [.nemotron35Streaming])
+        XCTAssertEqual(ModelProfile.default.upstreamRepo, "nvidia/nemotron-3.5-asr-streaming-0.6b")
+        XCTAssertTrue(ModelProfile.default.supportsLiveDictation)
+        XCTAssertEqual(ModelProfile.default.formatLabel, "Streaming")
+        XCTAssertEqual(ModelProfile.default.latencyLabel, "320 ms chunks")
     }
 
     func testSuperflowErrorDescriptionsAreUserFacing() {

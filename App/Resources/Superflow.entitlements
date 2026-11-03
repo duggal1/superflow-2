@@ -8,7 +8,7 @@
 	<false/>
 	<key>com.apple.security.device.audio-input</key>
 	<true/>
-	<!-- llama.framework and the FluidAudio artifacts are signed separately (and
+	<!-- llama.framework and the audio.cpp libraries are signed separately (and
 	     locally with an ad-hoc identity), so library validation must be off for
 	     the unsigned local build. A Developer ID build may tighten this. -->
 	<key>com.apple.security.cs.disable-library-validation</key>

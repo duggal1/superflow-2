@@ -36,6 +36,8 @@ public final class SettingsViewModel: ObservableObject {
     private let store: any SettingsStore
     private let models: (any ModelProvider)?
     private let asrModels: (any ASRModelProvider)?
+    private let asrModelsByRuntime: [ASRRuntime: any ASRModelProvider]
+    private let activeASRRuntime: ASRRuntime
     private let diarizer: (any SpeakerDiarizer)?
     private let launchAtLogin: (any LaunchAtLoginController)?
     private let diagnostics: (any DiagnosticsExporting)?
@@ -50,6 +52,8 @@ public final class SettingsViewModel: ObservableObject {
     public init(store: any SettingsStore,
                 models: (any ModelProvider)? = nil,
                 asrModels: (any ASRModelProvider)? = nil,
+                asrModelsByRuntime: [ASRRuntime: any ASRModelProvider] = [:],
+                activeASRRuntime: ASRRuntime = .audioCpp,
                 diarizer: (any SpeakerDiarizer)? = nil,
                 enhancer: (any SpeechEnhancer)? = nil,
                 launchAtLogin: (any LaunchAtLoginController)? = nil,
@@ -63,6 +67,8 @@ public final class SettingsViewModel: ObservableObject {
         self.enhancer = enhancer
         self.models = models
         self.asrModels = asrModels ?? models
+        self.asrModelsByRuntime = asrModelsByRuntime
+        self.activeASRRuntime = activeASRRuntime
         self.diarizer = diarizer
         self.launchAtLogin = launchAtLogin
         self.diagnostics = diagnostics
@@ -80,13 +86,23 @@ public final class SettingsViewModel: ObservableObject {
     public var isValid: Bool { issues.isEmpty }
     public var hasChanges: Bool { settings != saved }
     public var canSave: Bool { hasChanges && isValid }
+    public var runtimeRequiresRestart: Bool { settings.asrRuntime != activeASRRuntime }
+    public var runtimeRestartMessage: String? {
+        guard runtimeRequiresRestart else { return nil }
+        return saved.asrRuntime == settings.asrRuntime
+            ? "Restart Superflow to apply."
+            : "Save and restart Superflow to apply."
+    }
     public var launchAtLoginAvailable: Bool { launchAtLogin != nil }
     public var diagnosticsAvailable: Bool { diagnostics != nil }
 
     public var profile: ModelProfile { ModelProfile.byID(settings.asrProfile) }
     /// Streaming only, default first. Dictation has no batch path.
     public var profileOptions: [String] {
-        ModelProfile.streamingProfiles
+        let compatible = settings.asrRuntime == .sherpaOnnx
+            ? [ModelProfile.default]
+            : ModelProfile.streamingProfiles
+        return compatible
             .sorted { lhs, rhs in
                 if lhs.id == ModelProfile.default.id { return true }
                 if rhs.id == ModelProfile.default.id { return false }
@@ -125,12 +141,26 @@ public final class SettingsViewModel: ObservableObject {
     public func setProfile(_ id: String) {
         guard settings.asrProfile != id else { return }
         let candidate = ModelProfile.byID(id)
-        guard candidate.supportsLiveDictation else {
+        guard candidate.id == id, candidate.supportsLiveDictation else {
             toast.show("\(candidate.displayName) is batch-only and cannot be used for live dictation.",
                        style: .warning)
             return
         }
+        guard settings.asrRuntime == .audioCpp || id == ModelProfile.default.id else {
+            toast.show("sherpa-onnx currently supports Nemotron 3.5 Streaming.", style: .warning)
+            return
+        }
         settings.asrProfile = id
+        Task { await refreshModelState() }
+    }
+
+    public func setRuntime(_ runtime: ASRRuntime) {
+        guard runtime == .audioCpp else { return }
+        guard settings.asrRuntime != runtime else { return }
+        settings.asrRuntime = runtime
+        if runtime == .sherpaOnnx, settings.asrProfile != ModelProfile.default.id {
+            settings.asrProfile = ModelProfile.default.id
+        }
         Task { await refreshModelState() }
     }
 
@@ -166,7 +196,9 @@ public final class SettingsViewModel: ObservableObject {
         await store.save(settings)
         saved = settings
         onSettingsSaved?(settings)
-        toast.show("Settings saved.", style: .success)
+        toast.show(runtimeRequiresRestart
+                   ? "ASR runtime saved. Restart Superflow to apply."
+                   : "Settings saved.", style: .success)
         return true
     }
 
@@ -217,7 +249,7 @@ public final class SettingsViewModel: ObservableObject {
         enhancementReady = await enhancer?.isAvailable() ?? false
         isCheckingModels = true
         defer { isCheckingModels = false }
-        if let asrModels, profile.supportsLiveDictation {
+        if let asrModels = selectedASRModels, profile.supportsLiveDictation {
             asrReady = await asrModels.isAvailable(profileID: settings.asrProfile)
         } else {
             asrReady = false
@@ -227,7 +259,7 @@ public final class SettingsViewModel: ObservableObject {
     }
 
     public func downloadASRModel() async {
-        guard let asrModels else {
+        guard let asrModels = selectedASRModels else {
             toast.show("Model downloads are unavailable in this build.", style: .warning)
             return
         }
@@ -266,6 +298,10 @@ public final class SettingsViewModel: ObservableObject {
                        style: .error)
         }
         isDownloadingASR = false
+    }
+
+    private var selectedASRModels: (any ASRModelProvider)? {
+        asrModelsByRuntime[settings.asrRuntime] ?? asrModels
     }
 
     public func downloadCleanupModel() async {

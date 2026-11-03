@@ -20,6 +20,20 @@ public enum ModelCompute: String, Codable, Sendable, CaseIterable {
     public var label: String { self == .gpu ? "GPU" : "CPU" }
 }
 
+public enum ASRRuntime: String, Codable, Sendable, CaseIterable, Identifiable {
+    case audioCpp
+    case sherpaOnnx
+
+    public static let allCases: [ASRRuntime] = [.audioCpp]
+    public var id: String { rawValue }
+    public var label: String {
+        switch self {
+        case .audioCpp: "audio.cpp"
+        case .sherpaOnnx: "sherpa-onnx"
+        }
+    }
+}
+
 public struct LineFormatSettings: Codable, Sendable, Equatable {
     public var minWords: Int = 25
     public var preferredMax: Int = 35
@@ -225,6 +239,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     /// Nemotron 3.5 ASR Streaming 0.6B is the model the app installs and runs. It is
     /// the default in one place only, so onboarding and the Models page cannot drift.
     public var asrProfile: String = ModelProfile.default.id
+    public var asrRuntime: ASRRuntime = .audioCpp
     public var speechEnhancementEnabled = true
     public var cleanupEnabled = true
     public var reflectionCleanupEnabled = false
@@ -279,11 +294,12 @@ public struct AppSettings: Codable, Sendable, Equatable {
         let storedVersion = try c.decodeIfPresent(Int.self, forKey: .settingsVersion) ?? 1
         settingsVersion = storedVersion
         theme = try c.decodeIfPresent(ThemeMode.self, forKey: .theme) ?? d.theme
-        // Streaming only. A stored batch profile (or a removed one) is replaced
-        // with the default instead of being allowed onto the dictation path.
+        asrRuntime = .audioCpp
+        // Streaming only. Sherpa currently ships this one compatible profile.
         let storedProfile = try c.decodeIfPresent(String.self, forKey: .asrProfile) ?? d.asrProfile
         let resolved = ModelProfile.byID(storedProfile)
         asrProfile = resolved.id == storedProfile && resolved.supportsLiveDictation
+            && (asrRuntime == .audioCpp || storedProfile == ModelProfile.default.id)
             ? storedProfile
             : ModelProfile.default.id
         speechEnhancementEnabled = try c.decodeIfPresent(Bool.self, forKey: .speechEnhancementEnabled) ?? d.speechEnhancementEnabled

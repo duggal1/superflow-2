@@ -1,6 +1,6 @@
 import Darwin
 import Foundation
-import SuperflowASRFluidAudio
+import SuperflowAudioCpp
 import SuperflowKernel
 import SuperflowPorts
 
@@ -35,7 +35,7 @@ struct RealModelSpeedBench {
         let audioSeconds = Double(audio.count) / Double(sampleRate)
         let chunkSamples = sampleRate * chunkMS / 1_000
 
-        let recognizer = FluidAudioRecognizer(modelCacheRoot: modelCacheRoot)
+        let recognizer = AudioCppRecognizer(modelCacheRoot: modelCacheRoot)
         let loadClock = ContinuousClock()
         let loadStart = loadClock.now
         try await recognizer.warmUp(profile: profileID)
@@ -94,7 +94,7 @@ struct RealModelSpeedBench {
         let words: Int
     }
 
-    private func runOnce(recognizer: FluidAudioRecognizer, audio: [Float],
+    private func runOnce(recognizer: AudioCppRecognizer, audio: [Float],
                          chunkSamples: Int) async throws -> Run {
         let streamStart = ContinuousClock.now
         let stream = try await recognizer.makeStream(profile: profileID, source: .mic)

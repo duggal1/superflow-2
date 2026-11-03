@@ -53,6 +53,7 @@ if [[ "$SMOKE" == 0 ]]; then
 fi
 
 if [[ "$SKIP_BUILD" == 0 ]]; then
+    "$ROOT/tools/build-audio-cpp"
     swift build --package-path "$PACKAGE" --configuration "$CONFIGURATION"
     mkdir -p "$HELPER_PACKAGE/.build"
     if [[ ! -e "$HELPER_PACKAGE/.build/artifacts" && ! -L "$HELPER_PACKAGE/.build/artifacts" ]]; then
@@ -156,8 +157,89 @@ if [[ -d "$ROOT/App/Resources/Fonts" ]]; then
     ditto "$ROOT/App/Resources/Fonts" "$OUTPUT/Contents/Resources/Fonts"
 fi
 
+APP_FRAMEWORKS_DIR="$OUTPUT/Contents/Frameworks"
+APP_RUNTIME_FRAMEWORKS=("")
+APP_RUNTIME_DYLIBS=("")
+APP_ONNXRUNTIME_SOURCE=""
+while IFS= read -r dependency; do
+    case "$dependency" in
+        @rpath/libaudiocpp*.dylib)
+            native_dir="$ROOT/ThirdParty/audio.cpp/build/superflow-metal/bin"
+            if [[ ! -f "$native_dir/${dependency#@rpath/}" ]]; then
+                printf 'audio.cpp library is missing; run tools/build-audio-cpp.\n' >&2
+                exit 1
+            fi
+            mkdir -p "$APP_FRAMEWORKS_DIR"
+            for library in "$native_dir"/*.dylib; do
+                destination="$APP_FRAMEWORKS_DIR/$(basename "$library")"
+                cp -L "$library" "$destination"
+                APP_RUNTIME_DYLIBS+=("$destination")
+            done
+            if otool -l "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME" | grep -Fq "$native_dir"; then
+                install_name_tool -delete_rpath "$native_dir" "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME"
+            fi
+            ;;
+        @rpath/*.framework/*)
+            framework_name="${dependency#@rpath/}"
+            framework_name="${framework_name%%/*}"
+            framework_binary="${dependency#@rpath/$framework_name/}"
+            framework_source="$BIN_DIR/$framework_name"
+            if [[ ! -d "$framework_source" ]]; then
+                printf 'Required app framework is missing from SwiftPM products: %s\n' "$framework_name" >&2
+                exit 1
+            fi
+            if [[ "$framework_name" == "onnxruntime.framework" ]]; then
+                APP_ONNXRUNTIME_SOURCE="$framework_source/$framework_binary"
+                continue
+            fi
+            mkdir -p "$APP_FRAMEWORKS_DIR"
+            framework_version="${framework_binary#Versions/}"
+            framework_version="${framework_version%%/*}"
+            framework_executable="${framework_binary##*/}"
+            framework_destination="$APP_FRAMEWORKS_DIR/$framework_name"
+            framework_destination_version="$framework_destination/Versions/$framework_version"
+            mkdir -p "$framework_destination_version/Resources"
+            ditto "$framework_source/$framework_binary" "$framework_destination_version/$framework_executable"
+            if [[ -d "$framework_source/Versions/$framework_version/Resources" ]]; then
+                while IFS= read -r resource; do
+                    ditto "$resource" "$framework_destination_version/Resources/$(basename "$resource")"
+                done < <(find -H "$framework_source/Versions/$framework_version/Resources" -maxdepth 1 -type f -print)
+            fi
+            ln -s "$framework_version" "$framework_destination/Versions/Current"
+            ln -s "Versions/Current/$framework_executable" "$framework_destination/$framework_executable"
+            ln -s Versions/Current/Resources "$framework_destination/Resources"
+            APP_RUNTIME_FRAMEWORKS+=("$framework_destination")
+            ;;
+    esac
+done < <(otool -L "$EXECUTABLE" | tail -n +2 | sed 's/^[[:space:]]*//' | awk '{ print $1 }')
+
+if [[ -n "$APP_ONNXRUNTIME_SOURCE" ]]; then
+    mkdir -p "$APP_FRAMEWORKS_DIR"
+    APP_ONNXRUNTIME_DESTINATION="$APP_FRAMEWORKS_DIR/libonnxruntime.dylib"
+    ditto "$APP_ONNXRUNTIME_SOURCE" "$APP_ONNXRUNTIME_DESTINATION"
+    install_name_tool -id '@rpath/libonnxruntime.dylib' "$APP_ONNXRUNTIME_DESTINATION"
+    install_name_tool -change '@rpath/onnxruntime.framework/Versions/A/onnxruntime' \
+        '@rpath/libonnxruntime.dylib' "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME"
+    APP_RUNTIME_DYLIBS+=("$APP_ONNXRUNTIME_DESTINATION")
+fi
+
+if ((${#APP_RUNTIME_FRAMEWORKS[@]} > 1 || ${#APP_RUNTIME_DYLIBS[@]} > 1)); then
+    if ! otool -l "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME" | grep -q '@executable_path/../Frameworks'; then
+        install_name_tool -add_rpath '@executable_path/../Frameworks' \
+            "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME"
+    fi
+    for framework in "${APP_RUNTIME_FRAMEWORKS[@]}"; do
+        [[ -n "$framework" ]] || continue
+        codesign --force --timestamp=none --options runtime --sign "$IDENTITY" "$framework"
+    done
+    for library in "${APP_RUNTIME_DYLIBS[@]}"; do
+        [[ -n "$library" ]] || continue
+        codesign --force --timestamp=none --options runtime --sign "$IDENTITY" "$library"
+    done
+fi
+
 if [[ "$HAVE_FRAMEWORK" == 1 && "$APP_NEEDS_FRAMEWORK" == 1 ]]; then
-    mkdir -p "$OUTPUT/Contents/Frameworks"
+    mkdir -p "$APP_FRAMEWORKS_DIR"
     ditto "$LLAMA_FRAMEWORK" "$OUTPUT/Contents/Frameworks/llama.framework"
     if ! otool -l "$OUTPUT/Contents/MacOS/$EXECUTABLE_NAME" | grep -q '@executable_path/../Frameworks'; then
         install_name_tool -add_rpath '@executable_path/../Frameworks' \

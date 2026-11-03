@@ -39,6 +39,11 @@ public enum CleanGuard {
                   boundary(result.text, match.upperBound, before: false) else { return .protectedLost }
             cursor = match.upperBound
         }
+        let sourcePaths = Set(Tokenizer.tokens(in: comparable).map(\.core)
+            .filter { $0.contains("/") && $0.contains(where: \.isLetter) }.map { $0.lowercased() })
+        let outputPaths = Tokenizer.tokens(in: result.text).map(\.core)
+            .filter { $0.contains("/") && $0.contains(where: \.isLetter) }.map { $0.lowercased() }
+        guard outputPaths.allSatisfy(sourcePaths.contains) else { return .contentChanged }
         guard MeaningCarriers.accepts(comparable, result.text) else { return .contentChanged }
         let source = content(comparable)
         let cleaned = content(result.text)

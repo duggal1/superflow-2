@@ -153,7 +153,19 @@ extension AppCoordinator {
 
     func handleKeyEvent(_ event: KeyEvent) async {
         if event.kind == .intelligenceDown {
-            mainWindowController.show(.intelligence)
+            mainWindowController.show(.meetings)
+            guard !menuBarController.meetingState.isActive, !isStartingIntelligenceMeeting else { return }
+            isStartingIntelligenceMeeting = true
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                defer { self.isStartingIntelligenceMeeting = false }
+                await self.menuBarController.startMeeting()
+                if self.menuBarController.meetingState.isActive {
+                    self.islandBridge?.meetingBegan()
+                } else {
+                    self.islandBridge?.refused(self.menuBarController.error ?? "The meeting is not ready. Try again after startup finishes.")
+                }
+            }
             return
         }
         if event.kind == .escape {

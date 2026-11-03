@@ -8,7 +8,7 @@ let package = Package(
     dependencies: [
         .package(path: "../../Packages/L0-Core/Kernel"),
         .package(path: "../../Packages/L0-Core/Ports"),
-        .package(path: "../../Packages/L1-Adapters/ASRFluidAudio"),
+        .package(path: "../../Packages/L1-Adapters/AudioCpp"),
         .package(path: "../../Packages/L1-Adapters/AudioCapture"),
         .package(path: "../../Packages/L1-Adapters/AudioJournal"),
         .package(path: "../../Packages/L1-Adapters/GrammarHarper"),
@@ -22,7 +22,7 @@ let package = Package(
             dependencies: [
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowPorts", package: "Ports"),
-                .product(name: "SuperflowASRFluidAudio", package: "ASRFluidAudio"),
+                .product(name: "SuperflowAudioCpp", package: "AudioCpp"),
                 .product(name: "SuperflowAudioCapture", package: "AudioCapture"),
                 .product(name: "SuperflowAudioJournal", package: "AudioJournal"),
                 .product(name: "SuperflowGrammarHarper", package: "GrammarHarper"),

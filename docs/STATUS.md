@@ -1,5 +1,10 @@
 # Backend Run Status
 
+## Current ASR runtime — 2026-11-03
+
+The app now uses audio.cpp with mandatory Metal streaming, resident Q8 Nemotron ASR sessions, and Nemotron 3 speaker separation. FluidAudio code and dedicated model caches were removed. Endpointing uses the RMS fallback. Native golden checks cover full text, pauses, resumed timestamps, flushing, reuse, and speaker IDs; 47 nearby kernel/settings/recovery tests pass. See [validation](../agents/codex/audio-cpp-runtime/results/validation.md) for the single-run warm timing and verification limits. Earlier FluidAudio measurements below are historical and superseded.
+
+
 Updated: 2026-10-29
 
 ## Cleanup v3 status (2026-11-02)
@@ -7,6 +12,10 @@ Updated: 2026-10-29
 The active pipeline runs S1-mini first, then basic protected duplicate removal, followed by enabled product features (commands, shortcuts, spoken code, numbers, dictionary, code-aware formatting, and line formatting). Numbers and lexicon run after S1-mini. Harper, disfluency, prose polish, and deterministic list-structure stages are not scheduled. S1-mini's trained `lists` control remains available.
 
 Cleanup chunk outcomes and safe token/latency counts are available through Settings → Export Diagnostics. Successful and rejected completions include prefill/generation timings; deadline and runtime errors do not carry those timings. The owner’s five packaged-app takes, runtime parity, reference-based quality, 9/10 score, deadline/fallback rates, and performance sweeps are **UNTESTED**; no quality or speed improvement is claimed. See `work/plan/backend/solution-v3-cleanup.md` for the remaining gate.
+
+## Engineering dictation vocabulary (2026-11-02)
+
+Nemotron 3.5 now receives five curated hotwords: Vercel, idempotency, TypeScript, PostgreSQL, and Rust FFI. The post-ASR dictionary adds contextual corrections for the supplied Vercel, Redis, idempotency, Zod, rate-limit, concurrency, memory-allocation, and FFI variants. The focused dictionary and ASR adapter suites pass. No source-audio A/B was available, so term recall, false-fire rate, grammar quality, and latency impact remain unmeasured. HTTP status values and negation are not rewritten by these additions.
 
 ## Milestones
 

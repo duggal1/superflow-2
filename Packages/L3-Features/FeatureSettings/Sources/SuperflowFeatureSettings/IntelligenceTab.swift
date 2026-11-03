@@ -50,10 +50,9 @@ struct IntelligenceTab: View {
                     ], label: "Mode")
                 }
                 SettingRow(.keyboard, "Trigger key", filter: query) {
-                    Dropdown(selection: $trigger,
-                             options: IntelligenceTriggerKey.allCases.map {
-                                 .init(value: $0.rawValue, title: $0.title)
-                             }, label: "Trigger key")
+                    Segmented(selection: $trigger, items: IntelligenceTriggerKey.allCases.map {
+                        .init($0.title, value: $0.rawValue)
+                    })
                 }
                 SettingRow(.eyeSlash, "Screen awareness", filter: query) {
                     AppToggle("Screen awareness", isOn: $screenAware)

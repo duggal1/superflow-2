@@ -125,4 +125,31 @@ pass "required framework is enforced"
 "$PACKAGER" --help >/dev/null || fail "packager --help failed"
 pass "help exits successfully"
 
+# 6. A SwiftPM-linked dynamic framework must be embedded for dyld at launch.
+RUNTIME_BIN="$WORK/runtime-app-bin"
+RUNTIME_FRAMEWORK="$RUNTIME_BIN/SherpaOnnxC.framework"
+mkdir -p "$RUNTIME_FRAMEWORK/Versions/A/Resources"
+printf 'int sherpa_fixture(void) { return 0; }\n' > "$WORK/runtime.c"
+printf 'int sherpa_fixture(void); int main(void) { return sherpa_fixture(); }\n' > "$WORK/runtime-main.c"
+clang -dynamiclib "$WORK/runtime.c" -Wl,-install_name,@rpath/SherpaOnnxC.framework/Versions/A/SherpaOnnxC -o "$RUNTIME_FRAMEWORK/Versions/A/SherpaOnnxC"
+ln -s A "$RUNTIME_FRAMEWORK/Versions/Current"
+ln -s Versions/Current/SherpaOnnxC "$RUNTIME_FRAMEWORK/SherpaOnnxC"
+ln -s Versions/Current/Resources "$RUNTIME_FRAMEWORK/Resources"
+cat > "$RUNTIME_FRAMEWORK/Versions/A/Resources/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.superflow.test.sherpa</string>
+<key>CFBundleExecutable</key><string>SherpaOnnxC</string>
+<key>CFBundlePackageType</key><string>FMWK</string>
+<key>CFBundleVersion</key><string>1</string>
+</dict></plist>
+PLIST
+clang "$WORK/runtime-main.c" -F "$RUNTIME_BIN" -framework SherpaOnnxC -Wl,-headerpad_max_install_names -o "$RUNTIME_BIN/SuperflowApp"
+RUNTIME_APP="$WORK/runtime.app"
+env SUPERFLOW_APP_BINARY="$RUNTIME_BIN/SuperflowApp" SUPERFLOW_BIN_DIR="$RUNTIME_BIN" SUPERFLOW_LLAMA_FRAMEWORK="$WORK/no-such.framework" SUPERFLOW_APP_OUTPUT="$RUNTIME_APP" "$PACKAGER" --smoke >/dev/null
+test -x "$RUNTIME_APP/Contents/Frameworks/SherpaOnnxC.framework/Versions/A/SherpaOnnxC" || fail "SwiftPM-linked runtime framework was not embedded"
+otool -l "$RUNTIME_APP/Contents/MacOS/SuperflowApp" | grep -q '@executable_path/../Frameworks' || fail "app is missing the runtime framework rpath"
+codesign --verify --deep --strict "$RUNTIME_APP" 2>/dev/null || fail "runtime framework app signature is invalid"
+pass "app bundle embeds and signs linked SwiftPM runtime frameworks"
 printf 'package-app smoke tests passed\n'

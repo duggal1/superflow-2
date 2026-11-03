@@ -1,5 +1,103 @@
 # Issue
 
+## Metal resources survive application termination
+
+Cached audio.cpp sessions remain alive while native Metal global resources are destroyed during quit.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: supplied crash aborts in ggml_metal_rsets_free after NSApplication.terminate; explicit model unloading added, pending verification.
+
+## Cold enhancement blocks microphone consumption
+
+Recording waits for cold enhancement loading before consuming captured samples and publishing microphone levels.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: SessionEngine starts capture, then awaits enhancer.begin before consumeCapture; begin previously cold-loaded the model.
+
+## Recent dictations fall back from cleanup
+
+Recent sessions returned fallback; the exact causes are not yet established.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: the five latest sessions report fallback; a real-model fixture also fell back on protected content.
+
+## Cleanup accepts invented path separators
+
+S1-mini can turn separate spoken folder names into a path without the safety gate rejecting it.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Evidence: live S1-mini changed a two-word folder phrase to a slash-separated path; the guard returned no failure.
+
+Verification: focused regression and the real-model safety gate pass.
+
+## Typical longer dictation cannot use parallel cleanup
+
+The default chunk target leaves typical longer speech segments on one S1-mini worker.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Evidence: a 100-word deterministic fixture produced one chunk and one active worker; the requested two-worker check failed.
+
+Verification: the worker regression passes; a real-model service run produced two chunks.
+
+## Native streaming rejects resumed audio timelines
+
+Absolute source positions violate audio.cpp’s contiguous session timeline after recovery or pause resets.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Evidence: upstream Nemotron process_audio_chunk requires chunk.start_sample to equal received_samples for each native stream.
+
+Verification: regression failed before normalization and passed afterward with exact text, pauses, and preserved nonzero source timestamps.
+
+## Recovery deletes journals after streamed ASR failure
+
+Recovery ignored ASR failure events and deleted saved audio after partial meeting recovery.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Evidence: testStreamFailurePreservesBothMeetingJournals failed; both 3,200-sample journals were deleted and the meeting marked recovered.
+
+Verification: failing-before regression now passes; all nine RecoveryTests pass, including legacy-profile replay.
+
+## Meeting Intelligence is not connected to capture
+
+The Intelligence backend is not connected to meeting transcripts or an on-screen assistant.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: shortcut now routes to meeting capture; no app code instantiates MeetingIntelligence or feeds its transcript buffer.
+
+## Reflection cleanup barely edits spoken transcripts
+
+The rigid cleanup prompt overemphasized verbatim preservation and constrained formatting, leading to under-edited output.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Evidence: prompt now directs sentence-level rewriting and natural polishing while preserving meaning and identifiers; Reflection toggle selection is covered by a passing focused test. No live Reflection request was made.
+
+## Engineering dictation terminology and meaning
+
+The supplied engineering take misses technical terms and contains unverified status-code and negation changes.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: the supplied polished transcript differs from its read-aloud script on technical names, HTTP 401, and the null-value statement. Source audio and intermediate ASR text were not provided, so the status and negation causes remain unknown.
+
 ## Core ML abort during startup transcription
 
 Starting transcription can abort inside Core ML prediction and report a misleading microphone failure.
@@ -7,7 +105,7 @@ Starting transcription can abort inside Core ML prediction and report a misleadi
 - [x] Unresolved
 - [ ] Resolved
 
-Evidence: SuperflowApp crash report 2026-11-02-200554 shows SIGABRT in MLE5ExecutionStream prediction; startup trigger remains unverified.
+Evidence: Reports 2026-11-02-200554 and 2026-11-03-004719 show SIGABRT in Core ML async prediction; the latest occurred 28 seconds after launch. Removed ten synthetic DeepFilterNet predictions and serialized enhancement startup behind ASR/VAD. The rebuilt app stayed open for 35 seconds; real dictation remains unverified.
 
 ## Meeting intelligence screen OCR stalls
 
@@ -281,7 +379,7 @@ Production TextContext constructors omit activeAppBundleID, preventing developer
 
 Evidence: identifier appears in TextContext and gate, but no production caller supplies it. Mixed-language false positives also require policy review.
 
-Latest resolution: Dictionary gate bypasses developer context — failing-before regressions now pass for Textract gating and disabled pins.
+Latest resolution: Cleanup accepts invented path separators — focused regression and real-model safety gate passed.
 
 ## Short ASR first result is late
 

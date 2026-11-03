@@ -320,49 +320,14 @@ public struct ModelProfile: Sendable, Hashable, Identifiable {
         "\(vendor) · \(language) · \(latencyLabel)"
     }
 
-    public static let parakeetEOU120M = ModelProfile(
-        id: "parakeet-eou-120m", displayName: "Parakeet Realtime EOU 120M",
-        vendor: "NVIDIA",
-        upstreamRepo: "nvidia/parakeet_realtime_eou_120m-v1",
-        runtimeRepo: "FluidInference/parakeet-realtime-eou-120m-coreml/320ms",
-        language: "English", chunkMs: 320, streaming: true, status: .verified,
-        note: "Lowest-latency streaming profile, with native end-of-utterance detection.")
-    public static let nemotronStreaming = ModelProfile(
-        id: "nemotron-streaming-0.6b", displayName: "Nemotron Speech Streaming 0.6B",
-        vendor: "NVIDIA",
-        upstreamRepo: "nvidia/nemotron-speech-streaming-en-0.6b",
-        runtimeRepo: "FluidInference/nemotron-speech-streaming-en-0.6b-coreml/560ms",
-        language: "English", chunkMs: 560, streaming: true, status: .verified,
-        note: "Cache-aware English streaming at the 560 ms Core ML tier.")
-    public static let parakeetUnified = ModelProfile(
-        id: "parakeet-unified-0.6b", displayName: "Parakeet Unified 0.6B",
-        vendor: "NVIDIA",
-        upstreamRepo: "nvidia/parakeet-unified-en-0.6b",
-        runtimeRepo: "FluidInference/parakeet-unified-en-0.6b-coreml",
-        language: "English", chunkMs: 640, streaming: true, status: .unverified,
-        note: "Chunked-attention streaming at the 640 ms Core ML tier. The upstream checkpoint also supports offline use.")
     public static let nemotron35Streaming = ModelProfile(
         id: "nemotron-3.5-asr-streaming-0.6b", displayName: "Nemotron 3.5 ASR Streaming 0.6B",
         vendor: "NVIDIA",
         upstreamRepo: "nvidia/nemotron-3.5-asr-streaming-0.6b",
-        runtimeRepo: "FluidInference/Nemotron-3.5-ASR-Streaming-Multilingual-0.6b-CoreML/latin/1120ms",
-        language: "40 locales", chunkMs: 1_120, streaming: true, status: .unverified,
-        note: "Cache-aware multilingual streaming. The Latin Core ML build covers English and five other Latin-script languages.")
-    public static let parakeetTDTV3 = ModelProfile(
-        id: "parakeet-tdt-0.6b-v3", displayName: "Parakeet TDT 0.6B v3",
-        vendor: "NVIDIA",
-        upstreamRepo: "nvidia/parakeet-tdt-0.6b-v3",
-        runtimeRepo: "FluidInference/parakeet-tdt-0.6b-v3-coreml",
-        language: "English", chunkMs: 15_000, streaming: false, status: .unavailable,
-        note: "Batch only. FluidAudio processes 15 s sliding windows and cannot feed live dictation with TDT.")
-
-    public static let all: [ModelProfile] = [
-        .parakeetEOU120M,
-        .nemotronStreaming,
-        .parakeetUnified,
-        .nemotron35Streaming,
-        .parakeetTDTV3,
-    ]
+        runtimeRepo: "audio-cpp/audio.cpp-gguf/Nemotron-3.5-ASR-Streaming-0.6B-GGUF",
+        language: "40 locales", chunkMs: 320, streaming: true, status: .unverified,
+        note: "Cache-aware multilingual streaming through audio.cpp on Metal.")
+    public static let all: [ModelProfile] = [.nemotron35Streaming]
 
     /// The one dictation profile the app installs, offers first and falls back to.
     public static var `default`: ModelProfile { .nemotron35Streaming }

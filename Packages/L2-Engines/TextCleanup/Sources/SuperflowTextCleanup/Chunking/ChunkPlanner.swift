@@ -22,7 +22,7 @@ public struct CleanupConfig: Sendable, Equatable {
     /// off except list and paragraph shaping after cleanup.
     public var format: FormatConfig
 
-    public init(softTokenTarget: Int = 250, hardTokenCap: Int = 600, interactiveDeadlineMs: Int = 1_500,
+    public init(softTokenTarget: Int = 64, hardTokenCap: Int = 600, interactiveDeadlineMs: Int = 1_500,
                 backgroundDeadlineMs: Int = 30_000, workers: Int = 3, ratioFloor: Double = 0.6,
                 retryDepth: Int = 3, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_024,
                 overlapPercent: Double = 0.12, format: FormatConfig = FormatConfig()) {

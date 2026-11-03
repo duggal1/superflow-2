@@ -1,9 +1,9 @@
 import Foundation
-import SuperflowAppCore
 import SuperflowKernel
 import SuperflowPorts
 import SuperflowStorageSQLite
 import XCTest
+@testable import SuperflowAppCore
 
 final class AppCompositionTests: XCTestCase {
     @MainActor
@@ -109,5 +109,27 @@ final class AppCompositionTests: XCTestCase {
         XCTAssertEqual(pipeline.stageIDs,
                        ["dedupe", "format", "spokenCode", "numbers", "lexicon", "codeAware", "lineformat",
                         "techDictionary"])
+    }
+
+    @MainActor
+    func testReflectionToggleKeepsCleanupStageInDictationPipeline() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SuperflowReflection-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let environment = try AppEnvironment(applicationSupportDirectory: directory)
+        var settings = AppSettings.default
+        settings.reflectionCleanupEnabled = true
+        settings.cleanupEnabled = true
+
+        XCTAssertTrue(AppEnvironment.usesReflectionCleanup(settings: settings, forDictation: true))
+        XCTAssertFalse(AppEnvironment.usesReflectionCleanup(settings: settings, forDictation: false))
+        var localSettings = settings
+        localSettings.reflectionCleanupEnabled = false
+        XCTAssertFalse(AppEnvironment.usesReflectionCleanup(settings: localSettings, forDictation: true))
+
+        let pipeline = await environment.makePipeline(settings: settings)
+
+        XCTAssertTrue(pipeline.stageIDs.contains("cleanup"))
     }
 }

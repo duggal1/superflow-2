@@ -27,6 +27,7 @@ public final class MenuBarController: ObservableObject {
     /// is still inside its model or microphone wait; both callers share it
     /// instead of racing into "session already active".
     private var startTask: Task<Bool, Never>?
+    private var releaseModels: (@Sendable () async -> Void)?
 
     public convenience init(environment: AppEnvironment?, mainWindow: MainWindowController,
                             sessionEvents: AsyncStream<SessionEvent>? = nil,
@@ -37,6 +38,10 @@ public final class MenuBarController: ObservableObject {
                   mainWindow: mainWindow,
                   sessionEvents: sessionEvents,
                   meetingEvents: meetingEvents)
+        releaseModels = {
+            await environment?.recognizer.unload()
+            await environment?.diarizer.unload()
+        }
     }
 
     init(session: SessionEngine?, meeting: MeetingEngine?,
@@ -323,10 +328,16 @@ public final class MenuBarController: ObservableObject {
         error = message
     }
 
-    public func quit() async {
+    public func prepareToQuit() async {
+        startTask?.cancel()
+        _ = await startTask?.value
         await cancel(.dictation)
         await cancel(.meeting)
         await hotkeys?.stop()
+        await releaseModels?()
+    }
+
+    public func quit() async {
         NSApp.terminate(nil)
     }
 }

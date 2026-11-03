@@ -155,18 +155,21 @@ final class SettingsViewModelTests: XCTestCase {
         let model = makeModel()
         await model.load()
         XCTAssertFalse(model.asrReady)
-        XCTAssertEqual(model.profileName("nemotron-streaming-0.6b"),
-                       "Nemotron Speech Streaming 0.6B")
-
+        XCTAssertEqual(model.profileName(ModelProfile.default.id), ModelProfile.default.displayName)
         model.setProfile("nemotron-streaming-0.6b")
         await model.refreshModelState()
-        XCTAssertEqual(model.settings.asrProfile, "nemotron-streaming-0.6b")
-        XCTAssertEqual(model.profile.id, "nemotron-streaming-0.6b")
-        XCTAssertEqual(model.profileStatusLabel("parakeet-unified-0.6b"), "Experimental")
-        XCTAssertTrue(model.profileOptions.contains("parakeet-unified-0.6b"))
-        XCTAssertTrue(model.profileOptions.contains("nemotron-3.5-asr-streaming-0.6b"))
-        XCTAssertFalse(model.profileOptions.contains("parakeet-tdt-0.6b-v3"))
-        XCTAssertEqual(model.profileStatusLabel("parakeet-tdt-0.6b-v3"), "Not for dictation")
+        XCTAssertEqual(model.settings.asrProfile, ModelProfile.default.id)
+        XCTAssertEqual(model.profileOptions, [ModelProfile.default.id])
+        XCTAssertEqual(model.toast.current?.style, .warning)
+    }
+
+    func testOnlyAudioCppRuntimeCanBeSelected() async {
+        let model = makeModel()
+        await model.load()
+        model.setRuntime(.sherpaOnnx)
+        XCTAssertEqual(model.settings.asrRuntime, .audioCpp)
+        XCTAssertEqual(ASRRuntime.allCases, [.audioCpp])
+        XCTAssertNil(model.runtimeRestartMessage)
     }
 
     func testBatchModelCannotBeSelectedForLiveDictation() async {
@@ -178,7 +181,7 @@ final class SettingsViewModelTests: XCTestCase {
         // The batch profile is refused, so the previous selection stands.
         XCTAssertEqual(model.settings.asrProfile, ModelProfile.nemotron35Streaming.id)
         XCTAssertEqual(model.toast.current?.style, .warning)
-        XCTAssertFalse(ModelProfile.parakeetTDTV3.supportsLiveDictation)
+        XCTAssertTrue(ModelProfile.streamingProfiles.allSatisfy(\.supportsLiveDictation))
     }
 
     func testDownloadASRModelHandlesSuccessAndFailure() async {

@@ -71,6 +71,7 @@ public final class AppCoordinator: ObservableObject {
     private var retentionTask: Task<Void, Never>?
     var permissionTask: Task<Void, Never>?
     var intelligenceTriggerObserver: NSObjectProtocol?
+    var isStartingIntelligenceMeeting = false
     let sessionEventRelay = EngineEventRelay<SessionEvent>()
     let meetingEventRelay = EngineEventRelay<MeetingEvent>()
 
@@ -107,6 +108,10 @@ public final class AppCoordinator: ObservableObject {
         guard let environment else { return nil }
         return ModelsViewModel(models: environment.modelProvider,
                                asrModels: environment.recognizer,
+                               asrModelsByRuntime: [
+                                   .audioCpp: environment.recognizer,
+                               ],
+                               asrRuntime: settings.asrRuntime,
                                diarizer: environment.diarizer,
                                asrProfile: settings.asrProfile,
                                enhancer: environment.speechEnhancer,
@@ -120,6 +125,10 @@ public final class AppCoordinator: ObservableObject {
             store: environment.settingsStore,
             models: environment.modelProvider,
             asrModels: environment.recognizer,
+            asrModelsByRuntime: [
+                .audioCpp: environment.recognizer,
+            ],
+            activeASRRuntime: settings.asrRuntime,
             diarizer: environment.diarizer,
             enhancer: environment.speechEnhancer,
             launchAtLogin: environment.launchAtLogin,
@@ -229,8 +238,7 @@ public final class AppCoordinator: ObservableObject {
         isLoaded = true
         launchLog.info("UI initialization: \((DispatchTime.now().uptimeNanoseconds - launchStarted) / 1_000_000) ms")
 
-        // The model is the long pole. Start both loads now, without making any
-        // caller wait for them, then wire the live UI and background maintenance.
+        // Start model preparation after publishing the first frame.
         startModelPreparation(environment: environment, log: launchLog)
         await finishLaunch(environment: environment, launchStarted: launchStarted, log: launchLog)
     }
@@ -244,9 +252,12 @@ public final class AppCoordinator: ObservableObject {
 
     public func refreshPipeline() async {
         guard let environment else { return }
-        let pipeline = await environment.makePipeline(settings: settings)
-        await environment.sessionEngine.update(pipeline: pipeline, settings: settings)
-        await environment.meetingEngine.update(pipeline: pipeline, settings: settings)
+        let dictationPipeline = await environment.makePipeline(settings: settings)
+        let meetingPipeline = settings.reflectionCleanupEnabled
+            ? await environment.makePipeline(settings: settings, forDictation: false)
+            : dictationPipeline
+        await environment.sessionEngine.update(pipeline: dictationPipeline, settings: settings)
+        await environment.meetingEngine.update(pipeline: meetingPipeline, settings: settings)
     }
 
     public func applySettings(_ updated: AppSettings) async {
@@ -258,6 +269,8 @@ public final class AppCoordinator: ObservableObject {
         islandBridge?.setStoresTranscripts(!updated.noTranscriptStorage)
         applyIslandPrefs(updated)
         guard let environment else { return }
+        Task { await modelsModel?.updateASRSelection(runtime: updated.asrRuntime,
+                                                     profile: updated.asrProfile) }
         if retentionChanged { await purgeExpiredTranscripts() }
         await environment.transcripts.setNoTranscriptStorage(updated.noTranscriptStorage)
         await environment.practiceRunner.update(profile: updated.asrProfile)
@@ -279,10 +292,6 @@ public final class AppCoordinator: ObservableObject {
         if cleanupComputeChanged { await prepareCleanupModel() }
         if enhancementTurnedOn {
             modelsModel?.download(ModelsViewModel.enhancementID)
-            Task { [weak self] in
-                do { try await environment.recognizer.prepareVoiceActivity() }
-                catch { self?.menuBarController.publishError("Speech detection: \(error.localizedDescription)") }
-            }
         }
         if updated.onboardingComplete, await !environment.recognizer.isReady {
             Task { _ = await environment.sessionEngine.warmUp() }

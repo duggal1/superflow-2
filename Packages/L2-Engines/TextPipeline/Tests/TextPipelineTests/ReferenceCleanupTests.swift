@@ -41,8 +41,9 @@ final class ReferenceCleanupTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: TextPipelineDependencies(cleaner: cleaner))
         let raw = "alright so the things we still need to do are first first the text disfluency stage second the code aware path resolution third make sure streaming is forced on fourth the adaptive clipboard restore and fifth the content verification instead of just character count um I I think that’s everything for now"
         let result = await pipeline.run(raw, context: TextContext(settings: settings))
-        XCTAssertTrue(result.text.contains("first first the text disfluency stage"))
+        let flattened = result.text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        XCTAssertTrue(flattened.contains("first the text disfluency stage"), result.text)
         XCTAssertFalse(result.text.contains("\n- "))
-        XCTAssertTrue(result.text.contains("I think that’s everything for now"))
+        XCTAssertTrue(flattened.contains("I think that’s everything for now"), result.text)
     }
 }

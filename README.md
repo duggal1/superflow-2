@@ -25,7 +25,7 @@ Superflow turns speech into properly formatted text in the app you're already us
 ## What makes it different
 
 - **Native, not Electron.** A Swift 6.4 and SwiftUI macOS app. No bundled Chromium UI.
-- **Streaming by design.** Core ML recognition through FluidAudio emits partial transcripts as you speak. You don't have to wait until the end to see recognition progress.
+- **Streaming by design.** Metal recognition through audio.cpp emits partial transcripts as you speak. You don't have to wait until the end to see recognition progress.
 - **Runs on your Mac.** Recognition, cleanup, formatting, and transcript storage are local after the models are downloaded. No account or telemetry endpoint.
 - **Small, local text storage.** SQLite stores transcripts, history, dictionary entries, and settings. Transcript data is lightweight; optional saved audio and downloaded AI models take additional disk space.
 - **Formatting beyond transcription.** Handles fillers, punctuation, spoken commands, numbers, dates, line breaks, lists, personal shortcuts, and protected terminology.
@@ -63,7 +63,7 @@ Hotkey / gesture
        ↓
 Microphone capture + recovery journal
        ↓
-Streaming ASR (Core ML / FluidAudio)
+Streaming ASR (Metal / audio.cpp)
        ↓
 S1-mini cleanup → basic duplicate removal → user text features
        ↓
@@ -130,4 +130,4 @@ Start reading the code at `App/SuperflowApp/Sources/SuperflowAppCore/AppCoordina
 
 ## Acknowledgments
 
-Superflow builds on [FluidAudio](https://github.com/FluidInference/FluidAudio), [llama.cpp](https://github.com/ggml-org/llama.cpp), and the **S1-mini** cleanup model by Superwhisper. Licenses and third-party notices are in `docs/licenses/`.
+Superflow builds on [audio.cpp](https://github.com/0xShug0/audio.cpp), [llama.cpp](https://github.com/ggml-org/llama.cpp), and the **S1-mini** cleanup model by Superwhisper. Licenses and third-party notices are in `docs/licenses/`.

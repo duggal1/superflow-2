@@ -8,10 +8,10 @@ final class RepositoryTests: XCTestCase {
         let cutoff = Date(timeIntervalSince1970: 2_000)
         let old = SessionRecord(id: SessionID("old"), kind: .dictation,
                                 startedAt: Date(timeIntervalSince1970: 1_000),
-                                status: .complete, modelProfile: ModelProfile.parakeetEOU120M.id)
+                                status: .complete, modelProfile: ModelProfile.default.id)
         let active = SessionRecord(id: SessionID("active"), kind: .meeting,
                                    startedAt: Date(timeIntervalSince1970: 1_000),
-                                   status: .recording, modelProfile: ModelProfile.parakeetEOU120M.id)
+                                   status: .recording, modelProfile: ModelProfile.default.id)
         try await repository.createSession(old)
         try await repository.createSession(active)
 

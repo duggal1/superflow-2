@@ -62,7 +62,9 @@ public struct ReflectionClient: Sendable {
         self.session = session
     }
 
-    public func stream(system: String, user: String, effort: ReasoningEffort) -> AsyncThrowingStream<ReflectionEvent, Error> {
+    public func stream(system: String, user: String, effort: ReasoningEffort,
+                       temperature: Double = 0.7,
+                       maxCompletionTokens: Int? = nil) -> AsyncThrowingStream<ReflectionEvent, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -71,7 +73,10 @@ public struct ReflectionClient: Sendable {
                     request.timeoutInterval = 90
                     request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
                     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.httpBody = try JSONEncoder().encode(Request(system: system, user: user, effort: effort))
+                    request.httpBody = try JSONEncoder().encode(
+                        Request(system: system, user: user, effort: effort,
+                                temperature: temperature, maxCompletionTokens: maxCompletionTokens)
+                    )
                     let (bytes, response) = try await session.bytes(for: request)
                     guard let http = response as? HTTPURLResponse else { throw ReflectionError.invalidResponse }
                     guard http.statusCode == 200 else { throw ReflectionError.http(http.statusCode) }
@@ -101,12 +106,14 @@ private struct Request: Encodable {
     let stream_options = StreamOptions()
     let reasoning_effort: String
     let max_completion_tokens: Int
-    let temperature = 0.7
+    let temperature: Double
     let top_p = 0.99
 
-    init(system: String, user: String, effort: ReasoningEffort) {
+    init(system: String, user: String, effort: ReasoningEffort,
+         temperature: Double, maxCompletionTokens: Int?) {
         messages = [Message(role: "system", content: system), Message(role: "user", content: user)]
         reasoning_effort = effort.rawValue
-        max_completion_tokens = effort.maxCompletionTokens
+        self.temperature = temperature
+        max_completion_tokens = max(1, maxCompletionTokens ?? effort.maxCompletionTokens)
     }
 }

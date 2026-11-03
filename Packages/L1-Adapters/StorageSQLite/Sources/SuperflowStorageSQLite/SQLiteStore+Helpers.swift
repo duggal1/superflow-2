@@ -60,7 +60,7 @@ extension SQLiteStore {
             endedAt: statement.isNull(3) ? nil : Date(timeIntervalSince1970: statement.double(3)),
             status: SessionStatus(rawValue: statement.text(4) ?? "") ?? .complete,
             frontmostBundleID: statement.text(5),
-            modelProfile: statement.text(6) ?? ModelProfile.parakeetEOU120M.id,
+            modelProfile: statement.text(6) ?? ModelProfile.default.id,
             durationMs: Int(statement.int(7)),
             wordCount: Int(statement.int(8)),
             cleanupState: CleanupState(rawValue: statement.text(9) ?? "") ?? .pending,

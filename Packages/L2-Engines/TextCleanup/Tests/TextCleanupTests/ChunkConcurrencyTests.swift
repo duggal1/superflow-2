@@ -5,9 +5,23 @@ import SuperflowPorts
 @testable import SuperflowTextCleanup
 
 final class ChunkConcurrencyTests: XCTestCase {
-    func testTwoHundredFiftyTokensUseOneChunkAndFiveHundredUseTwoWorkers() async {
+    func testShortDictationUsesOneWorkerAndLongerDictationUsesTwo() async {
         let cleaner = CountingChunkCleaner()
         let service = CleanupService(cleaner: cleaner)
+        let short = Array(repeating: "word", count: 40).joined(separator: " ")
+        let longer = Array(repeating: "word", count: 100).joined(separator: " ")
+        let shortResult = await service.clean(short, context: TextContext(interactive: false))
+        let longResult = await service.clean(longer, context: TextContext(interactive: false))
+        XCTAssertEqual(shortResult.chunks.count, 1)
+        XCTAssertEqual(longResult.chunks.count, 2)
+        XCTAssertEqual(longResult.text, longer)
+        let active = await cleaner.maxActive
+        XCTAssertEqual(active, 2)
+    }
+
+    func testTwoHundredFiftyTokensUseOneChunkAndFiveHundredUseTwoWorkers() async {
+        let cleaner = CountingChunkCleaner()
+        let service = CleanupService(cleaner: cleaner, config: CleanupConfig(softTokenTarget: 250))
         let short = Array(repeating: "word", count: 250).joined(separator: " ")
         let long = Array(repeating: "word", count: 500).joined(separator: " ")
         let shortResult = await service.clean(short, context: TextContext(interactive: false))
@@ -22,7 +36,7 @@ final class ChunkConcurrencyTests: XCTestCase {
     }
     func testTokenHeavyWordsDoNotTriggerLinearTokenizerCalls() async {
         let counter = TokenHeavyCounter()
-        var config = CleanupConfig()
+        var config = CleanupConfig(softTokenTarget: 250)
         config.overlapPercent = 0
         let input = Array(repeating: "word", count: 250).joined(separator: " ")
         let plans = await ChunkPlanner(config: config).plan(input) { await counter.count($0) }

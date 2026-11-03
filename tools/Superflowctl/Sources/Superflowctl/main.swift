@@ -1,7 +1,7 @@
 import AVFoundation
 import Darwin
 import Foundation
-import SuperflowASRFluidAudio
+import SuperflowAudioCpp
 import SuperflowAudioCapture
 import SuperflowAudioJournal
 import SuperflowKernel
@@ -29,12 +29,12 @@ enum Superflowctl {
         case "transcribe":
             guard arguments.count == 2 else { throw UsageError() }
             try await transcribe(fileURL: URL(fileURLWithPath: arguments[1]).standardizedFileURL,
-                                 profileID: ModelProfile.parakeetEOU120M.id)
+                                 profileID: ModelProfile.default.id)
         case "campaign":
             try await Campaign(arguments: arguments.dropFirst()).run()
         case "live":
             guard arguments.count <= 2 else { throw UsageError() }
-            try await live(profileID: arguments.dropFirst().first ?? ModelProfile.parakeetEOU120M.id)
+            try await live(profileID: arguments.dropFirst().first ?? ModelProfile.default.id)
         case "help", "--help", "-h":
             print(UsageError.message)
         default:
@@ -43,7 +43,7 @@ enum Superflowctl {
     }
 
     private static func transcribe(fileURL: URL, profileID: String) async throws {
-        let recognizer = FluidAudioRecognizer()
+        let recognizer = AudioCppRecognizer()
         try await prepare(recognizer, profileID: profileID)
         var reader = try AudioFileChunkReader(url: fileURL)
         let pipeline = makeTier0Pipeline()
@@ -82,7 +82,7 @@ enum Superflowctl {
     }
 
     private static func live(profileID: String) async throws {
-        let recognizer = FluidAudioRecognizer()
+        let recognizer = AudioCppRecognizer()
         try await prepare(recognizer, profileID: profileID)
         let microphone = MicrophoneCapture()
         let journals = FileJournalStore()
@@ -139,8 +139,8 @@ enum Superflowctl {
         await journals.delete(session: session)
     }
 
-    private static func prepare(_ recognizer: FluidAudioRecognizer, profileID: String) async throws {
-        guard FluidAudioCatalog.supports(profileID) else {
+    private static func prepare(_ recognizer: AudioCppRecognizer, profileID: String) async throws {
+        guard AudioCppRecognizer.supports(profileID) else {
             throw SuperflowError.modelUnavailable("Unsupported ASR profile \(profileID)")
         }
         try await recognizer.prepare(profileID: profileID) { progress in

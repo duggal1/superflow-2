@@ -3,7 +3,7 @@ import SuperflowKernel
 import SuperflowPorts
 
 enum PostDedupe {
-    private static let intentionalDoubles = Set("very really so that had is are bye ha".split(separator: " ").map(String.init))
+    private static let intentionalDoubles = Set("very really so that had is are bye ha extremely".split(separator: " ").map(String.init))
     private static let protectedWords = Set("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion not no never none nothing nobody neither nor cannot without".split(separator: " ").map(String.init))
 
     static func apply(_ text: String, protected: Protected = Protected()) -> String {

@@ -12,6 +12,19 @@ import SuperflowUIComponents
 /// other apps, so it looked like nothing had launched at all.
 @MainActor
 final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
+    var menuController: MenuBarController?
+    private var terminating = false
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !terminating else { return .terminateLater }
+        terminating = true
+        Task { @MainActor in
+            await menuController?.prepareToQuit()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // The resident process is the only thing that keeps a loaded Core ML
         // model hot: a fresh process pays 0.8-1.6 s to rebuild the GPU encoder
@@ -129,6 +142,7 @@ struct SuperflowApplication: App {
         Window("Superflow", id: "main") {
             MainWindowRootView(coordinator: coordinator, retryStartup: owner.retryStartup)
                 .id(ObjectIdentifier(coordinator))
+                .onAppear { appDelegate.menuController = coordinator.menuBarController }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: Layout.windowDefaultWidth, height: Layout.windowDefaultHeight)

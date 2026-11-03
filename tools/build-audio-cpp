@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE="$ROOT/ThirdParty/audio.cpp"
+PIN=06c13737cc39481787a03465697b58b1c954b56f
+
+if [[ ! -f "$SOURCE/include/audiocpp.h" ]]; then
+    mkdir -p "$(dirname "$SOURCE")"
+    git clone --depth 1 --no-tags https://github.com/0xShug0/audio.cpp.git "$SOURCE"
+fi
+if [[ "$(git -C "$SOURCE" rev-parse HEAD)" != "$PIN" ]]; then
+    printf 'audio.cpp source does not match the required Superflow pin.\n' >&2
+    exit 1
+fi
+
+cmake -S "$SOURCE" -B "$SOURCE/build/superflow-metal" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_OSX_ARCHITECTURES=arm64 \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
+    -DAUDIOCPP_MODEL_SET=custom \
+    -DAUDIOCPP_MODELS=nemotron_asr,nemotron_3_diar \
+    -DAUDIOCPP_BUILD_C_API=ON \
+    -DAUDIOCPP_DEPLOYMENT_BUILD=ON \
+    -DENGINE_ENABLE_METAL=ON \
+    -DGGML_METAL_EMBED_LIBRARY=ON \
+    -DENGINE_ENABLE_CUDA=OFF \
+    -DENGINE_ENABLE_VULKAN=OFF \
+    -DENGINE_ENABLE_OPENMP=OFF \
+    -DGGML_OPENMP=OFF \
+    -DENGINE_BUILD_TESTS=OFF
+cmake --build "$SOURCE/build/superflow-metal" --parallel 4 --target audiocpp audiocpp_cli

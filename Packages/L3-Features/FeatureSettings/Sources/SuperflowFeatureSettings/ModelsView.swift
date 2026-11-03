@@ -22,22 +22,25 @@ public struct ModelItem: Identifiable, Equatable, Sendable {
     public let id: String
     public let kind: ModelKind
     public let name: String
-    public let detail: String
+    public var detail: String
     public let bytes: Int64
+    public var installedASRRuntimes: [ASRRuntime]
     public var state: DownloadState
     public var isActive: Bool
 
     public init(id: String, kind: ModelKind, name: String, detail: String, bytes: Int64,
+                installedASRRuntimes: [ASRRuntime] = [],
                 state: DownloadState = .idle, isActive: Bool = false) {
         self.id = id; self.kind = kind; self.name = name; self.detail = detail
-        self.bytes = bytes; self.state = state; self.isActive = isActive
+        self.bytes = bytes; self.installedASRRuntimes = installedASRRuntimes
+        self.state = state; self.isActive = isActive
     }
 }
 
 /// The vendor mark, wrapped once so the asset name lives in one place.
 /// The mark on a Models row, at the same 24 pt as onboarding. Speech and cleanup
 /// are the two vendor artifacts (the NVIDIA eye, the S1-mini plate); the meetings
-/// row is FluidAudio's diarizer, so it carries a glyph rather than a vendor image.
+/// row is audio.cpp's diarizer, so it carries a glyph rather than a vendor image.
 public struct ModelMark: View {
     public let kind: ModelKind
     public init(kind: ModelKind) { self.kind = kind }
@@ -68,8 +71,10 @@ public final class ModelsViewModel {
     /// it about the speech profile reported "not installed" for a model the owner
     /// had just downloaded during onboarding, and its Download could never succeed.
     private let asrModels: (any ASRModelProvider)?
+    private let asrModelsByRuntime: [ASRRuntime: any ASRModelProvider]
     private let diarizer: (any SpeakerDiarizer)?
-    private let asrProfile: String
+    private var asrRuntime: ASRRuntime
+    private var asrProfile: String
     /// True until the first disk read finishes. A row must not offer Download
     /// before it knows the model is absent, or every visit looks like a re-download.
     public private(set) var isChecking = true
@@ -83,6 +88,8 @@ public final class ModelsViewModel {
 
     public init(models: (any ModelProvider)? = nil,
                 asrModels: (any ASRModelProvider)? = nil,
+                asrModelsByRuntime: [ASRRuntime: any ASRModelProvider] = [:],
+                asrRuntime: ASRRuntime = .audioCpp,
                 diarizer: (any SpeakerDiarizer)? = nil,
                 asrProfile: String = ModelProfile.nemotron35Streaming.id,
                 enhancer: (any SpeechEnhancer)? = nil,
@@ -92,14 +99,16 @@ public final class ModelsViewModel {
         self.enhancementEnabled = enhancementEnabled
         self.models = models
         self.asrModels = asrModels ?? models
+        self.asrModelsByRuntime = asrModelsByRuntime
         self.diarizer = diarizer
+        self.asrRuntime = asrRuntime
         self.asrProfile = asrProfile
         self.cleanupEnabled = cleanupEnabled
         self.items = [
             ModelItem(id: asrProfile, kind: .speech,
                       name: ModelProfile.byID(asrProfile).displayName,
-                      detail: "Streaming speech recognition for English. Runs on this Mac.",
-                      bytes: 620_000_000),
+                      detail: Self.speechDetail(for: asrRuntime),
+                      bytes: Self.speechBytes(for: asrRuntime)),
             ModelItem(id: Self.enhancementID, kind: .enhancement, name: "DeepFilterNet 3",
                       detail: "Required when noise suppression is on. Cleans microphone audio before speech detection.",
                       bytes: 13_223_348),
@@ -108,7 +117,7 @@ public final class ModelsViewModel {
                       bytes: 484_219_808),
             ModelItem(id: Self.meetingsID, kind: .meetings, name: "Speaker separation",
                       detail: "Labels who spoke in meetings.",
-                      bytes: 120_000_000),
+                      bytes: 106_675_136),
         ]
         syncActive()
     }
@@ -122,7 +131,7 @@ public final class ModelsViewModel {
     }
     public var missingCount: Int { items.count - installedCount }
     public var remainingDownloadCount: Int {
-        items.filter { !isInstalled($0.state) && !isBusy($0.state) }.count
+        items.filter { needsInstall($0) && !isBusy($0.state) }.count
     }
     public var showsDownloadRemaining: Bool {
         !isChecking && remainingDownloadCount > 0 && !items.contains { isBusy($0.state) }
@@ -133,16 +142,39 @@ public final class ModelsViewModel {
         items.first { $0.kind == .speech }?.name
             ?? ModelProfile.nemotron35Streaming.displayName
     }
+    public var selectedASRRuntime: ASRRuntime { asrRuntime }
+
+    public func updateASRSelection(runtime: ASRRuntime, profile: String) async {
+        guard asrRuntime != runtime || asrProfile != profile else { return }
+        asrRuntime = runtime
+        asrProfile = profile
+        if let index = items.firstIndex(where: { $0.kind == .speech }) {
+            let installedRuntimes = items[index].installedASRRuntimes
+            items[index] = ModelItem(id: profile, kind: .speech,
+                                     name: ModelProfile.byID(profile).displayName,
+                                     detail: Self.speechDetail(for: runtime,
+                                                               installedIn: installedRuntimes),
+                                     bytes: Self.speechBytes(for: runtime),
+                                     installedASRRuntimes: installedRuntimes)
+        }
+        isChecking = true
+        await refresh()
+    }
 
     public func refresh() async {
         defer {
             syncActive()
             isChecking = false
         }
-        guard let models else { return }
-        let speech = await asrModels?.isAvailable(profileID: asrProfile) ?? false
+        let installedRuntimes = await installedASRRuntimes(profileID: asrProfile)
+        if let index = items.firstIndex(where: { $0.kind == .speech }) {
+            items[index].installedASRRuntimes = installedRuntimes
+            items[index].detail = Self.speechDetail(for: asrRuntime,
+                                                     installedIn: installedRuntimes)
+        }
+        let speech = !installedRuntimes.isEmpty
         let enhancement = await enhancer?.isAvailable() ?? false
-        let cleanup = await models.llmModelURL() != nil
+        let cleanup = await models?.llmModelURL() != nil
         let meetings = (await diarizer?.isInstalled()) ?? false
         set(.installed, for: asrProfile, whenIdle: speech)
         set(.installed, for: Self.enhancementID, whenIdle: enhancement)
@@ -156,7 +188,8 @@ public final class ModelsViewModel {
         for i in items.indices {
             let onDisk = isInstalled(items[i].state)
             switch items[i].kind {
-            case .speech: items[i].isActive = onDisk
+            case .speech:
+                items[i].isActive = items[i].installedASRRuntimes.contains(asrRuntime)
             case .enhancement: items[i].isActive = onDisk && enhancementEnabled()
             case .cleanup: items[i].isActive = onDisk && cleanupEnabled()
             case .meetings: items[i].isActive = onDisk
@@ -180,6 +213,9 @@ public final class ModelsViewModel {
         let token = UUID()
         tokens[id] = token
         setState(.downloading(0), for: id)
+        let asrModels = selectedASRModels
+        let asrProfile = self.asrProfile
+        let asrRuntime = self.asrRuntime
 
         Task { @MainActor in
             let report = progressHandler(for: id, token: token)
@@ -203,7 +239,15 @@ public final class ModelsViewModel {
                 let installed: Bool
                 switch item.kind {
                 case .enhancement: installed = await enhancer?.isAvailable() ?? false
-                case .speech: installed = await asrModels?.isAvailable(profileID: asrProfile) ?? false
+                case .speech:
+                    installed = await asrModels?.isAvailable(profileID: asrProfile) ?? false
+                    if installed,
+                       let index = items.firstIndex(where: { $0.id == id }),
+                       !items[index].installedASRRuntimes.contains(asrRuntime) {
+                        items[index].installedASRRuntimes.append(asrRuntime)
+                        items[index].detail = Self.speechDetail(
+                            for: asrRuntime, installedIn: items[index].installedASRRuntimes)
+                    }
                 case .cleanup: installed = await models?.llmModelURL() != nil
                 case .meetings: installed = (await diarizer?.isReady()) ?? false
                 }
@@ -225,8 +269,51 @@ public final class ModelsViewModel {
 
     public func retry(_ id: String) { download(id) }
 
+    private var selectedASRModels: (any ASRModelProvider)? {
+        asrModelsByRuntime[asrRuntime] ?? asrModels
+    }
+
+    private func installedASRRuntimes(profileID: String) async -> [ASRRuntime] {
+        var installed: [ASRRuntime] = []
+        for runtime in ASRRuntime.allCases {
+            let provider = asrModelsByRuntime[runtime]
+                ?? (runtime == asrRuntime ? asrModels : nil)
+            guard let provider, await provider.isAvailable(profileID: profileID) else { continue }
+            installed.append(runtime)
+        }
+        return installed
+    }
+
+    private func needsInstall(_ item: ModelItem) -> Bool {
+        if item.kind == .speech {
+            return !item.installedASRRuntimes.contains(asrRuntime)
+        }
+        return !isInstalled(item.state)
+    }
+
+    private static func speechDetail(for runtime: ASRRuntime,
+                                     installedIn runtimes: [ASRRuntime] = []) -> String {
+        if runtimes.contains(runtime) {
+            switch runtime {
+            case .audioCpp: return "Installed for audio.cpp · Metal streaming on this Mac."
+            case .sherpaOnnx: return "Installed for sherpa-onnx · Core ML streaming on Apple hardware."
+            }
+        }
+        if let installedElsewhere = runtimes.first {
+            return "Installed for \(installedElsewhere.label). Select it in Settings to use these files; \(runtime.label) needs a separate model package."
+        }
+        return switch runtime {
+        case .audioCpp: "audio.cpp · Metal streaming. Model files are required on this Mac."
+        case .sherpaOnnx: "sherpa-onnx · Core ML streaming on Apple hardware. ONNX model files are required."
+        }
+    }
+
+    private static func speechBytes(for runtime: ASRRuntime) -> Int64 {
+        runtime == .sherpaOnnx ? 475_274_007 : 930_625_888
+    }
+
     public func downloadAll() {
-        for item in items where !isBusy(item.state) && !isInstalled(item.state) {
+        for item in items where !isBusy(item.state) && needsInstall(item) {
             download(item.id)
         }
     }
@@ -269,7 +356,7 @@ public struct ModelsView: View {
             EmptyView()
         } trailing: {
             if vm.showsDownloadRemaining {
-                AppButton("Download remaining (\(vm.remainingDownloadCount))", kind: .primary) { vm.downloadAll() }
+                AppButton("Install remaining (\(vm.remainingDownloadCount))", kind: .primary) { vm.downloadAll() }
             }
         } content: {
             if vm.items.isEmpty {
@@ -316,12 +403,18 @@ struct ModelCard: View {
                 case .idle:
                     Text(item.bytes, format: .byteCount(style: .file))
                         .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
-                    AppButton("Download", kind: .secondary) { vm.download(item.id) }
+                    AppButton("Install model", kind: .secondary) { vm.download(item.id) }
                 case .downloading, .verifying:
                     AppButton("Cancel", kind: .quiet) { vm.cancel(item.id) }
                 case .installed:
                     if item.isActive {
                         PixelBadge("Active", kind: .active)
+                    } else if item.kind == .speech {
+                        let runtimes = item.installedASRRuntimes.map(\.label).joined(separator: ", ")
+                        PixelBadge("Installed · \(runtimes)", kind: .installed)
+                        AppButton("Install for \(vm.selectedASRRuntime.label)", kind: .secondary) {
+                            vm.download(item.id)
+                        }
                     } else {
                         PixelBadge("Installed", kind: .installed)
                     }

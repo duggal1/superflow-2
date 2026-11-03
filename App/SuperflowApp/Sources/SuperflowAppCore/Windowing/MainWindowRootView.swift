@@ -166,9 +166,17 @@ public struct MainWindowRootView: View {
             || error.localizedCaseInsensitiveContains("keyboard shortcut") {
             return .noKeyboardAccess
         }
-        if let error = menuBar.error,
-           error.localizedCaseInsensitiveContains("microphone") {
-            return .noMicrophone
+        if let error = menuBar.error {
+            let lower = error.lowercased()
+            // Only an actual permission denial should send the owner to the
+            // microphone privacy pane. Capture and model failures also mention
+            // "microphone", but opening System Settings for them is misleading.
+            if lower.contains("microphone"),
+               (lower.contains("permission") || lower.contains("denied")
+                || lower.contains("not authorized") || lower.contains("not granted")
+                || lower.contains("access")) {
+                return .noMicrophone
+            }
         }
         switch menuBar.sessionState {
         case .warming, .recording, .finalizing, .inserting:

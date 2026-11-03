@@ -46,7 +46,6 @@ public actor RecoveryEngine {
         var added = 0
         var replayed: Int64 = 0
         var sourceFailed = false
-        var anySourceSucceeded = false
         let sources: [AudioSourceKind] = session.kind == .meeting ? [.mic, .system] : [.mic]
 
         for source in sources {
@@ -56,18 +55,19 @@ public actor RecoveryEngine {
                 .map { Int64($0.endMs) * Int64(sampleRate) / 1000 }
                 .max() ?? 0
             guard total > committedSamples else {
-                anySourceSucceeded = true
                 continue
             }
 
             do {
-                let stream = try await recognizer.makeStream(profile: session.modelProfile, source: source)
-                let collector = Task { () -> [RawSegment] in
+                let stream = try await recognizer.makeStream(profile: ModelProfile.byID(session.modelProfile).id, source: source)
+                let collector = Task { () -> (segments: [RawSegment], failed: Bool) in
                     var segments: [RawSegment] = []
+                    var failed = false
                     for await event in stream.events {
                         if case .committed(let segment) = event { segments.append(segment) }
+                        if case .failure = event { failed = true }
                     }
-                    return segments
+                    return (segments, failed)
                 }
                 for await chunk in await journals.replay(session: session.id, source: source,
                                                          fromSample: committedSamples) {
@@ -75,8 +75,13 @@ public actor RecoveryEngine {
                 }
                 await stream.finish()
                 let recovered = await collector.value
+                guard !recovered.failed else {
+                    sourceFailed = true
+                    report.notices.append("Recovery could not finish \(source.label) audio for \(session.id.short). The journal is retained.")
+                    continue
+                }
                 replayed += total - committedSamples
-                for segment in recovered {
+                for segment in recovered.segments {
                     let row = Segment(sessionID: session.id, index: nextIndex, startMs: segment.startMs,
                                       endMs: segment.endMs, speakerID: segment.speakerHint,
                                       source: source, rawText: segment.text, cleanupState: .pending)
@@ -85,14 +90,13 @@ public actor RecoveryEngine {
                     nextIndex += 1
                     added += 1
                 }
-                anySourceSucceeded = true
             } catch {
                 sourceFailed = true
                 report.notices.append("Recovery could not replay \(source.label) audio for \(session.id.short): \(error.localizedDescription)")
             }
         }
 
-        guard anySourceSucceeded || !sourceFailed else {
+        guard !sourceFailed else {
             report.failed += 1
             return
         }

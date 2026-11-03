@@ -1,6 +1,6 @@
 import Darwin
 import Foundation
-import SuperflowASRFluidAudio
+import SuperflowAudioCpp
 import SuperflowAudioJournal
 import SuperflowKernel
 import SuperflowPorts
@@ -53,7 +53,7 @@ struct RealModelBenchmark {
     }
 
     func run() async throws {
-        let recognizer = FluidAudioRecognizer(modelCacheRoot: modelCacheRoot)
+        let recognizer = AudioCppRecognizer(modelCacheRoot: modelCacheRoot)
         try await recognizer.warmUp(profile: profileID)
         let baselineRSS = Self.currentRSS()
         let rssMonitor = RSSPeak(initial: baselineRSS)

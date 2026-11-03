@@ -1,0 +1,5 @@
+module CAudioCpp [system] {
+    header "include/audiocpp.h"
+    link "audiocpp"
+    export *
+}

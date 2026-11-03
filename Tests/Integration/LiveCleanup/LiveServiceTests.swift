@@ -43,13 +43,13 @@ private actor MeasuredCleaner: DeadlineManagedTextCleaner {
 }
 
 final class LiveServiceTests: XCTestCase {
-    private func model() async throws -> LlamaCleaner {
+    private func model(sessions: Int = 2) async throws -> LlamaCleaner {
         guard let path = ProcessInfo.processInfo.environment["SUPERFLOW_CLEANUP_MODEL"] else {
             throw XCTSkip("Set SUPERFLOW_CLEANUP_MODEL to a local S1-mini GGUF.")
         }
         LlamaLogging.silence()
         let cleaner = LlamaCleaner(modelProvider: LocalModel(url: URL(fileURLWithPath: path)),
-                                   runtime: LlamaCppRuntime(sessions: 2))
+                                   runtime: LlamaCppRuntime(sessions: sessions))
         try await cleaner.prepare(compute: .gpu)
         return cleaner
     }
@@ -90,6 +90,49 @@ final class LiveServiceTests: XCTestCase {
         report += "## Use case 3 through CleanupService\n\nState: \(cleaned.state).\n\n\(cleaned.text)\n\n"
         report += "Normalized output exactly matches the input with the permitted phrase `you know like` removed.\n"
         try write(report, name: "live-service.md")
+    }
+
+    func testLiveShortTranscriptLatency() async throws {
+        let cleaner = try await model(sessions: 3)
+        let service = CleanupService(cleaner: cleaner)
+        let cases = [
+            ("2 seconds", "Please send the updated budget today."),
+            ("5 seconds", "Please send the updated budget to Morgan before the review tomorrow."),
+            ("10 seconds", "Please send the updated budget to Morgan before the review tomorrow and include the latest customer counts in the notes."),
+        ]
+        var samples: [String: [Int]] = Dictionary(uniqueKeysWithValues: cases.map { ($0.0, []) })
+        var fallbacks: [String: Int] = Dictionary(uniqueKeysWithValues: cases.map { ($0.0, 0) })
+
+        for pass in 0..<5 {
+            let ordered = pass.isMultiple(of: 2) ? cases : Array(cases.reversed())
+            for (label, input) in ordered {
+                let started = ContinuousClock.now
+                let outcome = await service.clean(input, context: TextContext(interactive: true))
+                let elapsed = started.duration(to: .now)
+                let elapsedMs = Int(elapsed.components.seconds * 1_000
+                                     + elapsed.components.attoseconds / 1_000_000_000_000_000)
+                XCTAssertEqual(normalized(outcome.text), normalized(input), "content changed for \(label)")
+                XCTAssertEqual(outcome.chunks.count, 1, "short transcript split for \(label)")
+                samples[label, default: []].append(elapsedMs)
+                if outcome.state == .fallback { fallbacks[label, default: 0] += 1 }
+            }
+        }
+
+        let rows = cases.map { label, _ -> String in
+            let values = samples[label, default: []].sorted()
+            let median = values[values.count / 2]
+            return "| \(label) | \(median) | \(values.first ?? 0)–\(values.last ?? 0) | \(fallbacks[label, default: 0])/5 |"
+        }
+        let report = """
+        # Short transcript cleanup latency
+
+        Release build, warmed S1-mini Q4_K_M on GPU, three runtime sessions, default cleanup settings. Five alternating runs per synthetic transcript; timing covers `CleanupService.clean` and excludes model loading. Correctness compares normalized input and output words.
+
+        | Speech length | Median ms | Range ms | Fallbacks |
+        |---|---:|---:|---:|
+        \(rows.joined(separator: "\n"))
+        """
+        try write(report, name: "short-cleanup.md")
     }
 
     func testLiveSyntheticSoaks() async throws {

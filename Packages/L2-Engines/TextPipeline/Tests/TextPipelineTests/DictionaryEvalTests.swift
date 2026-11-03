@@ -56,4 +56,44 @@ final class DictionaryEvalTests: XCTestCase {
         XCTAssertTrue(failures.isEmpty,
                       "missed replacements:\n" + failures.prefix(20).joined(separator: "\n"))
     }
+
+    func testEngineeringDictationRepairsContextualAliases() async {
+        let stage = stage()
+        let cases = [
+            ("Deploy to Virshell for the backend.", "Deploy to Vercel for the backend."),
+            ("Use readys for caching.", "Use Redis for caching."),
+            ("The Adempotensi key prevents duplicate requests.",
+             "The idempotency key prevents duplicate requests."),
+            ("Use the resord schema for validation.", "Use the Zod schema for validation."),
+            ("HTTP 429 triggered the main rail limit too early.",
+             "HTTP 429 triggered the rate limit too early."),
+            ("The issue is congruency, memory location, or model initialization.",
+             "The issue is concurrency, memory allocation, or model initialization."),
+            ("Rust Ffi connects the two services.", "Rust FFI connects the two services."),
+        ]
+
+        for (input, expected) in cases {
+            let output = await stage.apply(TranscriptDraft(text: input),
+                                           context: TextContext()).text
+            XCTAssertEqual(output, expected, "input: \(input)")
+        }
+    }
+
+    func testEngineeringDictionaryPreservesAmbiguousWordsAndNumbers() async {
+        let stage = stage()
+        let cases = [
+            "Ready for caching?",
+            "The congruency of the triangles is correct.",
+            "The memory location is read only.",
+            "HTTP 404 oh one is the reported value.",
+            "Target 200 ms on an M1 with 8 GB.",
+            "Rust FFI targets a localos process.",
+        ]
+
+        for input in cases {
+            let output = await stage.apply(TranscriptDraft(text: input),
+                                           context: TextContext()).text
+            XCTAssertEqual(output, input, "input: \(input)")
+        }
+    }
 }

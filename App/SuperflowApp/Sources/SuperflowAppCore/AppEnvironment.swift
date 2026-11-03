@@ -1,15 +1,15 @@
 import Foundation
-import SuperflowASRFluidAudio
+import SuperflowAudioCpp
 import SuperflowAudioCapture
 import SuperflowEnhancementDeepFilterNet
 import SuperflowAudioJournal
 import SuperflowDiagnostics
-import SuperflowDiarizationFluidAudio
 import SuperflowHotkeyEngine
 import SuperflowInferenceHelperProtocol
 import SuperflowKernel
 import SuperflowLLMCore
 import SuperflowMeetingEngine
+import SuperflowMeetingIntelligence
 import SuperflowModelStore
 import SuperflowPermissionsKit
 import SuperflowPorts
@@ -29,8 +29,8 @@ public final class AppEnvironment {
     public let libraryRepository: any LibraryRepository
     public let settingsStore: any SettingsStore
     public let modelProvider: ModelStore
-    public let recognizer: FluidAudioRecognizer
-    public let diarizer: FluidAudioDiarizer
+    public let recognizer: AudioCppRecognizer
+    public let diarizer: AudioCppDiarizer
     public let llamaRuntime: XPCInferenceHelperRuntime
     public let llamaCleaner: LlamaCleaner
     public let speechEnhancer: DeepFilterNetEnhancer
@@ -73,12 +73,12 @@ public final class AppEnvironment {
             fileManager: FileManager()
         )
         let metrics = MetricsRing()
-        let recognizer = FluidAudioRecognizer(
-            modelCacheRoot: supportDirectory.appendingPathComponent("Models/FluidAudio", isDirectory: true),
+        let recognizer = AudioCppRecognizer(
+            modelCacheRoot: supportDirectory.appendingPathComponent("Models/AudioCpp", isDirectory: true),
             fileManager: FileManager()
         )
-        let diarizer = FluidAudioDiarizer(
-            cacheDirectory: supportDirectory.appendingPathComponent("Models/FluidAudio/Diarization", isDirectory: true)
+        let diarizer = AudioCppDiarizer(
+            cacheDirectory: supportDirectory.appendingPathComponent("Models/AudioCpp", isDirectory: true)
         )
         let llamaRuntime = XPCInferenceHelperRuntime()
         let llamaCleaner = LlamaCleaner(modelProvider: modelProvider, runtime: llamaRuntime)
@@ -142,11 +142,17 @@ public final class AppEnvironment {
         )
     }
 
-    public func makePipeline(settings: AppSettings) async -> TextPipeline {
+    public func makePipeline(settings: AppSettings, forDictation: Bool = true) async -> TextPipeline {
         let lexicon = (try? await libraryRepository.lexicon()) ?? []
         let shortcuts = (try? await libraryRepository.shortcuts()) ?? []
+        let selectedCleaner: any TextCleaner
+        if Self.usesReflectionCleanup(settings: settings, forDictation: forDictation) {
+            selectedCleaner = ReflectionTextCleaner()
+        } else {
+            selectedCleaner = llamaCleaner
+        }
         let cleanup = CleanupService(
-            cleaner: llamaCleaner,
+            cleaner: selectedCleaner,
             config: CleanupConfig(
                 interactiveDeadlineMs: settings.interactiveDeadlineMs,
                 backgroundDeadlineMs: settings.backgroundDeadlineMs,
@@ -162,6 +168,10 @@ public final class AppEnvironment {
                 project: project
             )
         )
+    }
+
+    static func usesReflectionCleanup(settings: AppSettings, forDictation: Bool) -> Bool {
+        forDictation && settings.reflectionCleanupEnabled
     }
 
     /// Builds a bounded project index off the main actor and applies it to both
@@ -225,8 +235,8 @@ public final class AppEnvironment {
     }
 
     private static func loadThirdPartyNotices() -> String {
-        let names = ["README.md", "S1-mini-NOTICE.txt", "S1-mini-LICENSE.txt", "FluidAudio-LICENSE.txt",
-                     "llama.cpp-LICENSE.txt", "Hex-LICENSE.txt"]
+        let names = ["README.md", "S1-mini-NOTICE.txt", "S1-mini-LICENSE.txt", "AudioCpp-LICENSE.txt",
+                     "llama.cpp-LICENSE.txt", "Hex-LICENSE.txt", "AudioCpp-THIRD-PARTY-NOTICES.txt"]
         let directory = Bundle.module.resourceURL?.appendingPathComponent("ThirdPartyNotices", isDirectory: true)
         return names.compactMap { name -> String? in
             guard let directory else { return nil }

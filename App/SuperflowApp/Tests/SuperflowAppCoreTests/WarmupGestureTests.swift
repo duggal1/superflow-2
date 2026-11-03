@@ -10,11 +10,19 @@ import XCTest
 
 final class WarmupGestureTests: XCTestCase {
     @MainActor
-    func testIntelligenceTriggerOpensPageWithoutStartingADictationGesture() async {
+    func testIntelligenceTriggerOpensMeetingsWithoutStartingADictationGesture() async {
         _ = NSApplication.shared
-        let coordinator = AppCoordinator()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let coordinator = AppCoordinator(applicationSupportDirectory: directory)
+        coordinator.menuBarController.setRecoveryReady(false)
         await coordinator.handleKeyEvent(KeyEvent(kind: .intelligenceDown, timestampNs: 0))
-        XCTAssertEqual(coordinator.mainWindowController.selection, .intelligence)
+        XCTAssertEqual(coordinator.mainWindowController.selection, .meetings)
+        for _ in 0..<100 where coordinator.isStartingIntelligenceMeeting {
+            await Task.yield()
+        }
+        XCTAssertFalse(coordinator.isStartingIntelligenceMeeting)
+        XCTAssertNotEqual(AppSection.intelligence.icon, AppSection.meetings.icon)
         XCTAssertEqual(coordinator.gesture.state, .idle)
     }
 

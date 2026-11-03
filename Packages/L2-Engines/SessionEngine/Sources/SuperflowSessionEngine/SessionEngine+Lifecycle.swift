@@ -30,20 +30,9 @@ extension SessionEngine {
     func performWarmUp() async -> Bool {
         let recognizer = self.recognizer
         let profile = settings.asrProfile
-        let enhancer = settings.speechEnhancementEnabled ? self.enhancer : nil
-        let deadline = modelDeadline
         do {
             try await withDeadline(modelDeadline, label: "model warm-up") {
                 try await recognizer.warmUp(profile: profile)
-            }
-            // Optional enhancement must not gate ASR readiness. Prepare it only
-            // after Core ML has finished loading the speech recognizer.
-            if let enhancer {
-                Task(priority: .utility) {
-                    try? await withDeadline(deadline, label: "enhancement warm-up") {
-                        try await enhancer.prepare()
-                    }
-                }
             }
             return true
         } catch {

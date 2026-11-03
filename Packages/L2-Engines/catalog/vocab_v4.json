@@ -7459,6 +7459,146 @@
         {
           "t": "the zod",
           "tier": "B"
+        },
+        {
+          "t": "resord",
+          "tier": "B",
+          "requires": [
+            "schema",
+            "validation"
+          ],
+          "neg": [
+            "resort",
+            "record"
+          ]
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "concurrency",
+      "canonical": "concurrency",
+      "kind": "term",
+      "pack": "core",
+      "case": "lower",
+      "aliases": [
+        {
+          "t": "concurrency",
+          "tier": "A"
+        },
+        {
+          "t": "congruency",
+          "tier": "B",
+          "requires": [
+            "memory",
+            "worker",
+            "thread",
+            "parallel"
+          ],
+          "neg": [
+            "math",
+            "mathematics",
+            "geometry",
+            "linguistic",
+            "triangle"
+          ]
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "ffi",
+      "canonical": "FFI",
+      "kind": "acronym",
+      "pack": "core",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "ffi",
+          "tier": "A"
+        },
+        {
+          "t": "f f i",
+          "tier": "A"
+        },
+        {
+          "t": "foreign function interface",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "idempotency",
+      "canonical": "idempotency",
+      "kind": "term",
+      "pack": "core",
+      "case": "lower",
+      "aliases": [
+        {
+          "t": "idempotency",
+          "tier": "A"
+        },
+        {
+          "t": "adempotensi",
+          "tier": "B",
+          "requires": [
+            "key",
+            "request"
+          ]
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "memory-allocation",
+      "canonical": "memory allocation",
+      "kind": "term",
+      "pack": "core",
+      "case": "lower",
+      "aliases": [
+        {
+          "t": "memory allocation",
+          "tier": "A"
+        },
+        {
+          "t": "memory location",
+          "tier": "B",
+          "requires": [
+            "congruency",
+            "concurrency"
+          ],
+          "neg": [
+            "address",
+            "pointer",
+            "variable"
+          ]
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "rate-limit",
+      "canonical": "rate limit",
+      "kind": "term",
+      "pack": "core",
+      "case": "lower",
+      "aliases": [
+        {
+          "t": "rate limit",
+          "tier": "A"
+        },
+        {
+          "t": "main rail limit",
+          "tier": "B",
+          "requires": [
+            "429",
+            "api"
+          ],
+          "neg": [
+            "train",
+            "railway"
+          ]
         }
       ],
       "enabled_default": true
@@ -8514,6 +8654,24 @@
       "enabled_default": true
     },
     {
+      "id": "rust-ffi",
+      "canonical": "Rust FFI",
+      "kind": "acronym",
+      "pack": "rust",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "rust ffi",
+          "tier": "A"
+        },
+        {
+          "t": "rust f f i",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
       "id": "safetensors",
       "canonical": "Safetensors",
       "kind": "hardware",
@@ -9487,6 +9645,14 @@
         {
           "t": "re dis",
           "tier": "B"
+        },
+        {
+          "t": "readys",
+          "tier": "B",
+          "requires": [
+            "caching",
+            "cache"
+          ]
         }
       ],
       "enabled_default": true
@@ -12985,6 +13151,10 @@
         {
           "t": "ver sell",
           "tier": "B"
+        },
+        {
+          "t": "virshell",
+          "tier": "A"
         }
       ],
       "enabled_default": true

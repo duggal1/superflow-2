@@ -1,7 +1,7 @@
 import AVFoundation
 import Darwin
 import Foundation
-import SuperflowASRFluidAudio
+import SuperflowAudioCpp
 import SuperflowGrammarHarper
 import SuperflowKernel
 import SuperflowLLMCore
@@ -98,7 +98,7 @@ struct Campaign {
             .lowercased() ?? "gpu"
         let tier = Self.tierMilliseconds(profileID: profileID, cacheRoot: modelCacheRoot)
 
-        let recognizer = FluidAudioRecognizer(modelCacheRoot: modelCacheRoot)
+        let recognizer = AudioCppRecognizer(modelCacheRoot: modelCacheRoot)
         let baselineRSS = Self.currentRSS()
         let loadClock = ContinuousClock()
         let loadStart = loadClock.now
@@ -299,18 +299,7 @@ struct Campaign {
     }
 
     private static func tierMilliseconds(profileID: String, cacheRoot: URL) -> Int? {
-        guard let profile = FluidAudioCatalog.profile(for: profileID) else { return nil }
-        let dir = ProcessInfo.processInfo.environment["SUPERFLOW_MODEL_DIR"]
-            .map { URL(fileURLWithPath: $0, isDirectory: true) }
-            ?? FluidAudioCatalog.modelDirectory(for: profile, cacheRoot: cacheRoot)
-        if let raw = dir.lastPathComponent.split(separator: "m").first, let value = Int(raw) {
-            return value
-        }
-        let metadata = dir.appendingPathComponent("metadata.json")
-        guard let data = try? Data(contentsOf: metadata),
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let frames = object["chunk_mel_frames"] as? Int else { return nil }
-        return frames * 10
+        AudioCppRecognizer.supports(profileID) ? 320 : nil
     }
 
     private static func duration(of url: URL) throws -> Double {

@@ -90,4 +90,28 @@ final class LiveCleanupTests: XCTestCase {
         }
         XCTAssertTrue(cancelled)
     }
+    func testLiveParallelS1RequestsPreserveTheirResults() async throws {
+        guard let modelPath = ProcessInfo.processInfo.environment["SUPERFLOW_CLEANUP_MODEL"] else {
+            throw XCTSkip("Set SUPERFLOW_CLEANUP_MODEL to a local S1-mini GGUF.")
+        }
+        let runtime = LlamaCppRuntime(sessions: 2)
+        let cleaner = LlamaCleaner(modelProvider: LiveModelProvider(url: URL(fileURLWithPath: modelPath)),
+                                   runtime: runtime)
+        try await cleaner.prepare(compute: .gpu)
+        let input = "okay so please send the report to the team tomorrow morning and make sure the status code is 429 when the rate limit is reached"
+        let options = CleanOptions(deadlineMs: 1_500)
+        let expected = try await cleaner.clean(input, options: options)
+        let start = ContinuousClock.now
+        async let first = cleaner.clean(input, options: options)
+        async let second = cleaner.clean(input, options: options)
+        let (one, two) = try await (first, second)
+        let elapsed = start.duration(to: .now)
+        XCTAssertFalse(one.hitTokenCap)
+        XCTAssertFalse(two.hitTokenCap)
+        XCTAssertFalse(one.text.isEmpty)
+        XCTAssertEqual(one.text, expected.text)
+        XCTAssertEqual(two.text, expected.text)
+        print("s1_parallel_wall=\(elapsed) request_ms=\(one.latencyMs),\(two.latencyMs) errors=0 requests=2")
+    }
+
 }

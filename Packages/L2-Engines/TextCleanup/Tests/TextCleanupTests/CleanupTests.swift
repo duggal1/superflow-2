@@ -55,6 +55,18 @@ final class CleanupTests: XCTestCase {
         XCTAssertFalse(metrics.fields.flatMap(\.values).contains { $0.contains("report") || $0.contains("invented") })
     }
 
+    func testInventedPathSeparatorsAreRejected() {
+        let original = "go to the lib backend folder"
+        let rewritten = CleanResult(text: "Go to the lib/backend folder.", tokensIn: 0, tokensOut: 5,
+                                    hitTokenCap: false, latencyMs: 0)
+        XCTAssertEqual(CleanGuard.verify(input: original, protected: Protected(), result: rewritten, cap: 100),
+                       .contentChanged)
+        let unchanged = CleanResult(text: "Go to the lib/backend folder.", tokensIn: 0, tokensOut: 5,
+                                    hitTokenCap: false, latencyMs: 0)
+        XCTAssertNil(CleanGuard.verify(input: "go to the lib/backend folder", protected: Protected(),
+                                       result: unchanged, cap: 100))
+    }
+
     func testIdentityIsCleaned() async {
         let cleaner = FakeTextCleaner(.identity)
         let outcome = await service(cleaner).clean("hello world. this is fine.", context: TextContext())

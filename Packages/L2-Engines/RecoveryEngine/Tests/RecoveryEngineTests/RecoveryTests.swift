@@ -5,7 +5,7 @@ import SuperflowTestKit
 @testable import SuperflowRecoveryEngine
 
 final class RecoveryTests: XCTestCase {
-    private func session(kind: SessionKind = .dictation, profile: String = ModelProfile.parakeetEOU120M.id) -> SessionRecord {
+    private func session(kind: SessionKind = .dictation, profile: String = "parakeet-eou-120m") -> SessionRecord {
         SessionRecord(kind: kind, status: .recording, modelProfile: profile)
     }
 
@@ -87,6 +87,26 @@ final class RecoveryTests: XCTestCase {
         XCTAssertEqual(remaining, 1_600)
     }
 
+    func testStreamFailurePreservesBothMeetingJournals() async throws {
+        let repo = InMemoryRepository()
+        let journals = FakeJournalStore()
+        let record = session(kind: .meeting)
+        try await repo.createSession(record)
+        for chunk in chunks(2) { await journals.record(chunk) }
+        for chunk in chunks(2, source: .system) { await journals.record(chunk) }
+        let engine = RecoveryEngine(repository: repo, journals: journals,
+                                    recognizer: StreamingFailureRecognizer())
+        let report = await engine.recover()
+        XCTAssertEqual(report.failed, 1)
+        XCTAssertEqual(report.recovered, 0)
+        let status = try await repo.session(record.id)?.status
+        XCTAssertEqual(status, .recording)
+        let mic = await journals.sampleCount(session: record.id, source: .mic)
+        let system = await journals.sampleCount(session: record.id, source: .system)
+        XCTAssertEqual(mic, 3_200)
+        XCTAssertEqual(system, 3_200)
+    }
+
     func testMeetingRecoversBothSources() async throws {
         let repo = InMemoryRepository()
         let journals = FakeJournalStore()
@@ -146,5 +166,15 @@ final class RecoveryTests: XCTestCase {
         _ = await engine.recover()
         let remaining = await journals.sampleCount(session: s.id, source: .mic)
         XCTAssertEqual(remaining, 1_600)
+    }
+}
+
+private struct StreamingFailureRecognizer: SpeechRecognizer {
+    let isReady = true
+    func warmUp(profile: String) async throws {}
+    func makeStream(profile: String, source: AudioSourceKind) async throws -> any RecognitionStream {
+        guard profile == ModelProfile.default.id else { throw SuperflowError.modelUnavailable(profile) }
+        return FakeRecognitionStream(script: ["recovered"], samplesPerSegment: 1_600,
+                                     source: source, failEvery: source == .system ? 1 : 0)
     }
 }
