@@ -41,7 +41,14 @@ public actor RecoveryEngine {
     }
 
     private func recover(_ session: SessionRecord, report: inout RecoveryReport) async {
-        var existing = (try? await repository.segments(session: session.id)) ?? []
+        var existing: [Segment]
+        do {
+            existing = try await repository.segments(session: session.id)
+        } catch {
+            report.failed += 1
+            report.notices.append("Could not read the interrupted session; its journal was retained.")
+            return
+        }
         var nextIndex = (existing.map(\.index).max() ?? -1) + 1
         var added = 0
         var replayed: Int64 = 0
@@ -107,8 +114,14 @@ public actor RecoveryEngine {
                 let segment = existing[index]
                 let cleaned = await cleaner(segment.rawText)
                 if cleaned.text != segment.rawText || cleaned.state == .cleaned {
-                    try? await repository.updateCleaned(session: session.id, index: segment.index,
-                                                        cleaned: cleaned.text, state: cleaned.state)
+                    do {
+                        try await repository.updateCleaned(session: session.id, index: segment.index,
+                                                           cleaned: cleaned.text, state: cleaned.state)
+                    } catch {
+                        report.failed += 1
+                        report.notices.append("Could not save the recovered transcript; its journal was retained.")
+                        return
+                    }
                     existing[index].cleanedText = cleaned.text
                     existing[index].cleanupState = cleaned.state
                     if cleaned.state == .cleaned { cleanedCount += 1 }
