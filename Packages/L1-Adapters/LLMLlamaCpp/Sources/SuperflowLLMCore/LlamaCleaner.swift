@@ -185,7 +185,12 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
         self.runtime = runtime
     }
 
-    public var isReady: Bool { ready }
+    public var isReady: Bool {
+        get async {
+            if let preparation { try? await preparation.task.value }
+            return ready
+        }
+    }
 
     public func prepare(compute: ModelCompute = .gpu) async throws {
         if let preparation { try await preparation.task.value }
