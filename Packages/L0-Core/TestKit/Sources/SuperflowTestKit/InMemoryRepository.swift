@@ -8,6 +8,10 @@ public actor InMemoryRepository: TranscriptRepository {
     private var speakersBySession: [SessionID: [SpeakerRecord]] = [:]
     private var days: [String: DailyStat] = [:]
 
+    public enum Failure: Sendable { case append, update, read, finalize }
+    private var failure: Failure?
+    public func setFailure(_ failure: Failure?) { self.failure = failure }
+
     public init() {}
 
     public func createSession(_ s: SessionRecord) async throws {
@@ -19,6 +23,7 @@ public actor InMemoryRepository: TranscriptRepository {
     }
 
     public func appendSegment(_ s: Segment) async throws {
+        if failure == .append { throw SuperflowError.diskFull }
         var list = segmentsBySession[s.sessionID, default: []]
         list.removeAll { $0.index == s.index }
         list.append(s)
@@ -26,6 +31,7 @@ public actor InMemoryRepository: TranscriptRepository {
     }
 
     public func updateCleaned(session: SessionID, index: Int, cleaned: String?, state: CleanupState) async throws {
+        if failure == .update { throw SuperflowError.diskFull }
         guard var list = segmentsBySession[session], let i = list.firstIndex(where: { $0.index == index }) else { return }
         list[i].cleanedText = cleaned
         list[i].cleanupState = state
@@ -34,6 +40,7 @@ public actor InMemoryRepository: TranscriptRepository {
 
     public func finalizeSession(_ id: SessionID, endedAt: Date, status: SessionStatus, durationMs: Int,
                                 wordCount: Int, cleanupState: CleanupState) async throws {
+        if failure == .finalize { throw SuperflowError.diskFull }
         guard var s = sessionsByID[id] else { return }
         s.endedAt = endedAt
         s.status = status
@@ -60,7 +67,10 @@ public actor InMemoryRepository: TranscriptRepository {
         segmentsBySession[session]?.first { $0.index == index }
     }
 
-    public func segments(session: SessionID) async throws -> [Segment] { segmentsBySession[session] ?? [] }
+    public func segments(session: SessionID) async throws -> [Segment] {
+        if failure == .read { throw SuperflowError.diskFull }
+        return segmentsBySession[session] ?? []
+    }
 
     public func deleteSession(_ id: SessionID) async throws {
         sessionsByID[id] = nil

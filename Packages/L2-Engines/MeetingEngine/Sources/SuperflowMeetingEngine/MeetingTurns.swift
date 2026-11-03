@@ -21,10 +21,11 @@ extension MeetingEngine {
         let row = Segment(sessionID: session, index: index, startMs: sharedStart, endMs: sharedEnd,
                           speakerID: speakerID, source: source, rawText: raw.text,
                           cleanupState: .pending)
-        try? await repository.appendSegment(row)
-        try? await repository.upsertSpeaker(SpeakerRecord(sessionID: session, id: speakerID,
-                                                         label: speakerName,
-                                                         isSelf: speakerID == "self"))
+        do {
+            try await repository.appendSegment(row)
+            try await repository.upsertSpeaker(SpeakerRecord(sessionID: session, id: speakerID,
+                                                              label: speakerName, isSelf: speakerID == "self"))
+        } catch { persistenceFailed = true }
         if duplicate {
             await drop(index, session: session)
             return
@@ -51,8 +52,10 @@ extension MeetingEngine {
         if let position = residentTurns.firstIndex(where: { $0.index == index }) {
             residentTurns[position].text = text
         }
-        try? await repository.updateCleaned(session: session, index: index, cleaned: text,
-                                            state: result.draft.cleanupState)
+        do {
+            try await repository.updateCleaned(session: session, index: index, cleaned: text,
+                                               state: result.draft.cleanupState)
+        } catch { persistenceFailed = true }
     }
 
     func addGap(_ message: String, atMs: Int, session: SessionID) async {
@@ -63,11 +66,13 @@ extension MeetingEngine {
                                startMs: atMs, endMs: atMs, text: message, rawText: message,
                                source: .system, isGap: true)
         appendResident(turn)
-        try? await repository.appendSegment(Segment(sessionID: session, index: index,
+        do {
+            try await repository.appendSegment(Segment(sessionID: session, index: index,
                                                     startMs: atMs, endMs: atMs,
                                                     speakerID: "system", source: .system,
                                                     rawText: message, cleanedText: "",
                                                     cleanupState: .skipped))
+        } catch { persistenceFailed = true }
     }
 
     func speakerID(atLocalMs ms: Int) async -> String {
@@ -114,8 +119,9 @@ extension MeetingEngine {
         droppedIndexes.insert(index)
         residentTurns.removeAll { $0.index == index }
         pipelineTasks.removeValue(forKey: index)?.cancel()
-        try? await repository.updateCleaned(session: session, index: index, cleaned: "",
-                                            state: .skipped)
+        do {
+            try await repository.updateCleaned(session: session, index: index, cleaned: "", state: .skipped)
+        } catch { persistenceFailed = true }
         trimDroppedIndexes()
     }
 

@@ -51,6 +51,7 @@ public actor MeetingEngine {
     var speakerNames: [String: String] = [:]
     var systemOffsetSamples: Int64 = 0
     var systemAvailable = false
+    var persistenceFailed = false
     var lastDocument: MeetingDocument?
     var micOriginNs: UInt64?
 
@@ -168,17 +169,24 @@ public actor MeetingEngine {
         transition(.finalizing)
         await finishCapture()
         let endedAt = clock.now()
-        let document = await repositoryDocument(endedAt: endedAt)
-        let words = document.turns.reduce(0) { $0 + wordCount($1.text) }
-        let cleanup = await cleanupStateFromRepository()
-        try? await repository.finalizeSession(record.id, endedAt: endedAt, status: .complete,
-                                              durationMs: document.durationMs, wordCount: words,
-                                              cleanupState: cleanup)
-        if !settings.keepJournals { await journals.delete(session: record.id) }
-        lastDocument = document
-        transition(.complete(record.id))
-        emit(.finished(record.id, document))
-        return document
+        do {
+            guard !persistenceFailed else { throw SuperflowError.invalidState("meeting capture or persistence failed") }
+            let document = try await repositoryDocument(endedAt: endedAt)
+            let words = document.turns.reduce(0) { $0 + wordCount($1.text) }
+            let cleanup = try await cleanupStateFromRepository()
+            try await repository.finalizeSession(record.id, endedAt: endedAt, status: .complete,
+                                                 durationMs: document.durationMs, wordCount: words,
+                                                 cleanupState: cleanup)
+            if !settings.keepJournals { await journals.delete(session: record.id) }
+            lastDocument = document
+            transition(.complete(record.id))
+            emit(.finished(record.id, document))
+            return document
+        } catch {
+            addNotice("Meeting could not be completed. Available audio was retained.")
+            transition(.failed("Meeting could not be completed; available audio retained."))
+            return nil
+        }
     }
 
     public func cancel() async {
@@ -262,6 +270,7 @@ public actor MeetingEngine {
         speakerNames.removeAll()
         systemOffsetSamples = 0
         systemAvailable = false
+        persistenceFailed = false
         micOriginNs = nil
     }
 

@@ -103,6 +103,7 @@ extension MeetingEngine {
             case .endpoint:
                 break
             case .failure(let message):
+                persistenceFailed = true
                 emit(.notice("\(source.label) recognition problem: \(message)"))
             }
         }
@@ -117,7 +118,10 @@ extension MeetingEngine {
         for stream in recognitionStreams.values { await stream.finish() }
         for task in recognitionTasks.values { await task.value }
         recognitionTasks.removeAll()
-        for writer in writers.values { _ = await writer.close() }
+        for writer in writers.values {
+            let summary = await writer.close()
+            if summary.degraded { persistenceFailed = true }
+        }
         writers.removeAll()
         for task in eventTasks.values { task.cancel() }
         eventTasks.removeAll()

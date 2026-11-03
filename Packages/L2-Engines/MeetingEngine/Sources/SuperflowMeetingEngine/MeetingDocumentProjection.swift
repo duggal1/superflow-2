@@ -112,14 +112,14 @@ extension MeetingEngine {
                                        endedAt: nil, durationMs: max(lastEndMs, 0))
     }
 
-    func repositoryDocument(endedAt: Date) async -> MeetingDocument {
+    func repositoryDocument(endedAt: Date) async throws -> MeetingDocument {
         guard let record else {
             return MeetingDocument(sessionID: "unknown", title: "Meeting", startedAt: endedAt,
                                    endedAt: endedAt, durationMs: lastEndMs, speakers: [], turns: [],
                                    notices: notices)
         }
-        let segments = (try? await repository.segments(session: record.id)) ?? []
-        let speakers = (try? await repository.speakers(session: record.id)) ?? []
+        let segments = try await repository.segments(session: record.id)
+        let speakers = try await repository.speakers(session: record.id)
         let wallMs = max(0, Int(endedAt.timeIntervalSince(record.startedAt) * 1000))
         return MeetingDocumentProjection.make(record: record, segments: segments,
                                               speakers: speakers, notices: notices,
@@ -127,11 +127,9 @@ extension MeetingEngine {
                                               durationMs: max(lastEndMs, wallMs))
     }
 
-    func cleanupStateFromRepository() async -> CleanupState {
-        guard let record,
-              let segments = try? await repository.segments(session: record.id) else {
-            return .skipped
-        }
+    func cleanupStateFromRepository() async throws -> CleanupState {
+        guard let record else { return .skipped }
+        let segments = try await repository.segments(session: record.id)
         let states = segments.filter { !MeetingDocumentProjection.isGap($0) }
             .map(\.cleanupState)
         if states.contains(.fallback) { return .fallback }
