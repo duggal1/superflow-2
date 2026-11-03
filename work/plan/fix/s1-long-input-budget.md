@@ -1,0 +1,10 @@
+# S1 long-input budget
+- Root cause: caller-supplied cleanup limits are not bounded to the requested S1-mini input limit; the runtime's 2048-token context can clip a valid 850-token request plus its output budget.
+- Clamp configured and mutated planner/service hard caps to 850 tokens, retain small 64-token normal chunks and bounded, ordered scheduling.
+- Increase the runtime context enough for the trained prompt and 850-token input plus the configured 1.3× output budget.
+- Verify the cap, oversized protected input, ordering and concurrency on 10-, 30- and 60-minute synthetic transcripts; run affected package tests and real-model inference.
+- Existing two simultaneous inference contexts remain: real-model comparison on this Mac showed no measurable gain from four; do not claim measured end-to-end speed.
+- Verification: 99 cleanup tests pass; synthetic 10/30/60-minute text preserves every word with two workers. A 841-token real-model repeated-list stress case missed its final item even though the model did not hit its cap. The safety guard rejects a comparable missing-item result; it does not prove 850-token quality. Keep this issue unresolved.
+- Tokenizer failure previously returned zero for non-empty input, bypassing chunking. A failing-before regression now requires a conservative nonzero bound when a loaded model's tokenizer is unavailable.
+- Real S1-mini Q4_K_M release-build runs with two contexts: 1,612 synthetic words / 26 calls, 4,588 words / 74 calls, and 9,052 words / 146 calls all completed with zero capped calls, errors or normalized word mismatches. Each uses the same short synthetic passage repeatedly; these are batch inference tests, not microphone, XPC, cleanup-guard, or stop-to-paste measurements.
+- Real-model adversarial 841-token direct request failed its last-item assertion despite no generation cap; 850 is a maximum, not a proven safe target. The default 64-token target is intentionally unchanged. No live transcript or real 30/60-minute recording was tested.

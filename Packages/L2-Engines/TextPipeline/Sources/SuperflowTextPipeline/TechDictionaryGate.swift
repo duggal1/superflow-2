@@ -77,13 +77,22 @@ struct TechDictionaryGate: Sendable {
 
     private static func contains(_ words: Set<String>, in line: [String],
                                  near trigger: String, radius: Int) -> Bool {
-        // The lexicon normalizer drops the spoken word "dot", so "dot go" and
-        // "go" share one trie key. Gate on the spoken tokens that remain.
-        let target = tokens(trigger).filter { $0 != "dot" }
-        guard !target.isEmpty, line.count >= target.count else { return false }
-        for start in 0...(line.count - target.count) {
-            guard Array(line[start..<start + target.count]) == target else { continue }
-            let end = start + target.count
+        // The lexicon normalizer concatenates tokens and drops the spoken word
+        // "dot", so the trigger text and the line rarely tokenize alike:
+        // "m o e" matches "moe", and "aria" matches "a r i a". Locate the
+        // match by its normalized key and gate on the tokens it covers.
+        let target = Array(normalized(trigger))
+        guard !target.isEmpty else { return false }
+        for start in 0..<line.count {
+            var end = start
+            var accumulated = ""
+            while end < line.count, accumulated.count < target.count {
+                let token = line[end]
+                end += 1
+                if token == "dot" { continue }
+                accumulated += token.filter { $0.isLetter || $0.isNumber || $0 == "'" }
+            }
+            guard accumulated == String(target) else { continue }
             let lower = max(0, start - radius)
             let upper = min(line.count - 1, end - 1 + radius)
             for index in lower...upper where index < start || index >= end {

@@ -52,6 +52,7 @@ extension SessionEngine {
         }
 
         isStarting = true
+        captureStopRequested = false
         defer { isStarting = false }
         await speculative.cancel()
 
@@ -108,6 +109,7 @@ extension SessionEngine {
                 }
             }
             let feedStream = consumeCapture(streams, writer: journalWriter, archive: clip)
+            if captureStopRequested { await audio.stop() }
 
             // Let Chromium/Electron build their Accessibility tree while the user
             // speaks; the microphone is already live.
@@ -179,6 +181,12 @@ extension SessionEngine {
 
     /// Drains capture and recognition, resolves every cleanup task, inserts the final text and
     /// finalizes the session. Returns nil when there is no active recording.
+    public func stopCaptureWhileStarting() async {
+        guard isStarting else { return }
+        captureStopRequested = true
+        await audio.stop()
+    }
+
     public func stop() async -> SessionOutcome? {
         guard case .recording = state, let record else { return nil }
         transition(.finalizing)
@@ -226,6 +234,21 @@ extension SessionEngine {
         }
         let cleanupState = await cleanupCoordinator?.finish() ?? .skipped
         cleanupCoordinator = nil
+        if settings.cleanupEnabled && cleanupState == .fallback {
+            if let clip = archiveWriter {
+                archiveWriter = nil
+                if let archived = await clip.finish(), let store = repository as? any AudioMetadataStore {
+                    try? await store.setAudio(session: record.id, duration: archived.duration,
+                                              peaks: Data(archived.peaks))
+                }
+            }
+            emit(.notice("Cleanup could not complete. Nothing was pasted; the recording was retained."))
+            transition(.failed(record.id, "Cleanup failed; recording retained."))
+            emit(.finished(record.id, .failed))
+            self.record = nil
+            return SessionOutcome(sessionID: record.id, text: "", wordCount: 0,
+                                  cleanupState: .fallback, insertion: nil)
+        }
         let assembledText = recognitionOverflow ? nil : await finalText(session: record.id)
         let text = assembledText ?? ""
         let words = wordCount(text)
@@ -291,7 +314,7 @@ extension SessionEngine {
             transition(.complete(record.id))
             emit(.finished(record.id, .complete))
         } else {
-            transition(.failed(record.id, recognitionOverflow ? "Recognition fell behind; recovery is required." : "Transcript could not be finalized."))
+            transition(.failed(record.id, recognitionOverflow ? "Recognition failed or fell behind; recovery is required." : "Transcript could not be finalized."))
             emit(.finished(record.id, .failed))
         }
         self.record = nil
@@ -353,6 +376,7 @@ extension SessionEngine {
             case .endpoint:
                 break
             case .failure(let message):
+                recognitionOverflow = true
                 emit(.notice("Recognition problem: \(message)"))
             }
         }

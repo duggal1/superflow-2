@@ -152,7 +152,7 @@ final class LlamaCleanerTests: XCTestCase {
     func testPlainTemplateHasNoChatTokens() {
         let prompt = LlamaPrompt.render(text: "hello", options: CleanOptions(), template: .plain)
         XCTAssertFalse(prompt.contains("<|im_start|>"))
-        XCTAssertTrue(prompt.contains("[Styling: semi-formal] [Structure: prose] [Context: general]"))
+        XCTAssertTrue(prompt.contains("[Styling: semi-formal] [Structure: lists] [Context: general]"))
         XCTAssertTrue(prompt.hasSuffix("hello"))
     }
 

@@ -1,0 +1,226 @@
+[
+  {
+    "style": "casual",
+    "case": "correction",
+    "input": "so um i need to like send the the report by uh friday no wait make that thursday",
+    "output": "so i need to send the report by thursday",
+    "capped": false
+  },
+  {
+    "style": "casual",
+    "case": "tail",
+    "input": "please send the report tomorrow um",
+    "output": "please send the report tomorrow",
+    "capped": false
+  },
+  {
+    "style": "casual",
+    "case": "number",
+    "input": "i think the answer is forty two no sorry forty three",
+    "output": "i think the answer is 43",
+    "capped": false
+  },
+  {
+    "style": "casual",
+    "case": "currency",
+    "input": "the invoice came to twenty three thousand four hundred and fifty dollars",
+    "output": "the invoice came to $23,450",
+    "capped": false
+  },
+  {
+    "style": "casual",
+    "case": "filler",
+    "input": "um",
+    "output": "",
+    "capped": false
+  },
+  {
+    "style": "casual",
+    "case": "voice",
+    "input": "hmm im gonna be late theres a cute dog outside i cant just walk past him",
+    "output": "hmm im gonna be late. theres a cute dog outside. i cant just walk past him",
+    "capped": false
+  },
+  {
+    "style": "casual",
+    "case": "terms",
+    "input": "um use S1-mini and Nemotron with GPT-6 Astra and Hugging Face",
+    "output": "um use s1-mini and nemotron with gpt-6 astra and hugging face",
+    "capped": false
+  },
+  {
+    "style": "casual",
+    "case": "negation",
+    "input": "do not delete the file keep all five backups before the release",
+    "output": "do not delete the file keep all five backups before the release",
+    "capped": false
+  },
+  {
+    "style": "semi-casual",
+    "case": "correction",
+    "input": "so um i need to like send the the report by uh friday no wait make that thursday",
+    "output": "so um I need to send the report by Thursday",
+    "capped": false
+  },
+  {
+    "style": "semi-casual",
+    "case": "tail",
+    "input": "please send the report tomorrow um",
+    "output": "please send the report tomorrow",
+    "capped": false
+  },
+  {
+    "style": "semi-casual",
+    "case": "number",
+    "input": "i think the answer is forty two no sorry forty three",
+    "output": "I think the answer is 43",
+    "capped": false
+  },
+  {
+    "style": "semi-casual",
+    "case": "currency",
+    "input": "the invoice came to twenty three thousand four hundred and fifty dollars",
+    "output": "the invoice came to $23,450",
+    "capped": false
+  },
+  {
+    "style": "semi-casual",
+    "case": "filler",
+    "input": "um",
+    "output": "",
+    "capped": false
+  },
+  {
+    "style": "semi-casual",
+    "case": "voice",
+    "input": "hmm im gonna be late theres a cute dog outside i cant just walk past him",
+    "output": "hmm, I'm gonna be late. there's a cute dog outside. I can't just walk past him",
+    "capped": false
+  },
+  {
+    "style": "semi-casual",
+    "case": "terms",
+    "input": "um use S1-mini and Nemotron with GPT-6 Astra and Hugging Face",
+    "output": "um, use S1-mini and Nemotron with GPT-6 Astra and Hugging Face",
+    "capped": false
+  },
+  {
+    "style": "semi-casual",
+    "case": "negation",
+    "input": "do not delete the file keep all five backups before the release",
+    "output": "do not delete the file, keep all five backups before the release",
+    "capped": false
+  },
+  {
+    "style": "semi-formal",
+    "case": "correction",
+    "input": "so um i need to like send the the report by uh friday no wait make that thursday",
+    "output": "So I need to send the report by Thursday.",
+    "capped": false
+  },
+  {
+    "style": "semi-formal",
+    "case": "tail",
+    "input": "please send the report tomorrow um",
+    "output": "Please send the report tomorrow.",
+    "capped": false
+  },
+  {
+    "style": "semi-formal",
+    "case": "number",
+    "input": "i think the answer is forty two no sorry forty three",
+    "output": "I think the answer is 43.",
+    "capped": false
+  },
+  {
+    "style": "semi-formal",
+    "case": "currency",
+    "input": "the invoice came to twenty three thousand four hundred and fifty dollars",
+    "output": "The invoice came to $23,450.",
+    "capped": false
+  },
+  {
+    "style": "semi-formal",
+    "case": "filler",
+    "input": "um",
+    "output": "",
+    "capped": false
+  },
+  {
+    "style": "semi-formal",
+    "case": "voice",
+    "input": "hmm im gonna be late theres a cute dog outside i cant just walk past him",
+    "output": "Hmm, I'm going to be late. There's a cute dog outside. I can't just walk past him.",
+    "capped": false
+  },
+  {
+    "style": "semi-formal",
+    "case": "terms",
+    "input": "um use S1-mini and Nemotron with GPT-6 Astra and Hugging Face",
+    "output": "Use S1-mini and Nemotron with GPT-6 Astra and Hugging Face.",
+    "capped": false
+  },
+  {
+    "style": "semi-formal",
+    "case": "negation",
+    "input": "do not delete the file keep all five backups before the release",
+    "output": "Do not delete the file. Keep all five backups before the release.",
+    "capped": false
+  },
+  {
+    "style": "formal",
+    "case": "correction",
+    "input": "so um i need to like send the the report by uh friday no wait make that thursday",
+    "output": "So I need to send the report by Thursday.",
+    "capped": false
+  },
+  {
+    "style": "formal",
+    "case": "tail",
+    "input": "please send the report tomorrow um",
+    "output": "Please send the report tomorrow.",
+    "capped": false
+  },
+  {
+    "style": "formal",
+    "case": "number",
+    "input": "i think the answer is forty two no sorry forty three",
+    "output": "I think the answer is 43.",
+    "capped": false
+  },
+  {
+    "style": "formal",
+    "case": "currency",
+    "input": "the invoice came to twenty three thousand four hundred and fifty dollars",
+    "output": "The invoice came to $23,450.",
+    "capped": false
+  },
+  {
+    "style": "formal",
+    "case": "filler",
+    "input": "um",
+    "output": "",
+    "capped": false
+  },
+  {
+    "style": "formal",
+    "case": "voice",
+    "input": "hmm im gonna be late theres a cute dog outside i cant just walk past him",
+    "output": "I am going to be late. There is a cute dog outside. I cannot just walk past him.",
+    "capped": false
+  },
+  {
+    "style": "formal",
+    "case": "terms",
+    "input": "um use S1-mini and Nemotron with GPT-6 Astra and Hugging Face",
+    "output": "Use S1-mini and Nemotron with GPT-6 Astra and Hugging Face.",
+    "capped": false
+  },
+  {
+    "style": "formal",
+    "case": "negation",
+    "input": "do not delete the file keep all five backups before the release",
+    "output": "Do not delete the file. Keep all five backups before the release.",
+    "capped": false
+  }
+]

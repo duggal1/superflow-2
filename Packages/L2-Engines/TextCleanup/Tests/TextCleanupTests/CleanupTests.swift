@@ -169,8 +169,10 @@ final class CleanupTests: XCTestCase {
 
     func testOrdinaryProseStaysProse() async {
         let cleaner = FakeTextCleaner(.identity)
+        var settings = AppSettings()
+        settings.cleanupStructure = "prose"
         _ = await service(cleaner).clean("First I went home. Then I ate dinner.",
-                                         context: TextContext())
+                                         context: TextContext(settings: settings))
         let options = await cleaner.lastOptions
         XCTAssertEqual(options?.structure, "prose")
     }

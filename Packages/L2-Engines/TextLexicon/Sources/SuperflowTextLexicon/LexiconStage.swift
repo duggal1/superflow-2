@@ -27,6 +27,7 @@ public struct LexiconStage: ExplainingTextStage {
     private let canonicals: [String]
     private let ruleIDs: [String]
     private let triggerTexts: [String]
+    private let tokenBudgets: [Int]
     private let filter: LexiconFilter?
 
     public init(entries: [LexiconEntry], id: String = "lexicon",
@@ -46,6 +47,7 @@ public struct LexiconStage: ExplainingTextStage {
         var canonicals: [String] = []
         var ruleIDs: [String] = []
         var triggerTexts: [String] = []
+        var tokenBudgets: [Int] = []
         var owner: [String: Int] = [:]
         var seenWarnings = Set<String>()
         var warnings: [LexiconWarning] = []
@@ -66,6 +68,10 @@ public struct LexiconStage: ExplainingTextStage {
                     if existingCanonical != entry.canonical {
                         warn(trigger, "trigger \"\(trigger)\" maps to both \"\(existingCanonical)\" " +
                             "and \"\(entry.canonical)\"; keeping the first")
+                    } else {
+                        // Another spelling of the same term widens the span this
+                        // key may consume ("next dot js" for "nextjs").
+                        tokenBudgets[existing] = max(tokenBudgets[existing], Self.tokenCount(trigger))
                     }
                     continue
                 }
@@ -73,6 +79,7 @@ public struct LexiconStage: ExplainingTextStage {
                 canonicals.append(entry.canonical)
                 ruleIDs.append(entry.id)
                 triggerTexts.append(trigger)
+                tokenBudgets.append(Self.tokenCount(trigger))
                 trie.insert(Array(key), entry: canonicals.count - 1)
             }
             for trigger in triggers where CommonWords.isRisky(trigger: trigger) {
@@ -85,6 +92,7 @@ public struct LexiconStage: ExplainingTextStage {
         self.canonicals = canonicals
         self.ruleIDs = ruleIDs
         self.triggerTexts = triggerTexts
+        self.tokenBudgets = tokenBudgets
         self.filter = filter
         self.entryCount = ordered.count
         self.warnings = warnings
@@ -143,7 +151,21 @@ public struct LexiconStage: ExplainingTextStage {
                                  && range.upperBound <= span.upperBound)
                     }
                     if !blocked {
-                        let accepts = filter?(trigger, canonical, line, context) ?? true
+                        // A single-token trigger may only rewrite a single
+                        // token or a spelled form ("n p m"): the normalizer
+                        // concatenates tokens, so without this "red is" would
+                        // reach the trigger "redis". Multi-token triggers may
+                        // still match one compressed token ("techstack").
+                        let consumed = (index...last).reduce(0) { count, token in
+                            stream.tokens[token].core == "dot" ? count : count + 1
+                        }
+                        let triggerTokens = tokenBudgets[match.entry]
+                        let spelled = (index...last).allSatisfy {
+                            let core = stream.tokens[$0].core
+                            return core == "dot" || core.filter(\.isLetter).count <= 1
+                        }
+                        let accepts = (consumed <= max(1, triggerTokens) || spelled)
+                            && (filter?(trigger, canonical, line, context) ?? true)
                         if accepts {
                             let lead = stream.tokens[index].lead
                             let trail = stream.tokens[last].trail
@@ -161,6 +183,14 @@ public struct LexiconStage: ExplainingTextStage {
             index += 1
         }
         return out.joined(separator: " ")
+    }
+
+    /// Spoken words that actually contribute characters to a key. The
+    /// normalizer drops "dot", so it never counts as a consumed token.
+    static func tokenCount(_ text: String) -> Int {
+        text.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" })
+            .filter { $0.lowercased() != "dot" }
+            .count
     }
 
     public func explainEdits(before: TranscriptDraft, after: TranscriptDraft,

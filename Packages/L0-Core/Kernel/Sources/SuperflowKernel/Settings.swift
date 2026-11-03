@@ -230,10 +230,8 @@ public struct GestureConfig: Codable, Sendable, Equatable {
 }
 
 public struct AppSettings: Codable, Sendable, Equatable {
-    /// Bumped when a stored default has to change. Version 2 moves the legacy
-    /// CPU cleanup default onto the GPU; an explicit CPU choice made after the
-    /// migration keeps version 2 and is preserved.
-    public static let currentVersion = 2
+    /// Version 2 migrates the legacy CPU default; version 3 enables list formatting.
+    public static let currentVersion = 3
     public var settingsVersion = AppSettings.currentVersion
     public var theme: ThemeMode = .system
     /// Nemotron 3.5 ASR Streaming 0.6B is the model the app installs and runs. It is
@@ -268,7 +266,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var audioRetentionDays: Int? = 7
     public var keepJournals = false
     public var cleanupStyling = "semi-formal"
-    public var cleanupStructure = "prose"
+    public var cleanupStructure = "lists"
     public var cleanupContext = "general"
     public var interactiveDeadlineMs = 1500
     public var backgroundDeadlineMs = 30_000
@@ -329,6 +327,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         keepJournals = try c.decodeIfPresent(Bool.self, forKey: .keepJournals) ?? d.keepJournals
         cleanupStyling = try c.decodeIfPresent(String.self, forKey: .cleanupStyling) ?? d.cleanupStyling
         cleanupStructure = try c.decodeIfPresent(String.self, forKey: .cleanupStructure) ?? d.cleanupStructure
+        if storedVersion < 3, cleanupStructure == "prose" { cleanupStructure = "lists" }
         cleanupContext = try c.decodeIfPresent(String.self, forKey: .cleanupContext) ?? d.cleanupContext
         interactiveDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .interactiveDeadlineMs) ?? d.interactiveDeadlineMs
         backgroundDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .backgroundDeadlineMs) ?? d.backgroundDeadlineMs
@@ -337,7 +336,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         // Version 1 shipped with CPU as the saved value for many installs even
         // though GPU is the product default. Migrate that legacy value once; a
         // deliberate CPU choice made after version 2 is left alone.
-        if storedVersion < AppSettings.currentVersion, cleanupCompute == .cpu {
+        if storedVersion < 2, cleanupCompute == .cpu {
             cleanupCompute = .gpu
         }
         meetingsInStats = try c.decodeIfPresent(Bool.self, forKey: .meetingsInStats) ?? d.meetingsInStats

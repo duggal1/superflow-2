@@ -181,7 +181,7 @@ public struct CleanupLine: View {
     }
 }
 
-/// The component under the 12-month graph: the newest dictation as a picture you
+/// The component under the month graph: the newest dictation as a picture you
 /// can drag to hear, and as the sentence the model cleaned. It replaces the old
 /// text-only card, so the audio component and the cleanup line live together.
 ///

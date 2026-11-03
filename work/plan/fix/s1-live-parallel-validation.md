@@ -1,0 +1,12 @@
+# Live cleanup parallelism and ASR cadence
+
+- User objective: finish long dictations quickly with continuous local processing; never lose dictated text.
+- Current input: microphone capture drains every 10 ms; audio.cpp receives captured chunks, while its Nemotron 3.5 encoder batches a minimum 320 ms after the initial chunk (`session.cpp`: `max(lookahead + 1, 4)`). Swift requests lookahead 3.
+- S1-mini: `CleanupService` falls back to input after unready, timeout, invalid/unsafe output, or runtime failure. It does not call an alternate model. Keep fallback because deleting it can lose or corrupt dictated text; it is not a second model invocation.
+- `AudioCpp` endpointing commits on 600 ms silence or 120 s cap. Continuous speech can therefore wait for the cap before the cleanup pipeline sees a final segment. Arbitrarily reducing the cap can cut words; a safe stable-prefix design and real speech accuracy tests remain required.
+- Previously one SessionCleanupCoordinator worker ran while recording. Change starts up to two, matching two helper contexts; remaining configured workers start on finish. Queue remains bounded. There is no measured claim of lower latency or higher throughput yet.
+- A deterministic test failed before and passes after: two committed requests enter cleanup simultaneously before recording finishes. All 43 session tests passed.
+- On installed Nemotron Q8_0 GPU, existing 2-second paced fixture passed once, first partial 0.729 s, zero stream failures. It measures fixture startup after warm-up, not microphone-to-screen latency or 80 ms mode.
+- On installed S1-mini Q4_K_M GPU, the existing two-parallel-request test passed once, with matching results and no errors. It does not demonstrate long-session throughput.
+- A synthetic five-minute-equivalent attempt using repeated sentences and two workers configured timed out after 30 s on a model request before both configurations could be compared. Machine load exceeded 75 on 8 logical CPUs. This is inconclusive about typical dictations and is not a valid speed comparison. No live long-session success, one-hour latency, or audio-to-insertion result has been established.
+- Future verification: use consented representative audio and independently timed pipelines; interleave worker counts under comparable GPU load, count ASR/cleanup failures and rejected output, record peak memory, backlog, first partial and stop-to-insertion. Investigate the timeout before asserting a speedup or increasing parallelism further.

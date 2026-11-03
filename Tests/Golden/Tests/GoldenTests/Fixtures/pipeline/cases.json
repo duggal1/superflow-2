@@ -22,7 +22,7 @@
     {
       "name": "grouped number survives the pipeline",
       "input": "it costs 1,200 dollars",
-      "expected": "It costs 1,200 dollars.",
+      "expected": "It costs $1,200.",
       "source": "Thousands separators must remain intact through the pipeline"
     },
     {

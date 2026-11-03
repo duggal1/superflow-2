@@ -71,7 +71,6 @@ public final class AppCoordinator: ObservableObject {
     private var retentionTask: Task<Void, Never>?
     var permissionTask: Task<Void, Never>?
     var intelligenceTriggerObserver: NSObjectProtocol?
-    var isStartingIntelligenceMeeting = false
     let sessionEventRelay = EngineEventRelay<SessionEvent>()
     let meetingEventRelay = EngineEventRelay<MeetingEvent>()
 
@@ -114,8 +113,6 @@ public final class AppCoordinator: ObservableObject {
                                asrRuntime: settings.asrRuntime,
                                diarizer: environment.diarizer,
                                asrProfile: settings.asrProfile,
-                               enhancer: environment.speechEnhancer,
-                               enhancementEnabled: { [weak self] in self?.settings.speechEnhancementEnabled ?? true },
                                cleanupEnabled: { [weak self] in self?.settings.cleanupEnabled ?? true })
     }()
 
@@ -130,7 +127,6 @@ public final class AppCoordinator: ObservableObject {
             ],
             activeASRRuntime: settings.asrRuntime,
             diarizer: environment.diarizer,
-            enhancer: environment.speechEnhancer,
             launchAtLogin: environment.launchAtLogin,
             diagnostics: environment.diagnostics,
             thirdPartyNotices: environment.thirdPartyNotices,
@@ -261,7 +257,6 @@ public final class AppCoordinator: ObservableObject {
     }
 
     public func applySettings(_ updated: AppSettings) async {
-        let enhancementTurnedOn = !settings.speechEnhancementEnabled && updated.speechEnhancementEnabled
         let retentionChanged = settings.retentionDays != updated.retentionDays
         let cleanupComputeChanged = settings.cleanupCompute != updated.cleanupCompute
         settings = updated
@@ -290,9 +285,6 @@ public final class AppCoordinator: ObservableObject {
         // The cleanup model is already resident at this point, so switching
         // CPU/GPU has to re-place its weights rather than wait for a relaunch.
         if cleanupComputeChanged { await prepareCleanupModel() }
-        if enhancementTurnedOn {
-            modelsModel?.download(ModelsViewModel.enhancementID)
-        }
         if updated.onboardingComplete, await !environment.recognizer.isReady {
             Task { _ = await environment.sessionEngine.warmUp() }
         }

@@ -11,18 +11,13 @@ extension AppCoordinator {
         Task { [weak self] in
             guard let self else { return }
 
-            let asrStarted = DispatchTime.now().uptimeNanoseconds
-            let asrReady = await environment.sessionEngine.prewarm()
-            log.info("ASR prewarm: \((DispatchTime.now().uptimeNanoseconds - asrStarted) / 1_000_000) ms; ready: \(asrReady)")
-
-            if self.settings.speechEnhancementEnabled {
-                self.modelsModel?.download(ModelsViewModel.enhancementID)
-            }
-
-            let cleanupStarted = DispatchTime.now().uptimeNanoseconds
-            let ready = await environment.prepareInstalledCleanupModel(compute: self.settings.cleanupCompute)
-            let cleanupMs = (DispatchTime.now().uptimeNanoseconds - cleanupStarted) / 1_000_000
-            log.info("Cleanup preparation: \(cleanupMs) ms; ready: \(ready)")
+            let cleanupCompute = self.settings.cleanupCompute
+            async let cleanupReady = environment.prepareInstalledCleanupModel(compute: cleanupCompute)
+            let started = DispatchTime.now().uptimeNanoseconds
+            async let asrReady = environment.sessionEngine.prewarm()
+            let (asr, cleanup) = await (asrReady, cleanupReady)
+            let elapsed = (DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
+            log.info("Model preparation: \(elapsed) ms; ASR ready: \(asr); cleanup ready: \(cleanup)")
         }
     }
 

@@ -213,7 +213,9 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
     }
 
     public func countTokens(_ text: String) async -> Int {
-        await runtime.countTokens(text) ?? 0
+        guard ready, !text.isEmpty else { return 0 }
+        if let count = await runtime.countTokens(text), count > 0 { return count }
+        return text.utf8.count
     }
 
     public func prewarm() async {
@@ -226,8 +228,9 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
         let prompt = LlamaPrompt.render(text: text, options: options)
         // The model card's sizing rule: output length tracks input length, so a
         // fixed ceiling wastes generation budget. `countTokens` is the model's
-        // own tokenizer; the estimate is only a fallback for test runtimes.
-        let inputTokens = await runtime.countTokens(text) ?? LlamaPrompt.estimateTokens(text)
+        // own tokenizer; UTF-8 length is a conservative bound if it is unavailable.
+        let measuredTokens = await runtime.countTokens(text)
+        let inputTokens = measuredTokens.flatMap { $0 > 0 ? $0 : nil } ?? text.utf8.count
         let outputCap = Self.outputTokenCap(inputTokens: inputTokens, configured: options.maxNewTokens)
         let output = try await runtime.completion(prompt: prompt, maxTokens: outputCap,
                                                   deadlineMs: options.deadlineMs)

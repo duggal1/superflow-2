@@ -1,13 +1,145 @@
 # Issue
 
-## Metal resources survive application termination
+## Tokenizer failure bypasses cleanup chunking
 
-Cached audio.cpp sessions remain alive while native Metal global resources are destroyed during quit.
+An unavailable tokenizer returned zero, allowing a long transcript to bypass the input budget.
+
+- [x] Resolved
+
+Verification: failing-before tokenizer regression passes with a conservative nonzero byte bound.
+
+
+## S1-mini can omit content below 850 tokens
+
+A synthetic 841-token input produced an uncapped output that omitted its final item.
+
+- [x] Unresolved
+
+Evidence: real Q4_K_M inference returned 501 tokens; the final item was absent despite no token-cap flag. A guard regression rejects comparable incomplete output.
+
+
+## Cleanup rejects an in-progress model preparation
+
+S1-mini preparation in progress was treated as unavailable and returned fallback immediately.
+
+- [x] Resolved
+
+Verification: readiness regression failed before and passes after; 22 cleaner tests and live helper inference pass.
+
+
+## Long cleanup can time out under load
+
+A long synthetic S1-mini request timed out during a heavily loaded local GPU test.
+
+- [x] Unresolved
+
+Evidence: one 30-second deadline expired; repeated-sentence input and high system load prevent attributing the cause.
+
+
+## Meeting completion can discard journals after storage failure
+
+Meeting writes and finalization suppress storage errors; stop can delete journals despite failed persistence.
+
+- [x] Unresolved
+
+Evidence: MeetingTurns.persist/resolve and MeetingEngine.stop use try?; stop deletes journals afterward. Failure-injection reproduction remains pending.
+
+## Valid trailing filler cleanup is rejected
+
+The truncation guard treated removed trailing fillers as missing content and restored raw text.
+
+- [x] Resolved
+
+Verification: three variants failed before the fix; trailing-filler and missing-content regressions now pass. 97 cleanup tests pass.
+
+
+## Quit hangs in AppKit termination loop
+
+The menu invokes AppKit termination from a main-actor task, blocking asynchronous termination cleanup.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Evidence: a process sample shows the menu quit task stuck in NSApplication termination.
+
+## Right Command requires a second tap to start a meeting
+
+A single tap waited for a second tap before starting capture.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: 21 GestureTests pass with single-tap start and a second press to stop. Live capture remains unverified.
+
+## Meeting transcription crash remains unexplained
+
+The user reports a crash when stopping meeting transcription; no matching local crash report was found.
 
 - [x] Unresolved
 - [ ] Resolved
 
-Evidence: supplied crash aborts in ggml_metal_rsets_free after NSApplication.terminate; explicit model unloading added, pending verification.
+## Intelligence shortcut lacks a standalone assistant
+
+The shortcut now opens Intelligence settings; a separate interactive assistant is not implemented.
+
+- [x] Unresolved
+- [ ] Resolved
+
+## Dashboard audio playback reports unavailable
+
+A recording shown in the screenshot failed playback despite an existing decodable audio file.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: a recording near the screenshot time decodes successfully; the exact affected recording is not identified.
+
+## Noise suppression replacement is missing
+
+A lightweight local speech enhancement model is not yet integrated.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: audio.cpp contains GTCRN, but its streaming interface and weights are not wired into capture.
+
+## Microphone fails to start in Core Audio
+
+Microphone startup can fail before capture begins; the screenshot truncates the system error code.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: screenshot shows AudioDeviceStart failure; startup now retries transient failures, pending verification.
+
+## Cold ASR initialization delays first transcript
+
+Native GPU session creation still delays the first transcript while captured audio waits.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: checksum receipt reduced model loading to 0.29 seconds; native Metal session preparation measured 16.62 seconds.
+
+## Fn release waits for cold model startup
+
+The microphone continued capturing because release waited behind the pending session start.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: cold-start release regression stops capture before model readiness; all 28 SessionTests and five WarmupGestureTests pass.
+
+## Metal resources survive application termination
+
+Cached audio.cpp sessions remain alive while native Metal global resources are destroyed during quit.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Evidence: supplied crash aborts in ggml_metal_rsets_free after NSApplication.terminate; explicit model unloading added.
+
+Verification: the packaged app opened its installed model and exited through AppKit quit with process exit code 0.
 
 ## Cold enhancement blocks microphone consumption
 
@@ -379,7 +511,7 @@ Production TextContext constructors omit activeAppBundleID, preventing developer
 
 Evidence: identifier appears in TextContext and gate, but no production caller supplies it. Mixed-language false positives also require policy review.
 
-Latest resolution: Cleanup accepts invented path separators — focused regression and real-model safety gate passed.
+Latest resolution: Tokenizer failure bypasses cleanup chunking — failing-before regression passes with a conservative byte bound.
 
 ## Short ASR first result is late
 

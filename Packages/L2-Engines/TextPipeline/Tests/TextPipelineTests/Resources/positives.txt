@@ -1,30 +1,30 @@
 the team uses a w s lambda for the current task	the team uses AWS Lambda for the current task
-the team uses amazon lambda function for the current task	the team uses AWS Lambda for the current task
+the team uses amazon lambda function for the current task	the team uses AWS Lambda function for the current task
 the team uses amazon web services lambda for the current task	the team uses AWS Lambda for the current task
 the team uses aws lam bda for the current task	the team uses AWS Lambda for the current task
 the team uses aws lamb da for the current task	the team uses AWS Lambda for the current task
-the team uses aws lambda function for the current task	the team uses AWS Lambda for the current task
-the team uses aws lambda functions for the current task	the team uses AWS Lambda for the current task
-the team uses aws lambda serverless for the current task	the team uses AWS Lambda for the current task
-the team uses aws lamda function for the current task	the team uses AWS Lambda for the current task
-the team uses aws llama da function for the current task	the team uses AWS Lambda for the current task
+the team uses aws lambda function for the current task	the team uses AWS Lambda function for the current task
+the team uses aws lambda functions for the current task	the team uses AWS Lambda functions for the current task
+the team uses aws lambda serverless for the current task	the team uses AWS Lambda serverless for the current task
+the team uses aws lamda function for the current task	the team uses AWS Lambda function for the current task
+the team uses aws llama da function for the current task	the team uses AWS Lambda function for the current task
 the team uses aws llama function for the current task	the team uses AWS Lambda for the current task
 the team uses aws serverless lambda for the current task	the team uses AWS Lambda for the current task
-the team uses lambda aws function for the current task	the team uses AWS Lambda for the current task
-the team uses lambda function aws for the current task	the team uses AWS Lambda for the current task
-the team uses lambda functions aws for the current task	the team uses AWS Lambda for the current task
-the team uses lambda on aws for the current task	the team uses AWS Lambda for the current task
-the team uses chat g p t ai for the current task	the team uses ChatGPT for the current task
+the team uses lambda aws function for the current task	the team uses lambda AWS function for the current task
+the team uses lambda function aws for the current task	the team uses lambda function AWS for the current task
+the team uses lambda functions aws for the current task	the team uses lambda functions AWS for the current task
+the team uses lambda on aws for the current task	the team uses lambda on AWS for the current task
+the team uses chat g p t ai for the current task	the team uses ChatGPT ai for the current task
 the team uses chat gbt for the current task	the team uses ChatGPT for the current task
 the team uses chat gee p tee for the current task	the team uses ChatGPT for the current task
 the team uses chat gpt for the current task	the team uses ChatGPT for the current task
-the team uses anthropic claude model for the current task	the team uses Claude for the current task
+the team uses anthropic claude model for the current task	the team uses Claude model for the current task
 the team uses claud ai for the current task	the team uses Claude for the current task
 the team uses claude llm for the current task	the team uses Claude for the current task
-the team uses clod ai model for the current task	the team uses Claude for the current task
-the team uses clod coding model for the current task	the team uses Claude for the current task
-the team uses cloud ai model anthropic for the current task	the team uses Claude for the current task
-the team uses cloud code anthropic for the current task	the team uses Claude for the current task
+the team uses clod ai model for the current task	the team uses Claude ai model for the current task
+the team uses clod coding model for the current task	the team uses Claude coding model for the current task
+the team uses cloud ai model anthropic for the current task	the team uses cloud ai model Anthropic for the current task
+the team uses cloud code anthropic for the current task	the team uses cloud code Anthropic for the current task
 the team uses claude code for the current task	the team uses Claude Code for the current task
 the team uses clod code for the current task	the team uses Claude Code for the current task
 the team uses claude fable five for the current task	the team uses Claude Fable 5 for the current task
@@ -86,11 +86,11 @@ the team uses deep seak for the current task	the team uses DeepSeek for the curr
 the team uses deep seat ai for the current task	the team uses DeepSeek for the current task
 the team uses deep seat model for the current task	the team uses DeepSeek for the current task
 the team uses deep seec for the current task	the team uses DeepSeek for the current task
-the team uses deep seek ai for the current task	the team uses DeepSeek for the current task
-the team uses deep seek coder for the current task	the team uses DeepSeek for the current task
-the team uses deep seek coding model for the current task	the team uses DeepSeek for the current task
-the team uses deep seek llm for the current task	the team uses DeepSeek for the current task
-the team uses deep seek model for the current task	the team uses DeepSeek for the current task
+the team uses deep seek ai for the current task	the team uses DeepSeek ai for the current task
+the team uses deep seek coder for the current task	the team uses DeepSeek coder for the current task
+the team uses deep seek coding model for the current task	the team uses DeepSeek coding model for the current task
+the team uses deep seek llm for the current task	the team uses DeepSeek LLM for the current task
+the team uses deep seek model for the current task	the team uses DeepSeek model for the current task
 the team uses deep seek r one for the current task	the team uses DeepSeek for the current task
 the team uses deep seek r1 for the current task	the team uses DeepSeek for the current task
 the team uses deep seek v three for the current task	the team uses DeepSeek for the current task
@@ -98,7 +98,7 @@ the team uses deep sick ai for the current task	the team uses DeepSeek for the c
 the team uses deep sick model for the current task	the team uses DeepSeek for the current task
 the team uses deepseak for the current task	the team uses DeepSeek for the current task
 the team uses deepseec for the current task	the team uses DeepSeek for the current task
-the team uses deepseek llm for the current task	the team uses DeepSeek for the current task
+the team uses deepseek llm for the current task	the team uses DeepSeek LLM for the current task
 the team uses deepseek r one for the current task	the team uses DeepSeek for the current task
 the team uses deep seek v3.2 for the current task	the team uses DeepSeek-V3.2 for the current task
 the team uses deepseek v three point two for the current task	the team uses DeepSeek-V3.2 for the current task
@@ -152,7 +152,7 @@ the team uses g p t four o for the current task	the team uses GPT-4o for the cur
 the team uses gpt 4o for the current task	the team uses GPT-4o for the current task
 the team uses gpt four oh for the current task	the team uses GPT-4o for the current task
 the team uses g p t 5 for the current task	the team uses GPT-5 for the current task
-the team uses gpt5 model for the current task	the team uses GPT-5 for the current task
+the team uses gpt5 model for the current task	the team uses GPT-5 model for the current task
 the team uses gpt 5.5 for the current task	the team uses GPT-5.5 for the current task
 the team uses chatgpt 5.6 luna for the current task	the team uses GPT-5.6 Luna for the current task
 the team uses gpt 5.6 luna for the current task	the team uses GPT-5.6 Luna for the current task
@@ -200,24 +200,22 @@ the team uses kimmy k three for the current task	the team uses Kimi K3 for the c
 the team uses kimmy k3 for the current task	the team uses Kimi K3 for the current task
 the team uses lama llm for the current task	the team uses Llama for the current task
 the team uses llama llm for the current task	the team uses Llama for the current task
-the team uses meta llama model for the current task	the team uses Llama for the current task
+the team uses meta llama model for the current task	the team uses Llama model for the current task
 the team uses llama 4 maverick for the current task	the team uses Llama 4 Maverick for the current task
 the team uses llama four maverick for the current task	the team uses Llama 4 Maverick for the current task
 the team uses llama 4 scout for the current task	the team uses Llama 4 Scout for the current task
 the team uses llama four scout for the current task	the team uses Llama 4 Scout for the current task
-the team uses llama c plus plus project for the current task	the team uses llama.cpp for the current task
+the team uses llama c plus plus project for the current task	the team uses llama.cpp project for the current task
 the team uses llama cpp for the current task	the team uses llama.cpp for the current task
 the team uses llama dot cpp for the current task	the team uses llama.cpp for the current task
 the team uses l o r a for the current task	the team uses LoRA for the current task
 the team uses mistral 7b for the current task	the team uses Mistral for the current task
-the team uses mistral llm for the current task	the team uses Mistral for the current task
+the team uses mistral llm for the current task	the team uses Mistral LLM for the current task
 the team uses mistral seven b for the current task	the team uses Mistral for the current task
 the team uses mistrall model for the current task	the team uses Mistral for the current task
 the team uses mistrel ai for the current task	the team uses Mistral for the current task
 the team uses mistrel model for the current task	the team uses Mistral for the current task
-the team uses m o e for the current task	the team uses MoE for the current task
 the team uses mixture of experts for the current task	the team uses MoE for the current task
-the team uses moe for the current task	the team uses MoE for the current task
 the team uses meta muse glimmer for the current task	the team uses Muse Glimmer for the current task
 the team uses moose glimmer for the current task	the team uses Muse Glimmer for the current task
 the team uses meta muse spark for the current task	the team uses Muse Spark for the current task
@@ -242,19 +240,19 @@ the team uses nemotron three super 120b for the current task	the team uses Nemot
 the team uses nvidia nemotron 3 super 120b for the current task	the team uses Nemotron 3 Super 120B for the current task
 the team uses o llama for the current task	the team uses Ollama for the current task
 the team uses oh llama for the current task	the team uses Ollama for the current task
-the team uses ollama runtime for the current task	the team uses Ollama for the current task
+the team uses ollama runtime for the current task	the team uses Ollama runtime for the current task
 the team uses open a i for the current task	the team uses OpenAI for the current task
-the team uses open ai api for the current task	the team uses OpenAI for the current task
-the team uses open ai sdk for the current task	the team uses OpenAI for the current task
+the team uses open ai api for the current task	the team uses OpenAI API for the current task
+the team uses open ai sdk for the current task	the team uses OpenAI SDK for the current task
 the team uses open eye for the current task	the team uses OpenAI for the current task
 the team uses kwen ai for the current task	the team uses Qwen for the current task
 the team uses kwen model for the current task	the team uses Qwen for the current task
 the team uses quen 3 235b for the current task	the team uses Qwen for the current task
-the team uses quen ai for the current task	the team uses Qwen for the current task
-the team uses quen model for the current task	the team uses Qwen for the current task
+the team uses quen ai for the current task	the team uses Qwen ai for the current task
+the team uses quen model for the current task	the team uses Qwen model for the current task
 the team uses quinn 3 235b for the current task	the team uses Qwen for the current task
 the team uses quinn coder for the current task	the team uses Qwen for the current task
-the team uses qwen llm for the current task	the team uses Qwen for the current task
+the team uses qwen llm for the current task	the team uses Qwen LLM for the current task
 the team uses qwen3 235b for the current task	the team uses Qwen for the current task
 the team uses qwen audio 3.0 for the current task	the team uses Qwen-Audio 3.0 for the current task
 the team uses qwen audio three point zero for the current task	the team uses Qwen-Audio 3.0 for the current task
@@ -298,26 +296,25 @@ the team uses vllm for the current task	the team uses vLLM for the current task
 the team uses openai whisper for the current task	the team uses Whisper for the current task
 the team uses whisper speech recognition for the current task	the team uses Whisper for the current task
 the team uses whisper stt for the current task	the team uses Whisper for the current task
-the team uses b a s h for the current task	the team uses bash for the current task
-the team uses terminal cli for the current task	the team uses CLI for the current task
-the team uses git hub repo for the current task	the team uses GitHub for the current task
-the team uses github repo for the current task	the team uses GitHub for the current task
+the team uses terminal cli for the current task	the team uses terminal CLI for the current task
+the team uses git hub repo for the current task	the team uses GitHub repo for the current task
+the team uses github repo for the current task	the team uses GitHub repo for the current task
 the team uses git hub action for the current task	the team uses GitHub Actions for the current task
 the team uses git hub actions for the current task	the team uses GitHub Actions for the current task
 the team uses git hub workflow for the current task	the team uses GitHub Actions for the current task
 the team uses github action for the current task	the team uses GitHub Actions for the current task
 the team uses github actions for the current task	the team uses GitHub Actions for the current task
 the team uses github workflows for the current task	the team uses GitHub Actions for the current task
-the team uses git lab repo for the current task	the team uses GitLab for the current task
+the team uses git lab repo for the current task	the team uses GitLab repo for the current task
 the team uses git lab c i for the current task	the team uses GitLab CI for the current task
 the team uses gitlab ci for the current task	the team uses GitLab CI for the current task
 the team uses gitlab continuous integration for the current task	the team uses GitLab CI for the current task
 the team uses gitlab see eye for the current task	the team uses GitLab CI for the current task
-the team uses g r p c api for the current task	the team uses gRPC for the current task
+the team uses g r p c api for the current task	the team uses gRPC API for the current task
 the team uses gee r p c for the current task	the team uses gRPC for the current task
-the team uses grpc client for the current task	the team uses gRPC for the current task
-the team uses grpc service for the current task	the team uses gRPC for the current task
-the team uses homebrew package manager for the current task	the team uses Homebrew for the current task
+the team uses grpc client for the current task	the team uses gRPC client for the current task
+the team uses grpc service for the current task	the team uses gRPC service for the current task
+the team uses homebrew package manager for the current task	the team uses Homebrew package manager for the current task
 go build the binary	Go build the binary
 next year we should use next js	next year we should use Next.js
 the cloud model is expensive	the Claude model is expensive
@@ -327,3 +324,55 @@ build textract for the tech stack	build tech stack for the tech stack
 tan stack query	TanStack Query
 next jay ess app router	Next.js app router
 claude code hooks	Claude Code hooks
+the model uses moe for routing	the model uses MoE for routing
+the model uses m o e for routing	the model uses MoE for routing
+update the agents md file	update the AGENTS.md file
+write it in product md	write it in PRODUCT.md
+read the read me md first	read the README.md first
+check design md before you change it	check DESIGN.md before you change it
+add a rule to rules md	add a rule to RULES.md
+open claude md	open CLAUDE.md
+put the plan in plan md	put the plan in PLAN.md
+log it in issue md	log it in issue.md
+the git skills md covers git	the GIT-SKILLS.md covers git
+edit the make file	edit the Makefile
+add it to git ignore	add it to .gitignore
+export it in bash rc	export it in .bashrc
+source the zsh rc	source the .zshrc
+add the package to requirements txt	add the package to requirements.txt
+set it in py project toml	set it in pyproject.toml
+update the docker compose file	update the Docker Compose file
+commit the cargo lock	commit the Cargo.lock
+bump the go mod	bump the go.mod
+edit the next config js	edit the next.config.js
+edit the vite config ts	edit the vite.config.ts
+the es lint rc needs a rule	the .eslintrc needs a rule
+the prettier rc is stale	the .prettierrc is stale
+the npm rc has a token	the .npmrc has a token
+the editor config sets width	the .editorconfig sets width
+bump the package swift file	bump the Package.swift file
+the ci cd pipeline is red	the CI/CD pipeline is red
+deploy on railway	deploy on Railway
+the poetry lock is stale	the Poetry lock is stale
+poetry install in the venv	Poetry install in the venv
+use flask routes	use Flask routes
+pandas dataframe loading	Pandas dataframe loading
+the jest tests pass	the Jest tests pass
+playwright tests are flaky	Playwright tests are flaky
+cypress tests run in ci	Cypress tests run in ci
+postman collection export	Postman collection export
+swagger spec is old	Swagger spec is old
+recoil atoms are simple	Recoil atoms are simple
+stripe webhook signing	Stripe webhook signing
+the aria attribute is missing	the ARIA attribute is missing
+electron main process	Electron main process
+expo build for ios	Expo build for ios
+a spa router setup	a SPA router setup
+a rag pipeline with chunks	a RAG pipeline with chunks
+32 gb of ram	32 gb of RAM
+whisper asr model	Whisper ASR model
+insomnia rest client	Insomnia rest client
+jax training loop	JAX training loop
+prettier formatting config	Prettier formatting config
+sass compiler output	Sass compiler output
+llama cpp runs on metal	llama.cpp runs on metal

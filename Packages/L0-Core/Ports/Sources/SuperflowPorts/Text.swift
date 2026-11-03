@@ -13,7 +13,7 @@ public struct CleanOptions: Sendable, Equatable {
     public var context: String
     public var deadlineMs: Int
     public var maxNewTokens: Int
-    public init(styling: String = "semi-formal", structure: String = "prose", context: String = "general",
+    public init(styling: String = "semi-formal", structure: String = "lists", context: String = "general",
                 deadlineMs: Int = 1_500, maxNewTokens: Int = 1_024) {
         self.styling = styling
         self.structure = structure

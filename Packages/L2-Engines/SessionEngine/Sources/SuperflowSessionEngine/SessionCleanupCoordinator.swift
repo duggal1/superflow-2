@@ -22,6 +22,7 @@ public actor SessionCleanupCoordinator {
     private let metrics: any MetricsSink
     private let emit: @Sendable (SessionEvent) -> Void
     private var workerTasks: [Task<Void, Never>] = []
+    private var maxWorkers = 1
     private var requests: [CleanupRequest] = []
     private var workerWaiters: [CheckedContinuation<CleanupRequest?, Never>] = []
     private var submitWaiters: [CheckedContinuation<Void, Never>] = []
@@ -43,9 +44,18 @@ public actor SessionCleanupCoordinator {
     public func start(workerCount: Int) {
         guard workerTasks.isEmpty else { return }
         let count = min(8, max(1, workerCount))
+        maxWorkers = count
         queueCapacity = count
-        workerTasks = (0..<count).map { _ in
-            Task { await self.runWorker() }
+        // The inference helper owns two S1-mini contexts. Use both during capture
+        // when requested, and defer any additional workers until capture stops.
+        workerTasks = (0..<min(2, count)).map { _ in Task { await self.runWorker() } }
+    }
+
+    /// `finish()` calls this before waiting so the backlog drains in parallel
+    /// once capture has stopped and the GPU no longer serves recognition.
+    private func startRemainingWorkers() {
+        while workerTasks.count < maxWorkers {
+            workerTasks.append(Task { await self.runWorker() })
         }
     }
 
@@ -77,6 +87,7 @@ public actor SessionCleanupCoordinator {
 
     public func finish() async -> CleanupState {
         isFinished = true
+        startRemainingWorkers()
         resumeWorkersIfFinished()
         let tasks = workerTasks
         for task in tasks { await task.value }

@@ -97,15 +97,15 @@ public struct GestureRecognizer: Sendable {
         case .armed, .pushToTalk:
             // A 10 ms tick can promote `.armed` to `.pushToTalk` just before the
             // release is delivered. The event timestamp, not the tick clock, says
-            // whether the key was really held; otherwise a short first tap of a
-            // double-tap submitted the session instead of waiting for the second.
+            // whether the key was really held. A short tap engages hands-free on
+            // the first release; only a real hold submits as push-to-talk.
             if elapsedMs(now, since: downAtNs) >= config.holdMs {
                 return submit(.dictation)
             }
-            state = .awaitingSecondTap
+            state = .handsFree
             pendingKind = .dictation
-            tapAtNs = now
-            return []
+            holdAnnounced = true
+            return [.beginHandsFree]
         case .awaitingSecondTap, .handsFree, .meetingArmed, .meetingLatched, .idle:
             return []
         }
@@ -145,15 +145,9 @@ public struct GestureRecognizer: Sendable {
         }
         switch state {
         case .meetingArmed:
-            if elapsedMs(now, since: downAtNs) >= config.meetingHoldMs {
-                state = .meetingLatched
-                pendingKind = .meeting
-                return [.latchMeeting]
-            }
-            state = .awaitingSecondTap
+            state = .meetingLatched
             pendingKind = .meeting
-            tapAtNs = now
-            return []
+            return [.latchMeeting]
         case .meetingLatched, .awaitingSecondTap, .idle, .armed, .pushToTalk, .handsFree:
             return []
         }

@@ -309,8 +309,10 @@ final class FormattingPipelineIntegrationTests: XCTestCase {
     func testCleanupLeavesOrdinaryProseAsProse() async {
         let fake = FakeTextCleaner(.identity)
         let service = CleanupService(cleaner: fake)
+        var settings = AppSettings()
+        settings.cleanupStructure = "prose"
         _ = await service.clean("I bought one apple two oranges and three pears",
-                                context: TextContext())
+                                context: TextContext(settings: settings))
         let options = await fake.lastOptions
         XCTAssertEqual(options?.structure, "prose")
     }

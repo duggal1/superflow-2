@@ -1,0 +1,327 @@
+alias,canonical,action,reason
+JAX,JAX,tier-b,ordinary English word
+a r i a,ARIA,tier-b,shares a gated key
+amazon cloud,AWS,delete,plain-English expansion
+amazon ec2,EC2,delete,acronym as a phrase
+amazon lambda function,AWS Lambda,delete,destructive suffix
+amazon rds,RDS,delete,acronym as a phrase
+anthropic claude model,Claude,delete,destructive suffix
+apache,Apache,tier-b,ordinary English word
+apache kafka,Kafka,tier-b,gated head word
+api endpoint,API,delete,acronym as a phrase
+apollo,Apollo Client,delete,ordinary English phrase
+arch,Arch Linux,delete,ordinary English phrase
+aria,ARIA,tier-b,ordinary English word
+aria attributes,ARIA,delete,acronym as a phrase
+aws lambda function,AWS Lambda,delete,destructive suffix
+aws lambda functions,AWS Lambda,delete,destructive suffix
+aws lambda serverless,AWS Lambda,delete,destructive suffix
+aws lamda function,AWS Lambda,delete,destructive suffix
+aws llama da function,AWS Lambda,delete,destructive suffix
+azure,Azure,tier-b,ordinary English word
+azure cloud,Azure,delete,plain-English expansion
+babel,Babel,tier-b,ordinary English word
+blackwell,Blackwell,tier-b,ordinary English word
+boon,Bun,delete,ordinary English phrase
+bun dev,bun dev,tier-b,gated head word
+bun development,bun dev,tier-b,gated head word
+bun i,bun install,tier-b,gated head word
+bun install,bun install,tier-b,gated head word
+bun package install,bun install,tier-b,gated head word
+bun runtime,Bun,delete,destructive suffix
+c hash language,C++,delete,destructive suffix
+c sharp language,C++,delete,destructive suffix
+cargo,Cargo,tier-b,ordinary English word
+cd pipeline,CI/CD,delete,acronym as a phrase
+chat g p t ai,ChatGPT,delete,destructive suffix
+ci pipeline,CI/CD,delete,acronym as a phrase
+clod ai model,Claude,delete,destructive suffix
+clod coding model,Claude,delete,destructive suffix
+cloud ai model anthropic,Claude,tier-b,gated head word
+cloud code anthropic,Claude,tier-b,gated head word
+cloud front,CloudFront,tier-b,gated head word
+cloud front cdn,CloudFront,tier-b,gated head word
+command line,CLI,delete,plain-English expansion
+container registry,Docker Registry,delete,plain-English expansion
+cotton,Kotlin,delete,ordinary English phrase
+css styles,CSS,delete,acronym as a phrase
+css stylesheet,CSS,delete,acronym as a phrase
+cue wen model,Qwen,delete,destructive suffix
+cypress,Cypress,tier-b,ordinary English word
+cypress test,Cypress,delete,destructive suffix
+cypress testing,Cypress,delete,destructive suffix
+d jango,Django,tier-b,shares a gated key
+database query,SQL,delete,plain-English expansion
+deep seek ai,DeepSeek,delete,destructive suffix
+deep seek coder,DeepSeek,delete,destructive suffix
+deep seek coding model,DeepSeek,delete,destructive suffix
+deep seek llm,DeepSeek,delete,destructive suffix
+deep seek model,DeepSeek,delete,destructive suffix
+deepseek llm,DeepSeek,delete,destructive suffix
+deno,Deno,delete,forms from adjacent words
+deno runtime,Deno,delete,destructive suffix
+django,Django,tier-b,ordinary English word
+docker file config,Dockerfile,delete,destructive suffix
+dot swift,Swift,tier-b,shares a gated key
+drizzle,Drizzle ORM,delete,ordinary English phrase
+drizzle database library,Drizzle ORM,delete,destructive suffix
+dynamo,DynamoDB,delete,ordinary English phrase
+ec2 instance,EC2,delete,acronym as a phrase
+editor config file,.editorconfig,delete,destructive suffix
+elastic,Elasticsearch,delete,ordinary English phrase
+electron,Electron,tier-b,ordinary English word
+error boundaries,Error Boundary,delete,plain-English expansion
+es lint config,ESLint,delete,destructive suffix
+eslint configuration,ESLint,delete,destructive suffix
+expo,Expo,tier-b,ordinary English word
+fish,fish shell,delete,ordinary English phrase
+flask,Flask,tier-b,ordinary English word
+foreign function interface,FFI,delete,acronym as a phrase
+framer,Framer Motion,delete,ordinary English phrase
+g r p c api,gRPC,delete,destructive suffix
+git hub repo,GitHub,delete,destructive suffix
+git ignore file,.gitignore,delete,destructive suffix
+git lab repo,GitLab,delete,destructive suffix
+git repo,Git,delete,destructive suffix
+git repository,Git,delete,plain-English expansion
+github repo,GitHub,delete,destructive suffix
+google cloud,GCP,delete,plain-English expansion
+gpt5 model,GPT-5,delete,destructive suffix
+graph query,GraphQL,delete,plain-English expansion
+graph query language,GraphQL,delete,destructive suffix
+graphql client,GraphQL,delete,destructive suffix
+grpc client,gRPC,delete,destructive suffix
+grpc service,gRPC,delete,destructive suffix
+homebrew package manager,Homebrew,delete,destructive suffix
+hono,Hono,delete,forms from adjacent words
+hpm,HBM,delete,ordinary English phrase
+http secure,HTTPS,delete,plain-English expansion
+insomnia,Insomnia,tier-b,ordinary English word
+insomnia rest,Insomnia,delete,destructive suffix
+internet protocol,IP,delete,plain-English expansion
+ip address,IP,delete,acronym as a phrase
+j a x,JAX,tier-b,shares a gated key
+jason file,JSON,tier-b,gated head word
+jason schema,JSON Schema,tier-b,gated head word
+java language,Java,delete,plain-English expansion
+java programming,Java,delete,plain-English expansion
+java script,JavaScript,tier-b,gated head word
+java script language,JavaScript,tier-b,gated head word
+java scripted,JavaScript,delete,plain-English expansion
+java scripts,JavaScript,delete,plain-English expansion
+java virtual machine,Java Virtual Machine,tier-b,gated head word
+java vm,Java Virtual Machine,tier-b,gated head word
+jest,Jest,tier-b,ordinary English word
+jest test,Jest,delete,destructive suffix
+jest testing,Jest,delete,destructive suffix
+jest tests,Jest,delete,destructive suffix
+jot,JWT,delete,ordinary English phrase
+jotai state,Jotai,delete,destructive suffix
+kafka,Kafka,tier-b,ordinary English word
+kotlin language,Kotlin,delete,destructive suffix
+lama model,Llama,delete,destructive suffix
+lambda aws function,AWS Lambda,tier-b,gated head word
+lambda function,AWS Lambda,delete,ordinary English phrase
+lambda function aws,AWS Lambda,tier-b,gated head word
+lambda functions aws,AWS Lambda,tier-b,gated head word
+lambda on aws,AWS Lambda,tier-b,gated head word
+lang chain ai,LangChain,delete,destructive suffix
+lang chain framework,LangChain,delete,destructive suffix
+lang graph ai,LangGraph,delete,destructive suffix
+lang smith ai,LangSmith,delete,destructive suffix
+language model,LLM,delete,plain-English expansion
+linux,Linux,tier-b,ordinary English word
+llama,Llama,tier-b,ordinary English word
+llama c plus plus project,llama.cpp,delete,destructive suffix
+m o e,MoE,tier-b,shares a gated key
+mac o s,macOS,tier-b,shares a gated key
+mac os,macOS,tier-b,shares a gated key
+macos,macOS,tier-b,ordinary English word
+markdown js,MDX,delete,acronym as a phrase
+markdown jsx,MDX,delete,acronym as a phrase
+meta llama model,Llama,delete,destructive suffix
+microsoft azure,Azure,delete,plain-English expansion
+microsoft windows,Windows,delete,plain-English expansion
+mistral llm,Mistral,delete,destructive suffix
+mob x state,MobX,delete,destructive suffix
+moe,MoE,tier-b,ordinary English word
+mongo,MongoDB,delete,ordinary English phrase
+moose park,Muse Spark,delete,ordinary English phrase
+n g i n x,Nginx,tier-b,shares a gated key
+nest gs,Next.js,delete,ordinary English phrase
+nest js framework,NestJS,delete,destructive suffix
+ngin x,Nginx,tier-b,shares a gated key
+nginx,Nginx,tier-b,ordinary English word
+node,Node.js,delete,ordinary English phrase
+npm command,npm,delete,destructive suffix
+npm package,npm,delete,destructive suffix
+npm package manager,npm,delete,destructive suffix
+oath,OAuth,delete,ordinary English phrase
+ollama runtime,Ollama,delete,destructive suffix
+open ai api,OpenAI,delete,destructive suffix
+open ai sdk,OpenAI,delete,destructive suffix
+openid connect,OIDC,delete,acronym as a phrase
+p i p,pip,tier-b,shares a gated key
+pandas,Pandas,tier-b,ordinary English word
+php language,PHP,delete,plain-English expansion
+pie torch framework,PyTorch,delete,destructive suffix
+pip,pip,tier-b,ordinary English word
+plain javascript,Vanilla JavaScript,delete,plain-English expansion
+playwright,Playwright,tier-b,ordinary English word
+playwright testing,Playwright,delete,destructive suffix
+pnpm package manager,pnpm,delete,destructive suffix
+poetry,Poetry,tier-b,ordinary English word
+post grass,PostgreSQL,delete,ordinary English phrase
+postman,Postman,tier-b,ordinary English word
+prettier,Prettier,tier-b,ordinary English word
+prettier formatting,Prettier,delete,destructive suffix
+prisma client,Prisma,delete,destructive suffix
+prometheus,Prometheus,tier-b,ordinary English word
+pure javascript,Vanilla JavaScript,delete,plain-English expansion
+py torch framework,PyTorch,delete,destructive suffix
+py torch library,PyTorch,delete,destructive suffix
+python language,Python,delete,plain-English expansion
+python programming,Python,delete,plain-English expansion
+q when model,Qwen,delete,destructive suffix
+queen,Qwen,delete,ordinary English phrase
+quen ai,Qwen,delete,destructive suffix
+quen model,Qwen,delete,destructive suffix
+quick,Qwik,delete,ordinary English phrase
+quick js,Qwik,delete,ordinary English phrase
+quinn,Qwen,delete,ordinary English phrase
+quinn model,Qwen,delete,destructive suffix
+qwen llm,Qwen,delete,destructive suffix
+r a g,RAG,tier-b,shares a gated key
+r a m,RAM,tier-b,shares a gated key
+radix components,Radix UI,delete,destructive suffix
+rag,RAG,tier-b,ordinary English word
+rag pipeline,RAG,delete,acronym as a phrase
+rag system,RAG,delete,acronym as a phrase
+rails,Ruby on Rails,delete,ordinary English phrase
+railway,Railway,tier-b,ordinary English word
+ram,RAM,tier-b,ordinary English word
+rds database,RDS,delete,acronym as a phrase
+read me,README,delete,forms from adjacent words
+readme,README,delete,forms from adjacent words
+recoil,Recoil,tier-b,ordinary English word
+recoil state,Recoil,delete,destructive suffix
+redis,Redis,delete,forms from adjacent words
+redux state,Redux,delete,destructive suffix
+rest service,REST API,delete,plain-English expansion
+rollup,Rollup,delete,forms from adjacent words
+ruby language,Ruby,delete,plain-English expansion
+ruby on rails,Ruby on Rails,tier-b,gated head word
+ruby programming,Ruby,delete,plain-English expansion
+ruby rails,Ruby on Rails,tier-b,gated head word
+rust cargo,Cargo,tier-b,gated head word
+rust f f i,Rust FFI,tier-b,gated head word
+rust ffi,Rust FFI,tier-b,gated head word
+rust language,Rust,delete,plain-English expansion
+rust programming,Rust,delete,plain-English expansion
+rust programming language,Rust,delete,destructive suffix
+rust serde,Serde,tier-b,gated head word
+rust tokio,Tokio,tier-b,gated head word
+s a s s,Sass,tier-b,shares a gated key
+s p a,SPA,tier-b,shares a gated key
+sass,Sass,tier-b,ordinary English word
+sass css,SCSS,tier-b,gated head word
+scss styles,SCSS,delete,destructive suffix
+sdk package,SDK,delete,acronym as a phrase
+search optimization,SEO,delete,plain-English expansion
+secure http,HTTPS,delete,plain-English expansion
+secure shell,SSH,delete,plain-English expansion
+sentry sdk,Sentry,delete,destructive suffix
+sequel,SQL,delete,ordinary English phrase
+sequel alchemy,SQLAlchemy,tier-b,gated head word
+sequel file,SQL,delete,plain-English expansion
+sequel injection,SQL Injection,tier-b,gated head word
+sequel izer,Sequelize,tier-b,gated head word
+sequel language,SQL,delete,plain-English expansion
+sequel lite,SQLite,tier-b,gated head word
+shad c n components,shadcn/ui,delete,destructive suffix
+shad cn component,shadcn/ui,delete,destructive suffix
+shad cn components,shadcn/ui,delete,destructive suffix
+solid js app,SolidJS,delete,destructive suffix
+solid js framework,SolidJS,delete,destructive suffix
+solid start app,SolidStart,delete,destructive suffix
+solid start framework,SolidStart,delete,destructive suffix
+solid start project,SolidStart,delete,destructive suffix
+solid start web framework,SolidStart,delete,destructive suffix
+spa,SPA,tier-b,ordinary English word
+speech recognition,STT,delete,plain-English expansion
+speech synthesis,TTS,delete,plain-English expansion
+spring,Spring Boot,delete,ordinary English phrase
+spring boot,Spring Boot,tier-b,gated head word
+spring boot java,Spring Boot,tier-b,gated head word
+spring framework,Spring Boot,tier-b,gated head word
+sql alchemy library,SQLAlchemy,delete,destructive suffix
+sql query,SQL,delete,acronym as a phrase
+ssh connection,SSH,delete,acronym as a phrase
+story desktop app,Tauri,delete,ordinary English phrase
+story rust app,Tauri,delete,ordinary English phrase
+storybook components,Storybook,delete,destructive suffix
+stripe,Stripe,tier-b,ordinary English word
+stripe sdk,Stripe,delete,destructive suffix
+svelt framework,Svelte,delete,destructive suffix
+svelte kit app,SvelteKit,delete,destructive suffix
+svelte kit framework,SvelteKit,delete,destructive suffix
+svelte kit project,SvelteKit,delete,destructive suffix
+svelte kit web framework,SvelteKit,delete,destructive suffix
+swagger,Swagger,tier-b,ordinary English word
+swc compiler,SWC,delete,acronym as a phrase
+swc javascript,SWC,delete,acronym as a phrase
+swift language,Swift,delete,plain-English expansion
+swift programming,Swift,delete,plain-English expansion
+swift u i,SwiftUI,tier-b,gated head word
+swift ui,SwiftUI,tier-b,gated head word
+swift ui framework,SwiftUI,tier-b,gated head word
+system memory,RAM,delete,plain-English expansion
+t r p c api,tRPC,delete,destructive suffix
+t rpc api,tRPC,delete,destructive suffix
+tail wind,Tailwind CSS,delete,plain-English expansion
+tail wind merge library,Tailwind Merge,delete,destructive suffix
+tail wind merge package,Tailwind Merge,delete,destructive suffix
+tail wind s,Tailwind CSS,delete,plain-English expansion
+tail winds,Tailwind CSS,delete,plain-English expansion
+tail winds css,Tailwind CSS,delete,plain-English expansion
+tail wins,Tailwind CSS,delete,plain-English expansion
+tailwind class,Tailwind CSS,delete,plain-English expansion
+tailwind classes,Tailwind CSS,delete,plain-English expansion
+tailwind merge package,Tailwind Merge,delete,destructive suffix
+tailwind styles,Tailwind CSS,delete,destructive suffix
+tan stack query library,TanStack Query,delete,destructive suffix
+tari,Tauri,delete,ordinary English phrase
+tauri application,Tauri,delete,destructive suffix
+tech stock,tech stack,delete,plain-English expansion
+tech track,tech stack,delete,plain-English expansion
+technology stack,tech stack,delete,plain-English expansion
+terminal cli,CLI,delete,acronym as a phrase
+text stack,tech stack,delete,plain-English expansion
+text tack,tech stack,delete,plain-English expansion
+text track,tech stack,delete,plain-English expansion
+the zod,Zod,delete,ordinary English phrase
+tokyo,Tokio,delete,ordinary English phrase
+tory,Tauri,delete,ordinary English phrase
+transformer library,Transformers,delete,plain-English expansion
+transformer package,Transformers,delete,plain-English expansion
+transformers package,Transformers,delete,plain-English expansion
+transformers python,Transformers,delete,plain-English expansion
+trpc client,tRPC,delete,destructive suffix
+ubuntu,Ubuntu,tier-b,ordinary English word
+unique identifier,UUID,delete,acronym as a phrase
+url address,URL,delete,plain-English expansion
+vanilla js project,Vanilla JavaScript,delete,destructive suffix
+veat,Vite,delete,forms from adjacent words
+video ram,VRAM,delete,plain-English expansion
+view,Vue,delete,ordinary English phrase
+visual studio,VS Code,delete,plain-English expansion
+vitest test,Vitest,delete,destructive suffix
+vitest testing,Vitest,delete,destructive suffix
+vue,Vue,tier-b,ordinary English word
+web assembly runtime,WebAssembly,delete,destructive suffix
+web url,URL,delete,plain-English expansion
+whisper,Whisper,tier-b,ordinary English word
+yarn,Yarn,tier-b,ordinary English word
+zoostand state,Zustand,delete,destructive suffix
+zustand state,Zustand,delete,destructive suffix
+zustand state manager,Zustand,delete,destructive suffix

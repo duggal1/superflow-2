@@ -30,6 +30,7 @@ public actor SessionEngine {
     /// active after the model and stream are ready, so without this a second
     /// call during that window could create a second recording.
     var isStarting = false
+    var captureStopRequested = false
     var record: SessionRecord?
     var recognitionStream: (any RecognitionStream)?
     var writer: (any AudioJournalWriter)?

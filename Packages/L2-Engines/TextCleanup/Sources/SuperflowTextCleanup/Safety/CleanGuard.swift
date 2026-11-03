@@ -52,6 +52,15 @@ public enum CleanGuard {
         // legitimately change word order and vocabulary. Exact lexical equality
         // rejects that work. Keep the hard data checks above and reject gross loss.
         if source.count > 12, cleaned.count * 2 < source.count { return .truncated }
+        // Tail loss (e.g. a chunked cleaner dropping the last word of a chunk)
+        // is not caught by the coarse count ratio; check the trailing word.
+        let tailCheckedInput = comparable.split(whereSeparator: \.isWhitespace).reversed()
+            .drop(while: { fillers.contains($0.lowercased().trimmingCharacters(in: .punctuationCharacters)) })
+            .reversed().joined(separator: " ")
+        if TruncationDetector().detect(input: tailCheckedInput, output: result.text,
+                                      hitTokenCap: result.hitTokenCap) == .missingTail {
+            return .truncated
+        }
         return nil
     }
 

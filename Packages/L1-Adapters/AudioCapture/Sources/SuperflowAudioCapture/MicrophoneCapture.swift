@@ -35,9 +35,18 @@ public actor MicrophoneCapture: AudioSource {
             throw SuperflowError.permissionDenied(Permission.microphone.label)
         }
         do {
-            let capture = try HALInputStream(device: InputDevice.resolve())
-            try capture.start()
-            stream = capture
+            for attempt in 0..<3 {
+                guard running else { throw CancellationError() }
+                do {
+                    let capture = try HALInputStream(device: InputDevice.resolve())
+                    try capture.start()
+                    stream = capture
+                    break
+                } catch {
+                    if attempt == 2 { throw error }
+                    try await Task.sleep(for: .milliseconds(150))
+                }
+            }
         } catch { running = false; throw error }
         let (audio, sampleSink) = AsyncStream<AudioChunk>.makeStream(bufferingPolicy: .bufferingNewest(600))
         let (notifications, eventSink) = AsyncStream<AudioEvent>.makeStream(bufferingPolicy: .bufferingNewest(16))

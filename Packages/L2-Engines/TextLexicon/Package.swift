@@ -15,7 +15,7 @@ let package = Package(
             dependencies: [
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowPorts", package: "Ports"),
-            ], resources: [.copy("Resources")]
+            ]
         ),
         .testTarget(
             name: "SuperflowTextLexiconTests",

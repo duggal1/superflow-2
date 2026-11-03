@@ -16,6 +16,7 @@ final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
     private var terminating = false
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if menuController?.isQuitting == true { return .terminateNow }
         guard !terminating else { return .terminateLater }
         terminating = true
         Task { @MainActor in

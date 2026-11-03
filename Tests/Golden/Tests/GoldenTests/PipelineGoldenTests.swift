@@ -69,9 +69,8 @@ final class PipelineGoldenTests: XCTestCase {
             grammarPolicy: .default
         )
         XCTAssertEqual(pipeline.stageIDs,
-                       ["commands", "shortcuts", "disfluency", "spokenCode", "numbers", "lexicon",
-                        "codeAware", "cleanup", "polish",
-                        "grammar", "lineformat"])
+                       ["cleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "numbers", "lexicon",
+                        "codeAware", "lineformat", "normalize", "techDictionary"])
     }
 
     func testShortcutShortCircuitsEveryLaterStage() async throws {
@@ -92,7 +91,7 @@ final class PipelineGoldenTests: XCTestCase {
         XCTAssertEqual(result.text, "# Notes\n\n- one\n- two")
         let cleanerCalls = await cleaner.calls
         let checkerCalls = await checker.calls
-        XCTAssertEqual(cleanerCalls, 0)
+        XCTAssertEqual(cleanerCalls, 1)
         XCTAssertEqual(checkerCalls, 0)
         XCTAssertFalse(result.timings.contains { $0.id == "lineformat" })
     }

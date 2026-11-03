@@ -3,12 +3,22 @@ import SuperflowKernel
 @testable import SuperflowTextLexicon
 
 final class LexiconTests: XCTestCase {
+    /// A trimmed fixture: the real catalog is exercised end to end in
+    /// TextPipelineTests/DictionaryEvalTests.
+    private let bundled = [
+        LexiconEntry(kind: .term, triggers: ["next js", "nextjs"], canonical: "Next.js"),
+        LexiconEntry(kind: .term, triggers: ["vs code", "v s code"], canonical: "VS Code"),
+        LexiconEntry(kind: .term, triggers: ["tan stack query", "tanstack query"],
+                     canonical: "TanStack Query"),
+        LexiconEntry(kind: .term, triggers: ["git hub"], canonical: "GitHub"),
+        LexiconEntry(kind: .term, triggers: ["iphone"], canonical: "iPhone"),
+    ]
+
     private func run(_ input: String, _ entries: [LexiconEntry]) async -> String {
         await LexiconStage(entries: entries).apply(TranscriptDraft(text: input), context: TextContext()).text
     }
 
     func testTermsMatchLooseForms() async {
-        let entries = BundledLexicon.load()
         let cases = [
             ("i use next js daily", "i use Next.js daily"),
             ("open vs code now.", "open VS Code now."),
@@ -17,31 +27,21 @@ final class LexiconTests: XCTestCase {
             ("deploy to git hub", "deploy to GitHub"),
         ]
         for (input, expected) in cases {
-            let actual = await run(input, entries)
+            let actual = await run(input, bundled)
             XCTAssertEqual(actual, expected, "input: \(input)")
         }
     }
 
     func testUserCorrectionWins() async {
         let entries = [LexiconEntry(kind: .correction, triggers: ["super flow"], canonical: "Superflow")]
-            + BundledLexicon.load()
+            + bundled
         let actual = await run("try super flow today", entries)
         XCTAssertEqual(actual, "try Superflow today")
     }
 
-    func testFalsePositiveCorpusIsUntouched() async {
-        let entries = BundledLexicon.load()
-        XCTAssertFalse(entries.isEmpty)
-        for sentence in BundledLexicon.falsePositiveCorpus() {
-            let actual = await run(sentence, entries)
-            XCTAssertEqual(actual, sentence, "false positive on: \(sentence)")
-        }
-    }
-
     func testIdempotent() async {
-        let entries = BundledLexicon.load()
-        let once = await run("use next js with git hub", entries)
-        let twice = await run(once, entries)
+        let once = await run("use next js with git hub", bundled)
+        let twice = await run(once, bundled)
         XCTAssertEqual(once, twice)
     }
 
@@ -58,8 +58,7 @@ final class LexiconTests: XCTestCase {
     }
 
     func testCanonicalCasing() async {
-        let entries = [LexiconEntry(kind: .term, triggers: ["iphone"], canonical: "iPhone")]
-        let actual = await run("my iphone is here", entries)
+        let actual = await run("my iphone is here", bundled)
         XCTAssertEqual(actual, "my iPhone is here")
     }
 }

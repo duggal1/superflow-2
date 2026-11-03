@@ -45,10 +45,10 @@ public actor LlamaCppRuntime: LlamaRuntime {
     private var loadedURL: URL?
     private let sessionCount: Int
 
-    /// One context per cleanup worker by default. Three matches the product's
-    /// default worker count, so a long dictation never serializes a chunk behind
-    /// an idle session.
-    public init(sessions: Int = 3) {
+    /// Two contexts match the measured throughput ceiling: on this class of
+    /// hardware a third stream adds memory and steals GPU time from streaming
+    /// ASR without generating more tokens per second.
+    public init(sessions: Int = 2) {
         sessionCount = min(4, max(1, sessions))
     }
 
@@ -71,7 +71,9 @@ public actor LlamaCppRuntime: LlamaRuntime {
         var sessions: [LlamaSession] = []
         for _ in 0..<sessionCount {
             var params = llama_context_default_params()
-            params.n_ctx = 4_096
+            // Leave room for the S1 prompt, up to 850 input tokens, and the
+            // model's 1.3x + 32 output budget without clipping generation.
+            params.n_ctx = 3_072
             params.n_batch = 1_024
             params.n_ubatch = 512
             params.n_threads = generationThreads

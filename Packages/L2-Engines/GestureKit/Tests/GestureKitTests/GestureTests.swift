@@ -10,22 +10,18 @@ private func event(_ kind: KeyEvent.Kind, _ atMs: Int) -> KeyEvent {
 }
 
 final class GestureTests: XCTestCase {
-    func testExpiredFnTapStartsANewGestureEvenWhenTimerHasNotRun() {
+    func testQuickFnTapEngagesHandsFree() {
         var g = make()
-        _ = g.handle(event(.fnDown, 0))
-        _ = g.handle(event(.fnUp, 80))
-        XCTAssertEqual(g.handle(event(.fnDown, 431)),
-                       [.cancel(.dictation, .secondTapTimeout), .startSpeculative(.dictation)])
-        XCTAssertEqual(g.state, .armed)
+        XCTAssertEqual(g.handle(event(.fnDown, 0)), [.startSpeculative(.dictation)])
+        XCTAssertEqual(g.handle(event(.fnUp, 80)), [.beginHandsFree])
+        XCTAssertEqual(g.state, .handsFree)
     }
 
     func testExpiredCommandTapDoesNotLatchAMeeting() {
         var g = make()
         _ = g.handle(event(.rightCmdDown, 0))
-        _ = g.handle(event(.rightCmdUp, 80))
-        XCTAssertEqual(g.handle(event(.rightCmdDown, 430)),
-                       [.cancel(.meeting, .secondTapTimeout), .startSpeculative(.meeting)])
-        XCTAssertEqual(g.state, .meetingArmed)
+        XCTAssertEqual(g.handle(event(.rightCmdUp, 80)), [.latchMeeting])
+        XCTAssertEqual(g.handle(event(.rightCmdDown, 430)), [.submit(.meeting)])
     }
 
     func testFailedMeetingStartupDoesNotBlockNextFnPress() {
@@ -43,8 +39,7 @@ final class GestureTests: XCTestCase {
     func testFailedMeetingDoubleTapDoesNotBlockFn() {
         var g = make()
         _ = g.handle(event(.rightCmdDown, 0))
-        _ = g.handle(event(.rightCmdUp, 80))
-        XCTAssertEqual(g.handle(event(.rightCmdDown, 200)), [.latchMeeting])
+        XCTAssertEqual(g.handle(event(.rightCmdUp, 80)), [.latchMeeting])
         g.recoverFromFailedStart(.meeting)
         XCTAssertEqual(g.handle(event(.fnDown, 300)), [.startSpeculative(.dictation)])
     }
@@ -61,38 +56,32 @@ final class GestureTests: XCTestCase {
         XCTAssertEqual(g.state, .idle)
     }
 
-    func testFnShortTapWaitsThenCancels() {
+    func testFnShortTapEngagesHandsFree() {
         var g = make()
         XCTAssertEqual(g.handle(event(.fnDown, 0)), [.startSpeculative(.dictation)])
-        XCTAssertEqual(g.handle(event(.fnUp, 80)), [])
-        XCTAssertEqual(g.state, .awaitingSecondTap)
-        XCTAssertEqual(g.tick(atNs: 400 * ms), [])
-        XCTAssertEqual(g.state, .awaitingSecondTap)
-        XCTAssertEqual(g.tick(atNs: 431 * ms), [.cancel(.dictation, .secondTapTimeout)])
+        XCTAssertEqual(g.handle(event(.fnUp, 80)), [.beginHandsFree])
+        XCTAssertEqual(g.state, .handsFree)
+        XCTAssertEqual(g.handle(event(.fnDown, 300)), [.submit(.dictation)])
         XCTAssertEqual(g.state, .idle)
     }
 
     /// The 10 ms tick can fire just before a short release is delivered. The
-    /// release timestamp proves it was a tap, so the first tap must still wait
-    /// for a second instead of submitting.
+    /// release timestamp proves it was a tap, so it engages hands-free instead
+    /// of submitting.
     func testLateHoldTickBeforeShortReleaseStillCountsAsTap() {
         var g = make()
         _ = g.handle(event(.fnDown, 0))
         XCTAssertEqual(g.tick(atNs: 210 * ms), [.holdBegan(.dictation)])
         XCTAssertEqual(g.state, .pushToTalk)
-        XCTAssertEqual(g.handle(event(.fnUp, 120)), [])
-        XCTAssertEqual(g.state, .awaitingSecondTap)
-        XCTAssertEqual(g.handle(event(.fnDown, 300)), [.beginHandsFree])
+        XCTAssertEqual(g.handle(event(.fnUp, 120)), [.beginHandsFree])
         XCTAssertEqual(g.state, .handsFree)
     }
 
-    func testDoubleTapFnIsHandsFree() {
+    func testSingleTapFnIsHandsFree() {
         var g = make()
         _ = g.handle(event(.fnDown, 0))
-        _ = g.handle(event(.fnUp, 80))
-        XCTAssertEqual(g.handle(event(.fnDown, 300)), [.beginHandsFree])
+        XCTAssertEqual(g.handle(event(.fnUp, 80)), [.beginHandsFree])
         XCTAssertEqual(g.state, .handsFree)
-        XCTAssertEqual(g.handle(event(.fnUp, 340)), [])
         XCTAssertEqual(g.handle(event(.fnDown, 1000)), [.submit(.dictation)])
         XCTAssertEqual(g.state, .idle)
     }
@@ -108,7 +97,6 @@ final class GestureTests: XCTestCase {
         var g = make()
         _ = g.handle(event(.fnDown, 0))
         _ = g.handle(event(.fnUp, 50))
-        _ = g.handle(event(.fnDown, 200))
         XCTAssertEqual(g.state, .handsFree)
         XCTAssertEqual(g.handle(event(.escape, 300)), [.cancel(.dictation, .escape)])
         XCTAssertEqual(g.state, .idle)
@@ -118,7 +106,7 @@ final class GestureTests: XCTestCase {
         var g = make()
         _ = g.handle(event(.fnDown, 0))
         _ = g.handle(event(.fnUp, 50))
-        _ = g.handle(event(.fnDown, 200))
+        XCTAssertEqual(g.state, .handsFree)
         XCTAssertEqual(g.handle(event(.enter, 400)), [.submit(.dictation)])
     }
 
@@ -137,18 +125,16 @@ final class GestureTests: XCTestCase {
     func testRightCommandDoubleTapStartsMeeting() {
         var g = make()
         _ = g.handle(event(.rightCmdDown, 0))
-        _ = g.handle(event(.rightCmdUp, 100))
-        XCTAssertEqual(g.state, .awaitingSecondTap)
-        XCTAssertEqual(g.handle(event(.rightCmdDown, 300)), [.latchMeeting])
+        XCTAssertEqual(g.handle(event(.rightCmdUp, 100)), [.latchMeeting])
         XCTAssertEqual(g.state, .meetingLatched)
-        XCTAssertEqual(g.handle(event(.rightCmdUp, 340)), [])
+        XCTAssertEqual(g.handle(event(.rightCmdDown, 300)), [.submit(.meeting)])
     }
 
     func testRightCommandTapTimeoutCancels() {
         var g = make()
         _ = g.handle(event(.rightCmdDown, 0))
-        _ = g.handle(event(.rightCmdUp, 100))
-        XCTAssertEqual(g.tick(atNs: 451 * ms), [.cancel(.meeting, .secondTapTimeout)])
+        XCTAssertEqual(g.handle(event(.rightCmdUp, 100)), [.latchMeeting])
+        XCTAssertEqual(g.tick(atNs: 451 * ms), [])
     }
 
     func testCommandCAbortsMeetingGesture() {
@@ -202,13 +188,12 @@ final class GestureTests: XCTestCase {
         _ = g.handle(event(.fnDown, 0)); seen.insert(g.state)
         _ = g.tick(atNs: 200 * ms); seen.insert(g.state)
         _ = g.handle(event(.fnUp, 300))
-        _ = g.handle(event(.fnDown, 400)); _ = g.handle(event(.fnUp, 450))
-        seen.insert(g.state)
-        _ = g.handle(event(.fnDown, 500)); seen.insert(g.state)
-        _ = g.handle(event(.escape, 550))
+        _ = g.handle(event(.fnDown, 400)); seen.insert(g.state)
+        _ = g.handle(event(.fnUp, 450)); seen.insert(g.state)
+        _ = g.handle(event(.escape, 500))
         _ = g.handle(event(.rightCmdDown, 1000)); seen.insert(g.state)
         _ = g.tick(atNs: 1600 * ms)
         _ = g.handle(event(.rightCmdUp, 1700)); seen.insert(g.state)
-        XCTAssertEqual(seen, Set(GestureState.allCases))
+        XCTAssertEqual(seen, Set(GestureState.allCases).subtracting([.awaitingSecondTap]))
     }
 }

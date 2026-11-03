@@ -2,6 +2,7 @@ import Foundation
 import SuperflowKernel
 import SuperflowPorts
 import SuperflowTextNumbers
+import SuperflowTextLineFormat
 
 struct NumbersAdapter: SuperflowPorts.TextStage {
     let id = "numbers"
@@ -33,5 +34,16 @@ struct NumbersAdapter: SuperflowPorts.TextStage {
         }.joined(separator: "\n")
         result.protected.literals.formUnion(converted)
         return result
+    }
+}
+
+struct NormalizeAdapter: SuperflowPorts.TextStage {
+    let id = "normalize"
+
+    func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
+        guard !draft.shortCircuit else { return draft }
+        var output = draft
+        output.text = Normalizer.normalize(draft.text)
+        return output
     }
 }

@@ -3,6 +3,12 @@ import Foundation
 import SuperflowKernel
 
 enum AudioCppAsset: Sendable {
+    private struct Verification: Codable, Equatable {
+        let digest: String
+        let size: Int
+        let modified: Date
+    }
+
     case speech, speakers
 
     var family: String { self == .speech ? "nemotron_asr" : "nemotron_3_diar" }
@@ -24,6 +30,14 @@ enum AudioCppAsset: Sendable {
 
     func verified(_ url: URL) throws -> Bool {
         guard FileManager.default.fileExists(atPath: url.path) else { return false }
+        let values = try url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+        guard let size = values.fileSize, let modified = values.contentModificationDate else { return false }
+        let verification = Verification(digest: digest, size: size, modified: modified)
+        let receipt = url.appendingPathExtension("verified.json")
+        if let data = try? Data(contentsOf: receipt),
+           let cached = try? JSONDecoder().decode(Verification.self, from: data), cached == verification {
+            return true
+        }
         let file = try FileHandle(forReadingFrom: url)
         defer { try? file.close() }
         var hash = SHA256()
@@ -31,7 +45,11 @@ enum AudioCppAsset: Sendable {
             try Task.checkCancellation()
             hash.update(data: data)
         }
-        return hash.finalize().map { String(format: "%02x", $0) }.joined() == digest
+        guard hash.finalize().map({ String(format: "%02x", $0) }).joined() == digest else { return false }
+        if let data = try? JSONEncoder().encode(verification) {
+            try? data.write(to: receipt, options: .atomic)
+        }
+        return true
     }
 
     func install(at destination: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
@@ -39,7 +57,10 @@ enum AudioCppAsset: Sendable {
             throw SuperflowError.modelUnavailable("Invalid audio.cpp model URL")
         }
         let (temporary, response) = try await URLSession.shared.download(from: url, delegate: ModelDownloadProgress(progress: progress))
-        defer { try? FileManager.default.removeItem(at: temporary) }
+        defer {
+            try? FileManager.default.removeItem(at: temporary)
+            try? FileManager.default.removeItem(at: temporary.appendingPathExtension("verified.json"))
+        }
         guard let http = response as? HTTPURLResponse, http.statusCode == 200,
               try verified(temporary) else {
             throw SuperflowError.modelUnavailable("audio.cpp model download failed verification")

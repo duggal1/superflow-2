@@ -37,7 +37,7 @@ public enum OnboardingStep: String, CaseIterable, Sendable, Identifiable {
         case .welcome, .permissions, .models:
             nil
         case .key:
-            "Hold to talk. Double-tap for hands-free."
+            "Hold to talk. Tap for hands-free."
         case .done:
             "Hold fn anywhere to dictate."
         }

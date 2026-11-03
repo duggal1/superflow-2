@@ -36,7 +36,7 @@ final class DictionaryEvalTests: XCTestCase {
             if output != line { failures.append("\(line)  ->  \(output)") }
         }
         XCTAssertTrue(failures.isEmpty,
-                      "false positives:\n" + failures.prefix(20).joined(separator: "\n"))
+                      "false positives:\n" + failures.prefix(400).joined(separator: "\n"))
     }
 
     func testDeveloperSentencesReplaceAsExpected() async throws {
@@ -54,7 +54,7 @@ final class DictionaryEvalTests: XCTestCase {
             }
         }
         XCTAssertTrue(failures.isEmpty,
-                      "missed replacements:\n" + failures.prefix(20).joined(separator: "\n"))
+                      "missed replacements:\n" + failures.prefix(400).joined(separator: "\n"))
     }
 
     func testEngineeringDictationRepairsContextualAliases() async {

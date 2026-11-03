@@ -92,6 +92,18 @@ final class LiveServiceTests: XCTestCase {
         try write(report, name: "live-service.md")
     }
 
+    func testDefaultFormattingProducesSafeList() async throws {
+        let cleaner = try await model()
+        let service = CleanupService(cleaner: cleaner)
+        let input = "so for the trip we need to pack sunscreen and then also a first aid kit and um chargers for everything"
+        let outcome = await service.clean(input, context: TextContext())
+        XCTAssertEqual(outcome.state, .cleaned, "Reasons: \(outcome.chunks.compactMap(\.reason))")
+        XCTAssertTrue(outcome.text.contains("\n- "), "Expected list formatting")
+        for word in ["sunscreen", "aid", "chargers"] {
+            XCTAssertTrue(outcome.text.localizedCaseInsensitiveContains(word))
+        }
+    }
+
     func testLiveShortTranscriptLatency() async throws {
         let cleaner = try await model(sessions: 3)
         let service = CleanupService(cleaner: cleaner)

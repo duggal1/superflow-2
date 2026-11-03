@@ -27,6 +27,7 @@ public final class MenuBarController: ObservableObject {
     /// is still inside its model or microphone wait; both callers share it
     /// instead of racing into "session already active".
     private var startTask: Task<Bool, Never>?
+    public private(set) var isQuitting = false
     private var releaseModels: (@Sendable () async -> Void)?
 
     public convenience init(environment: AppEnvironment?, mainWindow: MainWindowController,
@@ -338,6 +339,11 @@ public final class MenuBarController: ObservableObject {
     }
 
     public func quit() async {
-        NSApp.terminate(nil)
+        // Perform cleanup first so termination does not depend on the
+        // delegate's asynchronous reply path (which can deadlock when
+        // triggered from a main-actor task).
+        isQuitting = true
+        await prepareToQuit()
+        await MainActor.run { NSApp.terminate(nil) }
     }
 }

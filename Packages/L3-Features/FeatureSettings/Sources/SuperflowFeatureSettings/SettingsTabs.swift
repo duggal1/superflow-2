@@ -66,14 +66,6 @@ struct DictationTab: View {
                                  label: "Speech model")
                     }
                 }
-                SettingRow(.noiseSuppression, "Noise suppression", filter: query) {
-                    HStack(spacing: 12) {
-                        if !model.enhancementReady {
-                            AppButton("Get model", kind: .quiet, height: 28) { openModels() }
-                        }
-                        AppToggle("Noise suppression", isOn: $model.settings.speechEnhancementEnabled)
-                    }
-                }
                 SettingRow(.cleanup, "Clean up dictation", filter: query) {
                     HStack(spacing: 12) {
                         if !model.cleanupModelInstalled && !model.settings.reflectionCleanupEnabled {

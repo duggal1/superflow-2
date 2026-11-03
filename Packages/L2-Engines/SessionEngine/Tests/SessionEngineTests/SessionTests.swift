@@ -27,6 +27,25 @@ final class SessionTests: XCTestCase {
                       insertionDeadline: deadline)
     }
 
+    func testReleaseStopsMicrophoneWhileColdModelIsStillLoading() async throws {
+        let audio = ScriptedAudioSource(samples: Array(repeating: 0.2, count: 16_000))
+        let recognizer = FakeSpeechRecognizer(script: ["hello world"], samplesPerSegment: 8_000)
+        let warming = expectation(description: "model loading after capture opens")
+        await recognizer.setOnWarmUp {
+            warming.fulfill()
+            try? await Task.sleep(for: .milliseconds(300))
+        }
+        let engine = engine(audio: audio, recognizer: recognizer)
+        let start = Task { try await engine.start() }
+        await fulfillment(of: [warming], timeout: 2)
+        await engine.stopCaptureWhileStarting()
+        XCTAssertEqual(audio.startCount, 1)
+        XCTAssertEqual(audio.stopCount, 1)
+        _ = try await start.value
+        let outcome = await engine.stop()
+        XCTAssertNotNil(outcome)
+    }
+
     func testStartRecordsAndStopInserts() async throws {
         let repo = InMemoryRepository()
         let inserter = RecordingInserter()
@@ -113,12 +132,12 @@ final class SessionTests: XCTestCase {
         await engine.cancel()
     }
 
-    func testCleanupFailureFallsBackToRawText() async throws {
+    func testCleanupFailureReturnsNoInsertionText() async throws {
         let engine = engine(cleaner: FakeTextCleaner(.fail))
         _ = try await engine.start()
         let outcome = await engine.stop()
         XCTAssertEqual(outcome?.cleanupState, .fallback)
-        XCTAssertTrue(outcome?.text.lowercased().contains("hello world") ?? false)
+        XCTAssertEqual(outcome?.text, "")
     }
 
     /// A filler-only dictation cleans to a valid empty string. The cleaned row

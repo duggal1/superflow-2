@@ -2,6 +2,7 @@ import Foundation
 import SuperflowKernel
 
 public struct CleanupConfig: Sendable, Equatable {
+    public static let maximumInputTokens = 850
     public var softTokenTarget: Int
     public var hardTokenCap: Int
     public var interactiveDeadlineMs: Int
@@ -22,12 +23,12 @@ public struct CleanupConfig: Sendable, Equatable {
     /// off except list and paragraph shaping after cleanup.
     public var format: FormatConfig
 
-    public init(softTokenTarget: Int = 64, hardTokenCap: Int = 600, interactiveDeadlineMs: Int = 1_500,
+    public init(softTokenTarget: Int = 64, hardTokenCap: Int = 850, interactiveDeadlineMs: Int = 1_500,
                 backgroundDeadlineMs: Int = 30_000, workers: Int = 3, ratioFloor: Double = 0.6,
-                retryDepth: Int = 3, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_024,
+                retryDepth: Int = 3, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_137,
                 overlapPercent: Double = 0.12, format: FormatConfig = FormatConfig()) {
         self.softTokenTarget = softTokenTarget
-        self.hardTokenCap = hardTokenCap
+        self.hardTokenCap = min(Self.maximumInputTokens, max(1, hardTokenCap))
         self.interactiveDeadlineMs = interactiveDeadlineMs
         self.backgroundDeadlineMs = backgroundDeadlineMs
         self.workers = max(1, workers)
@@ -71,7 +72,7 @@ public struct ChunkPlanner: Sendable {
 
     public func plan(_ words: [Word], count: @Sendable (String) async -> Int) async -> [ChunkPlan] {
         guard !words.isEmpty else { return [] }
-        let hard = max(1, config.hardTokenCap)
+        let hard = min(CleanupConfig.maximumInputTokens, max(1, config.hardTokenCap))
         let target = min(hard, max(1, config.softTokenTarget))
         let fullText = Tokenizer.join(words)
         let total = await count(fullText)

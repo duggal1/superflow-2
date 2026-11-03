@@ -55,8 +55,10 @@ public actor CleanupService {
                 structureMapping: any StructureMapping = S1MiniStructureMapping()) {
         self.cleaner = cleaner
         self.metrics = metrics
-        self.config = config
-        self.semaphore = AsyncSemaphore(config.workers)
+        var bounded = config
+        bounded.hardTokenCap = min(CleanupConfig.maximumInputTokens, max(1, config.hardTokenCap))
+        self.config = bounded
+        self.semaphore = AsyncSemaphore(bounded.workers)
         self.structureMapping = structureMapping
     }
 

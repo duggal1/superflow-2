@@ -15,6 +15,8 @@ struct MeetingDetail: View {
     @State private var hoverTime: TimeInterval?
     @State private var flash: Int?
     @State private var flashTask: Task<Void, Never>?
+    @State private var changes: [TranscriptDiff.Hunk] = []
+    @State private var showsChanges = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.lg) {
@@ -24,9 +26,13 @@ struct MeetingDetail: View {
                 readout
             }
             ForEach(document.notices, id: \.self) { NoticeBanner($0, tone: .orange) }
+            changesSection
             turns
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .task(id: document.sessionID) {
+            changes = await Self.edits(in: document)
+        }
         .onDisappear { flashTask?.cancel() }
     }
 
@@ -80,6 +86,51 @@ struct MeetingDetail: View {
             Text(Segment.timeLabel(document.durationMs))
         }
         .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2).frame(height: 16)
+    }
+
+    /// The same answer History gives, folded into one line: what the model
+    /// actually rewrote, not the whole transcript again. Collapsed until asked.
+    @ViewBuilder private var changesSection: some View {
+        if !changes.isEmpty {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                RowButton(showsChanges ? "Hide changes" : "What changed · \(changes.count)",
+                          radius: 0, action: { showsChanges.toggle() }) {
+                    Text(showsChanges ? "Hide changes" : "What changed · \(changes.count)")
+                        .appType(.caption).foregroundStyle(Tok.text2)
+                }
+                if showsChanges {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
+                        ForEach(Array(changes.prefix(6).enumerated()), id: \.offset) { _, hunk in
+                            HStack(spacing: Space.xs) {
+                                Text(hunk.from.isEmpty ? "added" : hunk.from)
+                                    .strikethrough(!hunk.from.isEmpty)
+                                    .foregroundStyle(Tok.text2).lineLimit(1)
+                                PixelMark(rows: ["....#..", ".....#.", "#######", ".....#.", "....#.."],
+                                          cell: 1, color: Ramp.blue[4])
+                                Text(hunk.to.isEmpty ? "removed" : hunk.to)
+                                    .foregroundStyle(Tok.text).lineLimit(1)
+                                Spacer(minLength: 0)
+                            }
+                            .appType(.caption).frame(height: 20)
+                        }
+                        if changes.count > 6 {
+                            Text("+\(changes.count - 6) more").appType(.caption)
+                                .foregroundStyle(Tok.text2)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Word-level edits, computed off the main actor: a long meeting is a large
+    /// diff and the transcript must render before it finishes.
+    private static func edits(in document: MeetingDocument) async -> [TranscriptDiff.Hunk] {
+        let turns = document.turns.filter { !$0.isGap && $0.rawText != $0.text }
+        guard !turns.isEmpty else { return [] }
+        return await Task.detached(priority: .utility) {
+            turns.flatMap { TranscriptDiff.compute(raw: $0.rawText, cleaned: $0.text).hunks }
+        }.value
     }
 
     private var turns: some View {
