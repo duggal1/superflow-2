@@ -58,8 +58,28 @@ public struct ModelMark: View {
 /// The Models page reads the same catalog and download ports as Settings and
 /// onboarding. There is no second download path: every row's state comes from
 /// `ModelProvider` and `SpeakerDiarizer`.
+private enum CatalogFilter: Hashable { case all, installed, available }
+
 public struct ModelsView: View {
     @Bindable var vm: ModelsViewModel
+    @State private var query = ""
+    @State private var searchFocus = false
+    @State private var filter: CatalogFilter = .all
+
+    private var filteredItems: [ModelItem] {
+        vm.items.filter { item in
+            guard vm.matches(item, query: query) else { return false }
+            switch filter {
+            case .all: return true
+            case .installed:
+                if case .installed = item.state { return true }
+                return false
+            case .available:
+                if case .idle = item.state { return true }
+                return false
+            }
+        }
+    }
 
     public init(vm: ModelsViewModel) { self.vm = vm }
 
@@ -71,15 +91,23 @@ public struct ModelsView: View {
                 AppButton("Install remaining (\(vm.remainingDownloadCount))", kind: .primary) { vm.downloadAll() }
             }
         } content: {
-            if vm.items.isEmpty {
-                EmptyState("No models.", message: "Reinstall Superflow to restore them.")
+            HStack(spacing: 12) {
+                SearchField(text: $query, prompt: "Search models", isFocused: $searchFocus)
+                Segmented(selection: $filter, items: [
+                    .init("All", value: .all),
+                    .init("Installed", value: .installed),
+                    .init("Available", value: .available),
+                ])
+            }
+            if filteredItems.isEmpty {
+                EmptyState("No matching models.", message: "Change the search or model filter.")
             } else {
-                ModelPipeline(noise: vm.items.contains { $0.kind == .enhancement && $0.isActive },
-                              speech: vm.items.contains { $0.kind == .speech && $0.isActive },
-                              cleanup: vm.items.contains { $0.kind == .cleanup && $0.isActive })
+                ModelPipeline(noise: filteredItems.contains { $0.kind == .enhancement && $0.isActive },
+                              speech: filteredItems.contains { $0.kind == .speech && $0.isActive },
+                              cleanup: filteredItems.contains { $0.kind == .cleanup && $0.isActive })
                 ForEach([false, true], id: \.self) { meetings in
                     let order: [ModelKind] = meetings ? [.meetings] : [.enhancement, .speech, .cleanup]
-                    let items = order.flatMap { kind in vm.items.filter { $0.kind == kind } }
+                    let items = order.flatMap { kind in filteredItems.filter { $0.kind == kind } }
                     if !items.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             SectionHeader(meetings ? "Meetings" : "Dictation",
@@ -93,6 +121,7 @@ public struct ModelsView: View {
             }
         }
         .task { await vm.refresh() }
+        .searchShortcut($searchFocus)
     }
 }
 
@@ -124,8 +153,14 @@ struct ModelCard: View {
                     } else if item.kind == .speech {
                         let runtimes = item.installedASRRuntimes.map(\.label).joined(separator: ", ")
                         PixelBadge("Installed · \(runtimes)", kind: .installed)
-                        AppButton("Install for \(vm.selectedASRRuntime.label)", kind: .secondary) {
-                            vm.download(item.id)
+                        if item.installedASRRuntimes.contains(vm.selectedASRRuntime) {
+                            AppButton("Use model", kind: .secondary) {
+                                Task { await vm.activate(item.id) }
+                            }
+                        } else {
+                            AppButton("Install for \(vm.selectedASRRuntime.label)", kind: .secondary) {
+                                vm.download(item.id)
+                            }
                         }
                     } else {
                         PixelBadge("Installed", kind: .installed)
