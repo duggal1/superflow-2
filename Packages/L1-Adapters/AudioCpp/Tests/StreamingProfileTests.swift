@@ -56,3 +56,32 @@ import SuperflowKernel
         #expect(error.localizedDescription.contains("Unsupported streaming ASR profile"))
     }
 }
+
+
+@Test func deletingOneStreamingArtifactPreservesOtherModelsAndCaches() async throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("superflow-removal-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let qwen = directory.appendingPathComponent(AudioCppAsset.qwenASR06B.fileName)
+    let nemotron = directory.appendingPathComponent(AudioCppAsset.speech.fileName)
+    let receipt = qwen.appendingPathExtension("verified.json")
+    try Data("mock qwen weights".utf8).write(to: qwen)
+    try Data("mock nemotron weights".utf8).write(to: nemotron)
+    try Data("stale verification".utf8).write(to: receipt)
+
+    let runtime = AudioCppRuntime(asset: .qwenASR06B, root: directory)
+    try await runtime.removeInstalledModel()
+    #expect(!FileManager.default.fileExists(atPath: qwen.path))
+    #expect(!FileManager.default.fileExists(atPath: receipt.path))
+    #expect(FileManager.default.fileExists(atPath: nemotron.path))
+
+    let speakerRuntime = AudioCppRuntime(asset: .speakers, root: directory)
+    do {
+        try await speakerRuntime.removeInstalledModel()
+        Issue.record("Diarization model was incorrectly removable as speech")
+    } catch {
+        #expect(error.localizedDescription.isEmpty == false)
+    }
+}
