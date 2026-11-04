@@ -93,7 +93,8 @@ final class ModelsViewTests: XCTestCase {
                                  asrModelsByRuntime: [.audioCpp: provider],
                                  onActivate: { _ in false })
         await vm.refresh()
-        XCTAssertFalse(await vm.activate(ModelProfile.qwen3ASR06B.id))
+        let didActivate = await vm.activate(ModelProfile.qwen3ASR06B.id)
+        XCTAssertFalse(didActivate)
         XCTAssertEqual(vm.items.filter { $0.kind == .speech && $0.isActive }.map(\.id),
                        [ModelProfile.default.id])
         XCTAssertNotNil(vm.actionErrors[ModelProfile.qwen3ASR06B.id])
@@ -108,7 +109,8 @@ final class ModelsViewTests: XCTestCase {
         let activated = await vm.activate(ModelProfile.qwen3ASR06B.id)
         XCTAssertTrue(activated)
         XCTAssertEqual(vm.activeName, ModelProfile.qwen3ASR06B.displayName)
-        XCTAssertFalse(await vm.remove(ModelProfile.qwen3ASR06B.id),
+        let didRemoveActive = await vm.remove(ModelProfile.qwen3ASR06B.id)
+        XCTAssertFalse(didRemoveActive,
                        "The active profile must not be deletable")
         let removed = await vm.remove(ModelProfile.voxtralRealtime.id)
         XCTAssertTrue(removed)
