@@ -3,17 +3,19 @@ import SuperflowDesignSystem
 import SuperflowFeatureDictionary
 import SuperflowFeatureShortcuts
 import SuperflowKernel
+import SuperflowTextPipeline
 import SuperflowUIComponents
 import SwiftUI
 import UniformTypeIdentifiers
 
 private enum KnowledgeSection: Hashable {
-    case all, dictionary, shortcuts
+    case all, dictionary, shortcuts, learned
 
     static let items: [Segmented<KnowledgeSection>.Item] = [
         .init("All", value: .all),
         .init("Dictionary", value: .dictionary),
         .init("Shortcuts", value: .shortcuts),
+        .init("Learned", value: .learned),
     ]
 }
 
@@ -22,19 +24,44 @@ private enum KnowledgeSection: Hashable {
 struct KnowledgeView: View {
     @ObservedObject var dictionary: DictionaryViewModel
     @ObservedObject var shortcuts: ShortcutsViewModel
+    let learning: DictionaryLearningEngine
+    @Binding var learningEnabled: Bool
+    @Binding var autoLearnEnabled: Bool
+    let onLearningChange: @MainActor () async -> Void
     @Environment(DialogHost.self) private var dialogs
     @State private var section: KnowledgeSection = .all
     @State private var query = ""
     @State private var searchFocus = false
     @State private var importing = false
     @State private var importingShortcuts = false
+    @State private var learned: [LearningCandidate] = []
+
+    init(dictionary: DictionaryViewModel, shortcuts: ShortcutsViewModel,
+         learning: DictionaryLearningEngine, learningEnabled: Binding<Bool>,
+         autoLearnEnabled: Binding<Bool>,
+         onLearningChange: @escaping @MainActor () async -> Void) {
+        self.dictionary = dictionary
+        self.shortcuts = shortcuts
+        self.learning = learning
+        _learningEnabled = learningEnabled
+        _autoLearnEnabled = autoLearnEnabled
+        self.onLearningChange = onLearningChange
+    }
 
     private var lexicon: [LexiconEntry] {
         dictionary.visibleEntries.filter { $0.source == .user }
     }
     private var phrases: [ShortcutEntry] { shortcuts.visibleEntries }
-    private var showDictionary: Bool { section != .shortcuts }
-    private var showShortcuts: Bool { section != .dictionary }
+    private var showDictionary: Bool { section == .all || section == .dictionary }
+    private var showShortcuts: Bool { section == .all || section == .shortcuts }
+    private var showLearned: Bool { section == .all || section == .learned }
+    private var visibleLearned: [LearningCandidate] {
+        learned.filter { $0.state != .rejected }
+            .filter {
+                query.isEmpty || $0.heard.localizedCaseInsensitiveContains(query)
+                    || $0.canonical.localizedCaseInsensitiveContains(query)
+            }
+    }
 
     var body: some View {
         Page(title: "Knowledge") {
@@ -59,8 +86,10 @@ struct KnowledgeView: View {
             if showShortcuts, !phrases.isEmpty {
                 shortcutsGroup
             }
+            if showLearned { learningGroup }
             if (!showDictionary || lexicon.isEmpty)
                 && (!showShortcuts || phrases.isEmpty)
+                && (!showLearned || visibleLearned.isEmpty)
                 && !dictionary.isLoading && !shortcuts.isLoading {
                 EmptyState("Nothing here yet.",
                            message: "Add a term or a shortcut to get started.")
@@ -71,6 +100,7 @@ struct KnowledgeView: View {
         .task {
             await dictionary.load()
             await shortcuts.load()
+            await loadLearned()
         }
         .onChange(of: query) { _, newValue in
             dictionary.query = newValue
@@ -131,6 +161,88 @@ struct KnowledgeView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var learningGroup: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader("Learning", note: "Suggestions require confirmation.")
+            HStack(spacing: 16) {
+                AppToggle("Observe short corrections", isOn: $learningEnabled)
+                AppToggle("Auto-add repeated corrections", isOn: $autoLearnEnabled,
+                          enabled: learningEnabled)
+            }
+            Text("Local only. Short, editable text fields; never passwords or full documents.")
+                .appType(.caption).foregroundStyle(Tok.text2)
+            if !visibleLearned.isEmpty {
+                Card(padding: 8) {
+                    VStack(spacing: 2) {
+                        ForEach(visibleLearned) { candidate in
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(candidate.heard + " → " + candidate.canonical)
+                                        .appType(.body).foregroundStyle(Tok.text)
+                                    Text(candidate.appScope ?? "All apps")
+                                        .appType(.caption).foregroundStyle(Tok.text2)
+                                }
+                                Spacer(minLength: 12)
+                                if candidate.state == .suggested {
+                                    AppButton("Confirm", kind: .quiet, height: 28) {
+                                        Task { await confirm(candidate) }
+                                    }
+                                    AppButton("Reject", kind: .quiet, height: 28) {
+                                        Task { await reject(candidate) }
+                                    }
+                                } else {
+                                    AppButton("Undo", kind: .quiet, height: 28) {
+                                        Task { await undo(candidate) }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 12).frame(minHeight: 44)
+                            .accessibilityElement(children: .contain)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func loadLearned() async {
+        do { learned = try await learning.candidates() }
+        catch { dictionary.toast.show("Could not load learned corrections.", style: .error) }
+    }
+
+    private func confirm(_ candidate: LearningCandidate) async {
+        do {
+            try await learning.confirm(id: candidate.id)
+            await dictionary.load()
+            await loadLearned()
+            await onLearningChange()
+            dictionary.toast.show("Added to Knowledge.", style: .success)
+        } catch {
+            dictionary.toast.show("Could not confirm correction.", style: .error)
+        }
+    }
+
+    private func reject(_ candidate: LearningCandidate) async {
+        do {
+            try await learning.reject(id: candidate.id)
+            await loadLearned()
+        } catch {
+            dictionary.toast.show("Could not reject correction.", style: .error)
+        }
+    }
+
+    private func undo(_ candidate: LearningCandidate) async {
+        do {
+            try await learning.undo(id: candidate.id)
+            await dictionary.load()
+            await loadLearned()
+            await onLearningChange()
+            dictionary.toast.show("Learned correction removed.", style: .success)
+        } catch {
+            dictionary.toast.show("Could not undo correction.", style: .error)
         }
     }
 
