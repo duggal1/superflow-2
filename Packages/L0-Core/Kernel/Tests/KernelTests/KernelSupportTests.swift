@@ -159,8 +159,11 @@ final class KernelSupportTests: XCTestCase {
         XCTAssertTrue(ModelProfile.streamingProfiles.contains(.nemotron35Streaming))
     }
 
-    func testNVIDIAProfilesExposeOnlyTheSupportedStreamingModel() {
-        XCTAssertEqual(ModelProfile.all, [.nemotron35Streaming])
+    func testCatalogContainsOnlyModelsWithNativeLivePartialImplementations() {
+        XCTAssertEqual(ModelProfile.all, [.nemotron35Streaming, .qwen3ASR06B,
+                                         .qwen3ASR17B, .voxtralRealtime])
+        XCTAssertTrue(ModelProfile.all.allSatisfy(\.supportsLiveDictation))
+        XCTAssertFalse(ModelProfile.all.contains { $0.id.contains("moonshine") })
         XCTAssertEqual(ModelProfile.default.upstreamRepo, "nvidia/nemotron-3.5-asr-streaming-0.6b")
         XCTAssertTrue(ModelProfile.default.supportsLiveDictation)
         XCTAssertEqual(ModelProfile.default.formatLabel, "Streaming")
