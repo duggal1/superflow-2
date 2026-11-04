@@ -7,7 +7,8 @@ import SwiftUI
 
 /// Runs the real deterministic dictionary stage on every keystroke, so the
 /// preview is the app's own behaviour and not a mock.
-struct DictionaryPlayground: View {
+public struct DictionaryPlayground: View {
+    public init(entries: [LexiconEntry]) { self.entries = entries }
     let entries: [LexiconEntry]
     @State private var input = ""
     @State private var output = AttributedString()
@@ -17,7 +18,7 @@ struct DictionaryPlayground: View {
         let count: Int
     }
 
-    var body: some View {
+    public var body: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.sm) {
                 SectionHeader("Try it")
