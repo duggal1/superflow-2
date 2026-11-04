@@ -171,7 +171,7 @@ actor AudioCppRuntime {
         if asset.isNemotron {
             try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
             try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
-        } else if asset == .qwenASR06B {
+        } else if asset == .qwenASR06B || asset == .qwenASR17B {
             try Self.check(audiocpp_request_set_option(request, "audio_chunk_duration_sec", "3"))
         }
     }
