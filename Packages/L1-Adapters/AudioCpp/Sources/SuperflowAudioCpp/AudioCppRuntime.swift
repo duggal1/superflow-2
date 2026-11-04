@@ -132,7 +132,8 @@ actor AudioCppRuntime {
             guard let options else { throw SuperflowError.modelUnavailable("audio.cpp options allocation failed") }
             try Self.check(audiocpp_options_set(options, "nemotron_3_diar.latency_profile", "ultra_low"))
         }
-        let session = try "metal".withCString { backend in
+        let backendName = AudioCppBackend.select()
+        let session = try backendName.withCString { backend in
             var session: OpaquePointer?
             var config = audiocpp_backend_config(backend: backend, device: 0, threads: 4)
             try Self.check(audiocpp_session_create(modelPointer, task, "streaming", &config, options, &session))
