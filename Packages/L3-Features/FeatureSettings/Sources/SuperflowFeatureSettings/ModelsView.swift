@@ -47,11 +47,20 @@ public struct ModelItem: Identifiable, Equatable, Sendable {
 /// row is audio.cpp's diarizer, so it carries a glyph rather than a vendor image.
 public struct ModelMark: View {
     public let kind: ModelKind
-    public init(kind: ModelKind) { self.kind = kind }
+    public let profileID: String?
+    public init(kind: ModelKind, profileID: String? = nil) {
+        self.kind = kind
+        self.profileID = profileID
+    }
 
     @ViewBuilder public var body: some View {
         switch kind {
-        case .speech: NVIDIAIcon(width: 24)
+        case .speech:
+            if profileID == nil || profileID == ModelProfile.nemotron35Streaming.id {
+                NVIDIAIcon(width: 24)
+            } else {
+                IconView(.speechModel, size: 18)
+            }
         case .enhancement: IconView(.noiseSuppression, size: 14)
         case .cleanup: S1MiniMark(size: 24)
         case .meetings: IconView(.speakerSeparation, size: 14)
@@ -136,7 +145,7 @@ struct ModelCard: View {
     var body: some View {
         DownloadCard(title: item.name, detail: item.detail, state: item.state,
                      totalBytes: item.bytes > 0 ? item.bytes : nil) {
-            ModelMark(kind: item.kind)
+            ModelMark(kind: item.kind, profileID: item.kind == .speech ? item.id : nil)
         } trailing: {
             HStack(spacing: 12) {
                 if item.kind == .speech {
