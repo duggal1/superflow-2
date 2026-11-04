@@ -42,6 +42,13 @@ public actor AudioCppRecognizer: SpeechRecognizer {
             }
         }
         try await runtime.prime()
+        // Prime may load a large model. Another capture could begin during the
+        // await, so repeat the guard before reclaiming old native handles.
+        for (id, other) in runtimes where id != profile {
+            if await other.hasActiveStreams() {
+                throw SuperflowError.invalidState("Active recording started during model preparation")
+            }
+        }
         currentProfile = profile
         for (id, other) in runtimes where id != profile { await other.unload() }
     }
