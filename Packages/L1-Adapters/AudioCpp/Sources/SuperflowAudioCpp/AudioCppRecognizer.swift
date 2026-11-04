@@ -2,7 +2,7 @@ import Foundation
 import SuperflowKernel
 import SuperflowPorts
 
-public actor AudioCppRecognizer: SpeechRecognizer {
+public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     /// Each family owns its own immutable model, stream handles and verified
     /// artifact. Selecting another profile must never overwrite Nemotron's
     /// installed files or reuse a session from an incompatible family.
@@ -62,6 +62,14 @@ public actor AudioCppRecognizer: SpeechRecognizer {
         currentProfile = profile
         return try await runtime.start(source: source)
     }
+    public func remove(profileID: String) async throws {
+        let runtime = try Self.runtime(profileID, from: runtimes)
+        guard profileID != currentProfile else {
+            throw SuperflowError.invalidState("Switch to another speech model before removing the active model")
+        }
+        try await runtime.removeInstalledModel()
+    }
+
     public func unload() async {
         for runtime in runtimes.values { await runtime.unload() }
     }
