@@ -547,4 +547,4 @@ ASRSherpaOnnx depended on the sibling L1 ModelStore package for a downloader pro
 - [x] Unresolved
 - [ ] Resolved
 
-Evidence: dependency and forbidden-pattern checks pass; GitHub then exposed the app-link prerequisite, which now builds the pinned audio.cpp library before Swift linking. Full verification is pending.
+Evidence: dependency and forbidden-pattern checks pass; GitHub exposed the native link prerequisite and a build script that never checked out its declared audio.cpp pin. Both are fixed; full verification is pending.
