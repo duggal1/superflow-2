@@ -547,4 +547,4 @@ ASRSherpaOnnx depended on the sibling L1 ModelStore package for a downloader pro
 - [x] Unresolved
 - [ ] Resolved
 
-Evidence: `tools/check-deps` now passes; local `make verify` stops extracting llama.cpp's test artifact because the machine is out of disk space. GitHub verification is pending.
+Evidence: dependency and forbidden-pattern checks pass; GitHub then exposed the app-link prerequisite, which now builds the pinned audio.cpp library before Swift linking. Full verification is pending.

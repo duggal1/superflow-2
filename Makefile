@@ -5,7 +5,7 @@
 # Never clean Rust, SwiftPM caches, models, or dependencies.
 # ------------------------------------------------------------
 
-.PHONY: build buildfix app run test lint verify deps-check lint-forbidden
+.PHONY: build buildfix app run test lint verify deps-check lint-forbidden native-audio
 
 APP := dist/Superflow.app
 SWIFT_APP_PACKAGE := App/SuperflowApp
@@ -18,7 +18,10 @@ SWIFT_TEST_PACKAGES := $(shell for manifest in $(SWIFT_PACKAGES); do grep -q '\.
 
 build: buildfix
 
-buildfix:
+native-audio:
+	@./tools/build-audio-cpp
+
+buildfix: native-audio
 	@set -euo pipefail; \
 	if [ -z "$${SUPERFLOW_SIGN_IDENTITY:-}" ]; then tools/dev-signing --print >/dev/null; fi; \
 	swift build --package-path "$(SWIFT_APP_PACKAGE)" --configuration release; \
@@ -37,7 +40,7 @@ run: app
 # It must work without a signing identity: no packaging here.
 # ------------------------------------------------------------
 
-test:
+test: native-audio
 	@set -euo pipefail; \
 	for manifest in $(SWIFT_TEST_PACKAGES); do \
 		printf '==> %s\n' "$$(dirname "$$manifest")"; \

@@ -12,6 +12,7 @@ Remove the L1-to-L1 dependency without weakening dependency checks or changing d
 - Remove the `ModelStore` package dependency and replace test imports with `SuperflowPorts`.
 - Use sherpa-onnx's static product so SwiftPM test hosts do not need an unbundled runtime dylib.
 - Fix the seven existing `lint-forbidden` blockers exposed once `deps-check` passes.
+- Build the pinned audio.cpp native library before Swift tests and app linking.
 - Record the confirmed CI issue and verification in `issue.md`.
 
 ## Verification
