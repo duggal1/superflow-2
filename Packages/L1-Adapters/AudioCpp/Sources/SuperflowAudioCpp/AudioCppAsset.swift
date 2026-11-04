@@ -9,13 +9,12 @@ enum AudioCppAsset: Sendable {
         let modified: Date
     }
 
-    case speech, moonshineTiny, moonshineSmall, qwenASR06B, speakers
+    case speech, qwenASR06B, voxtralRealtime, speakers
 
     init?(speechProfileID id: String) {
         switch id {
         case ModelProfile.nemotron35Streaming.id: self = .speech
-        case ModelProfile.moonshineTiny.id: self = .moonshineTiny
-        case ModelProfile.moonshineSmall.id: self = .moonshineSmall
+        case ModelProfile.voxtralRealtime.id: self = .voxtralRealtime
         case ModelProfile.qwen3ASR06B.id: self = .qwenASR06B
         default: return nil
         }
@@ -27,7 +26,7 @@ enum AudioCppAsset: Sendable {
     var family: String {
         switch self {
         case .speech: "nemotron_asr"
-        case .moonshineTiny, .moonshineSmall: "moonshine_asr"
+        case .voxtralRealtime: "voxtral_realtime"
         case .qwenASR06B: "qwen3_asr"
         case .speakers: "nemotron_3_diar"
         }
@@ -36,8 +35,7 @@ enum AudioCppAsset: Sendable {
     var fileName: String {
         switch self {
         case .speech: "nemotron-q8_0.gguf" // Preserve existing installed artifact paths.
-        case .moonshineTiny: "moonshine-streaming-tiny-q8_0.gguf"
-        case .moonshineSmall: "moonshine-streaming-small-q8_0.gguf"
+        case .voxtralRealtime: "voxtral-mini-4b-realtime-2602-q4_k.gguf"
         case .qwenASR06B: "qwen3-asr-0.6b-q8_0.gguf"
         case .speakers: "diarization-q8_0.gguf"
         }
@@ -45,8 +43,7 @@ enum AudioCppAsset: Sendable {
     var digest: String {
         switch self {
         case .speech: "c58b62c1bdd6c5d7b14b08126c5bd16c1289fee6e0d6ac0761dbd3aa6d714935"
-        case .moonshineTiny: "b1409ca065d9d8472773b2801ce8bab772720d8f850779180f687871e63b7ba2"
-        case .moonshineSmall: "4d03fd9debad978240f522de238dba0b1a10fb0c9539e608701418682838a892"
+        case .voxtralRealtime: "8cafef18ea3e4cad81da8ffc4e72b69d2eab2c159c2e68428e2e088accbfc7f8"
         case .qwenASR06B: "6c44ec2fb4cee513892d7863c1fcc3ea6b699ffa4d899b0ef4ab19956d9544f7"
         case .speakers: "9a737455bd10123bcf1e036d9a0b07b6e8c42e7d0dd1a5ee4141dc386db46d0b"
         }
@@ -56,10 +53,8 @@ enum AudioCppAsset: Sendable {
         switch self {
         case .speech:
             "audio-cpp/audio.cpp-gguf/resolve/874fcb41ececda20bcbc0782d6b4ea7f7d069ea8/Nemotron-3.5-ASR-Streaming-0.6B-GGUF/nemotron-3.5-asr-streaming-0.6b-q8_0.gguf"
-        case .moonshineTiny:
-            "audio-cpp/audio.cpp-gguf/resolve/0a104324546d2622985e3c676a4b5550cc772127/Moonshine-Streaming-GGUF/moonshine-streaming-tiny-q8_0.gguf"
-        case .moonshineSmall:
-            "audio-cpp/audio.cpp-gguf/resolve/0a104324546d2622985e3c676a4b5550cc772127/Moonshine-Streaming-GGUF/moonshine-streaming-small-q8_0.gguf"
+        case .voxtralRealtime:
+            "audio-cpp/audio.cpp-gguf/resolve/4afa5086d2411a3b9e8ec96f1a1c4dd5312b50cd/Voxtral-Mini-4B-Realtime-2602-GGUF/voxtral-mini-4b-realtime-2602-q4_k.gguf"
         case .qwenASR06B:
             "audio-cpp/audio.cpp-gguf/resolve/4c9a3098d552a0f3d9b2adc11638a11022c07d7e/Qwen3-ASR-0.6B-GGUF/qwen3-asr-0.6b-q8_0.gguf"
         case .speakers:
