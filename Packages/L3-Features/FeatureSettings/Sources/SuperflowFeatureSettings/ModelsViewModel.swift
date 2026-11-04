@@ -55,11 +55,11 @@ public final class ModelsViewModel {
         self.asrProfile = asrProfile
         self.cleanupEnabled = cleanupEnabled
         self.onActivate = onActivate
-        self.items = [
-            ModelItem(id: asrProfile, kind: .speech,
-                      name: ModelProfile.byID(asrProfile).displayName,
-                      detail: Self.speechDetail(for: asrRuntime),
-                      bytes: Self.speechBytes(for: asrRuntime)),
+        self.items = ModelProfile.streamingProfiles.map { profile in
+            ModelItem(id: profile.id, kind: .speech, name: profile.displayName,
+                      detail: profile.metadataLabel + " · " + profile.licenseName,
+                      bytes: profile.artifactBytes)
+        } + [
             ModelItem(id: Self.enhancementID, kind: .enhancement, name: "DeepFilterNet 3",
                       detail: "Required for optional microphone noise suppression.",
                       bytes: 0),
