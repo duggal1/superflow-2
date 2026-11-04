@@ -8,6 +8,8 @@ import SwiftUI
 @MainActor @Observable
 public final class ModelsViewModel {
     public private(set) var items: [ModelItem]
+    public private(set) var actionErrors: [String: String] = [:]
+    public private(set) var activatingProfile: String?
 
     private let enhancer: (any SpeechEnhancer)?
     private let enhancementEnabled: @MainActor () -> Bool
@@ -104,7 +106,14 @@ public final class ModelsViewModel {
               ModelProfile.byID(id).supportsLiveDictation,
               item.installedASRRuntimes.contains(.audioCpp) else { return false }
         if item.isActive { return true }
-        guard await onActivate(id) else { return false }
+        guard activatingProfile == nil else { return false }
+        actionErrors[id] = nil
+        activatingProfile = id
+        defer { activatingProfile = nil }
+        guard await onActivate(id) else {
+            actionErrors[id] = "Could not prepare this streaming model. The previous model is still active."
+            return false
+        }
         await updateASRSelection(runtime: .audioCpp, profile: id)
         return true
     }
@@ -243,6 +252,27 @@ public final class ModelsViewModel {
     }
 
     public func retry(_ id: String) { download(id) }
+
+    @discardableResult
+    public func remove(_ id: String) async -> Bool {
+        guard let item = items.first(where: { $0.id == id && $0.kind == .speech }),
+              case .installed = item.state,
+              !item.isActive, id != asrProfile, tokens[id] == nil else { return false }
+        guard let remover = (asrModelsByRuntime[.audioCpp] ?? asrModels) as? any ASRModelRemoving else {
+            actionErrors[id] = "This model provider does not support removal."
+            return false
+        }
+        do {
+            try await remover.remove(profileID: id)
+            actionErrors[id] = nil
+            await refresh()
+            return true
+        } catch {
+            actionErrors[id] = error.localizedDescription
+            return false
+        }
+    }
+
 
     private var selectedASRModels: (any ASRModelProvider)? {
         asrModelsByRuntime[asrRuntime] ?? asrModels
