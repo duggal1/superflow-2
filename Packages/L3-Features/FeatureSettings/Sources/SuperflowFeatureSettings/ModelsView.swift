@@ -102,9 +102,9 @@ public struct ModelsView: View {
             if filteredItems.isEmpty {
                 EmptyState("No matching models.", message: "Change the search or model filter.")
             } else {
-                ModelPipeline(noise: filteredItems.contains { $0.kind == .enhancement && $0.isActive },
-                              speech: filteredItems.contains { $0.kind == .speech && $0.isActive },
-                              cleanup: filteredItems.contains { $0.kind == .cleanup && $0.isActive })
+                ModelPipeline(noise: vm.items.contains { $0.kind == .enhancement && $0.isActive },
+                              speech: vm.items.contains { $0.kind == .speech && $0.isActive },
+                              cleanup: vm.items.contains { $0.kind == .cleanup && $0.isActive })
                 ForEach([false, true], id: \.self) { meetings in
                     let order: [ModelKind] = meetings ? [.meetings] : [.enhancement, .speech, .cleanup]
                     let items = order.flatMap { kind in filteredItems.filter { $0.kind == kind } }
