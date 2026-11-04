@@ -63,6 +63,7 @@ public enum TextPipelineBuilder {
         }
         stages.append(LineFormatStage(settings: settings.lineFormat))
         stages.append(NormalizeAdapter())
+        stages.append(ModelNameStage())
         // Final deterministic layer. The dictionary is loaded once and is never
         // exposed to ASR or the cleanup model. Tier B aliases are context-gated.
         let gate = TechDictionaryGate(userEntries: dependencies.lexiconEntries,
