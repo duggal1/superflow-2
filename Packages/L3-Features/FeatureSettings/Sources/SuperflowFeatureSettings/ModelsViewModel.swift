@@ -257,7 +257,8 @@ public final class ModelsViewModel {
     public func remove(_ id: String) async -> Bool {
         guard let item = items.first(where: { $0.id == id && $0.kind == .speech }),
               case .installed = item.state,
-              !item.isActive, id != asrProfile, tokens[id] == nil else { return false }
+              !item.isActive, id != asrProfile, activatingProfile != id,
+              tokens[id] == nil else { return false }
         guard let remover = (asrModelsByRuntime[.audioCpp] ?? asrModels) as? any ASRModelRemoving else {
             actionErrors[id] = "This model provider does not support removal."
             return false
