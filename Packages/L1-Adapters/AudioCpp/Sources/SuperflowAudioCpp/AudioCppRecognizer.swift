@@ -50,7 +50,7 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
             }
         }
         currentProfile = profile
-        for (id, other) in runtimes where id != profile { await other.unload() }
+        for (id, other) in runtimes where id != profile { await other.unloadResident() }
     }
     public func makeStream(profile: String, source: AudioSourceKind) async throws -> any RecognitionStream {
         let runtime = try Self.runtime(profile, from: runtimes)
