@@ -155,6 +155,10 @@ struct ModelCard: View {
                         .foregroundStyle(Tok.text2)
                         .accessibilityLabel("Speech recognition benchmark")
                 }
+                if let error = vm.actionErrors[item.id] {
+                    PixelBadge("Could not activate", kind: .failed)
+                        .help(error)
+                }
                 switch item.state {
                 case .idle where vm.isChecking:
                     // The disk has not answered yet. Offering Download here made a
@@ -174,8 +178,12 @@ struct ModelCard: View {
                         let runtimes = item.installedASRRuntimes.map(\.label).joined(separator: ", ")
                         PixelBadge("Installed · \(runtimes)", kind: .installed)
                         if item.installedASRRuntimes.contains(.audioCpp) {
-                            AppButton("Use model", kind: .secondary) {
+                            AppButton(vm.activatingProfile == item.id ? "Preparing…" : "Use model",
+                                      kind: .secondary) {
                                 Task { await vm.activate(item.id) }
+                            }
+                            AppButton("Remove", kind: .quiet) {
+                                Task { await vm.remove(item.id) }
                             }
                         } else {
                             AppButton("Install for audio.cpp", kind: .secondary) {
