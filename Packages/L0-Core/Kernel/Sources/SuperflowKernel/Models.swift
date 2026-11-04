@@ -239,14 +239,37 @@ public struct LexiconEntry: Sendable, Codable, Hashable, Identifiable {
     public var canonical: String
     public var enabled: Bool
     public var source: EntrySource
+    /// Nil is global. Non-nil rules apply only in the matching bundle ID.
+    public var appScope: String?
+    public var heardForms: [String]?
+    public var phoneticKey: String?
+    public var learnedFrom: String?
+    public var confidence: Double?
+    public var confirmationCount: Int?
+    public var hitCount: Int?
+    public var createdAt: Date?
+    public var updatedAt: Date?
+
     public init(id: String = UUID().uuidString, kind: LexiconKind, triggers: [String], canonical: String,
-                enabled: Bool = true, source: EntrySource = .user) {
+                enabled: Bool = true, source: EntrySource = .user,
+                appScope: String? = nil, heardForms: [String]? = nil, phoneticKey: String? = nil,
+                learnedFrom: String? = nil, confidence: Double? = nil, confirmationCount: Int? = nil,
+                hitCount: Int? = nil, createdAt: Date? = nil, updatedAt: Date? = nil) {
         self.id = id
         self.kind = kind
         self.triggers = triggers
         self.canonical = canonical
         self.enabled = enabled
         self.source = source
+        self.appScope = appScope
+        self.heardForms = heardForms
+        self.phoneticKey = phoneticKey
+        self.learnedFrom = learnedFrom
+        self.confidence = confidence
+        self.confirmationCount = confirmationCount
+        self.hitCount = hitCount
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
 }
 
