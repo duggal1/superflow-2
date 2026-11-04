@@ -26,6 +26,23 @@ private actor InstalledUnloadedDiarizer: SpeakerDiarizer {
 
 /// S1-mini is part of every transcript by default, so the Models page has to show
 /// it as installed and running, not as an optional extra.
+private actor CancellationAwareASRProvider: ASRModelProvider {
+    private(set) var started = false
+    private(set) var cancelled = false
+
+    func isAvailable(profileID: String) async -> Bool { false }
+
+    func prepare(profileID: String, progress: @escaping @Sendable (Double) -> Void) async throws {
+        started = true
+        do {
+            try await Task.sleep(for: .seconds(20))
+        } catch {
+            cancelled = true
+            throw error
+        }
+    }
+}
+
 @MainActor
 final class ModelsViewTests: XCTestCase {
     func testInstalledSpeakerModelDoesNotNeedToBeLoadedToAppearInstalled() async throws {
@@ -143,6 +160,28 @@ final class ModelsViewTests: XCTestCase {
     }
 
     /// A cancelled row cannot be repainted by a late progress callback.
+    func testCancelStopsTheUnderlyingSpeechDownloadTask() async throws {
+        let speech = CancellationAwareASRProvider()
+        let vm = ModelsViewModel(asrModels: speech)
+        vm.download(ModelProfile.default.id)
+        for _ in 0..<100 {
+            if await speech.started { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let started = await speech.started
+        XCTAssertTrue(started, "The fake provider must start before cancellation is assessed.")
+        vm.cancel(ModelProfile.default.id)
+        for _ in 0..<100 {
+            if await speech.cancelled { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let cancelled = await speech.cancelled
+        XCTAssertTrue(cancelled, "Cancelling a download must cancel its actual async task.")
+        let model = try XCTUnwrap(vm.items.first { $0.kind == .speech })
+        XCTAssertEqual(model.state, .idle)
+        XCTAssertFalse(model.isActive)
+    }
+
     func testCancelReturnsCleanupToIdle() async throws {
         let (vm, _) = makeModel(llm: nil)
         await vm.refresh()
