@@ -327,9 +327,11 @@ final class SQLiteStoreTests: XCTestCase {
         XCTAssertEqual(match.hitCount, rule.hitCount)
         XCTAssertEqual(match.createdAt, rule.createdAt)
         XCTAssertEqual(match.updatedAt, rule.updatedAt)
-        XCTAssertEqual(try await reopened.learningCandidates(), [candidate])
+        let persistedCandidates = try await reopened.learningCandidates()
+        XCTAssertEqual(persistedCandidates, [candidate])
         try await reopened.deleteLearningCandidate(id: candidate.id)
-        XCTAssertTrue(try await reopened.learningCandidates().isEmpty)
+        let afterDelete = try await reopened.learningCandidates()
+        XCTAssertTrue(afterDelete.isEmpty)
     }
 
     func testLegacyLexiconMigrationPreservesRowsAndAllowsScopedRules() async throws {
@@ -354,7 +356,8 @@ final class SQLiteStoreTests: XCTestCase {
         let new = LexiconEntry(kind: .correction, triggers: ["next year"],
                                canonical: "Next.js", appScope: "com.apple.TextEdit")
         try await migrated.saveLexicon(new)
-        XCTAssertEqual(try await migrated.lexicon().count, 2)
+        let rows = try await migrated.lexicon()
+        XCTAssertEqual(rows.count, 2)
     }
 
     func testMigrationsAreIdempotent() async throws {
