@@ -30,7 +30,7 @@ public enum IslandReducer {
                 return .notice(notice)
             case .listening, .handsFree, .meeting, .meetingPanel, .processing, .landed, .notice:
                 switch notice.kind {
-                case .milestone, .streak, .modelReady, .update: return phase
+                case .milestone, .knowledge, .streak, .modelReady, .update: return phase
                 case .clipboard, .info: return .notice(notice)
                 }
             }
