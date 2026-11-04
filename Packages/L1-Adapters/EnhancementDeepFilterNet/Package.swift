@@ -9,6 +9,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../L0-Core/Ports"),
+        .package(path: "../../L0-Core/Kernel"),
         .package(url: "https://github.com/kylehowells/DeepFilterNet-mlx", branch: "master"),
     ],
     targets: [
@@ -16,6 +17,7 @@ let package = Package(
             name: "SuperflowEnhancementDeepFilterNet",
             dependencies: [
                 .product(name: "SuperflowPorts", package: "Ports"),
+                .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "DeepFilterNetCoreML", package: "DeepFilterNet-mlx"),
             ]
         ),
