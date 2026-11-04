@@ -27,9 +27,9 @@ enum CodingLanguageNormalizer {
     private static let command = try! NSRegularExpression(pattern:
         #"(?i)(?<![\w./])(?:git|get)\s+(?:[a-z]+(?:-[a-z]+)?)\b"#)
     private static let remoteFlag = try! NSRegularExpression(pattern:
-        #"(?i)\bgit\s+remote\s+(?:dash\s+)?v\b"#)
+        #"(?i)\b(?:get|git)\s+remote\s+(?:dash\s+)?v\b"#)
     private static let addDot = try! NSRegularExpression(pattern:
-        #"(?i)\bgit\s+add\s+(?:dot|period)\b"#)
+        #"(?i)\b(?:get|git)\s+add\s+(?:dot|period)\b"#)
 
     private struct Replacement {
         let range: NSRange
