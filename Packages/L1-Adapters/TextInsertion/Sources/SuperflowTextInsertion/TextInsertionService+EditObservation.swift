@@ -16,7 +16,7 @@ extension TextInsertionService {
 
         let inspection = await focus.inspect(pid: pid)
         guard case .editable = inspection.focus, let target = inspection.target,
-              let count = await target.characterCount(),
+              let count = await target.boundedCharacterCount(),
               count <= 512, count >= inserted.utf16.count,
               let before = await target.textValue(), before.utf16.count <= 512,
               before.range(of: inserted) != nil else { return }
@@ -42,7 +42,7 @@ extension TextInsertionService {
             guard !Task.isCancelled, frontmost == pid else { return }
             let inspected = await focus.inspect(pid: pid)
             guard case .editable = inspected.focus,
-                  let count = await target.characterCount(), count <= 512,
+                  let count = await target.boundedCharacterCount(), count <= 512,
                   let current = await target.textValue(), current.utf16.count <= 512 else {
                 return
             }
