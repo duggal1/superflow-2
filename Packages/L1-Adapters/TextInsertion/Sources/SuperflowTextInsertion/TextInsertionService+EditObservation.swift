@@ -9,9 +9,10 @@ extension TextInsertionService {
                                    onCorrection: @escaping @Sendable (ObservedCorrection) async -> Void) async {
         observationTask?.cancel()
         observationTask = nil
+        let ownPID = await apps.selfPID()
         guard !inserted.isEmpty, inserted.utf16.count <= 512,
               let pid = await apps.frontmostPID(),
-              pid != await apps.selfPID() else { return }
+              pid != ownPID else { return }
 
         let inspection = await focus.inspect(pid: pid)
         guard case .editable = inspection.focus, let target = inspection.target,
@@ -37,7 +38,8 @@ extension TextInsertionService {
         for _ in 0..<40 {
             guard !Task.isCancelled else { return }
             await sleep(.milliseconds(400))
-            guard !Task.isCancelled, await apps.frontmostPID() == pid else { return }
+            let frontmost = await apps.frontmostPID()
+            guard !Task.isCancelled, frontmost == pid else { return }
             let inspected = await focus.inspect(pid: pid)
             guard case .editable = inspected.focus,
                   let count = await target.characterCount(), count <= 512,
