@@ -43,8 +43,96 @@ private actor CancellationAwareASRProvider: ASRModelProvider {
     }
 }
 
+private actor CatalogASRProvider: ASRModelRemoving {
+    private var installedIDs: Set<String>
+    private var preparedIDs: [String] = []
+    private var removedIDs: [String] = []
+
+    init(installedIDs: Set<String>) { self.installedIDs = installedIDs }
+
+    func isAvailable(profileID: String) async -> Bool {
+        installedIDs.contains(profileID)
+    }
+
+    func prepare(profileID: String, progress: @escaping @Sendable (Double) -> Void) async throws {
+        preparedIDs.append(profileID)
+        installedIDs.insert(profileID)
+        progress(1)
+    }
+
+    func remove(profileID: String) async throws {
+        removedIDs.append(profileID)
+        installedIDs.remove(profileID)
+    }
+
+    func preparedProfiles() -> [String] { preparedIDs }
+    func removedProfiles() -> [String] { removedIDs }
+}
+
 @MainActor
 final class ModelsViewTests: XCTestCase {
+    func testThreeStreamingRowsAreIndependent() async throws {
+        let provider = CatalogASRProvider(installedIDs: [
+            ModelProfile.default.id, ModelProfile.qwen3ASR06B.id,
+        ])
+        let vm = ModelsViewModel(asrModels: provider,
+                                 asrModelsByRuntime: [.audioCpp: provider])
+        await vm.refresh()
+        let speech = vm.items.filter { $0.kind == .speech }
+        XCTAssertEqual(speech.count, 3)
+        XCTAssertEqual(speech.filter(\.isActive).map(\.id), [ModelProfile.default.id])
+        XCTAssertEqual(speech.filter { $0.state == .installed }.count, 2)
+        XCTAssertEqual(speech.first { $0.id == ModelProfile.voxtralRealtime.id }?.state, .idle)
+        XCTAssertTrue(vm.matches(speech[1], query: "Qwen"))
+        XCTAssertFalse(vm.matches(speech[1], query: "Voxtral"))
+    }
+
+    func testActivationFailureKeepsExistingModelSelected() async throws {
+        let provider = CatalogASRProvider(installedIDs: Set(ModelProfile.streamingProfiles.map(\.id)))
+        let vm = ModelsViewModel(asrModels: provider,
+                                 asrModelsByRuntime: [.audioCpp: provider],
+                                 onActivate: { _ in false })
+        await vm.refresh()
+        XCTAssertFalse(await vm.activate(ModelProfile.qwen3ASR06B.id))
+        XCTAssertEqual(vm.items.filter { $0.kind == .speech && $0.isActive }.map(\.id),
+                       [ModelProfile.default.id])
+        XCTAssertNotNil(vm.actionErrors[ModelProfile.qwen3ASR06B.id])
+    }
+
+    func testSuccessfulActivationAndRemovalDoNotTouchOtherInstalledModels() async throws {
+        let provider = CatalogASRProvider(installedIDs: Set(ModelProfile.streamingProfiles.map(\.id)))
+        let vm = ModelsViewModel(asrModels: provider,
+                                 asrModelsByRuntime: [.audioCpp: provider],
+                                 onActivate: { $0 == ModelProfile.qwen3ASR06B.id })
+        await vm.refresh()
+        let activated = await vm.activate(ModelProfile.qwen3ASR06B.id)
+        XCTAssertTrue(activated)
+        XCTAssertEqual(vm.activeName, ModelProfile.qwen3ASR06B.displayName)
+        XCTAssertFalse(await vm.remove(ModelProfile.qwen3ASR06B.id),
+                       "The active profile must not be deletable")
+        let removed = await vm.remove(ModelProfile.voxtralRealtime.id)
+        XCTAssertTrue(removed)
+        let removedIDs = await provider.removedProfiles()
+        XCTAssertEqual(removedIDs, [ModelProfile.voxtralRealtime.id])
+        XCTAssertEqual(vm.items.first { $0.id == ModelProfile.voxtralRealtime.id }?.state, .idle)
+        XCTAssertEqual(vm.items.first { $0.id == ModelProfile.default.id }?.state, .installed)
+    }
+
+    func testExplicitOptionalModelDownloadTargetsRequestedProfile() async throws {
+        let provider = CatalogASRProvider(installedIDs: [ModelProfile.default.id])
+        let vm = ModelsViewModel(asrModels: provider,
+                                 asrModelsByRuntime: [.audioCpp: provider])
+        await vm.refresh()
+        vm.download(ModelProfile.voxtralRealtime.id)
+        for _ in 0..<100 {
+            if await provider.preparedProfiles().contains(ModelProfile.voxtralRealtime.id) { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let prepared = await provider.preparedProfiles()
+        XCTAssertEqual(prepared, [ModelProfile.voxtralRealtime.id])
+        vm.cancel(ModelProfile.voxtralRealtime.id)
+    }
+
     func testInstalledSpeakerModelDoesNotNeedToBeLoadedToAppearInstalled() async throws {
         let vm = ModelsViewModel(models: FakeModelProvider(asrURL: nil, llmURL: nil),
                                  diarizer: InstalledUnloadedDiarizer())
