@@ -83,7 +83,8 @@ final class DictionaryLearningTests: XCTestCase {
         }
         let suggested = try await engine.candidates()
         XCTAssertEqual(suggested.first?.state, .suggested)
-        XCTAssertTrue(try await lexicon.lexicon().isEmpty)
+        let activeBeforeConfirm = try await lexicon.lexicon()
+        XCTAssertTrue(activeBeforeConfirm.isEmpty)
         try await engine.confirm(id: try XCTUnwrap(suggested.first?.id))
         let learned = try await lexicon.lexicon()
         XCTAssertEqual(learned.first?.canonical, "idempotency")
