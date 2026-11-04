@@ -10,20 +10,25 @@ public struct LexiconDraft: Equatable, Sendable {
     public var canonical: String
     public var enabled: Bool
     public var source: EntrySource
+    /// Editing must not erase an already learned rule's provenance or scope.
+    public var original: LexiconEntry?
 
     public init(id: String? = nil, kind: LexiconKind = .term, triggers: [String] = [""],
-                canonical: String = "", enabled: Bool = true, source: EntrySource = .user) {
+                canonical: String = "", enabled: Bool = true, source: EntrySource = .user,
+                original: LexiconEntry? = nil) {
         self.id = id
         self.kind = kind
         self.triggers = triggers
         self.canonical = canonical
         self.enabled = enabled
         self.source = source
+        self.original = original
     }
 
     public init(entry: LexiconEntry) {
         self.init(id: entry.id, kind: entry.kind, triggers: entry.triggers,
-                  canonical: entry.canonical, enabled: entry.enabled, source: entry.source)
+                  canonical: entry.canonical, enabled: entry.enabled, source: entry.source,
+                  original: entry)
     }
 
     public var cleaned: LexiconDraft {
@@ -36,8 +41,14 @@ public struct LexiconDraft: Equatable, Sendable {
 
     public var entry: LexiconEntry {
         let value = cleaned
-        return LexiconEntry(id: id ?? UUID().uuidString, kind: kind, triggers: value.triggers,
-                            canonical: value.canonical, enabled: enabled, source: source)
+        var entry = original ?? LexiconEntry(id: id ?? UUID().uuidString, kind: kind,
+                                             triggers: value.triggers, canonical: value.canonical)
+        entry.kind = kind
+        entry.triggers = value.triggers
+        entry.canonical = value.canonical
+        entry.enabled = enabled
+        entry.source = source
+        return entry
     }
 }
 
