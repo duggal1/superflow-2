@@ -8,6 +8,7 @@ import SuperflowKernel
     #expect(ids == [
         ModelProfile.nemotron35Streaming.id,
         ModelProfile.qwen3ASR06B.id,
+        ModelProfile.qwen3ASR17B.id,
         ModelProfile.voxtralRealtime.id,
     ])
     for id in ids {
@@ -23,6 +24,7 @@ import SuperflowKernel
     let pairs: [(String, AudioCppAsset)] = [
         (ModelProfile.nemotron35Streaming.id, .speech),
         (ModelProfile.qwen3ASR06B.id, .qwenASR06B),
+        (ModelProfile.qwen3ASR17B.id, .qwenASR17B),
         (ModelProfile.voxtralRealtime.id, .voxtralRealtime),
     ]
     var filenames = Set<String>()
