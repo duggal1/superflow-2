@@ -60,6 +60,7 @@ final class ModelsViewTests: XCTestCase {
         let models = FakeModelProvider(asrURL: URL(fileURLWithPath: "/tmp/asr"),
                                        llmURL: llm)
         let vm = ModelsViewModel(models: models,
+                                 asrModels: InstalledASRProvider(installed: true),
                                  diarizer: FakeSpeakerDiarizer(ready: true),
                                  cleanupEnabled: cleanupEnabled)
         return (vm, models)
