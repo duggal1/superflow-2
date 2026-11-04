@@ -23,7 +23,7 @@ cmake -S "$SOURCE" -B "$SOURCE/build/superflow-metal" \
     -DCMAKE_OSX_ARCHITECTURES=arm64 \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
     -DAUDIOCPP_MODEL_SET=custom \
-    -DAUDIOCPP_MODELS=nemotron_asr,nemotron_3_diar \
+    -DAUDIOCPP_MODELS=nemotron_asr,moonshine_asr,qwen3_asr,nemotron_3_diar \
     -DAUDIOCPP_BUILD_C_API=ON \
     -DAUDIOCPP_DEPLOYMENT_BUILD=ON \
     -DENGINE_ENABLE_METAL=ON \
