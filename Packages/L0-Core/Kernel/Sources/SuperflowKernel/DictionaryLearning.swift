@@ -6,11 +6,15 @@ public struct ObservedCorrection: Sendable, Equatable {
     public var heard: String
     public var corrected: String
     public var appBundleID: String?
+    /// The originating insertion. Repeated AX notifications cannot count twice.
+    public var anchorID: String
 
-    public init(heard: String, corrected: String, appBundleID: String? = nil) {
+    public init(heard: String, corrected: String, appBundleID: String? = nil,
+                anchorID: String = UUID().uuidString) {
         self.heard = heard
         self.corrected = corrected
         self.appBundleID = appBundleID
+        self.anchorID = anchorID
     }
 }
 
