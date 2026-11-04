@@ -4,6 +4,16 @@ import SuperflowGestureKit
 extension AppCoordinator {
     func configureIslandActions(_ islandModel: IslandModel, environment: AppEnvironment) {
         islandModel.showHistory = { [weak mainWindowController] in mainWindowController?.show(.history) }
+        let knowledgeNotices = KnowledgeNoticeRouter(learning: environment.learningEngine,
+                                                     island: islandModel)
+        islandModel.noticeAction = { [knowledgeNotices] notice in
+            knowledgeNotices.handle(notice)
+        }
+        Task { [weak knowledgeNotices] in
+            await environment.learningEngine.setOnApplied { [weak knowledgeNotices] candidate, active in
+                await knowledgeNotices?.applied(candidate, active: active)
+            }
+        }
         islandModel.rePaste = { [weak islandModel] transcript in
             Task { @MainActor [weak islandModel] in
                 do {

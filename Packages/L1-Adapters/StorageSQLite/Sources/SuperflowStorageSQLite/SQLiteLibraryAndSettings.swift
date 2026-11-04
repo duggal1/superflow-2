@@ -5,7 +5,7 @@ import SuperflowPorts
 extension SQLiteStore: LibraryRepository {
     public func lexicon() async throws -> [LexiconEntry] {
         let statement = try db.prepare("""
-        SELECT id, kind, triggers, canonical, enabled, source FROM lexicon_entries ORDER BY canonical
+        SELECT id, kind, triggers, canonical, enabled, source, app_scope, heard_forms, phonetic_key, learned_from, confidence, confirmation_count, hit_count, created_at, updated_at FROM lexicon_entries ORDER BY canonical
         """)
         var result: [LexiconEntry] = []
         while try statement.step() {
@@ -17,21 +17,51 @@ extension SQLiteStore: LibraryRepository {
                 triggers: triggers,
                 canonical: statement.text(3) ?? "",
                 enabled: statement.int(4) != 0,
-                source: EntrySource(rawValue: statement.text(5) ?? "") ?? .user))
+                source: EntrySource(rawValue: statement.text(5) ?? "") ?? .user,
+                appScope: statement.text(6),
+                heardForms: (try? JSONDecoder().decode([String].self, from:
+                    Data((statement.text(7) ?? "[]").utf8))) ?? [],
+                phoneticKey: statement.text(8),
+                learnedFrom: statement.text(9),
+                confidence: statement.isNull(10) ? nil : statement.double(10),
+                confirmationCount: Int(statement.int(11)),
+                hitCount: Int(statement.int(12)),
+                createdAt: statement.isNull(13) ? nil :
+                    Date(timeIntervalSince1970: statement.double(13)),
+                updatedAt: statement.isNull(14) ? nil :
+                    Date(timeIntervalSince1970: statement.double(14))))
         }
         return result
     }
 
     public func saveLexicon(_ e: LexiconEntry) async throws {
-        let triggers = String(data: try JSONEncoder().encode(e.triggers), encoding: .utf8) ?? "[]"
+        let triggers = String(decoding: try JSONEncoder().encode(e.triggers), as: UTF8.self)
+        let heard = String(decoding: try JSONEncoder().encode(e.heardForms ?? []), as: UTF8.self)
+        func optional(_ string: String?) -> SQLValue { string.map(SQLValue.text) ?? .null }
+        func optionalDate(_ date: Date?) -> SQLValue {
+            date.map { .real($0.timeIntervalSince1970) } ?? .null
+        }
         let statement = try db.prepare("""
-        INSERT INTO lexicon_entries (id, kind, triggers, canonical, enabled, source)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO lexicon_entries
+        (id, kind, triggers, canonical, enabled, source, app_scope, heard_forms,
+         phonetic_key, learned_from, confidence, confirmation_count, hit_count,
+         created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET kind = excluded.kind, triggers = excluded.triggers,
-            canonical = excluded.canonical, enabled = excluded.enabled, source = excluded.source
+            canonical = excluded.canonical, enabled = excluded.enabled, source = excluded.source,
+            app_scope = excluded.app_scope, heard_forms = excluded.heard_forms,
+            phonetic_key = excluded.phonetic_key, learned_from = excluded.learned_from,
+            confidence = excluded.confidence, confirmation_count = excluded.confirmation_count,
+            hit_count = excluded.hit_count, updated_at = excluded.updated_at
         """)
-        try statement.bind([.text(e.id), .text(e.kind.rawValue), .text(triggers), .text(e.canonical),
-                            .integer(e.enabled ? 1 : 0), .text(e.source.rawValue)])
+        try statement.bind([
+            .text(e.id), .text(e.kind.rawValue), .text(triggers), .text(e.canonical),
+            .integer(e.enabled ? 1 : 0), .text(e.source.rawValue),
+            optional(e.appScope), .text(heard), optional(e.phoneticKey),
+            optional(e.learnedFrom), e.confidence.map(SQLValue.real) ?? .null,
+            .integer(Int64(e.confirmationCount ?? 0)), .integer(Int64(e.hitCount ?? 0)),
+            optionalDate(e.createdAt), optionalDate(e.updatedAt),
+        ])
         try statement.step()
     }
 

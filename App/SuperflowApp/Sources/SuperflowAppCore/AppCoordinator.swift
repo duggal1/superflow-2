@@ -113,19 +113,11 @@ public final class AppCoordinator: ObservableObject {
                                asrRuntime: settings.asrRuntime,
                                diarizer: environment.diarizer,
                                asrProfile: settings.asrProfile,
+                               enhancer: environment.enhancer,
+                               enhancementEnabled: { [weak self] in self?.settings.speechEnhancementEnabled ?? false },
                                cleanupEnabled: { [weak self] in self?.settings.cleanupEnabled ?? true },
                                onActivate: { [weak self] profile in
-                                   guard let self, let environment = self.environment,
-                                         !self.menuBarController.sessionState.isActive,
-                                         !self.menuBarController.meetingState.isActive,
-                                         await environment.recognizer.isAvailable(profileID: profile) else {
-                                       return false
-                                   }
-                                   var updated = self.settings
-                                   updated.asrProfile = profile
-                                   await environment.settingsStore.save(updated)
-                                   await self.applySettings(updated)
-                                   return true
+                                   await self?.activateSpeechModel(profile) ?? false
                                })
     }()
 

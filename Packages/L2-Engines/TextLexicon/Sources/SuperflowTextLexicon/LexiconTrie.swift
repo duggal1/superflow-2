@@ -6,7 +6,7 @@ import Foundation
 struct LexiconTrie: Sendable {
     struct Node: Sendable {
         var children: [Character: Int] = [:]
-        var terminal: Int?
+        var terminals: [Int] = []
     }
 
     private(set) var nodes: [Node] = [Node()]
@@ -24,13 +24,12 @@ struct LexiconTrie: Sendable {
                 node = created
             }
         }
-        if nodes[node].terminal == nil {
-            nodes[node].terminal = entry
-        }
+        nodes[node].terminals.append(entry)
     }
 
     /// Longest terminal reachable from `start` that ends on a token boundary.
-    func longestMatch(in stream: LexiconStream, from start: Int) -> (entry: Int, end: Int)? {
+    func longestMatch(in stream: LexiconStream, from start: Int,
+                      accepting: (Int) -> Bool = { _ in true }) -> (entry: Int, end: Int)? {
         guard start < stream.characters.count else { return nil }
         var node = 0
         var best: (entry: Int, end: Int)?
@@ -39,7 +38,8 @@ struct LexiconTrie: Sendable {
             guard let next = nodes[node].children[stream.characters[index]] else { break }
             node = next
             index += 1
-            if let terminal = nodes[node].terminal, stream.isTokenEnd[index - 1] {
+            if stream.isTokenEnd[index - 1],
+               let terminal = nodes[node].terminals.first(where: accepting) {
                 best = (terminal, index)
             }
         }

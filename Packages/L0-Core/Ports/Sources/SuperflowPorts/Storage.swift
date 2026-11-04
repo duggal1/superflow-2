@@ -69,6 +69,14 @@ public protocol LibraryRepository: Sendable {
     func deleteShortcut(id: String) async throws
 }
 
+/// Candidates remain separate from active lexicon rules until an explicit
+/// confirmation or a validated auto-promotion transaction.
+public protocol LearningRepository: Sendable {
+    func learningCandidates() async throws -> [LearningCandidate]
+    func saveLearningCandidate(_ candidate: LearningCandidate) async throws
+    func deleteLearningCandidate(id: String) async throws
+}
+
 public protocol SettingsStore: Sendable {
     func load() async -> AppSettings
     func save(_ s: AppSettings) async

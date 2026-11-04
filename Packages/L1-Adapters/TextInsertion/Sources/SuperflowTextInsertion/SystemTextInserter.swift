@@ -8,20 +8,33 @@ import SuperflowPorts
 /// preparation hook.
 public final class SystemTextInserter: TextInserter, @unchecked Sendable {
     private let service: TextInsertionService
+    private let shouldObserve: @Sendable () async -> Bool
+    private let onCorrection: @Sendable (ObservedCorrection) async -> Void
 
     @MainActor
-    public convenience init(pasteboard: NSPasteboard = .general) {
-        self.init(service: TextInsertionService.live(pasteboard: pasteboard))
+    public convenience init(pasteboard: NSPasteboard = .general,
+                            shouldObserve: @escaping @Sendable () async -> Bool = { false },
+                            onCorrection: @escaping @Sendable (ObservedCorrection) async -> Void = { _ in }) {
+        self.init(service: TextInsertionService.live(pasteboard: pasteboard),
+                  shouldObserve: shouldObserve, onCorrection: onCorrection)
     }
 
     /// Test seam: inject a service built from fakes.
-    public init(service: TextInsertionService) {
+    public init(service: TextInsertionService,
+                shouldObserve: @escaping @Sendable () async -> Bool = { false },
+                onCorrection: @escaping @Sendable (ObservedCorrection) async -> Void = { _ in }) {
         self.service = service
+        self.shouldObserve = shouldObserve
+        self.onCorrection = onCorrection
     }
 
     public func insert(_ text: String, strategy: InsertionStrategy) async throws -> InsertionOutcome {
         guard !text.isEmpty else { return .pasted }
-        return Self.outcome(for: await service.insert(text, options: Self.options(for: strategy)))
+        let report = await service.insert(text, options: Self.options(for: strategy))
+        if case .inserted(_, let verified) = report.result, verified, await shouldObserve() {
+            await service.observeCommittedInsertion(text, onCorrection: onCorrection)
+        }
+        return Self.outcome(for: report)
     }
 
     public func prepareForInsertion() async {

@@ -6,7 +6,7 @@ import SwiftUI
 
 /// Add and Edit are the same dialog, for both a term and a correction. The
 /// "You say / You get" composer card is gone.
-struct TermDialog: View {
+public struct TermDialog: View {
     enum Kind: Hashable { case term, correction }
 
     private let existing: LexiconEntry?
@@ -17,7 +17,7 @@ struct TermDialog: View {
     @State private var wire = 0.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(existing: LexiconEntry? = nil, onSave: @escaping (LexiconDraft) -> Void) {
+    public init(existing: LexiconEntry? = nil, onSave: @escaping (LexiconDraft) -> Void) {
         self.existing = existing
         self.onSave = onSave
         _kind = State(initialValue: existing?.kind == .correction ? .correction : .term)
@@ -37,7 +37,7 @@ struct TermDialog: View {
         return !trimmed.isEmpty && CommonWords.isRisky(trigger: trimmed)
     }
 
-    var body: some View {
+    public var body: some View {
         DialogFrame(title: existing == nil
                         ? (kind == .term ? "Add a term" : "Add a correction")
                         : (kind == .term ? "Edit term" : "Edit correction"),
@@ -52,7 +52,7 @@ struct TermDialog: View {
                                                  triggers: [trimmedSay],
                                                  canonical: result.trimmingCharacters(in: .whitespacesAndNewlines),
                                                  enabled: existing?.enabled ?? true,
-                                                 source: .user)
+                                                 source: .user, original: existing)
                         if kind == .term { draft.canonical = trimmedSay }
                         onSave(draft)
                     }) {

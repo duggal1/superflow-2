@@ -26,6 +26,7 @@ public struct LexiconStage: ExplainingTextStage {
     private let trie: LexiconTrie
     private let canonicals: [String]
     private let ruleIDs: [String]
+    private let entryScopes: [String?]
     private let triggerTexts: [String]
     private let tokenBudgets: [Int]
     private let filter: LexiconFilter?
@@ -39,6 +40,11 @@ public struct LexiconStage: ExplainingTextStage {
                 let lhsUser = lhs.element.source == .user
                 let rhsUser = rhs.element.source == .user
                 if lhsUser != rhsUser { return lhsUser }
+                // Specific app rules must beat a global alias for the same
+                // pronunciation; the global entry remains a safe fallback.
+                let lhsScoped = lhs.element.appScope != nil
+                let rhsScoped = rhs.element.appScope != nil
+                if lhsScoped != rhsScoped { return lhsScoped }
                 return lhs.offset < rhs.offset
             }
             .map(\.element)
@@ -46,6 +52,7 @@ public struct LexiconStage: ExplainingTextStage {
         var trie = LexiconTrie()
         var canonicals: [String] = []
         var ruleIDs: [String] = []
+        var entryScopes: [String?] = []
         var triggerTexts: [String] = []
         var tokenBudgets: [Int] = []
         var owner: [String: Int] = [:]
@@ -61,8 +68,9 @@ public struct LexiconStage: ExplainingTextStage {
             var triggers = entry.triggers
             if includeCanonical, entry.kind == .term { triggers.append(entry.canonical) }
             for trigger in triggers {
-                let key = LexiconNormalizer.key(trigger)
-                guard !key.isEmpty else { continue }
+                let normalized = LexiconNormalizer.key(trigger)
+                guard !normalized.isEmpty else { continue }
+                let key = normalized + "\u{0}" + (entry.appScope ?? "*")
                 if let existing = owner[key] {
                     let existingCanonical = canonicals[existing]
                     if existingCanonical != entry.canonical {
@@ -78,9 +86,10 @@ public struct LexiconStage: ExplainingTextStage {
                 owner[key] = canonicals.count
                 canonicals.append(entry.canonical)
                 ruleIDs.append(entry.id)
+                entryScopes.append(entry.appScope)
                 triggerTexts.append(trigger)
                 tokenBudgets.append(Self.tokenCount(trigger))
-                trie.insert(Array(key), entry: canonicals.count - 1)
+                trie.insert(Array(normalized), entry: canonicals.count - 1)
             }
             for trigger in triggers where CommonWords.isRisky(trigger: trigger) {
                 warn(trigger, "trigger \"\(trigger)\" is made only of common English words " +
@@ -91,6 +100,7 @@ public struct LexiconStage: ExplainingTextStage {
         self.trie = trie
         self.canonicals = canonicals
         self.ruleIDs = ruleIDs
+        self.entryScopes = entryScopes
         self.triggerTexts = triggerTexts
         self.tokenBudgets = tokenBudgets
         self.filter = filter
@@ -132,7 +142,9 @@ public struct LexiconStage: ExplainingTextStage {
         var index = 0
         while index < stream.tokens.count {
             let start = stream.tokenStart[index]
-            if start >= 0, let match = trie.longestMatch(in: stream, from: start) {
+            if start >= 0, let match = trie.longestMatch(in: stream, from: start, accepting: {
+                entryScopes[$0] == nil || entryScopes[$0] == context.activeAppBundleID
+            }) {
                 let last = stream.endToken[match.end - 1]
                 if last >= index {
                     let slice = stream.tokens[index...last]

@@ -33,6 +33,7 @@ public final class ModelsViewModel {
     /// A download owns its row until it finishes or is cancelled. Cancelling
     /// invalidates the token, so a late progress callback cannot repaint the row.
     @ObservationIgnored private var tokens: [String: UUID] = [:]
+    @ObservationIgnored private var downloadTasks: [String: Task<Void, Never>] = [:]
 
     public init(models: (any ModelProvider)? = nil,
                 asrModels: (any ASRModelProvider)? = nil,
@@ -59,6 +60,9 @@ public final class ModelsViewModel {
                       name: ModelProfile.byID(asrProfile).displayName,
                       detail: Self.speechDetail(for: asrRuntime),
                       bytes: Self.speechBytes(for: asrRuntime)),
+            ModelItem(id: Self.enhancementID, kind: .enhancement, name: "DeepFilterNet 3",
+                      detail: "Required for optional microphone noise suppression.",
+                      bytes: 0),
             ModelItem(id: Self.cleanupID, kind: .cleanup, name: "S1-mini",
                       detail: "Cleans every dictation: filler words, punctuation, false starts.",
                       bytes: 484_219_808),
@@ -187,7 +191,14 @@ public final class ModelsViewModel {
         let asrProfile = self.asrProfile
         let asrRuntime = self.asrRuntime
 
-        Task { @MainActor in
+        downloadTasks[id] = Task { @MainActor in
+            defer {
+                // A cancelled old download must not clear a newer retry.
+                if tokens[id] == token {
+                    tokens[id] = nil
+                    downloadTasks[id] = nil
+                }
+            }
             let report = progressHandler(for: id, token: token)
             do {
                 switch item.kind {
@@ -223,17 +234,16 @@ public final class ModelsViewModel {
                 }
                 guard tokens[id] == token else { return }
                 setState(installed ? .installed : .failed("The model did not install."), for: id)
-                tokens[id] = nil
             } catch {
                 guard tokens[id] == token else { return }
                 setState(.failed(error.localizedDescription), for: id)
-                tokens[id] = nil
             }
         }
     }
 
     public func cancel(_ id: String) {
         tokens[id] = nil
+        downloadTasks.removeValue(forKey: id)?.cancel()
         setState(.idle, for: id)
     }
 

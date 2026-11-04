@@ -16,6 +16,31 @@ final class IslandNoticeTests: XCTestCase {
             safeTop: 38, leftWidth: 704, rightWidth: 704, scale: 2))
     }
 
+    func testCommittedKnowledgeNoticeQueuesSoundAndRoutesUndoOnlyWhenShown() async throws {
+        let model = model()
+        var cues = 0
+        var routed: IslandNotice?
+        model.playMilestoneSound = { cues += 1 }
+        model.noticeAction = { routed = $0 }
+        let notice = IslandNotice(kind: .knowledge, title: "Added to Knowledge",
+                                  detail: "next year → Next.js", action: "Undo")
+
+        model.send(.holdBegan(nil))
+        model.notify(notice)
+        XCTAssertEqual(model.phase, .listening)
+        XCTAssertEqual(cues, 0, "Learning must never interrupt the microphone.")
+        model.send(.cancelled)
+        try await Task.sleep(for: .milliseconds(700))
+        XCTAssertEqual(model.phase, .notice(notice))
+        XCTAssertEqual(cues, 1)
+        model.openNotice(notice)
+        XCTAssertEqual(routed, notice)
+
+        model.send(.dismissed)
+        model.notify(.init(kind: .info, title: "Removed from Knowledge", detail: "Next.js"))
+        XCTAssertEqual(cues, 1, "Undo must not play a second confirmation sound.")
+    }
+
     func testMilestoneWaitsUntilCaptureEnds() async throws {
         let model = model()
         var soundCount = 0

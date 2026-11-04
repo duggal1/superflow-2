@@ -6,6 +6,8 @@ import SwiftUI
 public enum AppSection: String, CaseIterable, Hashable, Identifiable {
     case dashboard
     case history
+    case knowledge
+    // Kept only so existing persisted routes still decode without data loss.
     case dictionary
     case shortcuts
     case meetings
@@ -13,14 +15,16 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
     case intelligence
     case settings
 
+    public static let allCases: [AppSection] = [
+        .dashboard, .history, .knowledge, .meetings, .models, .intelligence, .settings,
+    ]
     public var id: String { rawValue }
 
     public var title: String {
         switch self {
         case .dashboard: "Dashboard"
         case .history: "History"
-        case .dictionary: "Dictionary"
-        case .shortcuts: "Shortcuts"
+        case .knowledge, .dictionary, .shortcuts: "Knowledge"
         case .meetings: "Meetings"
         case .models: "Models"
         case .intelligence: "Intelligence"
@@ -33,8 +37,7 @@ public enum AppSection: String, CaseIterable, Hashable, Identifiable {
         switch self {
         case .dashboard: .dashboard
         case .history: .history
-        case .dictionary: .dictionary
-        case .shortcuts: .shortcuts
+        case .knowledge, .dictionary, .shortcuts: .dictionary
         case .meetings: .meetings
         case .models: .models
         case .intelligence: .intelligence
@@ -61,7 +64,8 @@ public final class MainWindowController: ObservableObject {
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let raw = defaults.string(forKey: Self.selectionKey)
-        selection = raw.flatMap(AppSection.init(rawValue:)) ?? .dashboard
+        let restored = raw.flatMap(AppSection.init(rawValue:)) ?? .dashboard
+        selection = restored == .dictionary || restored == .shortcuts ? .knowledge : restored
     }
 
     public func connect(openWindow: @escaping @MainActor () -> Void) {
@@ -73,7 +77,9 @@ public final class MainWindowController: ObservableObject {
     }
 
     public func show(_ section: AppSection? = nil) {
-        if let section { selection = section }
+        if let section {
+            selection = section == .dictionary || section == .shortcuts ? .knowledge : section
+        }
         NSApp.setActivationPolicy(.regular)
         openWindow?()
         NSApp.activate(ignoringOtherApps: true)

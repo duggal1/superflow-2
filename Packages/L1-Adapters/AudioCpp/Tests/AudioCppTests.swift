@@ -3,7 +3,7 @@ import Testing
 import SuperflowAudioCpp
 import SuperflowKernel
 
-@Test func metalStreamingProducesAndFinalizesSpeech() async throws {
+@Test func streamingProducesAndFinalizesSpeech() async throws {
     let root = AudioCppTestModels.repositoryRoot
     let models = root.appendingPathComponent(".models/audio-cpp")
     try await AudioCppTestModels.shared.prepareSpeech()

@@ -14,7 +14,7 @@ extension IslandModel {
         case .failed, .undo: performer.perform(.generic, performanceTime: .default)
         case .notice(let notice):
             performer.perform(.alignment, performanceTime: .default)
-            if notice.kind == .milestone { playMilestoneSound() }
+            if notice.kind == .milestone || notice.kind == .knowledge { playMilestoneSound() }
         case .idle, .hover, .processing, .recent, .history: break
         }
 

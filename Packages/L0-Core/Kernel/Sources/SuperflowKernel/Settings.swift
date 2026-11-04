@@ -141,6 +141,9 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var harperEnabled = false
     public var commandsEnabled = true
     public var codeSpeakEnabled = false
+    /// No passive edit monitoring or automatic rules without explicit consent.
+    public var learningEnabled = false
+    public var autoLearnEnabled = false
     public var disfluency = DisfluencySettings()
     public var codeAware = CodeAwareSettings()
     public var numberStyle: LargeNumberStyle = .abbreviated
@@ -204,6 +207,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
         harperEnabled = try c.decodeIfPresent(Bool.self, forKey: .harperEnabled) ?? d.harperEnabled
         commandsEnabled = try c.decodeIfPresent(Bool.self, forKey: .commandsEnabled) ?? d.commandsEnabled
         codeSpeakEnabled = try c.decodeIfPresent(Bool.self, forKey: .codeSpeakEnabled) ?? d.codeSpeakEnabled
+        learningEnabled = try c.decodeIfPresent(Bool.self, forKey: .learningEnabled) ?? d.learningEnabled
+        autoLearnEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoLearnEnabled) ?? d.autoLearnEnabled
         disfluency = try c.decodeIfPresent(DisfluencySettings.self, forKey: .disfluency) ?? d.disfluency
         codeAware = try c.decodeIfPresent(CodeAwareSettings.self, forKey: .codeAware) ?? d.codeAware
         numberStyle = try c.decodeIfPresent(LargeNumberStyle.self, forKey: .numberStyle) ?? d.numberStyle

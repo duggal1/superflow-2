@@ -3,7 +3,7 @@ import Foundation
 /// Versioned migrations. Each version is applied inside its own transaction so
 /// a failed upgrade leaves the previous schema intact.
 enum Schema {
-    static let currentVersion: Int32 = 4
+    static let currentVersion: Int32 = 5
 
     static func migrate(_ connection: SQLiteConnection) throws {
         let version = try connection.userVersion
@@ -30,6 +30,12 @@ enum Schema {
             try connection.transaction {
                 try connection.execute(v4)
                 try connection.setUserVersion(4)
+            }
+        }
+        if version < 5 {
+            try connection.transaction {
+                try connection.execute(v5)
+                try connection.setUserVersion(5)
             }
         }
     }
@@ -139,4 +145,35 @@ enum Schema {
     WHERE kind = 'dictation' AND status NOT IN ('recording', 'finalizing')
     GROUP BY local_day;
     """
+    /// All existing dictionary entries remain global, enabled and unchanged.
+    /// Observed edits are quarantined in a separate candidate table until
+    /// confirmation; no speculative rule can modify dictation.
+    static let v5 = """
+    ALTER TABLE lexicon_entries ADD COLUMN app_scope TEXT;
+    ALTER TABLE lexicon_entries ADD COLUMN heard_forms TEXT NOT NULL DEFAULT '[]';
+    ALTER TABLE lexicon_entries ADD COLUMN phonetic_key TEXT;
+    ALTER TABLE lexicon_entries ADD COLUMN learned_from TEXT;
+    ALTER TABLE lexicon_entries ADD COLUMN confidence REAL;
+    ALTER TABLE lexicon_entries ADD COLUMN confirmation_count INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE lexicon_entries ADD COLUMN hit_count INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE lexicon_entries ADD COLUMN created_at REAL;
+    ALTER TABLE lexicon_entries ADD COLUMN updated_at REAL;
+
+    CREATE TABLE IF NOT EXISTS learning_candidates (
+        id TEXT PRIMARY KEY NOT NULL,
+        heard TEXT NOT NULL,
+        canonical TEXT NOT NULL,
+        app_scope TEXT,
+        confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+        observations INTEGER NOT NULL CHECK (observations >= 1),
+        state TEXT NOT NULL CHECK (state IN ('suggested', 'confirmed', 'rejected')),
+        created_at REAL NOT NULL,
+        updated_at REAL NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS learning_candidates_dedup
+    ON learning_candidates(heard, canonical, COALESCE(app_scope, ''));
+    CREATE INDEX IF NOT EXISTS learning_candidates_state
+    ON learning_candidates(state, updated_at DESC);
+    """
+
 }

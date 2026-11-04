@@ -6,7 +6,7 @@ import SwiftUI
 
 /// Add and Edit are the same dialog. The composer card that used to sit at the
 /// top of the page is gone.
-struct ShortcutDialog: View {
+public struct ShortcutDialog: View {
     private let existing: ShortcutEntry?
     private let onSave: (ShortcutDraft) -> Void
     @State private var trigger: String
@@ -14,7 +14,7 @@ struct ShortcutDialog: View {
     @State private var wire = 0.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(existing: ShortcutEntry? = nil, onSave: @escaping (ShortcutDraft) -> Void) {
+    public init(existing: ShortcutEntry? = nil, onSave: @escaping (ShortcutDraft) -> Void) {
         self.existing = existing
         self.onSave = onSave
         _trigger = State(initialValue: existing?.trigger ?? "")
@@ -31,7 +31,7 @@ struct ShortcutDialog: View {
         return !trimmed.isEmpty && CommonWords.isRisky(trigger: trimmed)
     }
 
-    var body: some View {
+    public var body: some View {
         DialogFrame(title: existing == nil ? "Add a shortcut" : "Edit shortcut",
                     subtitle: "Say a short phrase. Superflow types the full text.",
                     confirmTitle: existing == nil ? "Add shortcut" : "Save",

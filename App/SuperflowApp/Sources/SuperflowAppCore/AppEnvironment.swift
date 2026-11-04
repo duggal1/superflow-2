@@ -3,6 +3,7 @@ import SuperflowAudioCpp
 import SuperflowAudioCapture
 import SuperflowAudioJournal
 import SuperflowDiagnostics
+import SuperflowEnhancementDeepFilterNet
 import SuperflowHotkeyEngine
 import SuperflowInferenceHelperProtocol
 import SuperflowKernel
@@ -26,9 +27,11 @@ public final class AppEnvironment {
     public let database: SQLiteStore
     public let transcripts: PrivacyRepository
     public let libraryRepository: any LibraryRepository
+    public let learningEngine: DictionaryLearningEngine
     public let settingsStore: any SettingsStore
     public let modelProvider: ModelStore
     public let recognizer: AudioCppRecognizer
+    public let enhancer: DeepFilterNetEnhancer
     public let diarizer: AudioCppDiarizer
     public let llamaRuntime: XPCInferenceHelperRuntime
     public let llamaCleaner: LlamaCleaner
@@ -80,6 +83,8 @@ public final class AppEnvironment {
         )
         let llamaRuntime = XPCInferenceHelperRuntime()
         let llamaCleaner = LlamaCleaner(modelProvider: modelProvider, runtime: llamaRuntime)
+        let enhancer = DeepFilterNetEnhancer(
+            directory: supportDirectory.appendingPathComponent("Models/DeepFilterNet3", isDirectory: true))
         let microphone = MicrophoneCapture()
         let systemAudio = SystemAudioCapture()
         let journalStore = FileJournalStore(
@@ -88,15 +93,29 @@ public final class AppEnvironment {
         )
         let audioArchive = AudioArchiveAdapter(
             directory: supportDirectory.appendingPathComponent("Audio", isDirectory: true))
-        let textInserter = SystemTextInserter()
+        let learningEngine = DictionaryLearningEngine(learning: database, lexicon: database)
+        let textInserter = SystemTextInserter(
+            shouldObserve: { [database] in
+                let saved = await database.load()
+                return saved.learningEnabled
+            },
+            onCorrection: { [database, learningEngine] edit in
+                let saved = await database.load()
+                guard saved.learningEnabled else { return }
+                _ = try? await learningEngine.observe(
+                    edit, consent: saved.learningEnabled, autoPromote: saved.autoLearnEnabled)
+            }
+        )
         let pipeline = TextPipelineBuilder.make(settings: .default)
 
         self.database = database
         transcripts = PrivacyRepository(base: database)
         libraryRepository = database
+        self.learningEngine = learningEngine
         settingsStore = database
         self.modelProvider = modelProvider
         self.recognizer = recognizer
+        self.enhancer = enhancer
         self.diarizer = diarizer
         self.llamaRuntime = llamaRuntime
         self.llamaCleaner = llamaCleaner
@@ -122,6 +141,7 @@ public final class AppEnvironment {
             journals: journalStore,
             inserter: textInserter,
             archive: audioArchive,
+            enhancer: enhancer,
             metrics: metrics,
             speculativeCleanupEnabled: ProcessInfo.processInfo.environment["SUPERFLOW_SPECULATIVE_CLEANUP"] == "1"
         )

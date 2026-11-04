@@ -17,7 +17,7 @@ public actor TextInsertionService {
     /// The prepared target is only valid for the dictation that created it.
     public static let defaultPreparedTargetTTL: Duration = .seconds(30)
 
-    private let focus: any FocusInspecting
+    let focus: any FocusInspecting
     let clipboard: any PasteboardAccess
     let poster: any PasteEventPosting
     let keyResolver: any PasteKeyResolving
@@ -33,6 +33,7 @@ public actor TextInsertionService {
     var preparedAt: ContinuousClock.Instant?
     private var insertionInFlight = false
     private var insertionWaiters: [CheckedContinuation<Void, Never>] = []
+    var observationTask: Task<Void, Never>?
     private var pendingRestore: PendingRestore?
     private let log = Logger(subsystem: "com.superflow.app", category: "text-insertion")
 
@@ -127,6 +128,8 @@ public actor TextInsertionService {
     // MARK: - Insertion
 
     public func insert(_ text: String, options: TextInsertionOptions = TextInsertionOptions()) async -> TextInsertionReport {
+        observationTask?.cancel()
+        observationTask = nil
         await acquireInsertionSlot()
         defer { releaseInsertionSlot() }
         // A previous insertion may still owe the user their original clipboard.

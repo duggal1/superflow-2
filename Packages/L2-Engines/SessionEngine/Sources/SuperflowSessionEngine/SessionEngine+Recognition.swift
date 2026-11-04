@@ -43,6 +43,8 @@ extension SessionEngine {
         if revision != pipelineRevision { precomputed = nil }
         await cleanupCoordinator?.submit(index: index, interactive: interactive,
                                           pipeline: pipeline, settings: settings,
-                                          project: project, wordTimings: raw.words, precomputed: precomputed)
+                                          project: project, wordTimings: raw.words,
+                                          activeAppBundleID: record?.frontmostBundleID,
+                                          precomputed: precomputed)
     }
 }

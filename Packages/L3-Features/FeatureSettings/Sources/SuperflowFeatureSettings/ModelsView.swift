@@ -25,14 +25,18 @@ public struct ModelItem: Identifiable, Equatable, Sendable {
     public var detail: String
     public let bytes: Int64
     public var installedASRRuntimes: [ASRRuntime]
+    /// Populated only from a real same-corpus, same-device benchmark run.
+    public var benchmark: ASRBenchmarkResult?
     public var state: DownloadState
     public var isActive: Bool
 
     public init(id: String, kind: ModelKind, name: String, detail: String, bytes: Int64,
                 installedASRRuntimes: [ASRRuntime] = [],
+                benchmark: ASRBenchmarkResult? = nil,
                 state: DownloadState = .idle, isActive: Bool = false) {
         self.id = id; self.kind = kind; self.name = name; self.detail = detail
         self.bytes = bytes; self.installedASRRuntimes = installedASRRuntimes
+        self.benchmark = benchmark
         self.state = state; self.isActive = isActive
     }
 }
@@ -131,18 +135,25 @@ struct ModelCard: View {
 
     var body: some View {
         DownloadCard(title: item.name, detail: item.detail, state: item.state,
-                     totalBytes: item.bytes) {
+                     totalBytes: item.bytes > 0 ? item.bytes : nil) {
             ModelMark(kind: item.kind)
         } trailing: {
             HStack(spacing: 12) {
+                if item.kind == .speech {
+                    Text(item.benchmark.map { String(format: "%.0f/100", $0.intelligenceScore) }
+                         ?? "Not benchmarked")
+                        .appType(.caption)
+                        .foregroundStyle(Tok.text2)
+                        .accessibilityLabel("Speech recognition benchmark")
+                }
                 switch item.state {
                 case .idle where vm.isChecking:
                     // The disk has not answered yet. Offering Download here made a
                     // freshly installed model look like it needed downloading again.
-                    Text(item.bytes, format: .byteCount(style: .file))
+                    Text(item.bytes > 0 ? item.bytes.formatted(.byteCount(style: .file)) : "Size unknown")
                         .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
                 case .idle:
-                    Text(item.bytes, format: .byteCount(style: .file))
+                    Text(item.bytes > 0 ? item.bytes.formatted(.byteCount(style: .file)) : "Size unknown")
                         .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
                     AppButton("Install model", kind: .secondary) { vm.download(item.id) }
                 case .downloading, .verifying:
