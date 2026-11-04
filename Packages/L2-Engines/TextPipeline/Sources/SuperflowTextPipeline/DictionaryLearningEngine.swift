@@ -16,6 +16,11 @@ public actor DictionaryLearningEngine {
     private let lexicon: any LibraryRepository
     private var seenAnchors = Set<String>()
     private var anchorOrder: [String] = []
+    private var onApplied: (@Sendable (LearningCandidate, Bool) async -> Void)?
+
+    public func setOnApplied(_ callback: @escaping @Sendable (LearningCandidate, Bool) async -> Void) {
+        onApplied = callback
+    }
 
     public init(learning: any LearningRepository, lexicon: any LibraryRepository) {
         self.learning = learning
@@ -90,6 +95,7 @@ public actor DictionaryLearningEngine {
         candidate.state = .confirmed
         candidate.updatedAt = .now
         try await learning.saveLearningCandidate(candidate)
+        if let onApplied { await onApplied(candidate, true) }
         return rule.id
     }
 
@@ -118,6 +124,7 @@ public actor DictionaryLearningEngine {
         candidate.state = .rejected
         candidate.updatedAt = .now
         try await learning.saveLearningCandidate(candidate)
+        if let onApplied { await onApplied(candidate, false) }
     }
 
     private func rememberAnchor(_ anchor: String) {
