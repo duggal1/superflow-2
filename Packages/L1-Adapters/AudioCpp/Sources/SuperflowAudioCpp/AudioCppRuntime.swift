@@ -51,6 +51,7 @@ actor AudioCppRuntime {
     }
 
     var isReady: Bool { model != nil && (!idle.isEmpty || !slots.isEmpty) }
+    func hasActiveStreams() -> Bool { !slots.isEmpty }
     func isInstalled() -> Bool { model != nil || (try? asset.verified(modelURL)) == true }
 
     func install(progress: @escaping @Sendable (Double) -> Void) async throws {
