@@ -9,13 +9,14 @@ enum AudioCppAsset: Sendable {
         let modified: Date
     }
 
-    case speech, qwenASR06B, voxtralRealtime, speakers
+    case speech, qwenASR06B, qwenASR17B, voxtralRealtime, speakers
 
     init?(speechProfileID id: String) {
         switch id {
         case ModelProfile.nemotron35Streaming.id: self = .speech
         case ModelProfile.voxtralRealtime.id: self = .voxtralRealtime
         case ModelProfile.qwen3ASR06B.id: self = .qwenASR06B
+        case ModelProfile.qwen3ASR17B.id: self = .qwenASR17B
         default: return nil
         }
     }
@@ -27,7 +28,7 @@ enum AudioCppAsset: Sendable {
         switch self {
         case .speech: "nemotron_asr"
         case .voxtralRealtime: "voxtral_realtime"
-        case .qwenASR06B: "qwen3_asr"
+        case .qwenASR06B, .qwenASR17B: "qwen3_asr"
         case .speakers: "nemotron_3_diar"
         }
     }
@@ -37,6 +38,7 @@ enum AudioCppAsset: Sendable {
         case .speech: "nemotron-q8_0.gguf" // Preserve existing installed artifact paths.
         case .voxtralRealtime: "voxtral-mini-4b-realtime-2602-q4_k.gguf"
         case .qwenASR06B: "qwen3-asr-0.6b-q8_0.gguf"
+        case .qwenASR17B: "qwen3-asr-1.7b-q8_0.gguf"
         case .speakers: "diarization-q8_0.gguf"
         }
     }
@@ -45,6 +47,7 @@ enum AudioCppAsset: Sendable {
         case .speech: "c58b62c1bdd6c5d7b14b08126c5bd16c1289fee6e0d6ac0761dbd3aa6d714935"
         case .voxtralRealtime: "8cafef18ea3e4cad81da8ffc4e72b69d2eab2c159c2e68428e2e088accbfc7f8"
         case .qwenASR06B: "6c44ec2fb4cee513892d7863c1fcc3ea6b699ffa4d899b0ef4ab19956d9544f7"
+        case .qwenASR17B: "da4fc2ac7f24dee784d1684eb1f35836cdbf559519452ae11777670734c0a4f8"
         case .speakers: "9a737455bd10123bcf1e036d9a0b07b6e8c42e7d0dd1a5ee4141dc386db46d0b"
         }
     }
@@ -57,6 +60,8 @@ enum AudioCppAsset: Sendable {
             "audio-cpp/audio.cpp-gguf/resolve/4afa5086d2411a3b9e8ec96f1a1c4dd5312b50cd/Voxtral-Mini-4B-Realtime-2602-GGUF/voxtral-mini-4b-realtime-2602-q4_k.gguf"
         case .qwenASR06B:
             "audio-cpp/audio.cpp-gguf/resolve/4c9a3098d552a0f3d9b2adc11638a11022c07d7e/Qwen3-ASR-0.6B-GGUF/qwen3-asr-0.6b-q8_0.gguf"
+        case .qwenASR17B:
+            "audio-cpp/audio.cpp-gguf/resolve/4c9a3098d552a0f3d9b2adc11638a11022c07d7e/Qwen3-ASR-1.7B-GGUF/qwen3-asr-1.7b-q8_0.gguf"
         case .speakers:
             "audio-cpp/Nemotron-3-Diarization-GGUF/resolve/647d39feaa0e91dca5ce355a95403837b76dff56/nemotron-3-diarization-q8_0.gguf"
         }
