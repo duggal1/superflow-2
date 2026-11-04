@@ -39,6 +39,33 @@ final class LexiconTests: XCTestCase {
         XCTAssertEqual(actual, "try Superflow today")
     }
 
+    func testAppScopedCorrectionOverridesGlobalOnlyInMatchingApp() async {
+        let general = LexiconEntry(kind: .correction, triggers: ["item potency"],
+                                   canonical: "item potency")
+        let scoped = LexiconEntry(kind: .correction, triggers: ["item potency"],
+                                  canonical: "idempotency", appScope: "com.microsoft.VSCode")
+        let stage = LexiconStage(entries: [general, scoped])
+        let raw = TranscriptDraft(text: "check item potency today")
+        let coding = await stage.apply(raw, context: TextContext(
+            activeAppBundleID: "com.microsoft.VSCode"))
+        XCTAssertEqual(coding.text, "check idempotency today")
+        let prose = await stage.apply(raw, context: TextContext(
+            activeAppBundleID: "com.apple.TextEdit"))
+        XCTAssertEqual(prose.text, "check item potency today")
+        let missing = await stage.apply(raw, context: TextContext())
+        XCTAssertEqual(missing.text, "check item potency today")
+    }
+
+    func testScopedRuleWithoutGlobalMatchDoesNotLeakIntoOtherApps() async {
+        let scoped = LexiconEntry(kind: .correction, triggers: ["item potency"],
+                                  canonical: "idempotency", appScope: "com.microsoft.VSCode")
+        let stage = LexiconStage(entries: [scoped])
+        let raw = TranscriptDraft(text: "item potency")
+        XCTAssertEqual((await stage.apply(raw, context: TextContext())).text, "item potency")
+        XCTAssertEqual((await stage.apply(raw, context: TextContext(
+            activeAppBundleID: "com.microsoft.VSCode"))).text, "idempotency")
+    }
+
     func testIdempotent() async {
         let once = await run("use next js with git hub", bundled)
         let twice = await run(once, bundled)
