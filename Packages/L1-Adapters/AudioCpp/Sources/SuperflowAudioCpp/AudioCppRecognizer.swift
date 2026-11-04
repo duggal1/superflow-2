@@ -8,7 +8,7 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     /// installed files or reuse a session from an incompatible family.
     private let runtimes: [String: AudioCppRuntime]
     private var currentProfile = ModelProfile.default.id
-    private var startingProfile: String?
+    private var streamStarts: [String: Int] = [:]
 
     public init(modelCacheRoot: URL? = nil, fileManager: FileManager = .default) {
         let root = modelCacheRoot ?? Self.defaultRoot(fileManager)
@@ -35,6 +35,9 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     }
     public func warmUp(profile: String) async throws {
         let runtime = try Self.runtime(profile, from: runtimes)
+        guard streamStarts.allSatisfy({ $0.key == profile }) else {
+            throw SuperflowError.invalidState("Another speech model is starting a stream")
+        }
         // Model preparation can be triggered while another recording is live.
         // Refuse the switch instead of evicting that session's native handles.
         for (id, other) in runtimes where id != profile {
@@ -55,11 +58,15 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     }
     public func makeStream(profile: String, source: AudioSourceKind) async throws -> any RecognitionStream {
         let runtime = try Self.runtime(profile, from: runtimes)
-        guard startingProfile == nil || startingProfile == profile else {
+        guard streamStarts.allSatisfy({ $0.key == profile }) else {
             throw SuperflowError.invalidState("Another ASR family is starting")
         }
-        startingProfile = profile
-        defer { startingProfile = nil }
+        streamStarts[profile, default: 0] += 1
+        defer {
+            let remaining = (streamStarts[profile] ?? 1) - 1
+            if remaining == 0 { streamStarts.removeValue(forKey: profile) }
+            else { streamStarts[profile] = remaining }
+        }
         for (id, other) in runtimes where id != profile {
             if await other.hasActiveStreams() {
                 throw SuperflowError.invalidState("Cannot mix streaming ASR model families")
