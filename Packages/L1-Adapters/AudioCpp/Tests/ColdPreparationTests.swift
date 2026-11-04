@@ -16,3 +16,10 @@ import Testing
     TestMetricsLog.record("cold_model_load=\(start.duration(to: loaded)) native_session_prepare=\(loaded.duration(to: prepared)) runs=1")
     await runtime.unload()
 }
+
+@Test func backendSelectionIsExplicitAndSafe() {
+    #expect(AudioCppBackend.select(environment: [:]) == "metal")
+    #expect(AudioCppBackend.select(environment: ["SUPERFLOW_AUDIOCPP_BACKEND": "cpu"]) == "cpu")
+    #expect(AudioCppBackend.select(environment: ["SUPERFLOW_AUDIOCPP_BACKEND": "metal"]) == "metal")
+    #expect(AudioCppBackend.select(environment: ["SUPERFLOW_AUDIOCPP_BACKEND": "unknown"]) == "metal")
+}
