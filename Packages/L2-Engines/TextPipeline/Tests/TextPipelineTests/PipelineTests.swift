@@ -62,7 +62,7 @@ final class PipelineTests: XCTestCase {
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
             "cleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "numbers", "lexicon", "codeAware",
-            "lineformat", "normalize", "techDictionary",
+            "lineformat", "normalize", "modelNames", "techDictionary",
         ])
     }
 
@@ -74,7 +74,7 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs,
                        ["dedupe", "format", "shortcuts", "spokenCode", "numbers", "lexicon", "codeAware", "lineformat",
-                        "normalize", "techDictionary"])
+                        "normalize", "modelNames", "techDictionary"])
     }
 
     func testCodeSpeakIsOptInAndRunsAfterNumbers() async {
@@ -214,7 +214,7 @@ final class PipelineTests: XCTestCase {
     func testTechDictionaryIsAlwaysLast() {
         let pipeline = TextPipelineBuilder.make(settings: AppSettings.default, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs.last, "techDictionary")
-        XCTAssertEqual(pipeline.stageIDs.dropLast().last, "normalize")
+        XCTAssertEqual(pipeline.stageIDs.dropLast().last, "modelNames")
         XCTAssertTrue(pipeline.stageIDs.contains("format"))
     }
 
