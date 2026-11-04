@@ -8,7 +8,6 @@ let package = Package(
     dependencies: [
         .package(path: "../../L0-Core/Kernel"),
         .package(path: "../../L0-Core/Ports"),
-        .package(path: "../ModelStore"),
         .package(url: "https://github.com/k2-fsa/sherpa-onnx.git", exact: "2.0.1"),
     ],
     targets: [
@@ -17,8 +16,7 @@ let package = Package(
             dependencies: [
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowPorts", package: "Ports"),
-                .product(name: "SuperflowModelStore", package: "ModelStore"),
-                .product(name: "sherpa-onnx-shared", package: "sherpa-onnx"),
+                .product(name: "sherpa-onnx", package: "sherpa-onnx"),
             ]
         ),
         .testTarget(
@@ -26,7 +24,7 @@ let package = Package(
             dependencies: [
                 "SuperflowASRSherpaOnnx",
                 .product(name: "SuperflowKernel", package: "Kernel"),
-                .product(name: "SuperflowModelStore", package: "ModelStore"),
+                .product(name: "SuperflowPorts", package: "Ports"),
             ],
             path: "Tests/ASRSherpaOnnxTests"
         ),

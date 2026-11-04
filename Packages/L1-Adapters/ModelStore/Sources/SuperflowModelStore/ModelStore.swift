@@ -3,11 +3,6 @@ import Foundation
 import SuperflowKernel
 import SuperflowPorts
 
-public protocol ModelDownloading: Sendable {
-    func download(from url: URL, to destination: URL, expectedBytes: Int64?,
-                  progress: @escaping @Sendable (Double) -> Void) async throws
-}
-
 /// Downloads and verifies the model artifacts declared in a manifest. A verified
 /// sidecar avoids re-hashing a multi-gigabyte file at every launch, while a
 /// changed size invalidates the sidecar immediately.

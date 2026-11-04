@@ -4,9 +4,10 @@ import SuperflowAudioCpp
 import SuperflowKernel
 
 @Test func metalStreamingProducesAndFinalizesSpeech() async throws {
-    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        .appendingPathComponent("../../../..", isDirectory: true).standardizedFileURL
+    let root = AudioCppTestModels.repositoryRoot
     let models = root.appendingPathComponent(".models/audio-cpp")
+    try await AudioCppTestModels.shared.prepareSpeech()
+    try await AudioCppTestModels.shared.prepareSpeakers()
     let fixture = root.appendingPathComponent("ThirdParty/audio.cpp/tests/parakeet_tdt/assets/2086-149220-0033.wav")
     let data = try Data(contentsOf: fixture)
     var offset = 12
@@ -73,7 +74,7 @@ import SuperflowKernel
     let normalized = text.lowercased().split { !$0.isLetter && !$0.isNumber }.joined(separator: " ")
     #expect(normalized == expected)
     #expect(!repeated.contains { if case .failure = $0 { true } else { false } })
-    print("audio_cpp_warm_stream_seconds=\(seconds) audio_seconds=\(Double(samples.count) / 16_000) runs=1")
+    TestMetricsLog.record("audio_cpp_warm_stream_seconds=\(seconds) audio_seconds=\(Double(samples.count) / 16_000) runs=1")
     let shifted = try await recognizer.makeStream(profile: ModelProfile.default.id, source: .mic)
     let shiftedEvents = Task { () -> [RecognitionEvent] in
         var values: [RecognitionEvent] = []

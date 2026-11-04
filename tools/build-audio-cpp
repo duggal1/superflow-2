@@ -10,6 +10,10 @@ if [[ ! -f "$SOURCE/include/audiocpp.h" ]]; then
     git clone --depth 1 --no-tags https://github.com/0xShug0/audio.cpp.git "$SOURCE"
 fi
 if [[ "$(git -C "$SOURCE" rev-parse HEAD)" != "$PIN" ]]; then
+    git -C "$SOURCE" fetch --depth 1 origin "$PIN"
+    git -C "$SOURCE" checkout --detach "$PIN"
+fi
+if [[ "$(git -C "$SOURCE" rev-parse HEAD)" != "$PIN" ]]; then
     printf 'audio.cpp source does not match the required Superflow pin.\n' >&2
     exit 1
 fi

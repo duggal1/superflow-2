@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 import SuperflowKernel
-import SuperflowModelStore
+import SuperflowPorts
 
 public actor SherpaOnnxModelStore {
     public static let profileID = ModelProfile.nemotron35Streaming.id
@@ -22,7 +22,7 @@ public actor SherpaOnnxModelStore {
     private let downloader: any ModelDownloading
 
     public init(root: URL? = nil, fileManager: FileManager = .default,
-                downloader: any ModelDownloading = URLSessionModelDownloader()) {
+                downloader: any ModelDownloading) {
         let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? fileManager.temporaryDirectory
         self.root = root ?? support.appendingPathComponent("Superflow/Models/SherpaOnnx", isDirectory: true)

@@ -45,7 +45,7 @@ final class LiveLongParallelTests: XCTestCase {
                 }
             }
         }
-        print("s1_long_parallel_input_words=\(batches * 2 * words) requests=\(batches * 2) failures=\(failures)")
+        TestMetricsLog.record("s1_long_parallel_input_words=\(batches * 2 * words) requests=\(batches * 2) failures=\(failures)")
         XCTAssertEqual(failures, 0)
     }
 }

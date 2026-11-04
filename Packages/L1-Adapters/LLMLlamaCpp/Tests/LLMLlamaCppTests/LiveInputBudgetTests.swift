@@ -38,6 +38,6 @@ final class LiveInputBudgetTests: XCTestCase {
         XCTAssertFalse(result.text.isEmpty)
         XCTAssertFalse(result.hitTokenCap)
         XCTAssertTrue(result.text.contains("item \(sentences.count)"), "Last item missing")
-        print("s1_live_input_tokens=\(tokens) output_tokens=\(result.tokensOut) capped=\(result.hitTokenCap)")
+        TestMetricsLog.record("s1_live_input_tokens=\(tokens) output_tokens=\(result.tokensOut) capped=\(result.hitTokenCap)")
     }
 }

@@ -3,8 +3,8 @@ import Testing
 @testable import SuperflowAudioCpp
 
 @Test func coldPreparationStages() async throws {
-    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        .appendingPathComponent("../../../..", isDirectory: true).standardizedFileURL
+    let root = AudioCppTestModels.repositoryRoot
+    try await AudioCppTestModels.shared.prepareSpeech()
     let runtime = AudioCppRuntime(asset: .speech, root: root.appendingPathComponent(".models/audio-cpp"))
     let clock = ContinuousClock()
     let start = clock.now
@@ -13,6 +13,6 @@ import Testing
     try await runtime.prime()
     let prepared = clock.now
     #expect(await runtime.isReady)
-    print("cold_model_load=\(start.duration(to: loaded)) metal_session_prepare=\(loaded.duration(to: prepared)) runs=1")
+    TestMetricsLog.record("cold_model_load=\(start.duration(to: loaded)) metal_session_prepare=\(loaded.duration(to: prepared)) runs=1")
     await runtime.unload()
 }

@@ -81,6 +81,11 @@ public protocol ModelProvider: ASRModelProvider, Sendable {
     func ensureLLM(progress: @escaping @Sendable (Double) -> Void) async throws -> URL
 }
 
+public protocol ModelDownloading: Sendable {
+    func download(from url: URL, to destination: URL, expectedBytes: Int64?,
+                  progress: @escaping @Sendable (Double) -> Void) async throws
+}
+
 public extension ModelProvider {
     func isAvailable(profileID: String) async -> Bool {
         await localURL(for: profileID) != nil

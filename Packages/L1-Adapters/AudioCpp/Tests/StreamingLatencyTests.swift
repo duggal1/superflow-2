@@ -10,8 +10,8 @@ private actor FirstPartial {
 }
 
 @Test func firstPartialArrivesDuringPacedShortAudio() async throws {
-    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        .appendingPathComponent("../../../..", isDirectory: true).standardizedFileURL
+    let root = AudioCppTestModels.repositoryRoot
+    try await AudioCppTestModels.shared.prepareSpeech()
     let audio = try AVAudioFile(forReading: root.appendingPathComponent(
         "ThirdParty/audio.cpp/tests/parakeet_tdt/assets/2086-149220-0033.wav"))
     let format = audio.processingFormat
@@ -53,6 +53,6 @@ private actor FirstPartial {
     let elapsed = await observed.elapsed
     #expect(failures == 0)
     #expect(elapsed != nil)
-    print("asr_first_partial=\(String(describing: elapsed)) input_audio_seconds=\(Double(samples.count) / 16_000) failures=\(failures) runs=1")
+    TestMetricsLog.record("asr_first_partial=\(String(describing: elapsed)) input_audio_seconds=\(Double(samples.count) / 16_000) failures=\(failures) runs=1")
     await recognizer.unload()
 }
