@@ -39,21 +39,16 @@ public actor DictionaryLearningEngine {
               heard != corrected else { return nil }
         rememberAnchor(observation.anchorID)
         let app = observation.appBundleID?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let bundle = (app?.isEmpty == false && app!.count <= 200) ? app : nil
+        let bundle = app.flatMap { !$0.isEmpty && $0.count <= 200 ? $0 : nil }
         let similarity = Self.editSimilarity(heard, corrected)
-        var candidate = try await learning.learningCandidates().first {
+        let existing = try await learning.learningCandidates().first {
             $0.heard.caseInsensitiveCompare(heard) == .orderedSame
                 && $0.canonical == corrected && $0.appScope == bundle
-        } ?? LearningCandidate(heard: heard, canonical: corrected, appScope: bundle,
-                               confidence: similarity)
-
-        guard candidate.state != .rejected else { return nil }
-        if candidate.observations > 0, candidate.updatedAt != candidate.createdAt {
-            candidate.observations += 1
-        } else if let previous = try await learning.learningCandidates().first(where: { $0.id == candidate.id }),
-                  previous.state == .suggested {
-            candidate.observations = previous.observations + 1
         }
+        var candidate = existing ?? LearningCandidate(
+            heard: heard, canonical: corrected, appScope: bundle, confidence: similarity)
+        guard candidate.state != .rejected else { return nil }
+        if existing != nil { candidate.observations += 1 }
         candidate.confidence = similarity
         candidate.updatedAt = .now
         try await learning.saveLearningCandidate(candidate)
