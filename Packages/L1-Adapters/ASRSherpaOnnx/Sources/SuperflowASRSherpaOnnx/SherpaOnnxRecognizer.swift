@@ -1,5 +1,5 @@
 import Foundation
-import SherpaOnnxShared
+import SherpaOnnx
 import SherpaOnnxC
 import SuperflowKernel
 import SuperflowPorts
@@ -9,7 +9,7 @@ public actor SherpaOnnxRecognizer: SpeechRecognizer {
     private var engine: SherpaOnnxEngine?
     private var preparing: Task<SherpaOnnxEngine, Error>?
 
-    public init(models: SherpaOnnxModelStore = SherpaOnnxModelStore()) {
+    public init(models: SherpaOnnxModelStore) {
         self.models = models
     }
 

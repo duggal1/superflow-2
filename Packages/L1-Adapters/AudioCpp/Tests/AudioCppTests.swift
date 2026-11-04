@@ -73,7 +73,7 @@ import SuperflowKernel
     let normalized = text.lowercased().split { !$0.isLetter && !$0.isNumber }.joined(separator: " ")
     #expect(normalized == expected)
     #expect(!repeated.contains { if case .failure = $0 { true } else { false } })
-    print("audio_cpp_warm_stream_seconds=\(seconds) audio_seconds=\(Double(samples.count) / 16_000) runs=1")
+    TestMetricsLog.record("audio_cpp_warm_stream_seconds=\(seconds) audio_seconds=\(Double(samples.count) / 16_000) runs=1")
     let shifted = try await recognizer.makeStream(profile: ModelProfile.default.id, source: .mic)
     let shiftedEvents = Task { () -> [RecognitionEvent] in
         var values: [RecognitionEvent] = []

@@ -53,6 +53,6 @@ private actor FirstPartial {
     let elapsed = await observed.elapsed
     #expect(failures == 0)
     #expect(elapsed != nil)
-    print("asr_first_partial=\(String(describing: elapsed)) input_audio_seconds=\(Double(samples.count) / 16_000) failures=\(failures) runs=1")
+    TestMetricsLog.record("asr_first_partial=\(String(describing: elapsed)) input_audio_seconds=\(Double(samples.count) / 16_000) failures=\(failures) runs=1")
     await recognizer.unload()
 }

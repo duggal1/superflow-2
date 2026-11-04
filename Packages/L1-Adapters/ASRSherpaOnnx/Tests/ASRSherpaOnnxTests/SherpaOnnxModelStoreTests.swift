@@ -1,6 +1,6 @@
 import Foundation
 import SuperflowASRSherpaOnnx
-import SuperflowModelStore
+import SuperflowPorts
 import XCTest
 
 final class SherpaOnnxModelStoreTests: XCTestCase {

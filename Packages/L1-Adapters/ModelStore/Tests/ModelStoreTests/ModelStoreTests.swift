@@ -1,6 +1,7 @@
 import CryptoKit
 import Foundation
 import SuperflowKernel
+import SuperflowPorts
 import XCTest
 @testable import SuperflowModelStore
 

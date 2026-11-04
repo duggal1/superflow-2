@@ -111,7 +111,7 @@ final class LiveCleanupTests: XCTestCase {
         XCTAssertFalse(one.text.isEmpty)
         XCTAssertEqual(one.text, expected.text)
         XCTAssertEqual(two.text, expected.text)
-        print("s1_parallel_wall=\(elapsed) request_ms=\(one.latencyMs),\(two.latencyMs) errors=0 requests=2")
+        TestMetricsLog.record("s1_parallel_wall=\(elapsed) request_ms=\(one.latencyMs),\(two.latencyMs) errors=0 requests=2")
     }
 
 }

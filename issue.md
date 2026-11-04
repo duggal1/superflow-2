@@ -539,3 +539,12 @@ DeepFilterNet output reached VAD, ASR and the enhanced archive without gain adju
 - [x] Resolved
 
 Verification: enhanced output targets 1.32× gain and applies a 0.98 peak ceiling. The raw journal remains before enhancement; gain and clipping regression passes.
+
+## GitHub verification rejects the ASR downloader dependency
+
+ASRSherpaOnnx depended on the sibling L1 ModelStore package for a downloader protocol.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: `tools/check-deps` now passes; local `make verify` stops extracting llama.cpp's test artifact because the machine is out of disk space. GitHub verification is pending.

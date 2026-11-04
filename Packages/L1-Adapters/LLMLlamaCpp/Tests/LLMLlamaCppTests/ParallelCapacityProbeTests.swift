@@ -49,13 +49,13 @@ final class ParallelCapacityProbeTests: XCTestCase {
                 let elapsed = start.duration(to: .now)
                 let seconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
                 samples[workers, default: []].append(seconds)
-                print("PROBE workers=\(workers) round=\(round) requests=4 errors=\(errors) seconds=\(seconds)")
+                TestMetricsLog.record("PROBE workers=\(workers) round=\(round) requests=4 errors=\(errors) seconds=\(seconds)")
                 XCTAssertEqual(errors, 0)
             }
         }
         for workers in [1, 2, 4] {
             let values = samples[workers, default: []].sorted()
-            print("PROBE_SUMMARY workers=\(workers) median=\(values[2]) min=\(values[0]) max=\(values[4])")
+            TestMetricsLog.record("PROBE_SUMMARY workers=\(workers) median=\(values[2]) min=\(values[0]) max=\(values[4])")
         }
     }
 }
