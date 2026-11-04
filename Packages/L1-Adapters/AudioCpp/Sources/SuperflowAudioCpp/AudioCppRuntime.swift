@@ -53,6 +53,26 @@ actor AudioCppRuntime {
     var isReady: Bool { model != nil && (!idle.isEmpty || !slots.isEmpty) }
     func hasActiveStreams() -> Bool { !slots.isEmpty }
     func isInstalled() -> Bool { model != nil || (try? asset.verified(modelURL)) == true }
+    /// Delete only this profile's verified GGUF, never shared diarization
+    /// weights or another model's files. An active session or download vetoes
+    /// removal; the UI refuses deleting the currently selected speech model.
+    func removeInstalledModel() throws {
+        guard asset.isSpeech else {
+            throw SuperflowError.invalidState("Speaker separation is not a speech model")
+        }
+        guard slots.isEmpty, installation == nil else {
+            throw SuperflowError.invalidState("Model is in use or downloading")
+        }
+        idle.removeAll()
+        model = nil
+        guard FileManager.default.fileExists(atPath: modelURL.path) else { return }
+        try FileManager.default.removeItem(at: modelURL)
+        let receipt = modelURL.appendingPathExtension("verified.json")
+        if FileManager.default.fileExists(atPath: receipt.path) {
+            try FileManager.default.removeItem(at: receipt)
+        }
+    }
+
 
     func install(progress: @escaping @Sendable (Double) -> Void) async throws {
         progress(0)
