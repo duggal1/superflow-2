@@ -56,7 +56,7 @@ struct NoticeMark: View {
         switch kind {
         case .milestone: PixelBitmap.spark
         case .streak: PixelBitmap.flame
-        case .modelReady: PixelBitmap.check
+        case .modelReady, .knowledge: PixelBitmap.check
         case .update: PixelBitmap.arrowUp
         case .clipboard, .info: PixelBitmap.dot
         }
