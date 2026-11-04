@@ -74,7 +74,7 @@ final class PortsDefaultTests: XCTestCase {
     func testCleanOptionsAndInsertionOutcomesHaveStableDefaults() {
         let options = CleanOptions()
         XCTAssertEqual(options.styling, "semi-formal")
-        XCTAssertEqual(options.structure, "prose")
+        XCTAssertEqual(options.structure, "lists")
         XCTAssertEqual(options.context, "general")
         XCTAssertEqual(options.deadlineMs, 1_500)
         XCTAssertEqual(options.maxNewTokens, 1_024)
