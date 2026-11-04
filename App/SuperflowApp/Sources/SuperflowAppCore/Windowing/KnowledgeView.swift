@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 private enum KnowledgeSection: Hashable {
     case all, dictionary, shortcuts, learned
 
-    static let items: [Segmented<KnowledgeSection>.Item] = [
+    @MainActor static let items: [Segmented<KnowledgeSection>.Item] = [
         .init("All", value: .all),
         .init("Dictionary", value: .dictionary),
         .init("Shortcuts", value: .shortcuts),

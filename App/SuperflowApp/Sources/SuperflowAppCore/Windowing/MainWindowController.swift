@@ -3,7 +3,7 @@ import Foundation
 import SuperflowIcons
 import SwiftUI
 
-public enum AppSection: String, CaseIterable, Hashable, Identifiable {
+public enum AppSection: String, CaseIterable, Hashable, Identifiable, Sendable {
     case dashboard
     case history
     case knowledge
