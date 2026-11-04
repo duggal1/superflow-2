@@ -22,6 +22,7 @@ public final class ModelsViewModel {
     private let diarizer: (any SpeakerDiarizer)?
     private var asrRuntime: ASRRuntime
     private var asrProfile: String
+    private let onActivate: @MainActor (String) async -> Bool
     /// True until the first disk read finishes. A row must not offer Download
     /// before it knows the model is absent, or every visit looks like a re-download.
     public private(set) var isChecking = true
@@ -41,7 +42,8 @@ public final class ModelsViewModel {
                 asrProfile: String = ModelProfile.nemotron35Streaming.id,
                 enhancer: (any SpeechEnhancer)? = nil,
                 enhancementEnabled: @escaping @MainActor () -> Bool = { true },
-                cleanupEnabled: @escaping @MainActor () -> Bool = { true }) {
+                cleanupEnabled: @escaping @MainActor () -> Bool = { true },
+                onActivate: @escaping @MainActor (String) async -> Bool = { _ in false }) {
         self.enhancer = enhancer
         self.enhancementEnabled = enhancementEnabled
         self.models = models
@@ -51,6 +53,7 @@ public final class ModelsViewModel {
         self.asrRuntime = asrRuntime
         self.asrProfile = asrProfile
         self.cleanupEnabled = cleanupEnabled
+        self.onActivate = onActivate
         self.items = [
             ModelItem(id: asrProfile, kind: .speech,
                       name: ModelProfile.byID(asrProfile).displayName,
@@ -87,6 +90,29 @@ public final class ModelsViewModel {
             ?? ModelProfile.nemotron35Streaming.displayName
     }
     public var selectedASRRuntime: ASRRuntime { asrRuntime }
+
+    /// A catalog entry is not an activated ASR model. The runtime must have
+    /// verified local artifacts and the coordinator must persist the change.
+    @discardableResult
+    public func activate(_ id: String) async -> Bool {
+        guard let item = items.first(where: { $0.id == id && $0.kind == .speech }),
+              case .installed = item.state,
+              ModelProfile.byID(id).supportsLiveDictation,
+              item.installedASRRuntimes.contains(asrRuntime) else { return false }
+        if item.isActive { return true }
+        guard await onActivate(id) else { return false }
+        await updateASRSelection(runtime: asrRuntime, profile: id)
+        return true
+    }
+
+    public func matches(_ item: ModelItem, query: String) -> Bool {
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else { return true }
+        let profile = item.kind == .speech ? ModelProfile.byID(item.id) : nil
+        return [item.name, item.detail, item.kind.title, profile?.vendor ?? "",
+                profile?.language ?? "", profile?.formatLabel ?? ""]
+            .contains { $0.localizedStandardContains(needle) }
+    }
 
     public func updateASRSelection(runtime: ASRRuntime, profile: String) async {
         guard asrRuntime != runtime || asrProfile != profile else { return }
