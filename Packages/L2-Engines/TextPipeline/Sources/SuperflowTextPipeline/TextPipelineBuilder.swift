@@ -52,6 +52,7 @@ public enum TextPipelineBuilder {
             stages.append(ShortcutsStage(entries: dependencies.shortcuts))
         }
         stages.append(SpokenCodeStage())
+        stages.append(CodingLanguageStage())
         stages.append(NumbersAdapter())
         if settings.codeSpeakEnabled {
             stages.append(CodeSpeakStage())
