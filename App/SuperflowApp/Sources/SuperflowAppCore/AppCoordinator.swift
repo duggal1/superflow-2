@@ -113,6 +113,8 @@ public final class AppCoordinator: ObservableObject {
                                asrRuntime: settings.asrRuntime,
                                diarizer: environment.diarizer,
                                asrProfile: settings.asrProfile,
+                               enhancer: environment.enhancer,
+                               enhancementEnabled: { [weak self] in self?.settings.speechEnhancementEnabled ?? false },
                                cleanupEnabled: { [weak self] in self?.settings.cleanupEnabled ?? true },
                                onActivate: { [weak self] profile in
                                    guard let self, let environment = self.environment,
