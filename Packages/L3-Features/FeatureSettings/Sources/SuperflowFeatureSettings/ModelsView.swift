@@ -131,7 +131,7 @@ struct ModelCard: View {
 
     var body: some View {
         DownloadCard(title: item.name, detail: item.detail, state: item.state,
-                     totalBytes: item.bytes) {
+                     totalBytes: item.bytes > 0 ? item.bytes : nil) {
             ModelMark(kind: item.kind)
         } trailing: {
             HStack(spacing: 12) {
@@ -139,10 +139,10 @@ struct ModelCard: View {
                 case .idle where vm.isChecking:
                     // The disk has not answered yet. Offering Download here made a
                     // freshly installed model look like it needed downloading again.
-                    Text(item.bytes, format: .byteCount(style: .file))
+                    Text(item.bytes > 0 ? item.bytes.formatted(.byteCount(style: .file)) : "Size unknown")
                         .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
                 case .idle:
-                    Text(item.bytes, format: .byteCount(style: .file))
+                    Text(item.bytes > 0 ? item.bytes.formatted(.byteCount(style: .file)) : "Size unknown")
                         .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
                     AppButton("Install model", kind: .secondary) { vm.download(item.id) }
                 case .downloading, .verifying:
