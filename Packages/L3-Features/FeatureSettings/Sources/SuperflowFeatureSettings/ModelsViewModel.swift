@@ -90,8 +90,8 @@ public final class ModelsViewModel {
     /// "2 of 3 installed." — the only subtitle on the page.
     public var subtitle: String { "\(installedCount) of \(items.count) installed." }
     public var activeName: String {
-        items.first { $0.kind == .speech }?.name
-            ?? ModelProfile.nemotron35Streaming.displayName
+        items.first { $0.kind == .speech && $0.isActive }?.name
+            ?? ModelProfile.byID(asrProfile).displayName
     }
     public var selectedASRRuntime: ASRRuntime { asrRuntime }
 
@@ -122,15 +122,6 @@ public final class ModelsViewModel {
         guard asrRuntime != runtime || asrProfile != profile else { return }
         asrRuntime = runtime
         asrProfile = profile
-        if let index = items.firstIndex(where: { $0.kind == .speech }) {
-            let installedRuntimes = items[index].installedASRRuntimes
-            items[index] = ModelItem(id: profile, kind: .speech,
-                                     name: ModelProfile.byID(profile).displayName,
-                                     detail: Self.speechDetail(for: runtime,
-                                                               installedIn: installedRuntimes),
-                                     bytes: Self.speechBytes(for: runtime),
-                                     installedASRRuntimes: installedRuntimes)
-        }
         isChecking = true
         await refresh()
     }
@@ -140,17 +131,19 @@ public final class ModelsViewModel {
             syncActive()
             isChecking = false
         }
-        let installedRuntimes = await installedASRRuntimes(profileID: asrProfile)
-        if let index = items.firstIndex(where: { $0.kind == .speech }) {
-            items[index].installedASRRuntimes = installedRuntimes
-            items[index].detail = Self.speechDetail(for: asrRuntime,
-                                                     installedIn: installedRuntimes)
+        for profile in ModelProfile.streamingProfiles {
+            let runtimes = await installedASRRuntimes(profileID: profile.id)
+            if let index = items.firstIndex(where: { $0.id == profile.id && $0.kind == .speech }) {
+                items[index].installedASRRuntimes = runtimes
+                items[index].detail = profile.metadataLabel + " · " + profile.licenseName
+                    + (runtimes.isEmpty ? " · audio.cpp" : " · Installed: " +
+                        runtimes.map(\.label).joined(separator: ", "))
+            }
+            set(.installed, for: profile.id, whenIdle: !runtimes.isEmpty)
         }
-        let speech = !installedRuntimes.isEmpty
         let enhancement = await enhancer?.isAvailable() ?? false
         let cleanup = await models?.llmModelURL() != nil
         let meetings = (await diarizer?.isInstalled()) ?? false
-        set(.installed, for: asrProfile, whenIdle: speech)
         set(.installed, for: Self.enhancementID, whenIdle: enhancement)
         set(.installed, for: Self.cleanupID, whenIdle: cleanup)
         set(.installed, for: Self.meetingsID, whenIdle: meetings)
@@ -163,7 +156,8 @@ public final class ModelsViewModel {
             let onDisk = isInstalled(items[i].state)
             switch items[i].kind {
             case .speech:
-                items[i].isActive = items[i].installedASRRuntimes.contains(asrRuntime)
+                items[i].isActive = items[i].id == asrProfile
+                    && items[i].installedASRRuntimes.contains(asrRuntime)
             case .enhancement: items[i].isActive = onDisk && enhancementEnabled()
             case .cleanup: items[i].isActive = onDisk && cleanupEnabled()
             case .meetings: items[i].isActive = onDisk
@@ -266,7 +260,7 @@ public final class ModelsViewModel {
 
     private func needsInstall(_ item: ModelItem) -> Bool {
         if item.kind == .speech {
-            return !item.installedASRRuntimes.contains(asrRuntime)
+            return item.id == asrProfile && !item.installedASRRuntimes.contains(asrRuntime)
         }
         return !isInstalled(item.state)
     }
