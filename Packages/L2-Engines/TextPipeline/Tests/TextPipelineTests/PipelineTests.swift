@@ -61,7 +61,7 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
-            "cleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "numbers", "lexicon", "codeAware",
+            "cleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware",
             "lineformat", "normalize", "modelNames", "techDictionary",
         ])
     }
@@ -73,7 +73,7 @@ final class PipelineTests: XCTestCase {
         settings.harperEnabled = false
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs,
-                       ["dedupe", "format", "shortcuts", "spokenCode", "numbers", "lexicon", "codeAware", "lineformat",
+                       ["dedupe", "format", "shortcuts", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware", "lineformat",
                         "normalize", "modelNames", "techDictionary"])
     }
 
@@ -87,8 +87,8 @@ final class PipelineTests: XCTestCase {
 
         settings.codeSpeakEnabled = true
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
-        XCTAssertEqual(Array(pipeline.stageIDs.prefix(7)),
-                       ["dedupe", "format", "commands", "shortcuts", "spokenCode", "numbers", "codeSpeak"])
+        XCTAssertEqual(Array(pipeline.stageIDs.prefix(8)),
+                       ["dedupe", "format", "commands", "shortcuts", "spokenCode", "codingLanguage", "numbers", "codeSpeak"])
         let index = pipeline.stageIDs.firstIndex(of: "codeSpeak")
         XCTAssertEqual(index.map { pipeline.stageIDs[$0 + 1] }, "lexicon")
 
