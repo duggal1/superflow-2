@@ -14,6 +14,6 @@ extension SessionEngine {
         await speculative.schedule(.init(session: session, revision: revision, text: text),
                                    pipeline: pipeline,
                                    context: TextContext(interactive: true, settings: settings, project: project,
-                                                        activeAppBundleID: record?.frontmostBundleID))
+                                                        activeAppBundleID: record.frontmostBundleID))
     }
 }
