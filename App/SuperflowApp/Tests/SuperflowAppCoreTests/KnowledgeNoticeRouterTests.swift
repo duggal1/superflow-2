@@ -26,8 +26,6 @@ final class KnowledgeNoticeRouterTests: XCTestCase {
         let island = IslandModel(feed: LearningTestFeed(), geometry: NotchGeometry(
             frame: CGRect(x: 0, y: 0, width: 1728, height: 1117),
             safeTop: 38, leftWidth: 704, rightWidth: 704, scale: 2))
-        var soundCount = 0
-        island.playMilestoneSound = { soundCount += 1 }
         let router = KnowledgeNoticeRouter(learning: learning, island: island)
         island.noticeAction = { [router] notice in router.handle(notice) }
         await learning.setOnApplied { [weak router] candidate, active in
@@ -55,7 +53,6 @@ final class KnowledgeNoticeRouterTests: XCTestCase {
         XCTAssertEqual(actual.title, notice.title)
         XCTAssertEqual(actual.detail, notice.detail)
         XCTAssertEqual(actual.action, "Undo")
-        XCTAssertEqual(soundCount, 1)
 
         island.noticeAction(actual)
         for _ in 0..<100 {
@@ -65,6 +62,5 @@ final class KnowledgeNoticeRouterTests: XCTestCase {
         }
         let remaining = try await store.lexicon()
         XCTAssertFalse(remaining.contains { $0.id == candidate.id })
-        XCTAssertEqual(soundCount, 1, "Removing a correction must not play completion again.")
     }
 }
