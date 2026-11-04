@@ -67,17 +67,19 @@ enum ModelNameNormalizer {
         "gpt", "chatgpt", "released", "inference", "token", "tokens",
     ]
 
-    static func normalize(_ input: String) -> (text: String, literals: Set<String>) {
+    static func normalize(_ input: String, protected: Protected = Protected()) -> (text: String, literals: Set<String>) {
         let source = input as NSString
+        let reserved = protected.ranges(in: input).map { NSRange($0, in: input) }
         var matches: [Candidate] = []
         for family in families {
             for alias in family.aliases {
                 let phrase = NSRegularExpression.escapedPattern(for: alias)
-                    .replacingOccurrences(of: #"\ "#, with: #"\s+"#)
+                    .replacingOccurrences(of: " ", with: #"\s+"#)
                 guard let expression = try? NSRegularExpression(
                     pattern: #"(?<![\p{L}\p{N}])"# + phrase + #"(?![\p{L}\p{N}])"#,
                     options: [.caseInsensitive]) else { continue }
                 for found in expression.matches(in: input, range: NSRange(location: 0, length: source.length)) {
+                    if reserved.contains(where: { NSIntersectionRange($0, found.range).length > 0 }) { continue }
                     let version = versionTail(source, after: NSMaxRange(found.range))
                     if family.requiresVersion && version == nil { continue }
                     if family.contextual && !hasModelContext(source, range: found.range) { continue }
@@ -164,7 +166,7 @@ struct ModelNameStage: SuperflowPorts.TextStage {
     func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
         guard !draft.shortCircuit else { return draft }
         var output = draft
-        let normalized = ModelNameNormalizer.normalize(draft.text)
+        let normalized = ModelNameNormalizer.normalize(draft.text, protected: draft.protected)
         output.text = normalized.text
         output.protected.literals.formUnion(normalized.literals)
         return output
