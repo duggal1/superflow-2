@@ -38,7 +38,7 @@ struct GeneralTab: View {
 
 struct DictationTab: View {
     @Environment(\.openModels) private var openModels
-    nonisolated static let titles = ["Noise suppression", "Clean up dictation",
+    nonisolated static let titles = ["Clean up dictation",
                                      "Reflection cleanup", "Dictation key",
                                      "Show live text", "Hold to talk", "Double-tap window",
                                      "Meeting hold"]
@@ -51,7 +51,7 @@ struct DictationTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.lg) {
-            SettingsCard(titles: Array(Self.titles.prefix(3)), query: query) {
+            SettingsCard(titles: Array(Self.titles.prefix(2)), query: query) {
                 SettingRow(.cleanup, "Clean up dictation", filter: query) {
                     HStack(spacing: 12) {
                         if !model.cleanupModelInstalled && !model.settings.reflectionCleanupEnabled {
