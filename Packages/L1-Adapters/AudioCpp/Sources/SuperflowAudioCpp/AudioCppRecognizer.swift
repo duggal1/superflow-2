@@ -30,7 +30,7 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     }
     public func prepare(profileID: String, progress: @escaping @Sendable (Double) -> Void) async throws {
         let runtime = try Self.runtime(profileID, from: runtimes)
-        try await runtime.install(progress: progress)
+        try await runtime.install(progress: progress, warmAfterInstall: false)
     }
     public func warmUp(profile: String) async throws {
         let runtime = try Self.runtime(profile, from: runtimes)
