@@ -139,6 +139,7 @@ public struct ModelsView: View {
 }
 
 struct ModelCard: View {
+    @Environment(DialogHost.self) private var dialogs
     let item: ModelItem
     let vm: ModelsViewModel
 
@@ -183,7 +184,16 @@ struct ModelCard: View {
                                 Task { await vm.activate(item.id) }
                             }
                             AppButton("Remove", kind: .quiet) {
-                                Task { await vm.remove(item.id) }
+                                dialogs.present {
+                                    DialogFrame(title: "Remove \(item.name)?",
+                                                subtitle: "The downloaded model will be deleted from this Mac.",
+                                                confirmTitle: "Remove model", canConfirm: true,
+                                                onConfirm: {
+                                                    Task { await vm.remove(item.id) }
+                                                }) {
+                                        EmptyView()
+                                    }
+                                }
                             }
                         } else {
                             AppButton("Install for audio.cpp", kind: .secondary) {
