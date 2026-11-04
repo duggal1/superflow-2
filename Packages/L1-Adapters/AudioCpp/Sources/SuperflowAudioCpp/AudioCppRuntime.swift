@@ -144,6 +144,18 @@ actor AudioCppRuntime {
         return NativeHandle(session, kind: .session)
     }
 
+    /// Nemotron uses token lookahead. Qwen emits native partial deltas after
+    /// bounded decoding windows; its upstream default is 30 seconds, which
+    /// would make a dictation UI appear frozen. Keep the option family-specific.
+    private func configureRequest(_ request: OpaquePointer) throws {
+        if asset.isNemotron {
+            try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
+            try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
+        } else if asset == .qwenASR06B {
+            try Self.check(audiocpp_request_set_option(request, "audio_chunk_duration_sec", "3"))
+        }
+    }
+
     func start(source: AudioSourceKind) throws -> AudioCppStream {
         guard slots.count < 2 else { throw SuperflowError.invalidState("audio.cpp has two active speech streams") }
         try load()
@@ -155,10 +167,7 @@ actor AudioCppRuntime {
         }
         defer { audiocpp_request_free(request) }
         try Self.check(audiocpp_request_set_audio(request, nil, 0, Int32(sampleRate), 1))
-        if asset.isNemotron {
-            try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
-            try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
-        }
+        try configureRequest(request)
         try Self.check(audiocpp_stream_start(owner.pointer, request))
         let id = UUID()
         let (events, continuation) = AsyncStream<RecognitionEvent>.makeStream(bufferingPolicy: .bufferingNewest(32))
@@ -207,10 +216,7 @@ actor AudioCppRuntime {
                     }
                     defer { audiocpp_request_free(request) }
                     try Self.check(audiocpp_request_set_audio(request, nil, 0, Int32(sampleRate), 1))
-                    if asset.isNemotron {
-                        try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
-                        try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
-                    }
+                    try configureRequest(request)
                     try Self.check(audiocpp_stream_start(slot.handle.pointer, request))
                     slot.text = ""
                     slot.start = nil
