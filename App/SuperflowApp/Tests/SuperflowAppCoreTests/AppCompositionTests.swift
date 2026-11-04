@@ -107,7 +107,7 @@ final class AppCompositionTests: XCTestCase {
         let pipeline = await environment.makePipeline(settings: settings)
 
         XCTAssertEqual(pipeline.stageIDs,
-                       ["dedupe", "format", "spokenCode", "numbers", "lexicon", "codeAware", "lineformat",
+                       ["dedupe", "format", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware", "lineformat",
                         "normalize", "modelNames", "techDictionary"])
     }
 
