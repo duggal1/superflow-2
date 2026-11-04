@@ -10,7 +10,7 @@ import XCTest
 private actor InstalledASRProvider: ASRModelProvider {
     private let installed: Bool
     init(installed: Bool) { self.installed = installed }
-    func isAvailable(profileID: String) async -> Bool { installed }
+    func isAvailable(profileID: String) async -> Bool { installed && profileID == ModelProfile.default.id }
     func prepare(profileID: String, progress: @escaping @Sendable (Double) -> Void) async throws {
         progress(1)
     }
@@ -72,7 +72,7 @@ final class ModelsViewTests: XCTestCase {
         XCTAssertEqual(cleanup.state, .installed)
         XCTAssertTrue(cleanup.isActive, "Cleanup runs on every dictation unless the owner turns it off.")
         XCTAssertEqual(vm.installedCount, 3)
-        XCTAssertEqual(vm.missingCount, 1)
+        XCTAssertEqual(vm.missingCount, 3)
     }
 
     /// Turning cleanup off in Settings leaves the model on disk; only its `Active`
