@@ -71,7 +71,7 @@ private actor CatalogASRProvider: ASRModelRemoving {
 
 @MainActor
 final class ModelsViewTests: XCTestCase {
-    func testThreeStreamingRowsAreIndependent() async throws {
+    func testFourStreamingRowsAreIndependent() async throws {
         let provider = CatalogASRProvider(installedIDs: [
             ModelProfile.default.id, ModelProfile.qwen3ASR06B.id,
         ])
@@ -79,7 +79,7 @@ final class ModelsViewTests: XCTestCase {
                                  asrModelsByRuntime: [.audioCpp: provider])
         await vm.refresh()
         let speech = vm.items.filter { $0.kind == .speech }
-        XCTAssertEqual(speech.count, 3)
+        XCTAssertEqual(speech.count, 4)
         XCTAssertEqual(speech.filter(\.isActive).map(\.id), [ModelProfile.default.id])
         XCTAssertEqual(speech.filter { $0.state == .installed }.count, 2)
         XCTAssertEqual(speech.first { $0.id == ModelProfile.voxtralRealtime.id }?.state, .idle)
@@ -163,7 +163,7 @@ final class ModelsViewTests: XCTestCase {
         XCTAssertEqual(cleanup.state, .installed)
         XCTAssertTrue(cleanup.isActive, "Cleanup runs on every dictation unless the owner turns it off.")
         XCTAssertEqual(vm.installedCount, 3)
-        XCTAssertEqual(vm.missingCount, 3)
+        XCTAssertEqual(vm.missingCount, 4)
     }
 
     /// Turning cleanup off in Settings leaves the model on disk; only its `Active`
