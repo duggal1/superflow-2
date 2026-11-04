@@ -108,7 +108,7 @@ final class AppCompositionTests: XCTestCase {
 
         XCTAssertEqual(pipeline.stageIDs,
                        ["dedupe", "format", "spokenCode", "numbers", "lexicon", "codeAware", "lineformat",
-                        "normalize", "techDictionary"])
+                        "normalize", "modelNames", "techDictionary"])
     }
 
     @MainActor
