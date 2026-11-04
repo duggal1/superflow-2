@@ -76,6 +76,6 @@ final class ModelNameGrammarTests: XCTestCase {
 
     func testPipelineRunsGrammarBeforeTechDictionary() {
         let pipeline = TextPipelineBuilder.make(settings: .default)
-        XCTAssertEqual(pipeline.stageIDs.suffix(2), ["modelNames", "techDictionary"])
+        XCTAssertEqual(Array(pipeline.stageIDs.suffix(2)), ["modelNames", "techDictionary"])
     }
 }
