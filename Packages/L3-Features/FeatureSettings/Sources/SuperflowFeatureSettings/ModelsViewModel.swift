@@ -102,10 +102,10 @@ public final class ModelsViewModel {
         guard let item = items.first(where: { $0.id == id && $0.kind == .speech }),
               case .installed = item.state,
               ModelProfile.byID(id).supportsLiveDictation,
-              item.installedASRRuntimes.contains(asrRuntime) else { return false }
+              item.installedASRRuntimes.contains(.audioCpp) else { return false }
         if item.isActive { return true }
         guard await onActivate(id) else { return false }
-        await updateASRSelection(runtime: asrRuntime, profile: id)
+        await updateASRSelection(runtime: .audioCpp, profile: id)
         return true
     }
 
@@ -181,9 +181,10 @@ public final class ModelsViewModel {
         let token = UUID()
         tokens[id] = token
         setState(.downloading(0), for: id)
-        let asrModels = selectedASRModels
-        let asrProfile = self.asrProfile
-        let asrRuntime = self.asrRuntime
+        // All additional families run through the native audio.cpp backend.
+        let asrModels = asrModelsByRuntime[.audioCpp] ?? selectedASRModels
+        let asrProfile = item.kind == .speech ? item.id : self.asrProfile
+        let asrRuntime: ASRRuntime = .audioCpp
 
         downloadTasks[id] = Task { @MainActor in
             defer {
@@ -260,7 +261,7 @@ public final class ModelsViewModel {
 
     private func needsInstall(_ item: ModelItem) -> Bool {
         if item.kind == .speech {
-            return item.id == asrProfile && !item.installedASRRuntimes.contains(asrRuntime)
+            return item.id == asrProfile && !item.installedASRRuntimes.contains(.audioCpp)
         }
         return !isInstalled(item.state)
     }
