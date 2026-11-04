@@ -10,7 +10,9 @@ let package = Package(
     dependencies: [
         .package(path: "../../L0-Core/Ports"),
         .package(path: "../../L0-Core/Kernel"),
-        .package(url: "https://github.com/kylehowells/DeepFilterNet-mlx", branch: "master"),
+        .package(url: "https://github.com/kylehowells/DeepFilterNet-mlx", revision: "c6c4b9dc98c62bfa90ed66c5fd4f5d54e88c7b4f"),
+        // Match DeepFilterNet's lockfile: later MLX releases require Sendable captures.
+        .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.30.6"),
     ],
     targets: [
         .target(
