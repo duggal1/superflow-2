@@ -22,6 +22,10 @@ public enum SpokenEnumerationShaper {
         let ns = line as NSString
         let markers = pattern.matches(in: line, range: NSRange(location: 0, length: ns.length))
         guard markers.count >= 2, markers.count <= 10 else { return line }
+        if markers.count == 2, !markers.contains(where: { marker in
+            let end = NSMaxRange(marker.range)
+            return end < ns.length && [",", ":"].contains(ns.substring(with: NSRange(location: end, length: 1)))
+        }) { return line }
 
         for (index, marker) in markers.enumerated() {
             guard ordinals.firstIndex(of: ns.substring(with: marker.range).lowercased()) == index else {
