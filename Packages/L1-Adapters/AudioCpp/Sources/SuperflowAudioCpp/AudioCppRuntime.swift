@@ -117,7 +117,7 @@ actor AudioCppRuntime {
     func prime() throws {
         try load()
         if idle.isEmpty && slots.isEmpty {
-            let stream = try start(source: asset == .speech ? .mic : .system)
+            let stream = try start(source: asset.isSpeech ? .mic : .system)
             close(id: stream.id)
             guard !idle.isEmpty else { throw SuperflowError.modelUnavailable("audio.cpp session preparation failed") }
         }
@@ -154,7 +154,7 @@ actor AudioCppRuntime {
         }
         defer { audiocpp_request_free(request) }
         try Self.check(audiocpp_request_set_audio(request, nil, 0, Int32(sampleRate), 1))
-        if asset == .speech {
+        if asset.isNemotron {
             try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
             try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
         }
@@ -192,7 +192,7 @@ actor AudioCppRuntime {
                 consume(audiocpp_event_as_result(next), slot: &slot)
                 audiocpp_event_free(next)
             }
-            if asset == .speech {
+            if asset.isSpeech {
                 let sum = chunk.samples.reduce(Float.zero) { $0 + $1 * $1 }
                 let speech = !chunk.samples.isEmpty && (sum / Float(chunk.samples.count)).squareRoot() >= 0.0025
                 slot.silenceSamples = speech ? 0 : slot.silenceSamples + chunk.samples.count
@@ -206,8 +206,10 @@ actor AudioCppRuntime {
                     }
                     defer { audiocpp_request_free(request) }
                     try Self.check(audiocpp_request_set_audio(request, nil, 0, Int32(sampleRate), 1))
-                    try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
-                    try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
+                    if asset.isNemotron {
+                        try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
+                        try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
+                    }
                     try Self.check(audiocpp_stream_start(slot.handle.pointer, request))
                     slot.text = ""
                     slot.start = nil
@@ -225,7 +227,7 @@ actor AudioCppRuntime {
         guard var slot = slots[id] else { return }
         defer { close(id: id) }
         do {
-            if asset == .speech {
+            if asset.isSpeech {
                 try finalizeSpeech(&slot)
             } else {
                 var result: OpaquePointer?
@@ -277,7 +279,7 @@ actor AudioCppRuntime {
     private func consume(_ result: OpaquePointer?, slot: inout Slot) {
         collectSpeakers(result)
         var text: UnsafePointer<CChar>?
-        if audiocpp_result_text(result, &text, nil) == AUDIOCPP_OK, let text, asset == .speech {
+        if audiocpp_result_text(result, &text, nil) == AUDIOCPP_OK, let text, asset.isSpeech {
             slot.text += String(cString: text)
             emit(.partial(slot.text), to: slot)
         }
