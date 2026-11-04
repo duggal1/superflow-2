@@ -140,10 +140,10 @@ public struct MainWindowRootView: View {
             }
         case .history:
             if let model = coordinator.historyModel { HistoryView(model: model) }
-        case .dictionary:
-            if let model = coordinator.dictionaryModel { DictionaryView(model: model) }
-        case .shortcuts:
-            if let model = coordinator.shortcutsModel { ShortcutsView(model: model) }
+        case .knowledge, .dictionary, .shortcuts:
+            if let terms = coordinator.dictionaryModel, let shortcuts = coordinator.shortcutsModel {
+                KnowledgeView(dictionary: terms, shortcuts: shortcuts)
+            }
         case .meetings:
             if let model = coordinator.meetingsModel { MeetingsView(model: model) }
         case .models:
