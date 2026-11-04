@@ -164,12 +164,12 @@ struct ModelCard: View {
                     } else if item.kind == .speech {
                         let runtimes = item.installedASRRuntimes.map(\.label).joined(separator: ", ")
                         PixelBadge("Installed · \(runtimes)", kind: .installed)
-                        if item.installedASRRuntimes.contains(vm.selectedASRRuntime) {
+                        if item.installedASRRuntimes.contains(.audioCpp) {
                             AppButton("Use model", kind: .secondary) {
                                 Task { await vm.activate(item.id) }
                             }
                         } else {
-                            AppButton("Install for \(vm.selectedASRRuntime.label)", kind: .secondary) {
+                            AppButton("Install for audio.cpp", kind: .secondary) {
                                 vm.download(item.id)
                             }
                         }
