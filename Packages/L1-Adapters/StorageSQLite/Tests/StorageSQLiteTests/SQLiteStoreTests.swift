@@ -295,6 +295,68 @@ final class SQLiteStoreTests: XCTestCase {
         XCTAssertFalse(files.contains { $0.contains("Superflow-corrupt") })
     }
 
+
+    func testLearningCandidateAndContextualMetadataSurviveRestart() async throws {
+        let file = directory.appendingPathComponent("learning.sqlite")
+        var database: SQLiteStore? = try SQLiteStore(path: file.path)
+        let now = Date(timeIntervalSince1970: 1_750_000_000)
+        let rule = LexiconEntry(id: "learned-1", kind: .correction,
+                                triggers: ["item potency"], canonical: "idempotency",
+                                appScope: "com.microsoft.VSCode",
+                                heardForms: ["item potency"], phoneticKey: "a1",
+                                learnedFrom: "user-edit", confidence: 0.94,
+                                confirmationCount: 2, hitCount: 5,
+                                createdAt: now, updatedAt: now)
+        try await database!.saveLexicon(rule)
+        let candidate = LearningCandidate(id: "candidate-1", heard: "item potency",
+                                          canonical: "idempotency",
+                                          appScope: "com.microsoft.VSCode",
+                                          confidence: 0.94, observations: 2,
+                                          state: .confirmed, createdAt: now, updatedAt: now)
+        try await database!.saveLearningCandidate(candidate)
+        database = nil
+        let reopened = try SQLiteStore(path: file.path)
+        let loaded = try await reopened.lexicon()
+        let match = try XCTUnwrap(loaded.first { $0.id == rule.id })
+        XCTAssertEqual(match.appScope, rule.appScope)
+        XCTAssertEqual(match.heardForms, rule.heardForms)
+        XCTAssertEqual(match.phoneticKey, rule.phoneticKey)
+        XCTAssertEqual(match.learnedFrom, rule.learnedFrom)
+        XCTAssertEqual(match.confidence, rule.confidence)
+        XCTAssertEqual(match.confirmationCount, rule.confirmationCount)
+        XCTAssertEqual(match.hitCount, rule.hitCount)
+        XCTAssertEqual(match.createdAt, rule.createdAt)
+        XCTAssertEqual(match.updatedAt, rule.updatedAt)
+        XCTAssertEqual(try await reopened.learningCandidates(), [candidate])
+        try await reopened.deleteLearningCandidate(id: candidate.id)
+        XCTAssertTrue(try await reopened.learningCandidates().isEmpty)
+    }
+
+    func testLegacyLexiconMigrationPreservesRowsAndAllowsScopedRules() async throws {
+        let file = directory.appendingPathComponent("legacy-lexicon.sqlite")
+        do {
+            let connection = try SQLiteConnection(path: file.path)
+            try connection.execute(Schema.v1)
+            try connection.setUserVersion(1)
+            try connection.execute("""
+                INSERT INTO lexicon_entries
+                (id, kind, triggers, canonical, enabled, source)
+                VALUES ('legacy', 'term', '["next js"]', 'Next.js', 1, 'user')
+                """)
+        }
+        let migrated = try SQLiteStore(path: file.path)
+        let existing = try await migrated.lexicon()
+        XCTAssertEqual(existing.count, 1)
+        XCTAssertEqual(existing.first?.id, "legacy")
+        XCTAssertEqual(existing.first?.canonical, "Next.js")
+        XCTAssertNil(existing.first?.appScope)
+        XCTAssertNil(existing.first?.confidence)
+        let new = LexiconEntry(kind: .correction, triggers: ["next year"],
+                               canonical: "Next.js", appScope: "com.apple.TextEdit")
+        try await migrated.saveLexicon(new)
+        XCTAssertEqual(try await migrated.lexicon().count, 2)
+    }
+
     func testMigrationsAreIdempotent() async throws {
         let path = directory.appendingPathComponent("migrate.sqlite").path
         _ = try SQLiteStore(path: path)
