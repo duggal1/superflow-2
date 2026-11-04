@@ -3,6 +3,7 @@ import SuperflowAudioCpp
 import SuperflowAudioCapture
 import SuperflowAudioJournal
 import SuperflowDiagnostics
+import SuperflowEnhancementDeepFilterNet
 import SuperflowHotkeyEngine
 import SuperflowInferenceHelperProtocol
 import SuperflowKernel
@@ -29,6 +30,7 @@ public final class AppEnvironment {
     public let settingsStore: any SettingsStore
     public let modelProvider: ModelStore
     public let recognizer: AudioCppRecognizer
+    public let enhancer: DeepFilterNetEnhancer
     public let diarizer: AudioCppDiarizer
     public let llamaRuntime: XPCInferenceHelperRuntime
     public let llamaCleaner: LlamaCleaner
@@ -80,6 +82,8 @@ public final class AppEnvironment {
         )
         let llamaRuntime = XPCInferenceHelperRuntime()
         let llamaCleaner = LlamaCleaner(modelProvider: modelProvider, runtime: llamaRuntime)
+        let enhancer = DeepFilterNetEnhancer(
+            directory: supportDirectory.appendingPathComponent("Models/DeepFilterNet3", isDirectory: true))
         let microphone = MicrophoneCapture()
         let systemAudio = SystemAudioCapture()
         let journalStore = FileJournalStore(
@@ -97,6 +101,7 @@ public final class AppEnvironment {
         settingsStore = database
         self.modelProvider = modelProvider
         self.recognizer = recognizer
+        self.enhancer = enhancer
         self.diarizer = diarizer
         self.llamaRuntime = llamaRuntime
         self.llamaCleaner = llamaCleaner
@@ -122,6 +127,7 @@ public final class AppEnvironment {
             journals: journalStore,
             inserter: textInserter,
             archive: audioArchive,
+            enhancer: enhancer,
             metrics: metrics,
             speculativeCleanupEnabled: ProcessInfo.processInfo.environment["SUPERFLOW_SPECULATIVE_CLEANUP"] == "1"
         )
