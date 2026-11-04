@@ -8,6 +8,7 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     /// installed files or reuse a session from an incompatible family.
     private let runtimes: [String: AudioCppRuntime]
     private var currentProfile = ModelProfile.default.id
+    private var startingProfile: String?
 
     public init(modelCacheRoot: URL? = nil, fileManager: FileManager = .default) {
         let root = modelCacheRoot ?? Self.defaultRoot(fileManager)
@@ -54,6 +55,11 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     }
     public func makeStream(profile: String, source: AudioSourceKind) async throws -> any RecognitionStream {
         let runtime = try Self.runtime(profile, from: runtimes)
+        guard startingProfile == nil || startingProfile == profile else {
+            throw SuperflowError.invalidState("Another ASR family is starting")
+        }
+        startingProfile = profile
+        defer { startingProfile = nil }
         for (id, other) in runtimes where id != profile {
             if await other.hasActiveStreams() {
                 throw SuperflowError.invalidState("Cannot mix streaming ASR model families")
