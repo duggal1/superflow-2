@@ -141,8 +141,34 @@ public struct MainWindowRootView: View {
         case .history:
             if let model = coordinator.historyModel { HistoryView(model: model) }
         case .knowledge, .dictionary, .shortcuts:
-            if let terms = coordinator.dictionaryModel, let shortcuts = coordinator.shortcutsModel {
-                KnowledgeView(dictionary: terms, shortcuts: shortcuts)
+            if let terms = coordinator.dictionaryModel, let shortcuts = coordinator.shortcutsModel,
+               let environment = coordinator.environment {
+                KnowledgeView(
+                    dictionary: terms, shortcuts: shortcuts,
+                    learning: environment.learningEngine,
+                    learningEnabled: Binding(
+                        get: { coordinator.settings.learningEnabled },
+                        set: { enabled in
+                            Task { @MainActor in
+                                var updated = coordinator.settings
+                                updated.learningEnabled = enabled
+                                if !enabled { updated.autoLearnEnabled = false }
+                                await coordinator.applySettings(updated)
+                                await environment.settingsStore.save(updated)
+                            }
+                        }),
+                    autoLearnEnabled: Binding(
+                        get: { coordinator.settings.autoLearnEnabled },
+                        set: { enabled in
+                            Task { @MainActor in
+                                var updated = coordinator.settings
+                                updated.autoLearnEnabled = enabled && updated.learningEnabled
+                                await coordinator.applySettings(updated)
+                                await environment.settingsStore.save(updated)
+                            }
+                        }),
+                    onLearningChange: { await coordinator.refreshPipeline() }
+                )
             }
         case .meetings:
             if let model = coordinator.meetingsModel { MeetingsView(model: model) }
