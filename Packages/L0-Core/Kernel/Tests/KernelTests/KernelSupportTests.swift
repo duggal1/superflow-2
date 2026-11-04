@@ -160,7 +160,8 @@ final class KernelSupportTests: XCTestCase {
     }
 
     func testNVIDIAProfilesExposeOnlyTheSupportedStreamingModel() {
-        XCTAssertEqual(ModelProfile.all, [.nemotron35Streaming])
+        XCTAssertEqual(ModelProfile.all, [.nemotron35Streaming, .moonshineTiny, .moonshineSmall, .qwen3ASR06B])
+        XCTAssertEqual(ModelProfile.all.filter { $0.vendor == "NVIDIA" }, [.nemotron35Streaming])
         XCTAssertEqual(ModelProfile.default.upstreamRepo, "nvidia/nemotron-3.5-asr-streaming-0.6b")
         XCTAssertTrue(ModelProfile.default.supportsLiveDictation)
         XCTAssertEqual(ModelProfile.default.formatLabel, "Streaming")
