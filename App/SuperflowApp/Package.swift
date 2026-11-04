@@ -101,6 +101,7 @@ let package = Package(
                 "SuperflowAppCore",
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "SuperflowStorageSQLite", package: "StorageSQLite"),
+                .product(name: "SuperflowFeatureIsland", package: "FeatureIsland"),
                 .product(name: "SuperflowTestKit", package: "TestKit"),
                 .product(name: "SuperflowTextCleanup", package: "TextCleanup"),
                 .product(name: "SuperflowTextPipeline", package: "TextPipeline"),
