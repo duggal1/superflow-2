@@ -21,6 +21,7 @@ let package = Package(
                 .product(name: "SuperflowPorts", package: "Ports"),
                 .product(name: "SuperflowKernel", package: "Kernel"),
                 .product(name: "DeepFilterNetCoreML", package: "DeepFilterNet-mlx"),
+                .product(name: "MLX", package: "mlx-swift"),
             ]
         ),
         .testTarget(
