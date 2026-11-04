@@ -13,6 +13,12 @@ public protocol ASRModelProvider: Sendable {
     func prepare(profileID: String, progress: @escaping @Sendable (Double) -> Void) async throws
 }
 
+/// Optional destructive capability. Most providers only need to install
+/// models; removal is exposed only by adapters that can prove safe isolation.
+public protocol ASRModelRemoving: ASRModelProvider {
+    func remove(profileID: String) async throws
+}
+
 public protocol SpeechRecognizer: ASRModelProvider, Sendable {
     var isReady: Bool { get async }
     /// True when this exact profile is resident and can stream immediately.
