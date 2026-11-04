@@ -25,7 +25,7 @@ final class ASRBenchmarkTests: XCTestCase {
         XCTAssertEqual(result.numberAccuracy, 1)
         XCTAssertEqual(result.nameAccuracy, 1)
         XCTAssertEqual(result.sampleCount, 4)
-        XCTAssertEqual(result.referenceWordCount, 8)
+        XCTAssertEqual(result.referenceWordCount, 9)
     }
 
     func testSubstitutionReducesWordAccuracyWithoutClampingRawWER() throws {
@@ -33,8 +33,8 @@ final class ASRBenchmarkTests: XCTestCase {
         samples[0] = .init(category: .general, reference: "the door is open",
                            transcript: "the door is closed")
         let result = try XCTUnwrap(ASRBenchmarkEvaluator.evaluate(samples, measurement: measurement()))
-        XCTAssertEqual(result.wordErrorRate, 1.0 / 8.0, accuracy: 0.00001)
-        XCTAssertEqual(result.intelligenceScore, 95, accuracy: 0.00001)
+        XCTAssertEqual(result.wordErrorRate, 1.0 / 9.0, accuracy: 0.00001)
+        XCTAssertEqual(result.intelligenceScore, 100 - (40.0 / 9.0), accuracy: 0.00001)
 
         samples[0] = .init(category: .general, reference: "door",
                            transcript: "an extra sequence with many invented words")
