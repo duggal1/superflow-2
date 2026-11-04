@@ -4,9 +4,10 @@ import SuperflowAudioCpp
 import SuperflowKernel
 
 @Test func metalStreamingProducesAndFinalizesSpeech() async throws {
-    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        .appendingPathComponent("../../../..", isDirectory: true).standardizedFileURL
+    let root = AudioCppTestModels.repositoryRoot
     let models = root.appendingPathComponent(".models/audio-cpp")
+    try await AudioCppTestModels.shared.prepareSpeech()
+    try await AudioCppTestModels.shared.prepareSpeakers()
     let fixture = root.appendingPathComponent("ThirdParty/audio.cpp/tests/parakeet_tdt/assets/2086-149220-0033.wav")
     let data = try Data(contentsOf: fixture)
     var offset = 12

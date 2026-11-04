@@ -10,8 +10,8 @@ private actor FirstPartial {
 }
 
 @Test func firstPartialArrivesDuringPacedShortAudio() async throws {
-    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        .appendingPathComponent("../../../..", isDirectory: true).standardizedFileURL
+    let root = AudioCppTestModels.repositoryRoot
+    try await AudioCppTestModels.shared.prepareSpeech()
     let audio = try AVAudioFile(forReading: root.appendingPathComponent(
         "ThirdParty/audio.cpp/tests/parakeet_tdt/assets/2086-149220-0033.wav"))
     let format = audio.processingFormat

@@ -14,6 +14,7 @@ Remove the L1-to-L1 dependency without weakening dependency checks or changing d
 - Fix the seven existing `lint-forbidden` blockers exposed once `deps-check` passes.
 - Build the pinned audio.cpp native library before Swift tests and app linking.
 - Make the native build script check out its declared audio.cpp commit before compiling.
+- Have audio.cpp integration tests install checksum-verified model assets through the production model API.
 - Record the confirmed CI issue and verification in `issue.md`.
 
 ## Verification

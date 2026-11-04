@@ -540,11 +540,11 @@ DeepFilterNet output reached VAD, ASR and the enhanced archive without gain adju
 
 Verification: enhanced output targets 1.32× gain and applies a 0.98 peak ceiling. The raw journal remains before enhancement; gain and clipping regression passes.
 
-## GitHub verification rejects the ASR downloader dependency
+## GitHub verification fails across ASR adapter and native tests
 
-ASRSherpaOnnx depended on the sibling L1 ModelStore package for a downloader protocol.
+CI verification failed on an invalid layer dependency, native build order, stale assertions and absent model fixtures.
 
 - [x] Unresolved
 - [ ] Resolved
 
-Evidence: dependency and forbidden-pattern checks pass; GitHub exposed the native link prerequisite and a build script that never checked out its declared audio.cpp pin. Both are fixed; full verification is pending.
+Evidence: CI exposed the native link prerequisite, an unchecked audio.cpp pin, stale test expectations and missing model fixtures. Build ordering, pin checkout and expectations are fixed; integration tests now install checksum-verified assets through production APIs. Full verification is pending.
