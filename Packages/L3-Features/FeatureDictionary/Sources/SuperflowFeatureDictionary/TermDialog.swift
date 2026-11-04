@@ -52,7 +52,7 @@ public struct TermDialog: View {
                                                  triggers: [trimmedSay],
                                                  canonical: result.trimmingCharacters(in: .whitespacesAndNewlines),
                                                  enabled: existing?.enabled ?? true,
-                                                 source: .user)
+                                                 source: .user, original: existing)
                         if kind == .term { draft.canonical = trimmedSay }
                         onSave(draft)
                     }) {
