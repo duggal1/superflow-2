@@ -288,6 +288,14 @@ actor AudioCppRuntime {
         return turns.last { $0.start <= sample && sample < $0.end }?.label
     }
     func resetSpeakers() { turns.removeAll(keepingCapacity: true) }
+    /// Release only GPU resident state on a model switch. Model downloads are
+    /// independent of selection and must not be cancelled by a different row.
+    func unloadResident() {
+        guard slots.isEmpty else { return }
+        idle.removeAll()
+        model = nil
+    }
+
     func unload() {
         generation &+= 1
         for id in Array(slots.keys) { close(id: id) }
