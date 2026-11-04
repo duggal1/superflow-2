@@ -54,6 +54,7 @@ public struct IslandUndo: Equatable, Sendable {
 public struct IslandNotice: Equatable, Sendable {
     public enum Kind: Equatable, Sendable {
         case milestone
+        case knowledge
         case streak
         case modelReady
         case update
