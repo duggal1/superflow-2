@@ -74,7 +74,8 @@ actor AudioCppRuntime {
     }
 
 
-    func install(progress: @escaping @Sendable (Double) -> Void) async throws {
+    func install(progress: @escaping @Sendable (Double) -> Void,
+                 warmAfterInstall: Bool = true) async throws {
         progress(0)
         let startedGeneration = generation
         if !isInstalled() {
@@ -101,7 +102,7 @@ actor AudioCppRuntime {
             }
         }
         guard generation == startedGeneration else { throw CancellationError() }
-        try prime()
+        if warmAfterInstall { try prime() }
         progress(1)
     }
 
