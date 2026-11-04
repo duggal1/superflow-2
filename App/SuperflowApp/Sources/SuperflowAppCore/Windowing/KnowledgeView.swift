@@ -59,8 +59,9 @@ struct KnowledgeView: View {
             if showShortcuts, !phrases.isEmpty {
                 shortcutsGroup
             }
-            if (showDictionary && lexicon.isEmpty)
-                && (showShortcuts && phrases.isEmpty) {
+            if (!showDictionary || lexicon.isEmpty)
+                && (!showShortcuts || phrases.isEmpty)
+                && !dictionary.isLoading && !shortcuts.isLoading {
                 EmptyState("Nothing here yet.",
                            message: "Add a term or a shortcut to get started.")
                     .frame(minHeight: 320)
