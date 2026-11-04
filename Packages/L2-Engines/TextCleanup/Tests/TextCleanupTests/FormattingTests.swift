@@ -133,7 +133,7 @@ final class SpokenEnumerationShaperTests: XCTestCase {
     func testDictatedOrdinalsBecomeNumberedLines() {
         let input = "First fix the authentication bug, second run all the tests, third push the changes."
         XCTAssertEqual(SpokenEnumerationShaper.apply(input),
-                       "1. fix the authentication bug,\\n2. run all the tests,\\n3. push the changes.")
+                       "1. fix the authentication bug,\n2. run all the tests,\n3. push the changes.")
     }
 
     func testKeepsProseAndFormattedListsIntact() {
@@ -141,22 +141,22 @@ final class SpokenEnumerationShaperTests: XCTestCase {
             "I met him for the first time, and the second attempt was better.",
             "First I went to work, second I went home.",
             "First. Third. Fifth.",
-            "1. fix the bug\\n2. run the tests",
+            "1. fix the bug\n2. run the tests",
         ] {
             XCTAssertEqual(SpokenEnumerationShaper.apply(text), text, text)
         }
     }
 
     func testS1MiniFormattedListIsStable() {
-        let list = "1. fix the bug\\n2. run the tests\\n3. deploy the fix"
+        let list = "1. fix the bug\n2. run the tests\n3. deploy the fix"
         XCTAssertEqual(SpokenEnumerationShaper.apply(list), list)
     }
 
     func testFormattingStageUsesExplicitOrdinals() async {
         let input = "First fix the authentication bug, second run all the tests, third push the changes."
         let result = await FormattingStage().apply(TranscriptDraft(text: input), context: TextContext())
-        XCTAssertTrue(result.text.contains("\\n2. run all the tests"), result.text)
-        XCTAssertTrue(result.text.contains("\\n3. push the changes"), result.text)
+        XCTAssertTrue(result.text.contains("\n2. run all the tests"), result.text)
+        XCTAssertTrue(result.text.contains("\n3. push the changes"), result.text)
     }
 }
 
