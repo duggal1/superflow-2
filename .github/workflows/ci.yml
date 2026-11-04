@@ -23,4 +23,8 @@ jobs:
           if ! command -v rg >/dev/null 2>&1; then brew install ripgrep; fi
           command -v rg
       - name: Verify packages, tests, and architecture rules
+        env:
+          # Hosted runners cannot reliably execute the full GGML Metal graph.
+          # Keep the real streaming inference test, but run its CPU backend.
+          SUPERFLOW_AUDIOCPP_BACKEND: cpu
         run: make verify
