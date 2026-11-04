@@ -7,6 +7,8 @@ import Foundation
 public protocol InsertionTarget: AnyObject, Sendable {
     /// Number of UTF-16 units in the field, when the app exposes it.
     func characterCount() -> Int?
+    /// Count obtained without fetching the entire field value.
+    func boundedCharacterCount() -> Int?
     /// The whole field value when the app exposes it. The primary verification
     /// signal, because it survives auto-formatting better than a count.
     func textValue() -> String?
@@ -18,7 +20,13 @@ public protocol InsertionTarget: AnyObject, Sendable {
     func insertSelectedText(_ text: String) -> Bool
 }
 
-/// Thin, main-actor-confined wrapper around one `AXUIElement`.
+public extension InsertionTarget {
+    /// Test doubles may expose a known count directly; the production AX
+    /// implementation overrides this to avoid whole-value fallback reads.
+    func boundedCharacterCount() -> Int? { characterCount() }
+}
+
+/// Thin, main-actor-confined wrapper around one AXUIElement.
 @MainActor
 public final class AXTextTarget: InsertionTarget {
     private let element: AXUIElement
@@ -28,10 +36,12 @@ public final class AXTextTarget: InsertionTarget {
         AXUIElementSetMessagingTimeout(element, 0.3)
     }
 
+    public func boundedCharacterCount() -> Int? {
+        (AXAttributes.attribute(element, kAXNumberOfCharactersAttribute) as? NSNumber)?.intValue
+    }
+
     public func characterCount() -> Int? {
-        if let number = AXAttributes.attribute(element, kAXNumberOfCharactersAttribute) as? NSNumber {
-            return number.intValue
-        }
+        if let count = boundedCharacterCount() { return count }
         // Text views that do not expose a character count still expose their value.
         if let value = AXAttributes.string(element, kAXValueAttribute) {
             return value.utf16.count
