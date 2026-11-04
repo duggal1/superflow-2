@@ -49,6 +49,11 @@ public func shapeOutput(_ cleaned: String, config: FormatConfig,
                         counters: inout FormatCounters) -> String {
     var text = cleaned
     if config.lists, !text.contains("```"), !text.contains("~~~") {
+        let spoken = SpokenEnumerationShaper.apply(text)
+        if spoken != text {
+            text = spoken
+            counters.listsFormatted += 1
+        }
         let shaped = ListShaper.apply(text, options: config.listOptions)
         if FormatGuard.preserves(text, shaped) {
             if shaped != text { counters.listsFormatted += 1 }

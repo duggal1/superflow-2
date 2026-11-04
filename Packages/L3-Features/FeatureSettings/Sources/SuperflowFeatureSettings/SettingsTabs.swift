@@ -38,7 +38,7 @@ struct GeneralTab: View {
 
 struct DictationTab: View {
     @Environment(\.openModels) private var openModels
-    nonisolated static let titles = ["Speech model", "Noise suppression", "Clean up dictation",
+    nonisolated static let titles = ["Clean up dictation",
                                      "Reflection cleanup", "Dictation key",
                                      "Show live text", "Hold to talk", "Double-tap window",
                                      "Meeting hold"]
@@ -51,21 +51,7 @@ struct DictationTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.lg) {
-            SettingsCard(titles: Array(Self.titles.prefix(4)), query: query) {
-                SettingRow(.speechModel, "Speech model", filter: query) {
-                    HStack(spacing: 8) {
-                        if !model.asrReady {
-                            AppButton("Get model", kind: .quiet, height: 28) { openModels() }
-                        }
-                        Dropdown(selection: Binding(
-                                    get: { model.settings.asrProfile },
-                                    set: { model.setProfile($0) }),
-                                 options: model.profileOptions.map {
-                                     .init(value: $0, title: model.profileName($0), leading: { AnyView(NVIDIAIcon(width: 16)) })
-                                 },
-                                 label: "Speech model")
-                    }
-                }
+            SettingsCard(titles: Array(Self.titles.prefix(2)), query: query) {
                 SettingRow(.cleanup, "Clean up dictation", filter: query) {
                     HStack(spacing: 12) {
                         if !model.cleanupModelInstalled && !model.settings.reflectionCleanupEnabled {
