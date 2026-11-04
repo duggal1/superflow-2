@@ -3,38 +3,70 @@ import SuperflowKernel
 import SuperflowPorts
 
 public actor AudioCppRecognizer: SpeechRecognizer {
-    private let runtime: AudioCppRuntime
+    /// Each family owns its own immutable model, stream handles and verified
+    /// artifact. Selecting another profile must never overwrite Nemotron's
+    /// installed files or reuse a session from an incompatible family.
+    private let runtimes: [String: AudioCppRuntime]
+    private var currentProfile = ModelProfile.default.id
 
     public init(modelCacheRoot: URL? = nil, fileManager: FileManager = .default) {
-        runtime = AudioCppRuntime(asset: .speech, root: modelCacheRoot ?? Self.defaultRoot(fileManager))
+        let root = modelCacheRoot ?? Self.defaultRoot(fileManager)
+        runtimes = Dictionary(uniqueKeysWithValues: ModelProfile.streamingProfiles.compactMap { profile in
+            guard let asset = AudioCppAsset(speechProfileID: profile.id) else { return nil }
+            return (profile.id, AudioCppRuntime(asset: asset, root: root))
+        })
     }
-    public var isReady: Bool { get async { await runtime.isReady } }
+
+    public var isReady: Bool {
+        get async { await runtimes[currentProfile]?.isReady ?? false }
+    }
     public func isPrepared(profile: String) async -> Bool {
-        guard Self.supports(profile) else { return false }
+        guard let runtime = runtimes[profile] else { return false }
         return await runtime.isReady
     }
     public func isAvailable(profileID: String) async -> Bool {
-        guard Self.supports(profileID) else { return false }
+        guard let runtime = runtimes[profileID] else { return false }
         return await runtime.isInstalled()
     }
     public func prepare(profileID: String, progress: @escaping @Sendable (Double) -> Void) async throws {
-        try Self.validate(profileID)
+        let runtime = try Self.runtime(profileID, from: runtimes)
         try await runtime.install(progress: progress)
     }
     public func warmUp(profile: String) async throws {
-        try Self.validate(profile)
+        let runtime = try Self.runtime(profile, from: runtimes)
+        // Model preparation can be triggered while another recording is live.
+        // Refuse the switch instead of evicting that session's native handles.
+        for (id, other) in runtimes where id != profile {
+            if await other.hasActiveStreams() {
+                throw SuperflowError.invalidState("Cannot switch ASR during active recording")
+            }
+        }
         try await runtime.prime()
+        currentProfile = profile
+        for (id, other) in runtimes where id != profile { await other.unload() }
     }
     public func makeStream(profile: String, source: AudioSourceKind) async throws -> any RecognitionStream {
-        try Self.validate(profile)
+        let runtime = try Self.runtime(profile, from: runtimes)
+        for (id, other) in runtimes where id != profile {
+            if await other.hasActiveStreams() {
+                throw SuperflowError.invalidState("Cannot mix streaming ASR model families")
+            }
+        }
+        currentProfile = profile
         return try await runtime.start(source: source)
     }
-    public func unload() async { await runtime.unload() }
-    public static func supports(_ profile: String) -> Bool { profile == ModelProfile.default.id }
-    private static func validate(_ profile: String) throws {
-        guard supports(profile) else {
-            throw SuperflowError.modelUnavailable("audio.cpp supports Nemotron 3.5 streaming")
+    public func unload() async {
+        for runtime in runtimes.values { await runtime.unload() }
+    }
+    public static func supports(_ profile: String) -> Bool {
+        AudioCppAsset(speechProfileID: profile) != nil
+    }
+    private static func runtime(_ profile: String, from runtimes: [String: AudioCppRuntime]) throws
+        -> AudioCppRuntime {
+        guard let runtime = runtimes[profile] else {
+            throw SuperflowError.modelUnavailable("Unsupported streaming ASR profile: \(profile)")
         }
+        return runtime
     }
     static func defaultRoot(_ fileManager: FileManager) -> URL {
         let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
