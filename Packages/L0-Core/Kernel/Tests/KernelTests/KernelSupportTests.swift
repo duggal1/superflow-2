@@ -180,6 +180,16 @@ final class KernelSupportTests: XCTestCase {
         XCTAssertTrue(SuperflowError.invalidState("bad").errorDescription?.contains("bad") == true)
     }
 
+    func testTranscriptJoinerKeepsProseAndExplicitListsDistinct() {
+        XCTAssertEqual(TranscriptTextJoiner.join(["Hello world.", "Another sentence."]),
+                       "Hello world. Another sentence.")
+        XCTAssertEqual(TranscriptTextJoiner.join(["Shopping list:", "- milk\n- eggs"]),
+                       "Shopping list:\n- milk\n- eggs")
+        XCTAssertEqual(TranscriptTextJoiner.join(["Sentence one.\n\nSentence two.", "Next"]),
+                       "Sentence one.\n\nSentence two. Next")
+        XCTAssertEqual(TranscriptTextJoiner.join(["", "  hello  ", "", " world "]), "hello world")
+    }
+
     func testTextSafeCollapsesNewlines() {
         XCTAssertEqual(TextSafe.singleLine(" one\ntwo \n"), "one two")
         XCTAssertEqual(TextSafe.singleLine("\n\n"), "")
