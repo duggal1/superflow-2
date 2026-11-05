@@ -33,9 +33,9 @@ final class IslandReducerTests: XCTestCase {
         }
     }
 
-    func testLandedOnlyLandsWhileBusy() {
-        XCTAssertEqual(IslandReducer.reduce(.listening, .landed(words: 4)), .landed(words: 4))
-        XCTAssertEqual(IslandReducer.reduce(.processing, .landed(words: 4)), .landed(words: 4))
+    func testSuccessfulPasteRetractsWithoutLeavingTranscriptOnIsland() {
+        XCTAssertEqual(IslandReducer.reduce(.listening, .landed(words: 4)), .idle)
+        XCTAssertEqual(IslandReducer.reduce(.processing, .landed(words: 4)), .idle)
         XCTAssertEqual(IslandReducer.reduce(.landed(words: 1), .landed(words: 4)), .landed(words: 1))
         XCTAssertEqual(IslandReducer.reduce(.idle, .landed(words: 4)), .idle)
         XCTAssertEqual(IslandReducer.reduce(.hover, .landed(words: 4)), .hover)

@@ -169,6 +169,9 @@ final class IslandBridge {
             switch outcome {
             case .pasted, .accessibility:
                 didLand = true
+                // Clear a queued partial before the UI retracts. The transcript
+                // remains in History, never on a successful-paste copy card.
+                box.clearLive()
                 box.send(.landed(words: Self.words(latestText)))
             case .clipboardOnly, .permissionRequired, .blockedSecureField:
                 // The copy card must quote the finalized transcript, so the
@@ -184,7 +187,6 @@ final class IslandBridge {
                     // the saved transcript, if any, should be recoverable.
                     await fail(id: id)
                 }
-                box.partial(latestText, isFinal: true)
                 await cacheLastTranscript(id)
             case .cancelled:
                 box.send(.cancelled)

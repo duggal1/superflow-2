@@ -39,6 +39,11 @@ final class ModelNameGrammarTests: XCTestCase {
             ("hunyuan three", "Hunyuan 3"),
             ("intern l m four", "InternLM 4"),
             ("entropic claude", "Anthropic claude"),
+            ("enthropic claude", "Anthropic claude"),
+            ("gpt six astra", "GPT-6 Astra"),
+            ("gpt six sol", "GPT-6 Sol"),
+            ("gpt six luna", "GPT-6 Luna"),
+            ("gpt six terra", "GPT-6 Terra"),
             ("open air models", "OpenAI models"),
         ]
         XCTAssertGreaterThanOrEqual(cases.count, 30)
@@ -72,6 +77,15 @@ final class ModelNameGrammarTests: XCTestCase {
         let protected = Protected(literals: ["opus five point five"])
         XCTAssertEqual(ModelNameNormalizer.normalize(original, protected: protected).text,
                        "use opus five point five and model GPT-6")
+    }
+
+    func testNaturalModelNamesAndProviderContext() {
+        let input = "i use claude opus five point five enthropic model and gpt six astra from open air"
+        let result = ModelNameNormalizer.normalize(input)
+        XCTAssertEqual(result.text,
+                       "i use Claude Opus 5.5 Anthropic model and GPT-6 Astra from OpenAI")
+        XCTAssertTrue(result.literals.contains("GPT-6 Astra"))
+        XCTAssertTrue(result.literals.contains("Claude Opus 5.5"))
     }
 
     func testPipelineRunsGrammarBeforeTechDictionary() {
