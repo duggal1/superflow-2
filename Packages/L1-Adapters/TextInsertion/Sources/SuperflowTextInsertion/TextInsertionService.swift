@@ -268,16 +268,17 @@ public actor TextInsertionService {
             }
         }
 
-        // Posting a chord or pressing a menu item does not prove it landed.
-        // Preserve the transcript and tell the Island when observation failed.
-        // Never try a second mutation after an unverified event: that can paste twice.
-        if inserted && !verified {
-            var onClipboard = ourChangeCount != nil
-            if !onClipboard {
-                onClipboard = await writeIfNeeded(text, enabled: options.writeClipboardOnFailure)
+        // AX may fail to observe a paste that the target already accepted.
+        // A dispatched mutation is an attempted insertion, NOT a definite
+        // failure. Do not display a false Island copy card or retry the paste:
+        // either could duplicate text already in the destination.
+        // The clipboard stays available for recovery until the user changes it.
+        if inserted && !verified, let method {
+            if ourChangeCount == nil {
+                _ = await writeIfNeeded(text, enabled: options.writeClipboardOnFailure)
             }
             report.append(InsertionStep.unverifiable)
-            return finish(.notInserted(.pasteNotObserved, textOnClipboard: onClipboard))
+            return finish(.inserted(method: method, verified: false))
         }
 
         guard inserted, let method else {
