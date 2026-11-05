@@ -21,6 +21,19 @@ final class PostDedupeTests: XCTestCase {
         XCTAssertGreaterThan(ids.firstIndex(of: "lexicon") ?? 0, 0)
     }
 
+    func testDeterministicFallbackSkipsModelButKeepsDedupeAndFormatting() async {
+        let settings = AppSettings.default
+        let model = CleanupService(cleaner: FakeTextCleaner(.fail))
+        let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: .init(cleaner: model))
+        let output = await pipeline.runDeterministic("we we need need to ship it",
+                                                     context: TextContext(settings: settings))
+        XCTAssertFalse(output.timings.contains { $0.id == "cleanup" })
+        XCTAssertTrue(output.timings.contains { $0.id == "dedupe" })
+        XCTAssertFalse(output.text.lowercased().contains("we we"), output.text)
+        XCTAssertFalse(output.text.lowercased().contains("need need"), output.text)
+        XCTAssertTrue(output.text.lowercased().contains("ship"), output.text)
+    }
+
     func testRepeatedWordsAndPhrases() {
         XCTAssertEqual(PostDedupe.apply("please review review the report"), "please review the report")
         XCTAssertEqual(PostDedupe.apply("we need to finish this project before friday we need to finish this project before friday please"), "we need to finish this project before friday please")
