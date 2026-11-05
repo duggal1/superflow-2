@@ -150,6 +150,11 @@ struct ModelCard: View {
         } trailing: {
             HStack(spacing: 12) {
                 if item.kind == .speech {
+                    if item.id == ModelProfile.default.id {
+                        PixelBadge("Default", kind: .installed)
+                    } else {
+                        PixelBadge("Experimental", kind: .caution)
+                    }
                     Text(item.benchmark.map { String(format: "%.0f/100", $0.intelligenceScore) }
                          ?? "Not benchmarked")
                         .appType(.caption)
