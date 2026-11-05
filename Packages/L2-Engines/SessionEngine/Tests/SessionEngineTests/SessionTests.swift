@@ -132,12 +132,16 @@ final class SessionTests: XCTestCase {
         await engine.cancel()
     }
 
-    func testCleanupFailureReturnsNoInsertionText() async throws {
-        let engine = engine(cleaner: FakeTextCleaner(.fail))
+    func testCleanupFailurePreservesAndInsertsRawTextWithoutRetry() async throws {
+        let inserter = RecordingInserter()
+        let engine = engine(cleaner: FakeTextCleaner(.fail), inserter: inserter)
         _ = try await engine.start()
         let outcome = await engine.stop()
         XCTAssertEqual(outcome?.cleanupState, .fallback)
-        XCTAssertEqual(outcome?.text, "")
+        XCTAssertFalse(outcome?.text.isEmpty ?? true)
+        XCTAssertEqual(outcome?.insertion, .pasted)
+        let inserted = await inserter.inserted
+        XCTAssertEqual(inserted, [outcome?.text].compactMap { $0 })
     }
 
     /// A filler-only dictation cleans to a valid empty string. The cleaned row
