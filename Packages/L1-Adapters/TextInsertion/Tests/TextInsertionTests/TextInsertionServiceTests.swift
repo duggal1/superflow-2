@@ -159,7 +159,7 @@ final class TextInsertionServiceTests: XCTestCase {
     func testStaleAccessibilityNeverCausesASecondPaste() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"), noChangePosts: 1)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
+        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
         let taps = await harness.poster.taps
         XCTAssertEqual(taps, [.cgSessionEventTap])
         XCTAssertTrue(harness.target.insertedTexts.isEmpty)
@@ -171,7 +171,7 @@ final class TextInsertionServiceTests: XCTestCase {
     func testUnverifiablePasteDoesNotRetry() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"), count: nil)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
+        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
         let taps = await harness.poster.taps
         XCTAssertEqual(taps, [.cgSessionEventTap])
     }
@@ -192,9 +192,11 @@ final class TextInsertionServiceTests: XCTestCase {
     func testUnobservedPasteDoesNotFallBackToAccessibility() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"), posterIncrements: false)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
+        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
         XCTAssertTrue(harness.target.insertedTexts.isEmpty)
-        XCTAssertEqual(harness.scheduler.delays, [.milliseconds(500)])
+        XCTAssertTrue(harness.scheduler.delays.isEmpty)
+        let clipboardText = await harness.clipboard.text
+        XCTAssertEqual(clipboardText, "hello")
     }
 
     /// A host that ignores the synthetic chord may still honour its own
@@ -223,7 +225,7 @@ final class TextInsertionServiceTests: XCTestCase {
         var options = TextInsertionOptions()
         options.preferMenuPaste = true
         let report = await harness.service.insert("hello", options: options)
-        XCTAssertEqual(report.result, .inserted(method: .menuPaste, verified: false))
+        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
         XCTAssertTrue(harness.target.insertedTexts.isEmpty)
     }
 

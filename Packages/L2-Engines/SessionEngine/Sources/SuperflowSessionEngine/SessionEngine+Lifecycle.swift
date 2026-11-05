@@ -174,6 +174,7 @@ extension SessionEngine {
                                                   durationMs: 0, wordCount: 0, cleanupState: .skipped)
             transition(.failed(newRecord.id, error.localizedDescription))
             emit(.notice("Could not start recording: \(error.localizedDescription)"))
+            emit(.finished(newRecord.id, .failed))
             record = nil
             throw error
         }
@@ -234,20 +235,11 @@ extension SessionEngine {
         }
         let cleanupState = await cleanupCoordinator?.finish() ?? .skipped
         cleanupCoordinator = nil
+        // Cleanup is optional. A failed S1-mini pass must not prevent the
+        // recognized words from reaching the user. The coordinator preserves
+        // original ASR text on a failed chunk. Do not retry the model.
         if settings.cleanupEnabled && cleanupState == .fallback {
-            if let clip = archiveWriter {
-                archiveWriter = nil
-                if let archived = await clip.finish(), let store = repository as? any AudioMetadataStore {
-                    try? await store.setAudio(session: record.id, duration: archived.duration,
-                                              peaks: Data(archived.peaks))
-                }
-            }
-            emit(.notice("Cleanup could not complete. Nothing was pasted; the recording was retained."))
-            transition(.failed(record.id, "Cleanup failed; recording retained."))
-            emit(.finished(record.id, .failed))
-            self.record = nil
-            return SessionOutcome(sessionID: record.id, text: "", wordCount: 0,
-                                  cleanupState: .fallback, insertion: nil)
+            emit(.notice("Text cleanup was unavailable. Using the original transcript without retrying."))
         }
         let assembledText = recognitionOverflow ? nil : await finalText(session: record.id)
         let text = assembledText ?? ""

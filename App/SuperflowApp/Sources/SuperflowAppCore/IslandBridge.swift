@@ -159,7 +159,10 @@ final class IslandBridge {
         case .state(let state):
             if case .inserting = state { sawInserting = true }
             switch state {
-            case .cancelled, .failed: box.send(.cancelled)
+            case .cancelled: box.send(.cancelled)
+            // Even a failed session can have persisted raw speech. The
+            // .finished event decides whether to offer the recovery card.
+            case .failed: break
             default: break
             }
         case .inserted(let outcome):
@@ -177,16 +180,16 @@ final class IslandBridge {
             switch status {
             case .complete:
                 if !didLand {
-                    if sawInserting {
-                        await fail(id: id)
-                    } else {
-                        box.send(.cancelled)
-                    }
+                    // Do not depend on the inserting event surviving buffering:
+                    // the saved transcript, if any, should be recoverable.
+                    await fail(id: id)
                 }
                 box.partial(latestText, isFinal: true)
                 await cacheLastTranscript(id)
-            case .cancelled, .failed:
+            case .cancelled:
                 box.send(.cancelled)
+            case .failed:
+                await fail(id: id)
             default:
                 break
             }

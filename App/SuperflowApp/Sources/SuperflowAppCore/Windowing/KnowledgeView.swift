@@ -8,10 +8,10 @@ import SuperflowUIComponents
 import SwiftUI
 import UniformTypeIdentifiers
 
-private enum KnowledgeSection: Hashable {
+private enum KnowledgeSection: Hashable, Sendable {
     case all, dictionary, shortcuts, learned
 
-    @MainActor static let items: [Segmented<KnowledgeSection>.Item] = [
+    static let items: [Segmented<KnowledgeSection>.Item] = [
         .init("All", value: .all),
         .init("Dictionary", value: .dictionary),
         .init("Shortcuts", value: .shortcuts),
