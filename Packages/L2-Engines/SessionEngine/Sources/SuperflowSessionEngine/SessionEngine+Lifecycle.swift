@@ -111,9 +111,10 @@ extension SessionEngine {
             let feedStream = consumeCapture(streams, writer: journalWriter, archive: clip)
             if captureStopRequested { await audio.stop() }
 
-            // Let Chromium/Electron build their Accessibility tree while the user
-            // speaks; the microphone is already live.
-            await inserter.prepareForInsertion()
+            // AX preparation may require a slow Chromium accessibility tree.
+            // It is an optional paste optimization, never a prerequisite for
+            // streaming ASR. Begin it concurrently while the user speaks.
+            Task { [inserter] in await inserter.prepareForInsertion() }
 
             if !(await recognizer.isPrepared(profile: profile)) { transition(.warming) }
             try await withDeadline(modelDeadline, label: "model warm-up") {

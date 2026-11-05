@@ -8,9 +8,10 @@ Do not touch unrelated ASR models, microphone capture formats, or `main` directl
 1. `IslandWings.swift` still renders `LiveLine` during listening and hands-free when the legacy setting is true. The earlier success reducer fix affects only the final state, not recording.
 2. `SessionEngine+Recognition.persist` synchronously asks the cleanup/XPC tokenizer for a token count, then awaits a cleanup coordinator whose bounded queue can suspend submission. The recognition event reader cannot progress during these waits.
 3. `LlamaCppRuntime.completion` starts the deadline after acquiring a worker from `WorkerPool`, so a request can queue for seconds before its latency budget begins.
-4. `SessionCleanupCoordinator.finish()` previously waited for all pending cleanup without a stop-time budget.
-5. Existing success snapshot test expected `.landed` despite the revised reducer returning `.idle`.
-6. Current full CI failed on an upstream sherpa-onnx binary archive HTTP 504 during SwiftPM resolution. This is external; not evidence that code tests passed or failed.
+4. `SessionEngine.start()` awaits `inserter.prepareForInsertion()`, potentially waiting on an application Accessibility tree before creating the streaming ASR session.
+5. `SessionCleanupCoordinator.finish()` previously waited for all pending cleanup without a stop-time budget.
+6. Existing success snapshot test expected `.landed` despite the revised reducer returning `.idle`.
+7. Current full CI failed on an upstream sherpa-onnx binary archive HTTP 504 during SwiftPM resolution. This is external; not evidence that code tests passed or failed.
 
 ## Architecture and implementation
 
@@ -21,7 +22,9 @@ At stop: allow the coordinator a short, explicit final cleanup drain (default 25
 
 For the Island: microphone and meter state remain visible during recording. Never render raw, partial, or finalized dictation text in the Island during normal recording, even if an older setting enabled it. A paste failure alone raises a transcript card. User-initiated History remains accessible separately. Meeting live text is unchanged.
 
-Inside llama.cpp: calculate one request deadline before attempting worker acquisition, expire pool waiters at that deadline, and pass the same instant into generation. Cancel timeout tasks and resume each queued continuation exactly once.
+Inside llama.cpp: calculate one request deadline before attempting worker acquisition, expire pool waiters at that deadline, and pass the same instant into generation.
+
+At startup, initiate Accessibility target preparation concurrently with ASR stream startup. It must not gate the first recognized word. Cancel timeout tasks and resume each queued continuation exactly once.
 
 Metrics (no transcript or audio content): `session.asr.slow_feed.ms`, `session.audio.enhancement.ms`, `session.stop.cleanup_wait.ms`, `session.cleanup.queue_full`, `session.cleanup.finish_deadline`, existing `cleanup.chunk.*` phase timing.
 
