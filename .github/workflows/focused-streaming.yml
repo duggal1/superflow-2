@@ -26,6 +26,8 @@ jobs:
         run: swift --version
       - name: Verify recognition and cleanup scheduling
         run: swift test --package-path Packages/L2-Engines/SessionEngine --jobs 2 --filter CleanupBackpressureTests
+      - name: Verify Accessibility preparation cannot delay first ASR
+        run: swift test --package-path Packages/L2-Engines/SessionEngine --jobs 2 --filter testAccessibilityPreparationDoesNotBlockASRStreamStartup
       - name: Verify Island transcript visibility and snapshot states
         run: swift test --package-path Packages/L3-Features/FeatureIsland --jobs 2 --filter IslandSnapshotTests
 
