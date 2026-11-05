@@ -47,7 +47,7 @@ enum ModelNameNormalizer {
         .init(canonical: "Hunyuan", aliases: ["hunyuan"], requiresVersion: true),
         .init(canonical: "InternLM", aliases: ["internlm", "intern l m"], requiresVersion: true),
         .init(canonical: "OpenAI", aliases: ["open air", "open ai"], contextual: true),
-        .init(canonical: "Anthropic", aliases: ["entropic", "anthropic"], contextual: true),
+        .init(canonical: "Anthropic", aliases: ["entropic", "enthropic", "anthropic"], contextual: true),
     ]
 
     private struct Candidate {
@@ -80,7 +80,7 @@ enum ModelNameNormalizer {
                     options: [.caseInsensitive]) else { continue }
                 for found in expression.matches(in: input, range: NSRange(location: 0, length: source.length)) {
                     if reserved.contains(where: { NSIntersectionRange($0, found.range).length > 0 }) { continue }
-                    let version = versionTail(source, after: NSMaxRange(found.range))
+                    let version = versionTail(source, after: NSMaxRange(found.range), allowVariants: family.hyphenVersion)
                     if family.requiresVersion && version == nil { continue }
                     if family.contextual && !hasModelContext(source, range: found.range) { continue }
                     let suffix = version.map { (family.hyphenVersion ? "-" : " ") + $0.value } ?? ""
@@ -120,7 +120,7 @@ enum ModelNameNormalizer {
         return tokens.contains(where: contextualWords.contains)
     }
 
-    private static func versionTail(_ source: NSString, after end: Int) -> (value: String, end: Int)? {
+    private static func versionTail(_ source: NSString, after end: Int, allowVariants: Bool) -> (value: String, end: Int)? {
         guard end < source.length else { return nil }
         let tail = source.substring(from: end) as NSString
         let tokens = tokenPattern.matches(in: tail as String,
@@ -150,8 +150,22 @@ enum ModelNameNormalizer {
             }
             if !decimal.isEmpty { result += "." + decimal }
         }
+        // Model variant names are not decimal digits. Keep them attached to
+        // the spoken GPT version instead of leaving a lowercase stray suffix.
+        if allowVariants, let variant = word(index), let canonical = gptVariants[variant],
+           let token = tokens.indices.contains(index) ? tokens[index] : nil {
+            let separator = tail.substring(with: NSRange(location: finish, length: token.range.location - finish))
+            if separator.allSatisfy(\.isWhitespace) {
+                result += " " + canonical
+                finish = NSMaxRange(token.range)
+            }
+        }
         return (result, end + finish)
     }
+
+    private static let gptVariants: [String: String] = [
+        "astra": "Astra", "sol": "Sol", "luna": "Luna", "terra": "Terra",
+    ]
 
     private static func numeric(_ value: String) -> String? {
         guard !value.isEmpty, value.allSatisfy({ $0.isASCII && ($0.isNumber || $0 == ".") }),

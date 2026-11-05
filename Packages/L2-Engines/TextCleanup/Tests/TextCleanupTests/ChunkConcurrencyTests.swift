@@ -8,15 +8,30 @@ final class ChunkConcurrencyTests: XCTestCase {
     func testShortDictationUsesOneWorkerAndLongerDictationUsesTwo() async {
         let cleaner = CountingChunkCleaner()
         let service = CleanupService(cleaner: cleaner)
-        let short = Array(repeating: "word", count: 40).joined(separator: " ")
-        let longer = Array(repeating: "word", count: 100).joined(separator: " ")
+        let short = Array(repeating: "word", count: 200).joined(separator: " ")
+        let longer = Array(repeating: "word", count: 500).joined(separator: " ")
         let shortResult = await service.clean(short, context: TextContext(interactive: false))
         let longResult = await service.clean(longer, context: TextContext(interactive: false))
         XCTAssertEqual(shortResult.chunks.count, 1)
         XCTAssertEqual(longResult.chunks.count, 2)
         XCTAssertEqual(longResult.text, longer)
+        XCTAssertTrue(longResult.chunks.allSatisfy { $0.tokensIn <= 250 })
         let active = await cleaner.maxActive
         XCTAssertEqual(active, 2)
+    }
+
+    func testWorkerCountClampsToTwoAvailableRuntimeContexts() async {
+        let cleaner = CountingChunkCleaner()
+        let input = Array(repeating: "word", count: 1_250).joined(separator: " ")
+        let outcome = await CleanupService(cleaner: cleaner,
+                                           config: CleanupConfig(workers: 8))
+            .clean(input, context: TextContext(interactive: false))
+        XCTAssertEqual(outcome.text, input)
+        XCTAssertEqual(outcome.state, .cleaned)
+        XCTAssertEqual(outcome.chunks.count, 5)
+        let maxActive = await cleaner.maxActive
+        XCTAssertEqual(maxActive, 2)
+        XCTAssertTrue(outcome.chunks.allSatisfy { $0.attempts == 1 })
     }
 
     func testTwoHundredFiftyTokensUseOneChunkAndFiveHundredUseTwoWorkers() async {

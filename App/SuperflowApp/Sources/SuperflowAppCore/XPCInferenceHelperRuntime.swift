@@ -28,18 +28,16 @@ public actor XPCInferenceHelperRuntime: LlamaRuntime {
     public func countTokens(_ text: String) async -> Int? {
         guard ready else { return nil }
         do {
-            return try await withRecovery {
-                let reply: Int = try await self.request { proxy, finish in
-                    proxy.countTokens(in: text) { count, error in
-                        if let error {
-                            finish(.failure(.helper(error)))
-                        } else {
-                            finish(.success(count))
-                        }
+            let reply: Int = try await request { proxy, finish in
+                proxy.countTokens(in: text) { count, error in
+                    if let error {
+                        finish(.failure(.helper(error)))
+                    } else {
+                        finish(.success(count))
                     }
                 }
-                return reply
             }
+            return reply
         } catch {
             return nil
         }
@@ -54,21 +52,22 @@ public actor XPCInferenceHelperRuntime: LlamaRuntime {
             throw XPCInferenceError.helper("The inference helper is not ready.")
         }
         let interactive = CleanPriority.current == .interactive
-        return try await withRecovery {
-            try await self.request { proxy, finish in
-                proxy.complete(prompt: prompt, maxTokens: maxTokens, deadlineMs: deadlineMs,
-                               interactive: interactive) { text, generatedTokens, hitTokenCap, prefill, generation, error in
-                    if let error {
-                        finish(.failure(.helper(error)))
-                    } else if let text {
-                        finish(.success(LlamaCompletion(text: text,
-                                                       generatedTokens: generatedTokens >= 0 ? generatedTokens : nil,
-                                                       hitTokenCap: hitTokenCap,
-                                                       prefillMs: prefill >= 0 ? prefill : nil,
-                                                       generationMs: generation >= 0 ? generation : nil)))
-                    } else {
-                        finish(.failure(.helper("The inference helper returned no text.")))
-                    }
+        // One inference attempt per chunk. Reconnecting and replaying a failed
+        // completion made the same dictation unpredictably slow. The caller
+        // preserves raw ASR text if the helper fails instead of silently retrying.
+        return try await request { proxy, finish in
+            proxy.complete(prompt: prompt, maxTokens: maxTokens, deadlineMs: deadlineMs,
+                           interactive: interactive) { text, generatedTokens, hitTokenCap, prefill, generation, error in
+                if let error {
+                    finish(.failure(.helper(error)))
+                } else if let text {
+                    finish(.success(LlamaCompletion(text: text,
+                                                   generatedTokens: generatedTokens >= 0 ? generatedTokens : nil,
+                                                   hitTokenCap: hitTokenCap,
+                                                   prefillMs: prefill >= 0 ? prefill : nil,
+                                                   generationMs: generation >= 0 ? generation : nil)))
+                } else {
+                    finish(.failure(.helper("The inference helper returned no text.")))
                 }
             }
         }
@@ -96,19 +95,6 @@ public actor XPCInferenceHelperRuntime: LlamaRuntime {
             throw XPCInferenceError.helper(loaded.message ?? "The inference helper could not load the model.")
         }
         ready = true
-    }
-
-    private func withRecovery<Value: Sendable>(
-        operation: () async throws -> Value
-    ) async throws -> Value {
-        do {
-            return try await operation()
-        } catch let error as XPCInferenceError {
-            guard case .connection = error, let modelURL else { throw error }
-            invalidateConnection()
-            try await connectAndLoad(modelURL)
-            return try await operation()
-        }
     }
 
     private func request<Value: Sendable>(

@@ -16,8 +16,9 @@ public enum IslandReducer {
             return phase.isBusy ? .idle : phase
         case .cancelled:
             return phase.isBusy ? .idle : phase
-        case .landed(let words):
-            return phase.isBusy ? .landed(words: words) : phase
+        case .landed:
+            // A successful paste must retract immediately. Only failures expose text.
+            return phase.isBusy ? .idle : phase
         case .pasteFailed(let transcript):
             return phase.isBusy ? .failed(transcript) : phase
         case .notice(let notice):

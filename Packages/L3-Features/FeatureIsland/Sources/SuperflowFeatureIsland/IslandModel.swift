@@ -122,7 +122,7 @@ public final class IslandModel {
             Task { [weak self] in
                 guard let live = self?.feed.live else { return }
                 for await text in live {
-                    guard let self, self.prefs.liveText else { continue }
+                    guard let self, self.prefs.liveText, self.phase.isBusy else { continue }
                     self.live = text
                 }
             },
