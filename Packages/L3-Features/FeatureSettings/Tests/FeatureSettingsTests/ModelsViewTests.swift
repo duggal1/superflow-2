@@ -88,7 +88,8 @@ final class ModelsViewTests: XCTestCase {
         XCTAssertTrue(speech.allSatisfy { vm.matches($0, query: "ASR") })
         XCTAssertTrue(speech.allSatisfy { vm.matches($0, query: "streaming") })
         XCTAssertTrue(vm.matches(speech[1], query: "Qwen/Qwen3-ASR"))
-        XCTAssertTrue(vm.matches(speech.last!, query: "Mistral"))
+        let voxtral = try XCTUnwrap(speech.last)
+        XCTAssertTrue(vm.matches(voxtral, query: "Mistral"))
         XCTAssertFalse(vm.matches(speech[0], query: "DeepFilterNet"))
     }
 
