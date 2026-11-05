@@ -9,7 +9,7 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     private let runtimes: [String: AudioCppRuntime]
     private var currentProfile = ModelProfile.default.id
     private var streamStarts: [String: Int] = [:]
-    private var warmingProfile: String?
+    private var warmStarts: [String: Int] = [:]
 
     public init(modelCacheRoot: URL? = nil, fileManager: FileManager = .default) {
         let root = modelCacheRoot ?? Self.defaultRoot(fileManager)
@@ -37,11 +37,17 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     public func warmUp(profile: String) async throws {
         let runtime = try Self.runtime(profile, from: runtimes)
         guard streamStarts.allSatisfy({ $0.key == profile }),
-              warmingProfile == nil else {
+              warmStarts.allSatisfy({ $0.key == profile }) else {
             throw SuperflowError.invalidState("Another speech model is starting or preparing")
         }
-        warmingProfile = profile
-        defer { warmingProfile = nil }
+        // On launch, the preload and session paths can both request the same
+        // model. Coalesce their family reservation rather than rejecting one.
+        warmStarts[profile, default: 0] += 1
+        defer {
+            let remaining = (warmStarts[profile] ?? 1) - 1
+            if remaining == 0 { warmStarts.removeValue(forKey: profile) }
+            else { warmStarts[profile] = remaining }
+        }
         // Model preparation can be triggered while another recording is live.
         // Refuse the switch instead of evicting that session's native handles.
         for (id, other) in runtimes where id != profile {
@@ -63,7 +69,7 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     public func makeStream(profile: String, source: AudioSourceKind) async throws -> any RecognitionStream {
         let runtime = try Self.runtime(profile, from: runtimes)
         guard streamStarts.allSatisfy({ $0.key == profile }),
-              warmingProfile == nil || warmingProfile == profile else {
+              warmStarts.allSatisfy({ $0.key == profile }) else {
             throw SuperflowError.invalidState("Another ASR family is starting or preparing")
         }
         streamStarts[profile, default: 0] += 1
