@@ -154,8 +154,9 @@ final class IslandBridge {
         case .level(let level):
             box.level(Self.meter(level))
         case .partial(let text):
+            // Keep the latest words privately for failure recovery or Escape.
+            // Never stream dictation text to the Island; successful paste has no transcript UI.
             latestText = text
-            box.partial(text)
         case .state(let state):
             if case .inserting = state { sawInserting = true }
             switch state {

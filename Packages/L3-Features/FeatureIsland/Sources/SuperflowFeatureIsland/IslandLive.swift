@@ -14,9 +14,8 @@ public struct IslandPrefs: Equatable, Sendable {
     }
 }
 
-/// Streaming partials. The recognizer always produces them; the model keeps the
-/// current one only when the setting is on, so turning the shelf off costs no
-/// engine work and turning it on needs no restart.
+/// Streaming partials are available to the meeting UI. Dictation text stays
+/// hidden until insertion actually fails, independently of legacy settings.
 public struct LiveText: Equatable, Sendable {
     public var text: String
     public var speaker: String?

@@ -88,12 +88,27 @@ final class IslandSnapshotTests: XCTestCase {
         XCTAssertNoThrow(try render(model))
     }
 
-    func testLandedRendersTheCheckmark() throws {
+    func testSuccessfulPasteRetractsWithoutATranscriptCard() throws {
         let model = model(geometry(notch: true))
         model.send(.holdBegan(nil))
         model.send(.landed(words: 12))
-        XCTAssertEqual(model.phase, .landed(words: 12))
+        XCTAssertEqual(model.phase, .idle)
         XCTAssertNoThrow(try render(model))
+    }
+
+    func testLiveTextSettingCannotExposeDictationInTheIsland() throws {
+        let model = model(geometry(notch: true))
+        model.configure(IslandPrefs(alwaysOn: false, liveText: true))
+        model.send(.holdBegan(nil))
+        XCTAssertEqual(model.box.body.height, model.geometry.band)
+        model.send(.handsFreeBegan(nil))
+        XCTAssertEqual(model.box.body.height, model.geometry.band + IslandLayout.hintShelf)
+        XCTAssertNoThrow(try render(model))
+        model.send(.holdEnded)
+        XCTAssertEqual(model.box.body.height, model.geometry.band)
+        model.send(.landed(words: 12))
+        XCTAssertEqual(model.phase, .idle)
+        XCTAssertTrue(model.live.text.isEmpty)
     }
 
     /// A latched dictation is a different promise from a held one, so it must
