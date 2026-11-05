@@ -52,7 +52,7 @@ final class IslandPanelControllerTests: XCTestCase {
         model.send(.cancelled)
     }
 
-    func testFailureKeepsFocusInTheTargetAppAndLiveShelfReceivesClicks() throws {
+    func testFailureKeepsTargetFocusAndDictationHasNoLiveTranscriptShelf() throws {
         let (controller, panel) = try makeController()
         defer { panel.close() }
         let model = controller.model
@@ -61,8 +61,11 @@ final class IslandPanelControllerTests: XCTestCase {
         XCTAssertTrue(host.containsPoint(CGPoint(x: IslandLayout.canvas.width / 2, y: 10)))
         model.send(.holdBegan(nil))
         RunLoop.current.run(until: Date().addingTimeInterval(0.8))
-        XCTAssertTrue(host.containsPoint(CGPoint(x: IslandLayout.canvas.width / 2,
-                                                 y: model.geometry.band + 20)))
+        // "Show meeting live text" must not expose dictation transcripts.
+        // Listening has wings only; the extra live-text shelf is meeting-only.
+        XCTAssertEqual(model.phase, .listening)
+        XCTAssertFalse(host.containsPoint(CGPoint(x: IslandLayout.canvas.width / 2,
+                                                  y: model.geometry.band + 20)))
         model.send(.pasteFailed(Feed().transcript))
         XCTAssertFalse(panel.canBecomeKey)
         XCTAssertFalse(host.containsPoint(CGPoint(x: 0, y: IslandLayout.canvas.height - 1)))
