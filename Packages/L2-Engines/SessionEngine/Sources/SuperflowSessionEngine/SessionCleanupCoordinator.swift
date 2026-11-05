@@ -77,7 +77,7 @@ public actor SessionCleanupCoordinator {
         guard !isFinished else { return }
         let request = CleanupRequest(index: index, interactive: interactive,
                                      pipeline: pipeline, settings: settings, wordTimings: wordTimings,
-                                     project: project, activeAppBundleID: activeAppBundleID,
+                                     activeAppBundleID: activeAppBundleID, project: project,
                                      precomputed: precomputed)
         if let waiter = workerWaiters.popLast() {
             waiter.resume(returning: request)

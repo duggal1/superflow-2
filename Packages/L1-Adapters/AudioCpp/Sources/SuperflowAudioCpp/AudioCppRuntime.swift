@@ -285,12 +285,17 @@ actor AudioCppRuntime {
         defer { audiocpp_result_free(result) }
         try Self.check(audiocpp_stream_finish(slot.handle.pointer, &result))
         var text: UnsafePointer<CChar>?
-        if audiocpp_result_text(result, &text, nil) == AUDIOCPP_OK, let text {
-            let final = String(cString: text).trimmingCharacters(in: .whitespacesAndNewlines)
-            if !final.isEmpty {
-                emit(.committed(RawSegment(text: final,
-                    startSample: slot.start ?? 0, endSample: slot.end, source: slot.source)), to: slot)
-            }
+        let final = (audiocpp_result_text(result, &text, nil) == AUDIOCPP_OK)
+            ? text.map { String(cString: $0).trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
+            : ""
+        // Some streaming backends provide an empty final despite valid partials.
+        // Retain the transcript already emitted to avoid losing spoken words.
+        let recovered = final.isEmpty
+            ? slot.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            : final
+        if !recovered.isEmpty {
+            emit(.committed(RawSegment(text: recovered,
+                startSample: slot.start ?? 0, endSample: slot.end, source: slot.source)), to: slot)
         }
     }
 

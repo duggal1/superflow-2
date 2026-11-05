@@ -95,6 +95,32 @@ final class IslandBridgeTests: XCTestCase {
                        "the card must be emitted once, from the finalized record")
     }
 
+    func testFailedSessionStillOffersStoredTranscript() async throws {
+        let repository = InMemoryRepository()
+        let record = try await session(in: repository)
+        try await repository.appendSegment(Segment(
+            sessionID: record.id, index: 0, startMs: 0, endMs: 500, rawText: "saved despite failure"))
+        let bridge = IslandBridge(transcripts: repository)
+        let failure = expectation(description: "saved transcript surfaced")
+        let reader = Task {
+            for await event in bridge.feed.events {
+                if case .pasteFailed(let transcript) = event {
+                    XCTAssertEqual(transcript.text, "saved despite failure")
+                    failure.fulfill()
+                    return
+                }
+            }
+        }
+        let input = AsyncStream<SessionEvent>.makeStream()
+        bridge.start(events: input.stream)
+        bridge.holdBegan()
+        input.continuation.yield(.state(.failed(record.id, "cleanup failed")))
+        input.continuation.yield(.finished(record.id, .failed))
+        input.continuation.finish()
+        await fulfillment(of: [failure], timeout: 3)
+        reader.cancel()
+    }
+
     func testBlockedSecureFieldAlsoWaitsForTheFinalizedTranscript() async throws {
         let repository = InMemoryRepository()
         let record = try await session(in: repository)

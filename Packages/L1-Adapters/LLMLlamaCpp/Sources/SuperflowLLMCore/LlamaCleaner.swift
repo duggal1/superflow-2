@@ -187,8 +187,9 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
 
     public var isReady: Bool {
         get async {
-            if let preparation { try? await preparation.task.value }
-            return ready
+            // Readiness checks must not block behind multi-second model warm-up.
+            // A cold cleanup model is optional; ASR text still gets delivered.
+            ready
         }
     }
 
