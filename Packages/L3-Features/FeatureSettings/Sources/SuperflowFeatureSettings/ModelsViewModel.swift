@@ -122,8 +122,11 @@ public final class ModelsViewModel {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return true }
         let profile = item.kind == .speech ? ModelProfile.byID(item.id) : nil
-        return [item.name, item.detail, item.kind.title, profile?.vendor ?? "",
-                profile?.language ?? "", profile?.formatLabel ?? ""]
+        return [item.id, item.name, item.detail, item.kind.title,
+                profile?.vendor ?? "", profile?.language ?? "",
+                profile?.formatLabel ?? "", profile?.upstreamRepo ?? "",
+                profile?.runtimeRepo ?? "",
+                item.kind == .speech ? "ASR streaming speech recognition dictation" : ""]
             .contains { $0.localizedStandardContains(needle) }
     }
 
