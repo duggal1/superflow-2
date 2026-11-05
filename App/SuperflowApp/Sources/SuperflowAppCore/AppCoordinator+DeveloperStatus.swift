@@ -5,7 +5,7 @@ extension AppCoordinator {
     /// Derived only from transcript-free local metrics. Model installation is
     /// not proof that inference ran on the most recent dictation.
     func cleanupDeveloperStatus() -> String {
-        guard let self, let environment = self.environment else {
+        guard let environment = self.environment else {
             return "S1-mini status unavailable."
         }
         guard self.settings.cleanupEnabled else { return "Cleanup is disabled." }
