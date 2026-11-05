@@ -91,6 +91,16 @@ enum AudioCppAsset: Sendable {
         return true
     }
 
+    private func writeVerifiedReceipt(for url: URL) throws {
+        let values = try url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+        guard let size = values.fileSize, let modified = values.contentModificationDate else {
+            return // Rehash on the next check rather than accept missing metadata.
+        }
+        let receipt = Verification(digest: digest, size: size, modified: modified)
+        let data = try JSONEncoder().encode(receipt)
+        try data.write(to: url.appendingPathExtension("verified.json"), options: .atomic)
+    }
+
     func install(at destination: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
         guard let url = URL(string: "https://huggingface.co/" + downloadPath) else {
             throw SuperflowError.modelUnavailable("Invalid audio.cpp model URL")
@@ -112,6 +122,10 @@ enum AudioCppAsset: Sendable {
         } else {
             try FileManager.default.moveItem(at: temporary, to: destination)
         }
+        // The temporary download was SHA-256 checked above. Its receipt is
+        // adjacent to the temporary file, not the installed destination.
+        // Persist destination metadata to avoid hashing a 1-3 GB model again.
+        try writeVerifiedReceipt(for: destination)
     }
 }
 
