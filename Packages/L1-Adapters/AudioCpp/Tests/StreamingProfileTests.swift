@@ -43,6 +43,20 @@ import SuperflowKernel
     #expect(AudioCppAsset.speakers.task == "diar")
     #expect(AudioCppAsset.speakers.family == "nemotron_3_diar")
     #expect(AudioCppAsset.speech.fileName == "nemotron-q8_0.gguf")
+    // Values from the pinned audio-cpp/audio.cpp-gguf Git LFS pointers.
+    let pinned: [(ModelProfile, AudioCppAsset, String, Int64)] = [
+        (.qwen3ASR06B, .qwenASR06B,
+         "6c44ec2fb4cee513892d7863c1fcc3ea6b699ffa4d899b0ef4ab19956d9544f7", 1_151_272_416),
+        (.qwen3ASR17B, .qwenASR17B,
+         "da4fc2ac7f24dee784d1684eb1f35836cdbf559519452ae11777670734c0a4f8", 2_473_010_048),
+        (.voxtralRealtime, .voxtralRealtime,
+         "8cafef18ea3e4cad81da8ffc4e72b69d2eab2c159c2e68428e2e088accbfc7f8", 3_097_662_432),
+    ]
+    for (profile, asset, sha, bytes) in pinned {
+        #expect(asset.digest == sha)
+        #expect(profile.artifactBytes == bytes)
+    }
+
 }
 
 @Test func unknownSpeechProfilesAreNeverMistakenForNemotron() async {
