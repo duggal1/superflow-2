@@ -43,7 +43,12 @@ extension SessionEngine {
                     emit(.notice("Audio journal stopped (disk). Transcription continues, crash recovery is off."))
                 }
             }
+            let enhanceStart = DispatchTime.now().uptimeNanoseconds
             let clean = await stage.push(chunk.samples)
+            if levelCounter % 32 == 0 {
+                metrics.record("session.audio.enhancement.ms",
+                               valueMs: Double((DispatchTime.now().uptimeNanoseconds - enhanceStart) / 1_000_000))
+            }
             if let failure = stage.failure, !warned { warned = true; emit(.notice(failure)) }
             if !clean.isEmpty {
                 let enhanced = AudioChunk(samples: clean, startSample: enhancing ? cleanCursor : chunk.startSample, source: .mic)

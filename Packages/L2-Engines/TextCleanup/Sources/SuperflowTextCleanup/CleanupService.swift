@@ -57,8 +57,8 @@ public actor CleanupService {
         self.metrics = metrics
         var bounded = config
         bounded.hardTokenCap = min(CleanupConfig.maximumInputTokens, max(1, config.hardTokenCap))
-        self.config = bounded
         bounded.workers = min(2, max(1, config.workers))
+        self.config = bounded
         self.semaphore = AsyncSemaphore(bounded.workers)
         self.structureMapping = structureMapping
     }

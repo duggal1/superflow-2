@@ -62,6 +62,28 @@ final class WorkerPoolTests: XCTestCase {
         await pool.release(held)
     }
 
+    func testDeadlineIncludesWorkerQueueWait() async throws {
+        let pool = WorkerPool([1])
+        let held = try await pool.acquire(.background)
+        let started = Date()
+        do {
+            _ = try await pool.acquire(.interactive,
+                                       deadline: ContinuousClock.now.advanced(by: .milliseconds(30)))
+            XCTFail("a saturated pool must not grant an expired request")
+        } catch WorkerPool<Int>.Failure.timedOut {
+            // The queued request expired before a worker became free.
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.5)
+        let queued = await pool.waitingCount
+        XCTAssertEqual(queued, 0)
+        await pool.release(held)
+        let recovered = try await pool.acquire(.background)
+        XCTAssertEqual(recovered, held)
+        await pool.release(recovered)
+    }
+
     func testThrowingOperationReleasesItsLease() async throws {
         enum Failure: Error { case expected }
         let pool = WorkerPool([1])

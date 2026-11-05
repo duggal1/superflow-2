@@ -111,9 +111,10 @@ extension SessionEngine {
             let feedStream = consumeCapture(streams, writer: journalWriter, archive: clip)
             if captureStopRequested { await audio.stop() }
 
-            // Let Chromium/Electron build their Accessibility tree while the user
-            // speaks; the microphone is already live.
-            await inserter.prepareForInsertion()
+            // AX preparation may require a slow Chromium accessibility tree.
+            // It is an optional paste optimization, never a prerequisite for
+            // streaming ASR. Begin it concurrently while the user speaks.
+            Task { [inserter] in await inserter.prepareForInsertion() }
 
             if !(await recognizer.isPrepared(profile: profile)) { transition(.warming) }
             try await withDeadline(modelDeadline, label: "model warm-up") {
@@ -233,7 +234,10 @@ extension SessionEngine {
             await cancel()
             return nil
         }
+        let cleanupStarted = DispatchTime.now().uptimeNanoseconds
         let cleanupState = await cleanupCoordinator?.finish() ?? .skipped
+        metrics.record("session.stop.cleanup_wait.ms",
+                       valueMs: Double((DispatchTime.now().uptimeNanoseconds - cleanupStarted) / 1_000_000))
         cleanupCoordinator = nil
         // Cleanup is optional. A failed S1-mini pass must not prevent the
         // recognized words from reaching the user. The coordinator preserves

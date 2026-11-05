@@ -25,7 +25,14 @@ extension SessionEngine {
             latency.microphoneStarted = nil
             metrics.record("session.mic_start.to_first_feed.ms", valueMs: elapsedMilliseconds(since: started))
         }
+        let started = DispatchTime.now().uptimeNanoseconds
         await recognition.feed(chunk)
+        let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
+        // Record slow native feed calls without sampling transcript content.
+        // Per-buffer metrics during normal streaming would add overhead.
+        if elapsed > 50 {
+            metrics.record("session.asr.slow_feed.ms", valueMs: elapsed)
+        }
     }
 
     func recordLatency(_ event: SessionEvent) {

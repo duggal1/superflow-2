@@ -6,7 +6,33 @@ import SuperflowTextCleanup
 import SuperflowTextPipeline
 @testable import SuperflowSessionEngine
 
+private actor DelayedInsertionPreparation: TextInserter {
+    func frontmostBundleID() async -> String? { nil }
+    func prepareForInsertion() async {
+        try? await Task.sleep(for: .seconds(2))
+    }
+    func insert(_ text: String, strategy: InsertionStrategy) async throws -> InsertionOutcome {
+        .pasted
+    }
+}
+
 final class SessionTests: XCTestCase {
+    func testAccessibilityPreparationDoesNotBlockASRStreamStartup() async throws {
+        let engine = SessionEngine(
+            audio: ScriptedAudioSource(samples: Array(repeating: 0.2, count: 16_000)),
+            recognizer: FakeSpeechRecognizer(script: ["Hello"], samplesPerSegment: 8_000),
+            pipeline: TextPipeline(stages: []),
+            repository: InMemoryRepository(),
+            journals: FakeJournalStore(),
+            inserter: DelayedInsertionPreparation())
+        let started = Date()
+        _ = try await engine.start()
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.8,
+                          "Accessibility tree preparation must not gate streaming recognition")
+        let result = await engine.stop()
+        XCTAssertEqual(result?.insertion, .pasted)
+    }
+
     private func pipeline(_ cleaner: FakeTextCleaner = FakeTextCleaner(.identity)) -> TextPipeline {
         var settings = AppSettings.default
         settings.cleanupEnabled = true

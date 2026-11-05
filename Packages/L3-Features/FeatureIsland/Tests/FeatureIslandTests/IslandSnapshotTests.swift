@@ -9,9 +9,11 @@ private struct StubFeed: IslandFeed {
     var last: IslandTranscript?
     var stores = true
     var rows: [IslandTranscript] = []
+    var liveStream: AsyncStream<LiveText>?
 
     var events: AsyncStream<IslandEvent> { AsyncStream { $0.finish() } }
     var levels: AsyncStream<Float> { AsyncStream { $0.finish() } }
+    var live: AsyncStream<LiveText> { liveStream ?? AsyncStream { $0.finish() } }
     func lastTranscript() -> IslandTranscript? { last }
     func history(limit: Int) -> [IslandTranscript] { Array(rows.prefix(limit)) }
     var storesTranscripts: Bool { stores }
@@ -88,12 +90,27 @@ final class IslandSnapshotTests: XCTestCase {
         XCTAssertNoThrow(try render(model))
     }
 
-    func testLandedRendersTheCheckmark() throws {
+    func testSuccessfulPasteRetractsWithoutATranscriptCard() throws {
         let model = model(geometry(notch: true))
         model.send(.holdBegan(nil))
         model.send(.landed(words: 12))
-        XCTAssertEqual(model.phase, .landed(words: 12))
+        XCTAssertEqual(model.phase, .idle)
         XCTAssertNoThrow(try render(model))
+    }
+
+    func testLiveTextSettingCannotExposeDictationInTheIsland() throws {
+        let model = model(geometry(notch: true))
+        model.configure(IslandPrefs(alwaysOn: false, liveText: true))
+        model.send(.holdBegan(nil))
+        XCTAssertEqual(model.box.body.height, model.geometry.band)
+        model.send(.handsFreeBegan(nil))
+        XCTAssertEqual(model.box.body.height, model.geometry.band + IslandLayout.hintShelf)
+        XCTAssertNoThrow(try render(model))
+        model.send(.holdEnded)
+        XCTAssertEqual(model.box.body.height, model.geometry.band)
+        model.send(.landed(words: 12))
+        XCTAssertEqual(model.phase, .idle)
+        XCTAssertTrue(model.live.text.isEmpty)
     }
 
     /// A latched dictation is a different promise from a held one, so it must
@@ -117,6 +134,23 @@ final class IslandSnapshotTests: XCTestCase {
         model.send(.meetingBegan(nil))
         XCTAssertEqual(model.phase, .meeting)
         XCTAssertNoThrow(try render(model))
+    }
+
+    func testLiveDictationPartialsNeverAppearDespiteLegacySetting() async throws {
+        let stream = AsyncStream<LiveText>.makeStream()
+        let subject = IslandModel(feed: StubFeed(liveStream: stream.stream),
+                                  geometry: geometry(notch: true))
+        subject.configure(IslandPrefs(alwaysOn: false, liveText: true))
+        subject.send(.holdBegan(nil))
+        stream.continuation.yield(LiveText(text: "private speech should not appear"))
+        try await Task.sleep(for: .milliseconds(60))
+        XCTAssertEqual(subject.live.text, "")
+        subject.send(.handsFreeBegan(nil))
+        stream.continuation.yield(LiveText(text: "still never display live dictation"))
+        try await Task.sleep(for: .milliseconds(60))
+        XCTAssertEqual(subject.live.text, "")
+        subject.send(.holdEnded)
+        stream.continuation.finish()
     }
 
     func testNoticeCardRenders() throws {

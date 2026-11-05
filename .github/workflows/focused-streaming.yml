@@ -1,0 +1,44 @@
+name: Focused streaming and cleanup regressions
+
+on:
+  push:
+    branches:
+      - fix/island-silent-streaming-cleanup-20261105
+  pull_request:
+    paths:
+      - "Packages/L1-Adapters/LLMLlamaCpp/**"
+      - "Packages/L2-Engines/SessionEngine/**"
+      - "Packages/L3-Features/FeatureIsland/**"
+      - "App/SuperflowApp/**"
+      - ".github/workflows/focused-streaming.yml"
+
+concurrency:
+  group: focused-streaming-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  session-island:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm compiler
+        run: swift --version
+      - name: Verify recognition and cleanup scheduling
+        run: swift test --package-path Packages/L2-Engines/SessionEngine --jobs 2 --filter CleanupBackpressureTests
+      - name: Verify Accessibility preparation cannot delay first ASR
+        run: swift test --package-path Packages/L2-Engines/SessionEngine --jobs 2 --filter testAccessibilityPreparationDoesNotBlockASRStreamStartup
+      - name: Verify Island transcript visibility and snapshot states
+        run: swift test --package-path Packages/L3-Features/FeatureIsland --jobs 2 --filter IslandSnapshotTests
+
+  llama-scheduler:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm compiler
+        run: swift --version
+      - name: Test bounded worker admission and deadlines
+        run: swift test --package-path Packages/L1-Adapters/LLMLlamaCpp --jobs 2 --filter WorkerPoolTests
+      - name: Test local S1-mini prompt and counting contract
+        run: swift test --package-path Packages/L1-Adapters/LLMLlamaCpp --jobs 2 --filter LlamaCleanerTests

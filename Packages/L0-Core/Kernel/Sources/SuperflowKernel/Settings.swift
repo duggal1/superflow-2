@@ -179,8 +179,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
     /// The Island is visible at rest, and a click opens its recent list. Off keeps
     /// it out of the way until there is something to say.
     public var islandAlwaysOn = false
-    /// Draw streaming words in the Island while dictating. The recognizer streams
-    /// either way; this only decides whether the shelf is shown.
+    /// Meeting-only live text shelf. Regular dictation is always text-free in
+    /// the Island except when automatic paste fails.
     public var islandLiveText = false
     public var onboardingComplete = false
     public init() {}

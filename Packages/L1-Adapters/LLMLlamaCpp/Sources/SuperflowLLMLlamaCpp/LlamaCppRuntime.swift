@@ -114,16 +114,22 @@ public actor LlamaCppRuntime: LlamaRuntime {
         guard let pool else {
             throw SuperflowError.invalidState("llama.cpp model is not loaded")
         }
-        return try await pool.use(CleanPriority.current) { session in
-            let deadline = ContinuousClock.now.advanced(by: .milliseconds(max(1, deadlineMs)))
-            let task = Task.detached {
-                try Self.decode(prompt: prompt, maxTokens: maxTokens, session: session, deadline: deadline)
+        // Queue time counts against the original request deadline. Previously,
+        // each waiting caller received a fresh budget only after a worker was free.
+        let deadline = ContinuousClock.now.advanced(by: .milliseconds(max(1, deadlineMs)))
+        do {
+            return try await pool.use(CleanPriority.current, deadline: deadline) { session in
+                let task = Task.detached {
+                    try Self.decode(prompt: prompt, maxTokens: maxTokens, session: session, deadline: deadline)
+                }
+                return try await withTaskCancellationHandler {
+                    try await task.value
+                } onCancel: {
+                    task.cancel()
+                }
             }
-            return try await withTaskCancellationHandler {
-                try await task.value
-            } onCancel: {
-                task.cancel()
-            }
+        } catch WorkerPool<LlamaSession>.Failure.timedOut {
+            throw SuperflowError.timeout("cleanup")
         }
     }
 

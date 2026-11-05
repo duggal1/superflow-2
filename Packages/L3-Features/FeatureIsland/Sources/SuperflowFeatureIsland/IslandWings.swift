@@ -42,18 +42,13 @@ struct WingsContent: View {
                 ZStack {
                     HintShelf(items: hints ?? [])
                         .opacity(model.noSignal ? 0 : (model.hint ? 1 : 0))
-                    if model.prefs.liveText {
-                        LiveLine(live: model.live)
-                            .padding(.horizontal, 20)
-                            .opacity(model.noSignal || model.hint ? 0 : 1)
-                    }
                     if model.noSignal {
                         NoSignalShelf()
                     }
                 }
                 // Kept in the tree while the silhouette shrinks, so the shelf is
                 // revealed by the moving shape instead of popping out of it.
-                .frame(height: model.prefs.liveText ? IslandLayout.liveShelf : IslandLayout.hintShelf)
+                .frame(height: IslandLayout.hintShelf)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: model.hint)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: model.noSignal)
                 .modifier(Entrance(delay: 0.10, dy: 4))
@@ -62,7 +57,7 @@ struct WingsContent: View {
                     .transition(.opacity)
             } else if model.hint, let hints {
                 HintShelf(items: hints)
-                    .frame(height: model.prefs.liveText ? IslandLayout.liveShelf : IslandLayout.hintShelf)
+                    .frame(height: IslandLayout.hintShelf)
                     .transition(.opacity)
             } else if model.prefs.liveText && showsLiveShelf {
                 LiveLine(live: model.live)
@@ -79,7 +74,8 @@ struct WingsContent: View {
 
     private var showsLiveShelf: Bool {
         switch phase {
-        case .listening, .handsFree, .meeting: true
+        case .meeting: true
+        case .listening, .handsFree: false
         case .idle, .hover, .meetingPanel, .processing, .landed, .failed,
              .recent, .history, .undo, .notice: false
         }

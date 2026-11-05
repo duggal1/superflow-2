@@ -64,7 +64,10 @@ public final class IslandModel {
             return IslandBox(body: .init(width: IslandLayout.cardWidth, height: geometry.band + 60),
                              top: 12, bottom: 24, opacity: 1)
         }
-        return IslandLayout.box(phase, geometry, hint: hint, live: prefs.liveText,
+        // Dictation never renders speculative/live transcript text. The only
+        // automatic transcript card is a failed paste, assembled after finalization.
+        let meetingLiveText = prefs.liveText && (phase == .meeting || phase == .meetingPanel)
+        return IslandLayout.box(phase, geometry, hint: hint, live: meetingLiveText,
                                 prefs: prefs, historyRows: history.count, noSignal: noSignal)
     }
     public internal(set) var target: IslandTarget?
@@ -122,7 +125,8 @@ public final class IslandModel {
             Task { [weak self] in
                 guard let live = self?.feed.live else { return }
                 for await text in live {
-                    guard let self, self.prefs.liveText, self.phase.isBusy else { continue }
+                    guard let self, self.prefs.liveText,
+                          self.phase == .meeting || self.phase == .meetingPanel else { continue }
                     self.live = text
                 }
             },
