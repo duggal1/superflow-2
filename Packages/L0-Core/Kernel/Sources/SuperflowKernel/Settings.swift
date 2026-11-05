@@ -170,7 +170,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var cleanupContext = "general"
     public var interactiveDeadlineMs = 1500
     public var backgroundDeadlineMs = 30_000
-    public var cleanupWorkers = 3
+    public var cleanupWorkers = 2
     /// Compute the cleanup model runs on. GPU is the default because it is far
     /// faster on Apple silicon; CPU is the escape hatch when Metal is busy,
     /// unsupported, or the machine is better spent elsewhere.

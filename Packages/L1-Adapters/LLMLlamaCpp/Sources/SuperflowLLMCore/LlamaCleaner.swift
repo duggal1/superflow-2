@@ -240,7 +240,9 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
         let tokensOut: Int
         if let generated = output.generatedTokens { tokensOut = generated }
         else { tokensOut = await runtime.countTokens(cleaned) ?? 0 }
-        let tokensIn = await runtime.countTokens(prompt) ?? 0
+        // The caller already measured input tokens; retokenizing the full
+        // prompt triggers an extra XPC round trip after every completion.
+        let tokensIn = inputTokens
         // Filler-only input legitimately normalizes to an empty string.
         return CleanResult(text: cleaned,
                            tokensIn: tokensIn,
