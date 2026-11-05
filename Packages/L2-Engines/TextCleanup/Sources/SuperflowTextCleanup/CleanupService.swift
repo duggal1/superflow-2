@@ -198,6 +198,8 @@ public actor CleanupService {
             do {
                 let options = CleanOptions(styling: styling, structure: detectedStructure, context: context.cleanupContext,
                                            deadlineMs: deadline, maxNewTokens: cap)
+                // Developer diagnostics: no transcripts, only actual model calls.
+                metrics.event("cleanup.chunk.started", ["index": String(plan.index)])
                 if cleaner is any DeadlineManagedTextCleaner {
                     result = try await cleaner.clean(modelInput, options: options)
                 } else {
