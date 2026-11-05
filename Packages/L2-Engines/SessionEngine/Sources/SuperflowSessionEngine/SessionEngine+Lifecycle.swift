@@ -64,6 +64,10 @@ extension SessionEngine {
         var newRecord = SessionRecord(kind: .dictation, status: .recording,
                                       frontmostBundleID: bundleID, modelProfile: settings.asrProfile)
         try await repository.createSession(newRecord)
+        metrics.event("session.cleanup.start", [
+            "enabled": String(settings.cleanupEnabled),
+            "model": settings.reflectionCleanupEnabled ? "reflection" : "s1-mini",
+        ])
         record = newRecord
         resetBuffers()
         recognitionStream = nil
@@ -239,14 +243,25 @@ extension SessionEngine {
         metrics.record("session.stop.cleanup_wait.ms",
                        valueMs: Double((DispatchTime.now().uptimeNanoseconds - cleanupStarted) / 1_000_000))
         cleanupCoordinator = nil
-        // Cleanup is optional. A failed S1-mini pass must not prevent the
-        // recognized words from reaching the user. The coordinator preserves
-        // original ASR text on a failed chunk. Do not retry the model.
+        // A delayed model cannot hold up paste, but raw ASR still deserves
+        // deterministic dedupe, list/paragraph formatting and punctuation.
+        // Save that fallback before assembling text for the target editor.
+        if cleanupState == .fallback && !recognitionOverflow {
+            await repairFallbackText(session: record.id)
+        }
+        metrics.event("session.cleanup.result", [
+            "state": cleanupState.rawValue,
+            "model": settings.reflectionCleanupEnabled ? "reflection" : "s1-mini",
+        ])
         if settings.cleanupEnabled && cleanupState == .fallback {
-            emit(.notice("Text cleanup was unavailable. Using the original transcript without retrying."))
+            emit(.notice("S1-mini cleanup was unavailable; deterministic formatting was applied."))
         }
         let assembledText = recognitionOverflow ? nil : await finalText(session: record.id)
-        let text = assembledText ?? ""
+        let joined = assembledText ?? ""
+        // The paragraph formatter trims each persisted block. A deliberately
+        // enabled trailing space belongs to paste output, not stored history.
+        let text = settings.lineFormat.trailingSpace && !joined.isEmpty && !joined.hasSuffix(" ")
+            ? joined + " " : joined
         let words = wordCount(text)
         let duration = max(lastEndMs, Int(clock.now().timeIntervalSince(record.startedAt) * 1000))
 
@@ -316,6 +331,28 @@ extension SessionEngine {
         self.record = nil
         return SessionOutcome(sessionID: record.id, text: text, wordCount: words,
                               cleanupState: cleanupState, insertion: insertion)
+    }
+
+    /// Fix pending or queue-rejected rows only. Already polished model output
+    /// stays untouched; a cancelled model may not overwrite these fallback rows.
+    func repairFallbackText(session: SessionID) async {
+        do {
+            for segment in try await repository.segmentsForProcessing(session: session) {
+                let rawFallback = segment.cleanedText == nil || segment.cleanedText == segment.rawText
+                guard segment.cleanupState == .pending ||
+                      (segment.cleanupState == .fallback && rawFallback) else { continue }
+                let context = TextContext(source: segment.source, interactive: true,
+                                          settings: settings, project: project,
+                                          activeAppBundleID: record?.frontmostBundleID)
+                let polished = await pipeline.runDeterministic(segment.rawText, context: context).text
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                try await repository.updateCleaned(session: session, index: segment.index,
+                                                   cleaned: polished.isEmpty ? segment.rawText : polished,
+                                                   state: .fallback)
+            }
+        } catch {
+            emit(.notice("Deterministic cleanup could not be saved; original transcript retained."))
+        }
     }
 
     public func cancel() async {
