@@ -159,7 +159,7 @@ final class TextInsertionServiceTests: XCTestCase {
     func testStaleAccessibilityNeverCausesASecondPaste() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"), noChangePosts: 1)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
         let taps = await harness.poster.taps
         XCTAssertEqual(taps, [.cgSessionEventTap])
         XCTAssertTrue(harness.target.insertedTexts.isEmpty)
@@ -171,7 +171,7 @@ final class TextInsertionServiceTests: XCTestCase {
     func testUnverifiablePasteDoesNotRetry() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"), count: nil)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
         let taps = await harness.poster.taps
         XCTAssertEqual(taps, [.cgSessionEventTap])
     }
@@ -192,7 +192,7 @@ final class TextInsertionServiceTests: XCTestCase {
     func testUnobservedPasteDoesNotFallBackToAccessibility() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"), posterIncrements: false)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
         XCTAssertTrue(harness.target.insertedTexts.isEmpty)
         XCTAssertTrue(harness.scheduler.delays.isEmpty)
         let clipboardText = await harness.clipboard.text
@@ -225,7 +225,7 @@ final class TextInsertionServiceTests: XCTestCase {
         var options = TextInsertionOptions()
         options.preferMenuPaste = true
         let report = await harness.service.insert("hello", options: options)
-        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
+        XCTAssertEqual(report.result, .inserted(method: .menuPaste, verified: false))
         XCTAssertTrue(harness.target.insertedTexts.isEmpty)
     }
 
@@ -401,12 +401,16 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertTrue(report.clipboardRestoreScheduled)
     }
 
-    /// A confirmed paste only needs a short settle window, not half a second.
-    func testUnverifiedPasteKeepsTheLastResortRestoreWindow() async {
+    /// A dispatched paste without an AX baseline must not trigger a false failure.
+    /// Keep the text on the clipboard because the destination cannot be verified.
+    func testUnverifiedPasteRetainsRecoveryClipboardWithoutFalseFailure() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"), count: nil)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
         XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
-        XCTAssertEqual(harness.scheduler.delays, [.milliseconds(500)])
+        XCTAssertFalse(report.clipboardRestoreScheduled)
+        XCTAssertTrue(harness.scheduler.delays.isEmpty)
+        let clipboardText = await harness.clipboard.text
+        XCTAssertEqual(clipboardText, "hello")
     }
 
     /// Rapid insertions must serialize their pasteboard mutations, even though
