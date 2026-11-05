@@ -26,8 +26,12 @@ final class PreparationReadinessTests: XCTestCase {
         let cleaner = LlamaCleaner(modelProvider: PreparedModel(), runtime: runtime)
         let task = Task { try await cleaner.prepare() }
         while await !runtime.started { try await Task.sleep(for: .milliseconds(5)) }
-        let ready = await cleaner.isReady
+        // Readiness polling must not wait for model loading. The model is
+        // still warming here, so callers can fall back to raw ASR text.
+        let readyDuringLoad = await cleaner.isReady
+        XCTAssertFalse(readyDuringLoad)
         try await task.value
-        XCTAssertTrue(ready)
+        let readyAfterLoad = await cleaner.isReady
+        XCTAssertTrue(readyAfterLoad)
     }
 }
