@@ -205,15 +205,11 @@ public actor SQLiteStore: TranscriptRepository, AudioMetadataStore {
         FROM segments WHERE session_id = ? ORDER BY idx
         """)
         try statement.bind([.text(session.value)])
-        var text = ""
+        var pieces: [String] = []
         while try statement.step() {
-            let value = Self.segment(from: statement).bestText
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !value.isEmpty else { continue }
-            if !text.isEmpty { text.append(contentsOf: "\n\n") }
-            text.append(contentsOf: value)
+            pieces.append(Self.segment(from: statement).bestText)
         }
-        return text
+        return TranscriptTextJoiner.join(pieces)
     }
 
     public func deleteSession(_ id: SessionID) async throws {
