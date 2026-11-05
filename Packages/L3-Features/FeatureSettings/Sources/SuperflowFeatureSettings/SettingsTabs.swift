@@ -90,8 +90,8 @@ struct DictationTab: View {
                              },
                              label: "Dictation key")
                 }
-                SettingRow(.liveText, "Show live text", filter: query) {
-                    AppToggle("Show live text", isOn: $model.settings.islandLiveText)
+                SettingRow(.liveText, "Show meeting live text", filter: query) {
+                    AppToggle("Show meeting live text", isOn: $model.settings.islandLiveText)
                 }
                 SettingRow(.handTap, "Hold to talk", filter: query) {
                     ms(\.holdMs, in: SettingsValidation.holdRange)
