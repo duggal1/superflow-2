@@ -73,6 +73,8 @@ public struct Segmented<Value: Hashable>: View {
     }
 }
 
+extension Segmented.Item: Sendable where Value: Sendable {}
+
 public struct AppToggleStyle: ToggleStyle {
     public init() {}
 
