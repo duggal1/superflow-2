@@ -7,7 +7,7 @@ import SuperflowTextPipeline
 @testable import SuperflowSessionEngine
 
 final class StrictCleanupTests: XCTestCase {
-    func testModelFailureDoesNotInsertFallbackAndKeepsRecording() async throws {
+    func testModelFailureInsertsRawTranscriptAndKeepsRecording() async throws {
         let repository = InMemoryRepository()
         let journals = FakeJournalStore()
         let inserter = RecordingInserter()
@@ -22,11 +22,13 @@ final class StrictCleanupTests: XCTestCase {
         let inserted = await inserter.inserted
         let samples = await journals.sampleCount(session: id, source: .mic)
         let state = await engine.currentState
-        XCTAssertTrue(inserted.isEmpty)
+        XCTAssertEqual(inserted, ["hello world"])
         XCTAssertGreaterThan(samples, 0)
-        guard case .failed = state else { return XCTFail("Expected a visible failure, got \(state)") }
+        XCTAssertEqual(state, .complete(id))
         let rows = try await repository.segments(session: id)
-        XCTAssertTrue(rows.contains { $0.rawText == "hello world" })
+        XCTAssertTrue(rows.contains { $0.rawText == "hello world" && $0.cleanupState == .fallback })
+        let saved = try await repository.session(id)
+        XCTAssertEqual(saved?.status, .complete)
     }
     func testASRFailureDoesNotInsertPartialTranscript() async throws {
         let repository = InMemoryRepository()

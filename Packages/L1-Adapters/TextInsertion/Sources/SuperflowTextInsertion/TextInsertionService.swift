@@ -268,6 +268,18 @@ public actor TextInsertionService {
             }
         }
 
+        // Posting a chord or pressing a menu item does not prove it landed.
+        // Preserve the transcript and tell the Island when observation failed.
+        // Never try a second mutation after an unverified event: that can paste twice.
+        if inserted && !verified {
+            var onClipboard = ourChangeCount != nil
+            if !onClipboard {
+                onClipboard = await writeIfNeeded(text, enabled: options.writeClipboardOnFailure)
+            }
+            report.append(InsertionStep.unverifiable)
+            return finish(.notInserted(.pasteNotObserved, textOnClipboard: onClipboard))
+        }
+
         guard inserted, let method else {
             var onClipboard = ourChangeCount != nil
             if !onClipboard {
