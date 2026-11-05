@@ -65,6 +65,16 @@ public struct TextPipeline: Sendable {
         return await tokenCounter(text)
     }
 
+    /// S1-mini can miss a stop deadline. Still apply every deterministic
+    /// text stage before inserting the saved transcript. Never invoke an LLM
+    /// from this recovery path or silently erase protected content.
+    public func runDeterministic(_ text: String, context: TextContext,
+                                 protected: Protected = Protected()) async -> PipelineResult {
+        let fallback = TextPipeline(stages: stages.filter { $0.id != "cleanup" },
+                                    seedProtected: seedProtected)
+        return await fallback.run(text, context: context, protected: protected)
+    }
+
     public func run(_ text: String, context: TextContext,
                     protected: Protected = Protected()) async -> PipelineResult {
         var draft = TranscriptDraft(text: text, protected: protected)
