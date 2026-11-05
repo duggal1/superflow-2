@@ -30,6 +30,7 @@ public final class SettingsViewModel: ObservableObject {
     @Published public private(set) var cleanupTransfer: TransferSnapshot?
     @Published public private(set) var diarizationProgress: Double?
     @Published public private(set) var lastDiagnosticsExport: URL?
+    @Published public private(set) var developerStatus = "No S1-mini activity yet."
 
     public let toast: ToastCenter
     public let thirdPartyNotices: String
@@ -41,6 +42,7 @@ public final class SettingsViewModel: ObservableObject {
     private let diarizer: (any SpeakerDiarizer)?
     private let launchAtLogin: (any LaunchAtLoginController)?
     private let diagnostics: (any DiagnosticsExporting)?
+    private let developerStatusProvider: @MainActor () -> String
     private let onCleanupModelReady: (@MainActor () -> Void)?
     private let onSettingsSaved: (@MainActor (AppSettings) -> Void)?
     private var asrDownloadToken = UUID()
@@ -61,6 +63,7 @@ public final class SettingsViewModel: ObservableObject {
                 toast: ToastCenter = ToastCenter(),
                 thirdPartyNotices: String = "",
                 initial: AppSettings = .default,
+                developerStatusProvider: @escaping @MainActor () -> String = { "No S1-mini activity yet." },
                 onCleanupModelReady: (@MainActor () -> Void)? = nil,
                 onSettingsSaved: (@MainActor (AppSettings) -> Void)? = nil) {
         self.store = store
@@ -73,11 +76,16 @@ public final class SettingsViewModel: ObservableObject {
         self.launchAtLogin = launchAtLogin
         self.diagnostics = diagnostics
         self.onCleanupModelReady = onCleanupModelReady
+        self.developerStatusProvider = developerStatusProvider
         self.toast = toast
         self.thirdPartyNotices = thirdPartyNotices
         self.onSettingsSaved = onSettingsSaved
         self.settings = initial
         self.saved = initial
+    }
+
+    public func refreshDeveloperStatus() {
+        developerStatus = developerStatusProvider()
     }
 
     // MARK: state
