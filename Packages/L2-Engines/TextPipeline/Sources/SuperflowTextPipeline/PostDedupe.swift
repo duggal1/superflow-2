@@ -34,13 +34,24 @@ enum PostDedupe {
                 }
             }
             if matched == 0, i + 1 < tokens.count {
-                let a = tokens[i], b = tokens[i + 1]
-                if !intentionalDoubles.contains(a.core.lowercased()),
-                   (a.core.first?.isUppercase != true || a.core == "I"),
-                   a.core.lowercased() == b.core.lowercased(),
-                   a.lead.isEmpty, b.lead.isEmpty, (a.trail.isEmpty || a.trail == ","),
-                   safe(a, in: line, protected: protected), safe(b, in: line, protected: protected) {
-                    matched = 1
+                let first = tokens[i]
+                let key = first.core.lowercased()
+                if (first.core.first?.isUppercase != true || first.core == "I"),
+                   first.lead.isEmpty, safe(first, in: line, protected: protected) {
+                    var count = 1
+                    while i + count < tokens.count {
+                        let previous = tokens[i + count - 1]
+                        let current = tokens[i + count]
+                        guard current.core.lowercased() == key, current.lead.isEmpty,
+                              previous.trail.isEmpty || previous.trail == ",",
+                              safe(current, in: line, protected: protected) else { break }
+                        count += 1
+                    }
+                    // Preserve deliberate doubles such as "very very" or
+                    // "that that", but never pass a ten-word ASR stutter through.
+                    if count >= 3 || (count == 2 && !intentionalDoubles.contains(key)) {
+                        matched = count - 1
+                    }
                 }
             }
             if matched > 0 {
