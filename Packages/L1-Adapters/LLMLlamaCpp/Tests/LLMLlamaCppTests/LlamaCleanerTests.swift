@@ -58,7 +58,7 @@ final class LlamaCleanerTests: XCTestCase {
         let result = try await cleaner.clean("hello", options: CleanOptions())
         let calls = await runtime.countCalls
         XCTAssertEqual(result.tokensOut, 1)
-        XCTAssertEqual(calls, 2)
+        XCTAssertEqual(calls, 1, "Only the input needs tokenization when metadata provides output count")
     }
 
     func testMissingGeneratedCountStillTokenizesOutput() async throws {
@@ -68,7 +68,7 @@ final class LlamaCleanerTests: XCTestCase {
         let result = try await cleaner.clean("hello", options: CleanOptions())
         let calls = await runtime.countCalls
         XCTAssertEqual(result.tokensOut, 1)
-        XCTAssertEqual(calls, 3)
+        XCTAssertEqual(calls, 2, "Only input and output are tokenized when metadata is unavailable")
     }
 
     func testSystemPromptMatchesPinnedHash() {
