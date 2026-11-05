@@ -105,6 +105,19 @@ final class SystemTextInserterTests: XCTestCase {
         XCTAssertEqual(restores, 1)
     }
 
+    /// Web editors may accept Cmd+V while exposing no AX value or count.
+    /// The adapter must not tell the Island that this was a definite failure.
+    func testUnverifiablePostedPasteStaysSilentAndKeepsRecoveryClipboard() async throws {
+        let harness = makeAdapter(focus: .unknown(reason: "role-AXGroup"), count: nil)
+        let outcome = try await harness.inserter.insert("already pasted", strategy: .auto)
+        XCTAssertEqual(outcome, .pasted)
+        let text = await harness.clipboard.text
+        XCTAssertEqual(text, "already pasted")
+        let posts = await harness.poster.posts
+        XCTAssertEqual(posts, 1, "Never send a second mutation when AX is stale")
+        XCTAssertTrue(harness.scheduler.delays.isEmpty)
+    }
+
     func testAutoFallsBackToAccessibility() async throws {
         let harness = makeAdapter(focus: .unknown(reason: "role-AXGroup"), posterResult: false)
         let outcome = try await harness.inserter.insert("fallback", strategy: .auto)
