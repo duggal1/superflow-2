@@ -138,10 +138,21 @@ actor AudioCppRuntime {
 
     func prime() throws {
         try load()
-        if idle.isEmpty && slots.isEmpty {
+        guard idle.isEmpty && slots.isEmpty else { return }
+        do {
             let stream = try start(source: asset.isSpeech ? .mic : .system)
             close(id: stream.id)
-            guard !idle.isEmpty else { throw SuperflowError.modelUnavailable("audio.cpp session preparation failed") }
+            guard !idle.isEmpty else {
+                throw SuperflowError.modelUnavailable("audio.cpp session preparation failed")
+            }
+        } catch {
+            // A failed experimental activation must release the candidate's
+            // GPU weights, so the previously selected model can still run.
+            if slots.isEmpty {
+                idle.removeAll()
+                model = nil
+            }
+            throw error
         }
     }
 
