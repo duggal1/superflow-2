@@ -85,6 +85,11 @@ final class ModelsViewTests: XCTestCase {
         XCTAssertEqual(speech.first { $0.id == ModelProfile.voxtralRealtime.id }?.state, .idle)
         XCTAssertTrue(vm.matches(speech[1], query: "Qwen"))
         XCTAssertFalse(vm.matches(speech[1], query: "Voxtral"))
+        XCTAssertTrue(speech.allSatisfy { vm.matches($0, query: "ASR") })
+        XCTAssertTrue(speech.allSatisfy { vm.matches($0, query: "streaming") })
+        XCTAssertTrue(vm.matches(speech[1], query: "Qwen/Qwen3-ASR"))
+        XCTAssertTrue(vm.matches(speech.last!, query: "Mistral"))
+        XCTAssertFalse(vm.matches(speech[0], query: "DeepFilterNet"))
     }
 
     func testActivationFailureKeepsExistingModelSelected() async throws {
