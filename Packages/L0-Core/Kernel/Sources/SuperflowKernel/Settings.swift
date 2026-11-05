@@ -127,8 +127,8 @@ public struct GestureConfig: Codable, Sendable, Equatable {
 }
 
 public struct AppSettings: Codable, Sendable, Equatable {
-    /// Version 2 migrates the legacy CPU default; version 3 enables list formatting.
-    public static let currentVersion = 3
+    /// Version 2 migrates CPU, version 3 migrated lists, version 4 restores auto structure.
+    public static let currentVersion = 4
     public var settingsVersion = AppSettings.currentVersion
     public var theme: ThemeMode = .system
     /// Nemotron 3.5 ASR Streaming 0.6B is the model the app installs and runs. It is
@@ -166,7 +166,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var audioRetentionDays: Int? = 7
     public var keepJournals = false
     public var cleanupStyling = "semi-formal"
-    public var cleanupStructure = "lists"
+    // Prose unless an explicit enumeration triggers automatic list shaping.
+    public var cleanupStructure = "prose"
     public var cleanupContext = "general"
     public var interactiveDeadlineMs = 1500
     public var backgroundDeadlineMs = 30_000
@@ -229,7 +230,10 @@ public struct AppSettings: Codable, Sendable, Equatable {
         keepJournals = try c.decodeIfPresent(Bool.self, forKey: .keepJournals) ?? d.keepJournals
         cleanupStyling = try c.decodeIfPresent(String.self, forKey: .cleanupStyling) ?? d.cleanupStyling
         cleanupStructure = try c.decodeIfPresent(String.self, forKey: .cleanupStructure) ?? d.cleanupStructure
-        if storedVersion < 3, cleanupStructure == "prose" { cleanupStructure = "lists" }
+        // Version 3 made every transcript request list formatting, including
+        // ordinary prose. Restore automatic evidence-based list detection.
+        // Version 4 preserves future explicitly saved "lists" selections.
+        if storedVersion < 4, cleanupStructure == "lists" { cleanupStructure = "prose" }
         cleanupContext = try c.decodeIfPresent(String.self, forKey: .cleanupContext) ?? d.cleanupContext
         interactiveDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .interactiveDeadlineMs) ?? d.interactiveDeadlineMs
         backgroundDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .backgroundDeadlineMs) ?? d.backgroundDeadlineMs
