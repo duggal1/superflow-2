@@ -61,9 +61,11 @@ final class LexiconTests: XCTestCase {
                                   canonical: "idempotency", appScope: "com.microsoft.VSCode")
         let stage = LexiconStage(entries: [scoped])
         let raw = TranscriptDraft(text: "item potency")
-        XCTAssertEqual((await stage.apply(raw, context: TextContext())).text, "item potency")
-        XCTAssertEqual((await stage.apply(raw, context: TextContext(
-            activeAppBundleID: "com.microsoft.VSCode"))).text, "idempotency")
+        let missing = await stage.apply(raw, context: TextContext())
+        let coding = await stage.apply(raw, context: TextContext(
+            activeAppBundleID: "com.microsoft.VSCode"))
+        XCTAssertEqual(missing.text, "item potency")
+        XCTAssertEqual(coding.text, "idempotency")
     }
 
     func testIdempotent() async {

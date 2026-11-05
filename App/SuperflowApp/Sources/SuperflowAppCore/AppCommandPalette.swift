@@ -28,8 +28,7 @@ enum AppCommandPalette {
         switch section {
         case .dashboard: .dashboard
         case .history: .history
-        case .knowledge: .dictionary
-        case .dictionary: .dictionary
+        case .knowledge, .dictionary: .dictionary
         case .shortcuts: .shortcuts
         case .meetings: .meetings
         case .models: .models
