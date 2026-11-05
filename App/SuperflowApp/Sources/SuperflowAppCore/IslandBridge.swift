@@ -227,8 +227,7 @@ final class IslandBridge {
 
     func makeTranscript(_ record: SessionRecord) async -> IslandTranscript? {
         let segments = (try? await transcripts.segments(session: record.id)) ?? []
-        let text = segments.map(\.bestText).joined(separator: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = TranscriptTextJoiner.join(segments.map(\.bestText))
         guard !text.isEmpty else { return nil }
         return IslandTranscript(text: text,
                                 bundleID: record.frontmostBundleID,
