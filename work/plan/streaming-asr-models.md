@@ -14,3 +14,17 @@ Scope (do not alter unrelated feature work):
 9. Add focused mapping, catalog, artifact and model-selection regression tests.
 10. Review Swift API compatibility, dependencies, and UI accessibility. Real Mac inference tests remain a release gate.
 11. Commit each scoped change on this branch and merge only after verification.
+
+Progress, 2026-11-05 (committed; not claimed runtime-verified):
+- Added four source-backed live-partial ASR profiles: Nemotron, Qwen 0.6B/1.7B, Voxtral.
+- Removed Moonshine from selectable candidates: the pinned runtime emits only final text.
+- Added isolated native runtimes, exact GGUF SHA256/byte metadata and CMake families.
+- Separated optional model installation from GPU warming; preserved Nemotron paths.
+- Added per-profile search/install/activate/remove, confirmation, failure feedback.
+- Native activation primes before settings commit and cannot evict active streams.
+- Added catalog, model-store, deletion, activation, and search regression source.
+- Added explicit macOS Apple-silicon acceptance test requiring pre-final partials.
+- Static check: no conflict markers and all modified Swift files below 400 lines.
+Release gates OPEN: native Swift compile, real Qwen/Voxtral streaming on Mac,
+full audio.cpp+ASR test pass, screenshot accessibility review, perf corpus,
+GitHub verification, integration with newer main commits, PR and merge.

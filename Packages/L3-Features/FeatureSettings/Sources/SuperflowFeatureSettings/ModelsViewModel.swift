@@ -8,6 +8,8 @@ import SwiftUI
 @MainActor @Observable
 public final class ModelsViewModel {
     public private(set) var items: [ModelItem]
+    public private(set) var actionErrors: [String: String] = [:]
+    public private(set) var activatingProfile: String?
 
     private let enhancer: (any SpeechEnhancer)?
     private let enhancementEnabled: @MainActor () -> Bool
@@ -55,11 +57,11 @@ public final class ModelsViewModel {
         self.asrProfile = asrProfile
         self.cleanupEnabled = cleanupEnabled
         self.onActivate = onActivate
-        self.items = [
-            ModelItem(id: asrProfile, kind: .speech,
-                      name: ModelProfile.byID(asrProfile).displayName,
-                      detail: Self.speechDetail(for: asrRuntime),
-                      bytes: Self.speechBytes(for: asrRuntime)),
+        self.items = ModelProfile.streamingProfiles.map { profile in
+            ModelItem(id: profile.id, kind: .speech, name: profile.displayName,
+                      detail: profile.metadataLabel + " · " + profile.licenseName,
+                      bytes: profile.artifactBytes)
+        } + [
             ModelItem(id: Self.enhancementID, kind: .enhancement, name: "DeepFilterNet 3",
                       detail: "Required for optional microphone noise suppression.",
                       bytes: 0),
@@ -90,8 +92,8 @@ public final class ModelsViewModel {
     /// "2 of 3 installed." — the only subtitle on the page.
     public var subtitle: String { "\(installedCount) of \(items.count) installed." }
     public var activeName: String {
-        items.first { $0.kind == .speech }?.name
-            ?? ModelProfile.nemotron35Streaming.displayName
+        items.first { $0.kind == .speech && $0.isActive }?.name
+            ?? ModelProfile.byID(asrProfile).displayName
     }
     public var selectedASRRuntime: ASRRuntime { asrRuntime }
 
@@ -102,10 +104,17 @@ public final class ModelsViewModel {
         guard let item = items.first(where: { $0.id == id && $0.kind == .speech }),
               case .installed = item.state,
               ModelProfile.byID(id).supportsLiveDictation,
-              item.installedASRRuntimes.contains(asrRuntime) else { return false }
+              item.installedASRRuntimes.contains(.audioCpp) else { return false }
         if item.isActive { return true }
-        guard await onActivate(id) else { return false }
-        await updateASRSelection(runtime: asrRuntime, profile: id)
+        guard activatingProfile == nil else { return false }
+        actionErrors[id] = nil
+        activatingProfile = id
+        defer { activatingProfile = nil }
+        guard await onActivate(id) else {
+            actionErrors[id] = "Could not prepare this streaming model. The previous model is still active."
+            return false
+        }
+        await updateASRSelection(runtime: .audioCpp, profile: id)
         return true
     }
 
@@ -113,8 +122,11 @@ public final class ModelsViewModel {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return true }
         let profile = item.kind == .speech ? ModelProfile.byID(item.id) : nil
-        return [item.name, item.detail, item.kind.title, profile?.vendor ?? "",
-                profile?.language ?? "", profile?.formatLabel ?? ""]
+        return [item.id, item.name, item.detail, item.kind.title,
+                profile?.vendor ?? "", profile?.language ?? "",
+                profile?.formatLabel ?? "", profile?.upstreamRepo ?? "",
+                profile?.runtimeRepo ?? "",
+                item.kind == .speech ? "ASR streaming speech recognition dictation" : ""]
             .contains { $0.localizedStandardContains(needle) }
     }
 
@@ -122,15 +134,6 @@ public final class ModelsViewModel {
         guard asrRuntime != runtime || asrProfile != profile else { return }
         asrRuntime = runtime
         asrProfile = profile
-        if let index = items.firstIndex(where: { $0.kind == .speech }) {
-            let installedRuntimes = items[index].installedASRRuntimes
-            items[index] = ModelItem(id: profile, kind: .speech,
-                                     name: ModelProfile.byID(profile).displayName,
-                                     detail: Self.speechDetail(for: runtime,
-                                                               installedIn: installedRuntimes),
-                                     bytes: Self.speechBytes(for: runtime),
-                                     installedASRRuntimes: installedRuntimes)
-        }
         isChecking = true
         await refresh()
     }
@@ -140,17 +143,19 @@ public final class ModelsViewModel {
             syncActive()
             isChecking = false
         }
-        let installedRuntimes = await installedASRRuntimes(profileID: asrProfile)
-        if let index = items.firstIndex(where: { $0.kind == .speech }) {
-            items[index].installedASRRuntimes = installedRuntimes
-            items[index].detail = Self.speechDetail(for: asrRuntime,
-                                                     installedIn: installedRuntimes)
+        for profile in ModelProfile.streamingProfiles {
+            let runtimes = await installedASRRuntimes(profileID: profile.id)
+            if let index = items.firstIndex(where: { $0.id == profile.id && $0.kind == .speech }) {
+                items[index].installedASRRuntimes = runtimes
+                items[index].detail = profile.metadataLabel + " · " + profile.licenseName
+                    + (runtimes.isEmpty ? " · audio.cpp" : " · Installed: " +
+                        runtimes.map(\.label).joined(separator: ", "))
+            }
+            set(.installed, for: profile.id, whenIdle: !runtimes.isEmpty)
         }
-        let speech = !installedRuntimes.isEmpty
         let enhancement = await enhancer?.isAvailable() ?? false
         let cleanup = await models?.llmModelURL() != nil
         let meetings = (await diarizer?.isInstalled()) ?? false
-        set(.installed, for: asrProfile, whenIdle: speech)
         set(.installed, for: Self.enhancementID, whenIdle: enhancement)
         set(.installed, for: Self.cleanupID, whenIdle: cleanup)
         set(.installed, for: Self.meetingsID, whenIdle: meetings)
@@ -163,7 +168,8 @@ public final class ModelsViewModel {
             let onDisk = isInstalled(items[i].state)
             switch items[i].kind {
             case .speech:
-                items[i].isActive = items[i].installedASRRuntimes.contains(asrRuntime)
+                items[i].isActive = items[i].id == asrProfile
+                    && items[i].installedASRRuntimes.contains(asrRuntime)
             case .enhancement: items[i].isActive = onDisk && enhancementEnabled()
             case .cleanup: items[i].isActive = onDisk && cleanupEnabled()
             case .meetings: items[i].isActive = onDisk
@@ -187,9 +193,10 @@ public final class ModelsViewModel {
         let token = UUID()
         tokens[id] = token
         setState(.downloading(0), for: id)
-        let asrModels = selectedASRModels
-        let asrProfile = self.asrProfile
-        let asrRuntime = self.asrRuntime
+        // All additional families run through the native audio.cpp backend.
+        let asrModels = asrModelsByRuntime[.audioCpp] ?? selectedASRModels
+        let asrProfile = item.kind == .speech ? item.id : self.asrProfile
+        let asrRuntime: ASRRuntime = .audioCpp
 
         downloadTasks[id] = Task { @MainActor in
             defer {
@@ -249,6 +256,28 @@ public final class ModelsViewModel {
 
     public func retry(_ id: String) { download(id) }
 
+    @discardableResult
+    public func remove(_ id: String) async -> Bool {
+        guard let item = items.first(where: { $0.id == id && $0.kind == .speech }),
+              case .installed = item.state,
+              !item.isActive, id != asrProfile, activatingProfile != id,
+              tokens[id] == nil else { return false }
+        guard let remover = (asrModelsByRuntime[.audioCpp] ?? asrModels) as? any ASRModelRemoving else {
+            actionErrors[id] = "This model provider does not support removal."
+            return false
+        }
+        do {
+            try await remover.remove(profileID: id)
+            actionErrors[id] = nil
+            await refresh()
+            return true
+        } catch {
+            actionErrors[id] = error.localizedDescription
+            return false
+        }
+    }
+
+
     private var selectedASRModels: (any ASRModelProvider)? {
         asrModelsByRuntime[asrRuntime] ?? asrModels
     }
@@ -266,7 +295,7 @@ public final class ModelsViewModel {
 
     private func needsInstall(_ item: ModelItem) -> Bool {
         if item.kind == .speech {
-            return !item.installedASRRuntimes.contains(asrRuntime)
+            return item.id == asrProfile && !item.installedASRRuntimes.contains(.audioCpp)
         }
         return !isInstalled(item.state)
     }

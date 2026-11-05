@@ -159,7 +159,8 @@ final class SettingsViewModelTests: XCTestCase {
         model.setProfile("nemotron-streaming-0.6b")
         await model.refreshModelState()
         XCTAssertEqual(model.settings.asrProfile, ModelProfile.default.id)
-        XCTAssertEqual(model.profileOptions, [ModelProfile.default.id])
+        XCTAssertEqual(model.profileOptions.first, ModelProfile.default.id)
+        XCTAssertEqual(Set(model.profileOptions), Set(ModelProfile.streamingProfiles.map(\.id)))
         XCTAssertEqual(model.toast.current?.style, .warning)
     }
 

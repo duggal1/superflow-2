@@ -335,7 +335,7 @@ public struct ModelProfile: Sendable, Hashable, Identifiable {
     }
 
     public var latencyLabel: String {
-        guard let chunkMs else { return "Offline" }
+        guard let chunkMs else { return streaming ? "Live chunks" : "Offline" }
         return streaming ? "\(chunkMs) ms chunks" : "\(chunkMs / 1_000) s windows"
     }
 
@@ -350,7 +350,7 @@ public struct ModelProfile: Sendable, Hashable, Identifiable {
         runtimeRepo: "audio-cpp/audio.cpp-gguf/Nemotron-3.5-ASR-Streaming-0.6B-GGUF",
         language: "40 locales", chunkMs: 320, streaming: true, status: .unverified,
         note: "Cache-aware multilingual streaming through audio.cpp on Metal.")
-    public static let all: [ModelProfile] = [.nemotron35Streaming, .moonshineTiny, .moonshineSmall, .qwen3ASR06B]
+    public static let all: [ModelProfile] = [.nemotron35Streaming, .qwen3ASR06B, .qwen3ASR17B, .voxtralRealtime]
 
     /// The one dictation profile the app installs, offers first and falls back to.
     public static var `default`: ModelProfile { .nemotron35Streaming }

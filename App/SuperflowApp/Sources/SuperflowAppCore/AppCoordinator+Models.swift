@@ -13,7 +13,17 @@ extension AppCoordinator {
               await environment.recognizer.isAvailable(profileID: profile) else {
             return false
         }
+        // Do not commit an alternate model that cannot start a native
+        // streaming session. The previous settings survive preparation failure.
+        do {
+            try await environment.recognizer.warmUp(profile: profile)
+        } catch {
+            return false
+        }
+        guard !menuBarController.sessionState.isActive,
+              !menuBarController.meetingState.isActive else { return false }
         var updated = settings
+        updated.asrRuntime = .audioCpp
         updated.asrProfile = profile
         await environment.settingsStore.save(updated)
         await applySettings(updated)

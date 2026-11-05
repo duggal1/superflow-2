@@ -51,9 +51,31 @@ actor AudioCppRuntime {
     }
 
     var isReady: Bool { model != nil && (!idle.isEmpty || !slots.isEmpty) }
+    func hasActiveStreams() -> Bool { !slots.isEmpty }
     func isInstalled() -> Bool { model != nil || (try? asset.verified(modelURL)) == true }
+    /// Delete only this profile's verified GGUF, never shared diarization
+    /// weights or another model's files. An active session or download vetoes
+    /// removal; the UI refuses deleting the currently selected speech model.
+    func removeInstalledModel() throws {
+        guard asset.isSpeech else {
+            throw SuperflowError.invalidState("Speaker separation is not a speech model")
+        }
+        guard slots.isEmpty, installation == nil else {
+            throw SuperflowError.invalidState("Model is in use or downloading")
+        }
+        idle.removeAll()
+        model = nil
+        guard FileManager.default.fileExists(atPath: modelURL.path) else { return }
+        try FileManager.default.removeItem(at: modelURL)
+        let receipt = modelURL.appendingPathExtension("verified.json")
+        if FileManager.default.fileExists(atPath: receipt.path) {
+            try FileManager.default.removeItem(at: receipt)
+        }
+    }
 
-    func install(progress: @escaping @Sendable (Double) -> Void) async throws {
+
+    func install(progress: @escaping @Sendable (Double) -> Void,
+                 warmAfterInstall: Bool = true) async throws {
         progress(0)
         let startedGeneration = generation
         if !isInstalled() {
@@ -80,7 +102,7 @@ actor AudioCppRuntime {
             }
         }
         guard generation == startedGeneration else { throw CancellationError() }
-        try prime()
+        if warmAfterInstall { try prime() }
         progress(1)
     }
 
@@ -116,10 +138,21 @@ actor AudioCppRuntime {
 
     func prime() throws {
         try load()
-        if idle.isEmpty && slots.isEmpty {
-            let stream = try start(source: asset == .speech ? .mic : .system)
+        guard idle.isEmpty && slots.isEmpty else { return }
+        do {
+            let stream = try start(source: asset.isSpeech ? .mic : .system)
             close(id: stream.id)
-            guard !idle.isEmpty else { throw SuperflowError.modelUnavailable("audio.cpp session preparation failed") }
+            guard !idle.isEmpty else {
+                throw SuperflowError.modelUnavailable("audio.cpp session preparation failed")
+            }
+        } catch {
+            // A failed experimental activation must release the candidate's
+            // GPU weights, so the previously selected model can still run.
+            if slots.isEmpty {
+                idle.removeAll()
+                model = nil
+            }
+            throw error
         }
     }
 
@@ -143,6 +176,18 @@ actor AudioCppRuntime {
         return NativeHandle(session, kind: .session)
     }
 
+    /// Nemotron uses token lookahead. Qwen emits native partial deltas after
+    /// bounded decoding windows; its upstream default is 30 seconds, which
+    /// would make a dictation UI appear frozen. Keep the option family-specific.
+    private func configureRequest(_ request: OpaquePointer) throws {
+        if asset.isNemotron {
+            try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
+            try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
+        } else if asset == .qwenASR06B || asset == .qwenASR17B {
+            try Self.check(audiocpp_request_set_option(request, "audio_chunk_duration_sec", "3"))
+        }
+    }
+
     func start(source: AudioSourceKind) throws -> AudioCppStream {
         guard slots.count < 2 else { throw SuperflowError.invalidState("audio.cpp has two active speech streams") }
         try load()
@@ -154,10 +199,7 @@ actor AudioCppRuntime {
         }
         defer { audiocpp_request_free(request) }
         try Self.check(audiocpp_request_set_audio(request, nil, 0, Int32(sampleRate), 1))
-        if asset == .speech {
-            try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
-            try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
-        }
+        try configureRequest(request)
         try Self.check(audiocpp_stream_start(owner.pointer, request))
         let id = UUID()
         let (events, continuation) = AsyncStream<RecognitionEvent>.makeStream(bufferingPolicy: .bufferingNewest(32))
@@ -192,7 +234,7 @@ actor AudioCppRuntime {
                 consume(audiocpp_event_as_result(next), slot: &slot)
                 audiocpp_event_free(next)
             }
-            if asset == .speech {
+            if asset.isSpeech {
                 let sum = chunk.samples.reduce(Float.zero) { $0 + $1 * $1 }
                 let speech = !chunk.samples.isEmpty && (sum / Float(chunk.samples.count)).squareRoot() >= 0.0025
                 slot.silenceSamples = speech ? 0 : slot.silenceSamples + chunk.samples.count
@@ -206,8 +248,7 @@ actor AudioCppRuntime {
                     }
                     defer { audiocpp_request_free(request) }
                     try Self.check(audiocpp_request_set_audio(request, nil, 0, Int32(sampleRate), 1))
-                    try Self.check(audiocpp_request_set_option(request, "language", "en-US"))
-                    try Self.check(audiocpp_request_set_option(request, "lookahead_tokens", "3"))
+                    try configureRequest(request)
                     try Self.check(audiocpp_stream_start(slot.handle.pointer, request))
                     slot.text = ""
                     slot.start = nil
@@ -225,7 +266,7 @@ actor AudioCppRuntime {
         guard var slot = slots[id] else { return }
         defer { close(id: id) }
         do {
-            if asset == .speech {
+            if asset.isSpeech {
                 try finalizeSpeech(&slot)
             } else {
                 var result: OpaquePointer?
@@ -247,9 +288,8 @@ actor AudioCppRuntime {
         let final = (audiocpp_result_text(result, &text, nil) == AUDIOCPP_OK)
             ? text.map { String(cString: $0).trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
             : ""
-        // Streaming backends sometimes return an empty final result after
-        // emitting valid live partials. Preserve those words instead of
-        // marking a speech-filled recording as "No speech".
+        // Some streaming backends provide an empty final despite valid partials.
+        // Retain the transcript already emitted to avoid losing spoken words.
         let recovered = final.isEmpty
             ? slot.text.trimmingCharacters(in: .whitespacesAndNewlines)
             : final
@@ -264,6 +304,14 @@ actor AudioCppRuntime {
         return turns.last { $0.start <= sample && sample < $0.end }?.label
     }
     func resetSpeakers() { turns.removeAll(keepingCapacity: true) }
+    /// Release only GPU resident state on a model switch. Model downloads are
+    /// independent of selection and must not be cancelled by a different row.
+    func unloadResident() {
+        guard slots.isEmpty else { return }
+        idle.removeAll()
+        model = nil
+    }
+
     func unload() {
         generation &+= 1
         for id in Array(slots.keys) { close(id: id) }
@@ -283,7 +331,7 @@ actor AudioCppRuntime {
     private func consume(_ result: OpaquePointer?, slot: inout Slot) {
         collectSpeakers(result)
         var text: UnsafePointer<CChar>?
-        if audiocpp_result_text(result, &text, nil) == AUDIOCPP_OK, let text, asset == .speech {
+        if audiocpp_result_text(result, &text, nil) == AUDIOCPP_OK, let text, asset.isSpeech {
             slot.text += String(cString: text)
             emit(.partial(slot.text), to: slot)
         }

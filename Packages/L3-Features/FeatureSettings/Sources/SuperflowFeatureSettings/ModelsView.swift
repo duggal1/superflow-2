@@ -47,11 +47,20 @@ public struct ModelItem: Identifiable, Equatable, Sendable {
 /// row is audio.cpp's diarizer, so it carries a glyph rather than a vendor image.
 public struct ModelMark: View {
     public let kind: ModelKind
-    public init(kind: ModelKind) { self.kind = kind }
+    public let profileID: String?
+    public init(kind: ModelKind, profileID: String? = nil) {
+        self.kind = kind
+        self.profileID = profileID
+    }
 
     @ViewBuilder public var body: some View {
         switch kind {
-        case .speech: NVIDIAIcon(width: 24)
+        case .speech:
+            if profileID == nil || profileID == ModelProfile.nemotron35Streaming.id {
+                NVIDIAIcon(width: 24)
+            } else {
+                IconView(.speechModel, size: 18)
+            }
         case .enhancement: IconView(.noiseSuppression, size: 14)
         case .cleanup: S1MiniMark(size: 24)
         case .meetings: IconView(.speakerSeparation, size: 14)
@@ -92,7 +101,7 @@ public struct ModelsView: View {
             EmptyView()
         } trailing: {
             if vm.showsDownloadRemaining {
-                AppButton("Install remaining (\(vm.remainingDownloadCount))", kind: .primary) { vm.downloadAll() }
+                AppButton("Install required (\(vm.remainingDownloadCount))", kind: .primary) { vm.downloadAll() }
             }
         } content: {
             HStack(spacing: 12) {
@@ -130,21 +139,31 @@ public struct ModelsView: View {
 }
 
 struct ModelCard: View {
+    @Environment(DialogHost.self) private var dialogs
     let item: ModelItem
     let vm: ModelsViewModel
 
     var body: some View {
         DownloadCard(title: item.name, detail: item.detail, state: item.state,
                      totalBytes: item.bytes > 0 ? item.bytes : nil) {
-            ModelMark(kind: item.kind)
+            ModelMark(kind: item.kind, profileID: item.kind == .speech ? item.id : nil)
         } trailing: {
             HStack(spacing: 12) {
                 if item.kind == .speech {
+                    if item.id == ModelProfile.default.id {
+                        PixelBadge("Default", kind: .installed)
+                    } else {
+                        PixelBadge("Experimental", kind: .caution)
+                    }
                     Text(item.benchmark.map { String(format: "%.0f/100", $0.intelligenceScore) }
                          ?? "Not benchmarked")
                         .appType(.caption)
                         .foregroundStyle(Tok.text2)
                         .accessibilityLabel("Speech recognition benchmark")
+                }
+                if let error = vm.actionErrors[item.id] {
+                    PixelBadge("Could not activate", kind: .failed)
+                        .help(error)
                 }
                 switch item.state {
                 case .idle where vm.isChecking:
@@ -164,12 +183,25 @@ struct ModelCard: View {
                     } else if item.kind == .speech {
                         let runtimes = item.installedASRRuntimes.map(\.label).joined(separator: ", ")
                         PixelBadge("Installed · \(runtimes)", kind: .installed)
-                        if item.installedASRRuntimes.contains(vm.selectedASRRuntime) {
-                            AppButton("Use model", kind: .secondary) {
+                        if item.installedASRRuntimes.contains(.audioCpp) {
+                            AppButton(vm.activatingProfile == item.id ? "Preparing…" : "Use model",
+                                      kind: .secondary) {
                                 Task { await vm.activate(item.id) }
                             }
+                            AppButton("Remove", kind: .quiet) {
+                                dialogs.present {
+                                    DialogFrame(title: "Remove \(item.name)?",
+                                                subtitle: "The downloaded model will be deleted from this Mac.",
+                                                confirmTitle: "Remove model", canConfirm: true,
+                                                onConfirm: {
+                                                    Task { await vm.remove(item.id) }
+                                                }) {
+                                        EmptyView()
+                                    }
+                                }
+                            }
                         } else {
-                            AppButton("Install for \(vm.selectedASRRuntime.label)", kind: .secondary) {
+                            AppButton("Install for audio.cpp", kind: .secondary) {
                                 vm.download(item.id)
                             }
                         }
