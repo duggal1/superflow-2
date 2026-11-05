@@ -233,7 +233,10 @@ extension SessionEngine {
             await cancel()
             return nil
         }
+        let cleanupStarted = DispatchTime.now().uptimeNanoseconds
         let cleanupState = await cleanupCoordinator?.finish() ?? .skipped
+        metrics.record("session.stop.cleanup_wait.ms",
+                       valueMs: Double((DispatchTime.now().uptimeNanoseconds - cleanupStarted) / 1_000_000))
         cleanupCoordinator = nil
         // Cleanup is optional. A failed S1-mini pass must not prevent the
         // recognized words from reaching the user. The coordinator preserves

@@ -23,16 +23,17 @@ public actor SessionCleanupCoordinator {
     private let metrics: any MetricsSink
     private let emit: @Sendable (SessionEvent) -> Void
     private var workerTasks: [Task<Void, Never>] = []
-    private var maxWorkers = 1
     private var requests: [CleanupRequest] = []
     private var workerWaiters: [CheckedContinuation<CleanupRequest?, Never>] = []
-    private var submitWaiters: [CheckedContinuation<Void, Never>] = []
     private var submittedCount = 0
     private var completedCount = 0
     private var cleanedCount = 0
     private var fallbackCount = 0
-    private var queueCapacity = 1
+    // Requests contain only metadata, not audio. Pending work is capped so
+    // prolonged inference stalls cannot grow memory without bound.
+    private static let maximumPendingSegments = 128
     private var isFinished = false
+    private var abandoned = false
 
     public init(repository: any TranscriptRepository, sessionID: SessionID,
                 metrics: any MetricsSink = NoopMetrics(), emit: @escaping @Sendable (SessionEvent) -> Void) {
@@ -47,26 +48,26 @@ public actor SessionCleanupCoordinator {
         // Match the helper's two inference contexts. Extra coordinator workers
         // cannot improve throughput and create an additional hidden queue.
         let count = min(2, max(1, workerCount))
-        maxWorkers = count
-        queueCapacity = count
         workerTasks = (0..<count).map { _ in Task { await self.runWorker() } }
     }
 
-    /// Backpressure keeps queued work bounded. The caller persists each row before submitting it.
+    /// Never wait for S1-mini from the recognition event consumer. A blocking
+    /// submit used to stop reading live ASR events when the cleanup queue filled.
+    /// The raw row is already persisted; when saturated, return false so its
+    /// caller can mark that row as a safe raw-text fallback.
     ///
-    /// Interactive (push-to-talk) rows jump ahead of background meeting/dictation
-    /// rows so the text the user is waiting on is not stuck behind a long backlog.
+    /// Interactive requests retain priority over background cleanup.
+    @discardableResult
     public func submit(index: Int, interactive: Bool, pipeline: TextPipeline,
                        settings: AppSettings, project: ProjectContext? = nil,
                        wordTimings: [WordTiming] = [], activeAppBundleID: String? = nil,
-                       precomputed: PipelineResult? = nil) async {
+                       precomputed: PipelineResult? = nil) async -> Bool {
         submittedCount = max(submittedCount, index + 1)
-        while requests.count >= queueCapacity, !isFinished {
-            await withCheckedContinuation { continuation in
-                submitWaiters.append(continuation)
-            }
+        guard !isFinished, requests.count < Self.maximumPendingSegments else {
+            complete(.fallback)
+            metrics.event("session.cleanup.queue_full", ["pending": String(requests.count)])
+            return false
         }
-        guard !isFinished else { return }
         let request = CleanupRequest(index: index, interactive: interactive,
                                      pipeline: pipeline, settings: settings, wordTimings: wordTimings,
                                      activeAppBundleID: activeAppBundleID, project: project,
@@ -74,26 +75,46 @@ public actor SessionCleanupCoordinator {
         if let waiter = workerWaiters.popLast() {
             waiter.resume(returning: request)
         } else {
-            let index = CleanupQueuePolicy.insertionIndex(
+            let queueIndex = CleanupQueuePolicy.insertionIndex(
                 isInteractive: interactive, queued: requests.map(\.interactive))
-            requests.insert(request, at: index)
+            requests.insert(request, at: queueIndex)
         }
+        return true
     }
 
-    public func finish() async -> CleanupState {
+    /// Final insertion gets a bounded cleanup tail, not an unbounded backlog.
+    /// Any unfinished segments retain their durable raw ASR text.
+    public func finish(maximumWaitMs: Int = 2_500) async -> CleanupState {
         isFinished = true
         resumeWorkersIfFinished()
-        let tasks = workerTasks
-        for task in tasks { await task.value }
+        let deadline = ContinuousClock.now.advanced(by: .milliseconds(max(0, maximumWaitMs)))
+        while completedCount < submittedCount && ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(20))
+            if Task.isCancelled { break }
+        }
+        if completedCount < submittedCount {
+            let unfinished = submittedCount - completedCount
+            abandoned = true
+            fallbackCount += unfinished
+            metrics.event("session.cleanup.finish_deadline", ["unfinished": String(unfinished)])
+            requests.removeAll()
+            for waiter in workerWaiters { waiter.resume(returning: nil) }
+            workerWaiters.removeAll()
+            for task in workerTasks { task.cancel() }
+            // The helper may take time to observe cancellation; do not block
+            // paste waiting for it. Abandoned workers cannot update rows.
+            workerTasks.removeAll()
+            return .fallback
+        }
+        for task in workerTasks { await task.value }
         workerTasks.removeAll()
         return aggregateState
     }
 
     public func cancel() async {
         isFinished = true
+        abandoned = true
         requests.removeAll()
-        for waiter in submitWaiters { waiter.resume() }
-        submitWaiters.removeAll()
         resumeWorkersIfFinished()
         for task in workerTasks { task.cancel() }
         let tasks = workerTasks
@@ -115,10 +136,6 @@ public actor SessionCleanupCoordinator {
     private func nextRequest() async -> CleanupRequest? {
         if !requests.isEmpty {
             let request = requests.removeFirst()
-            if let waiter = submitWaiters.first {
-                submitWaiters.removeFirst()
-                waiter.resume()
-            }
             return request
         }
         if isFinished { return nil }
@@ -159,6 +176,9 @@ public actor SessionCleanupCoordinator {
             let failedEmpty = cleaned.isEmpty && result.draft.cleanupState != .cleaned
             let resolved = failedEmpty ? segment.rawText : cleaned
             resultState = failedEmpty ? .fallback : result.draft.cleanupState
+            // A timed-out cleanup may finish after insertion. Never allow it
+            // to silently rewrite a transcript the owner has already pasted.
+            guard !abandoned, !Task.isCancelled else { return }
             do {
                 try await repository.updateCleaned(session: segment.sessionID, index: segment.index,
                                                    cleaned: resolved, state: resultState)

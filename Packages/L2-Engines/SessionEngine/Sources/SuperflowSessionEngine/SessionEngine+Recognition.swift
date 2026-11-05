@@ -31,20 +31,35 @@ extension SessionEngine {
         do {
             try await repository.appendSegment(row)
         } catch {
+            // Never insert incomplete text after a durable capture failure.
+            recognitionOverflow = true
             emit(.notice("Could not persist raw segment \(index): \(error.localizedDescription)"))
+            return
         }
-        let tokens = await pipeline.countTokens(raw.text)
-        let withinInteractiveBudget = tokens.map { cumulativeTokenCount + $0 <= 600 } ?? true
-        if let tokens { cumulativeTokenCount += tokens }
-        let interactive = raw.endMs <= 30_000 && withinInteractiveBudget
+        // Priority classification must not make an XPC tokenizer round trip:
+        // S1-mini could be busy and block this same recognition event reader.
+        // A conservative byte budget is sufficient for scheduling priority.
+        let estimatedTokens = (raw.text.utf8.count + 2) / 3
+        cumulativeTokenCount += estimatedTokens
+        let interactive = raw.endMs <= 30_000 && cumulativeTokenCount <= 600
         let revision = pipelineRevision
         var precomputed = speculativeCleanupEnabled && index == 0 && interactive && raw.words.isEmpty
             ? await speculative.take(.init(session: session, revision: revision, text: raw.text)) : nil
         if revision != pipelineRevision { precomputed = nil }
-        await cleanupCoordinator?.submit(index: index, interactive: interactive,
-                                          pipeline: pipeline, settings: settings,
-                                          project: project, wordTimings: raw.words,
-                                          activeAppBundleID: record?.frontmostBundleID,
-                                          precomputed: precomputed)
+        let scheduled = await cleanupCoordinator?.submit(index: index, interactive: interactive,
+                                                         pipeline: pipeline, settings: settings,
+                                                         project: project, wordTimings: raw.words,
+                                                         activeAppBundleID: record?.frontmostBundleID,
+                                                         precomputed: precomputed) ?? false
+        if !scheduled {
+            // Raw speech is already durable. Mark this segment as a fallback
+            // instead of leaving an indefinitely pending cleanup state.
+            do {
+                try await repository.updateCleaned(session: session, index: index,
+                                                   cleaned: raw.text, state: .fallback)
+            } catch {
+                emit(.notice("Could not retain raw segment \(index) as cleanup fallback."))
+            }
+        }
     }
 }
