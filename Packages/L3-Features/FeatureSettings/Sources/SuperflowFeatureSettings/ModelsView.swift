@@ -101,7 +101,7 @@ public struct ModelsView: View {
             EmptyView()
         } trailing: {
             if vm.showsDownloadRemaining {
-                AppButton("Install remaining (\(vm.remainingDownloadCount))", kind: .primary) { vm.downloadAll() }
+                AppButton("Install required (\(vm.remainingDownloadCount))", kind: .primary) { vm.downloadAll() }
             }
         } content: {
             HStack(spacing: 12) {
