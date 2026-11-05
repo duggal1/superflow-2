@@ -214,13 +214,15 @@ struct PrivacyTab: View {
 struct AdvancedTab: View {
     nonisolated static let titles = ["Typing speed", "Interactive deadline",
                                      "Background deadline", "Cleanup workers",
-                                     "Cleanup compute"]
+                                     "Cleanup compute", "Developer mode", "S1-mini status"]
 
     @ObservedObject var model: SettingsViewModel
     let query: String
+    @AppStorage("superflow.developerMode") private var developerMode = false
 
     var body: some View {
-        SettingsCard(titles: Self.titles, query: query) {
+        VStack(alignment: .leading, spacing: Space.lg) {
+            SettingsCard(titles: Array(Self.titles.prefix(5)), query: query) {
             SettingRow(.typingSpeed, "Typing speed", filter: query) {
                 AppStepper(value: $model.settings.typingWPM,
                            range: SettingsValidation.typingSpeedRange,
@@ -247,6 +249,26 @@ struct AdvancedTab: View {
                 Dropdown(selection: $model.settings.cleanupCompute,
                          options: ModelCompute.allCases.map { .init(value: $0, title: $0.label) },
                          label: "Cleanup compute")
+            }
+            }
+            SettingsCard(titles: Array(Self.titles.suffix(2)), query: query) {
+                SettingRow(.diagnostics, "Developer mode", filter: query) {
+                    AppToggle("Developer mode", isOn: $developerMode)
+                }
+                if developerMode {
+                    SettingRow(.diagnostics, "S1-mini status", filter: query) {
+                        Text(model.developerStatus)
+                            .appType(.caption)
+                            .foregroundStyle(Tok.text2)
+                    }
+                }
+            }
+        }
+        .task(id: developerMode) {
+            guard developerMode else { return }
+            while !Task.isCancelled {
+                model.refreshDeveloperStatus()
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
     }
