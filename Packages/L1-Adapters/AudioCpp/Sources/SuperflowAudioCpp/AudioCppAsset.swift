@@ -125,7 +125,7 @@ enum AudioCppAsset: Sendable {
         // The temporary download was SHA-256 checked above. Its receipt is
         // adjacent to the temporary file, not the installed destination.
         // Persist destination metadata to avoid hashing a 1-3 GB model again.
-        try writeVerifiedReceipt(for: destination)
+        try? writeVerifiedReceipt(for: destination)
     }
 }
 
