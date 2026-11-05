@@ -88,8 +88,10 @@ public actor AudioCppRecognizer: SpeechRecognizer, ASRModelRemoving {
     }
     public func remove(profileID: String) async throws {
         let runtime = try Self.runtime(profileID, from: runtimes)
-        guard profileID != currentProfile else {
-            throw SuperflowError.invalidState("Switch to another speech model before removing the active model")
+        guard profileID != currentProfile,
+              warmStarts[profileID] == nil,
+              streamStarts[profileID] == nil else {
+            throw SuperflowError.invalidState("Cannot remove an active or preparing speech model")
         }
         try await runtime.removeInstalledModel()
     }
