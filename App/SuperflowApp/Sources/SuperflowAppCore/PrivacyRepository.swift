@@ -85,14 +85,7 @@ public actor PrivacyRepository: TranscriptRepository {
 
     public func transcriptTextForProcessing(session id: SessionID) async throws -> String {
         let segments = try await segmentsForProcessing(session: id)
-        var text = ""
-        for segment in segments {
-            let value = segment.bestText.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !value.isEmpty else { continue }
-            if !text.isEmpty { text.append(contentsOf: "\n\n") }
-            text.append(contentsOf: value)
-        }
-        return text
+        return TranscriptTextJoiner.join(segments.map(\.bestText))
     }
 
     public func deleteSession(_ id: SessionID) async throws {
