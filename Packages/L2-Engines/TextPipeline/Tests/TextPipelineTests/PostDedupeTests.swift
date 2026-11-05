@@ -29,6 +29,10 @@ final class PostDedupeTests: XCTestCase {
         XCTAssertEqual(PostDedupe.apply("what what exactly changed"), "what exactly changed")
         XCTAssertEqual(PostDedupe.apply("we must we must we must fix the back end"), "we must fix the back end")
         XCTAssertEqual(PostDedupe.apply("must must fix the tech stack"), "must fix the tech stack")
+        XCTAssertEqual(PostDedupe.apply("extremely extremely extremely extremely extremely extremely extremely extremely extremely extremely slow"), "extremely slow")
+        XCTAssertEqual(PostDedupe.apply("that that that that is wrong"), "that is wrong")
+        XCTAssertEqual(PostDedupe.apply("very very"), "very very")
+        XCTAssertEqual(PostDedupe.apply("one one one two two"), "one one one two two")
         XCTAssertEqual(PostDedupe.apply("the back end uses the tech stack"), "the back end uses the tech stack")
     }
     func testProtectsMeaningAndFormatting() {
