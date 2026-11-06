@@ -2,6 +2,7 @@ import Foundation
 import SuperflowKernel
 import SuperflowPorts
 import SuperflowTextCleanup
+import SuperflowTextDisfluency
 import SuperflowTextCodeAware
 import SuperflowTextCodeSpeak
 import SuperflowTextCommands
@@ -40,6 +41,9 @@ public enum TextPipelineBuilder {
     public static func make(settings: AppSettings,
                             dependencies: TextPipelineDependencies = TextPipelineDependencies()) -> TextPipeline {
         var stages: [any SuperflowPorts.TextStage] = []
+        if settings.disfluency.enabled {
+            stages.append(DisfluencyStage(settings: settings.disfluency))
+        }
         if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
             stages.append(CleanupStage(service: cleaner))
         }

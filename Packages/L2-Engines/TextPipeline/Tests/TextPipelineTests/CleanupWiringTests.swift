@@ -24,10 +24,10 @@ final class CleanupWiringTests: XCTestCase {
         let result = await pipeline.run("please send the report tomorrow um",
                                         context: TextContext(settings: settings))
         let inputs = await cleaner.inputs
-        XCTAssertEqual(inputs, ["please send the report tomorrow um"])
+        XCTAssertEqual(inputs, ["please send the report tomorrow"])
         XCTAssertEqual(result.draft.cleanupState, .cleaned)
         XCTAssertEqual(result.text, "Please send the report tomorrow.")
-        XCTAssertEqual(result.timings.first?.id, "cleanup")
+        XCTAssertEqual(result.timings.first?.id, "disfluency")
         XCTAssertEqual(result.timings.last?.id, "techDictionary")
     }
 

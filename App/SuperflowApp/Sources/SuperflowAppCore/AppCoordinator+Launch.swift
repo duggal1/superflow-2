@@ -8,16 +8,18 @@ import SuperflowKernel
 @MainActor
 extension AppCoordinator {
     func startModelPreparation(environment: AppEnvironment, log: Logger) {
-        Task { [weak self] in
+        // Hex loads models on a single runtime thread at background priority,
+        // never concurrently on the GPU at launch. Mirror that: serialize ASR
+        // then cleanup, both at utility priority, so the UI never freezes.
+        Task(priority: .utility) { [weak self] in
             guard let self else { return }
-
-            let cleanupCompute = self.settings.cleanupCompute
-            async let cleanupReady = environment.prepareInstalledCleanupModel(compute: cleanupCompute)
             let started = DispatchTime.now().uptimeNanoseconds
-            async let asrReady = environment.sessionEngine.prewarm()
-            let (asr, cleanup) = await (asrReady, cleanupReady)
+            // Cleanup (S1-mini) is loaded lazily on first use (LlamaCleaner.clean
+            // calls prepare() when cold), so launch never blocks on a second
+            // GPU model load. Hex loads models on demand the same way.
+            let asr = await environment.sessionEngine.prewarm()
             let elapsed = (DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
-            log.info("Model preparation: \(elapsed) ms; ASR ready: \(asr); cleanup ready: \(cleanup)")
+            log.info("Model preparation: \(elapsed) ms; ASR ready: \(asr); cleanup deferred (lazy)")
         }
     }
 

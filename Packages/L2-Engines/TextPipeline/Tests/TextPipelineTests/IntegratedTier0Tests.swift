@@ -10,7 +10,7 @@ final class IntegratedTier0Tests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: settings)
         let context = TextContext(settings: settings)
         let list = await pipeline.run("first install the app second grant access third start dictation", context: context)
-        XCTAssertEqual(list.text, "first install the app second grant access third start dictation")
+        XCTAssertEqual(list.text, "1. install the app\n2. grant access\n3. start dictation")
         let empty = await pipeline.run("um uh", context: context)
         XCTAssertEqual(empty.text, "um uh")
         XCTAssertEqual(empty.draft.cleanupState, .pending)
