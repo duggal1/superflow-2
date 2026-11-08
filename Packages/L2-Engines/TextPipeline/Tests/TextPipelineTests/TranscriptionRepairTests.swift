@@ -85,6 +85,15 @@ final class TranscriptionRepairTests: XCTestCase {
         XCTAssertFalse(result.text.contains("vipcode"), result.text)
     }
 
+    func testWipeAndAgentOfVariants() async {
+        let pipeline = TextPipelineBuilder.make(settings: .default)
+        let result = await pipeline.run("here's heng I'm not a wipe coder okay I'm not a whipe coder. I'm a serious agent of engineer.", context: TextContext())
+        XCTAssertTrue(result.text.contains("vibe coder"), result.text)
+        XCTAssertTrue(result.text.contains("agentic engineer"), result.text)
+        XCTAssertFalse(result.text.contains("wipe"), result.text)
+        XCTAssertFalse(result.text.contains("agent of"), result.text)
+    }
+
     func testAICasingWholeTokenOnly() {
         XCTAssertEqual(AIEraResolver.enforceCasing("it said the rain"), "it said the rain")
         XCTAssertEqual(AIEraResolver.enforceCasing("i am an ai engineer"), "i am an AI engineer")
