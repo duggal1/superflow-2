@@ -585,3 +585,13 @@ ASR prime created a session without feeding audio; Metal compiled on the first d
 
 Evidence: prime now feeds 24k silence to compile at launch; live first-dictation timing remains unverified.
 
+## Six-worker stress froze macOS
+
+Six-context S1 GPU stress froze the Mac and forced a restart; contention remains unmeasured.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: throwaway contention harness froze macOS; full suites green without it (SessionEngine 48, FeatureSettings 34).
+
+
