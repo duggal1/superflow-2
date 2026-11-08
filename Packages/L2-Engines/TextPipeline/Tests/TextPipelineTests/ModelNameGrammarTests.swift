@@ -45,6 +45,9 @@ final class ModelNameGrammarTests: XCTestCase {
             ("gpt six luna", "GPT-6 Luna"),
             ("gpt six terra", "GPT-6 Terra"),
             ("open air models", "OpenAI models"),
+            ("use fable five point five", "use Claude Fable 5.5"),
+            ("use claude fable five", "use Claude Fable 5"),
+            ("use mythos five", "use Claude Mythos 5"),
         ]
         XCTAssertGreaterThanOrEqual(cases.count, 30)
         for (input, expected) in cases {
@@ -58,6 +61,8 @@ final class ModelNameGrammarTests: XCTestCase {
             "the granite counter is gray",
             "the nova was visible at night",
             "I wrote a sonnet yesterday",
+            "the fable ends with a moral",
+            "a mythos is a story",
             "there was a falcon in the park",
             "the llama ate grass",
             "five point nine dollars",

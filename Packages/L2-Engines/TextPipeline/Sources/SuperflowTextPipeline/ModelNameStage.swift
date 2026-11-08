@@ -18,6 +18,8 @@ enum ModelNameNormalizer {
         .init(canonical: "Claude Opus", aliases: ["claude opus", "opus"], requiresVersion: true),
         .init(canonical: "Claude Sonnet", aliases: ["claude sonnet", "sonnet"], requiresVersion: true),
         .init(canonical: "Claude Haiku", aliases: ["claude haiku", "haiku"], requiresVersion: true),
+        .init(canonical: "Claude Fable", aliases: ["claude fable", "fable"], requiresVersion: true),
+        .init(canonical: "Claude Mythos", aliases: ["claude mythos", "mythos"], requiresVersion: true),
         .init(canonical: "ChatGPT", aliases: ["chat gbd", "chat gpt", "chatgpt"]),
         .init(canonical: "GPT", aliases: ["gpt", "g p t"], hyphenVersion: true),
         .init(canonical: "Gemini", aliases: ["gemini"]),
