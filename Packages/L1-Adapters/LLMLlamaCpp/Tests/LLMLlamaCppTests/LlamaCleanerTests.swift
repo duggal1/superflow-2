@@ -74,7 +74,7 @@ final class LlamaCleanerTests: XCTestCase {
     func testSystemPromptMatchesPinnedHash() {
         let data = Data(LlamaPrompt.system(options: CleanOptions()).utf8)
         let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-        XCTAssertEqual(digest, "6ecb6800f96b00cf612631552eff606a829feb2be8449fa95f9f150713b89327")
+        XCTAssertEqual(digest, "a718e14582ad4401a54fb1ed55dee4c6cb35fc2675ed5202a0796f0ef425d183")
     }
 
     func testConcurrentPreparationLoadsOnce() async throws {
@@ -146,7 +146,7 @@ final class LlamaCleanerTests: XCTestCase {
     func testBundledPromptMatchesPinnedHash() throws {
         let data = try XCTUnwrap(LlamaPrompt.resourceData())
         let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-        XCTAssertEqual(digest, "7d9d1b20117eb230cc5b91ed3470dea314f33562ca7731a88520aaf6fc3d2602")
+        XCTAssertEqual(digest, "f801a3c53af593cf0873846f267ec04545b4a9dc7c189aa372242aefe4500607")
     }
 
     func testPlainTemplateHasNoChatTokens() {

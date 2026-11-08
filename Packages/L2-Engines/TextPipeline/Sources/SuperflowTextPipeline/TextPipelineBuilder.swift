@@ -36,17 +36,36 @@ public struct TextPipelineDependencies: Sendable {
     }
 }
 
-/// S1-mini receives the raw transcript before deterministic text formatting.
+/// S1-mini receives the transcript after safe pre-normalization, and the
+/// deterministic dictionary stages run again after it. Model cleanup must
+/// never be the first name fixer: strong aliases and model families give
+/// the cleanup model the corrected terminology, while Tier B stays gated.
 public enum TextPipelineBuilder {
     public static func make(settings: AppSettings,
                             dependencies: TextPipelineDependencies = TextPipelineDependencies()) -> TextPipeline {
         var stages: [any SuperflowPorts.TextStage] = []
+        stages.append(TranscriptionRepairStage(id: "preCleanupRepair"))
+        stages.append(PreCleanupModelNameStage())
+        let preGate = TechDictionaryGate(userEntries: dependencies.lexiconEntries,
+                                         project: dependencies.project)
+        stages.append(LexiconStage(entries: TechDictionary.lexiconEntries(),
+                                   id: "techDictionaryPreCleanup",
+                                   includeCanonical: false,
+                                   filter: { trigger, canonical, line, context in
+                                       guard let rule = TechDictionary.rule(trigger: trigger, canonical: canonical) else {
+                                           return true
+                                       }
+                                       if rule.tier == .a { return true }
+                                       return preGate.accepts(trigger: trigger, canonical: canonical,
+                                                                line: line, context: context)
+                                   }))
         if settings.disfluency.enabled {
             stages.append(DisfluencyStage(settings: settings.disfluency))
         }
         if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
             stages.append(CleanupStage(service: cleaner))
         }
+        stages.append(TranscriptionRepairStage(id: "postCleanupRepair"))
         stages.append(PostDedupeStage())
         stages.append(FormattingStage())
         if settings.commandsEnabled {

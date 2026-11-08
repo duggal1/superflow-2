@@ -6929,6 +6929,18 @@
         {
           "t": "next dot jay ess",
           "tier": "A"
+        },
+        {
+          "t": "nextgs",
+          "tier": "A"
+        },
+        {
+          "t": "next gs",
+          "tier": "A"
+        },
+        {
+          "t": "next g s",
+          "tier": "A"
         }
       ],
       "enabled_default": true
@@ -14423,6 +14435,129 @@
         {
           "t": "s 1 mini",
           "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "raspberry-pi",
+      "canonical": "Raspberry Pi",
+      "kind": "hardware",
+      "pack": "hardware",
+      "case": "lower",
+      "aliases": [
+        {
+          "t": "raspberry pi",
+          "tier": "A"
+        },
+        {
+          "t": "raspberry by",
+          "tier": "B",
+          "requires": [
+            "pi",
+            "speaker",
+            "cpu",
+            "board"
+          ]
+        },
+        {
+          "t": "raspberry p i",
+          "tier": "B"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "homepod",
+      "canonical": "HomePod",
+      "kind": "hardware",
+      "pack": "hardware",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "homepod",
+          "tier": "A"
+        },
+        {
+          "t": "home pod",
+          "tier": "A"
+        },
+        {
+          "t": "homepot",
+          "tier": "B",
+          "requires": [
+            "speaker",
+            "apple",
+            "pod"
+          ]
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "blender",
+      "canonical": "Blender",
+      "kind": "tool",
+      "pack": "3d",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "blender",
+          "tier": "A"
+        },
+        {
+          "t": "blunder",
+          "tier": "B",
+          "requires": [
+            "rendering",
+            "3d",
+            "model"
+          ]
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "codex",
+      "canonical": "Codex",
+      "kind": "tool",
+      "pack": "ai",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "codex",
+          "tier": "A"
+        },
+        {
+          "t": "code ex",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "respeaker",
+      "canonical": "ReSpeaker",
+      "kind": "hardware",
+      "pack": "hardware",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "respeaker",
+          "tier": "A"
+        },
+        {
+          "t": "re speaker",
+          "tier": "A"
+        },
+        {
+          "t": "reach speaker",
+          "tier": "B",
+          "requires": [
+            "mic",
+            "microphone",
+            "raspberry"
+          ]
         }
       ],
       "enabled_default": true

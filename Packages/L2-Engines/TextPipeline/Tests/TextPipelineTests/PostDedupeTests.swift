@@ -12,7 +12,7 @@ final class PostDedupeTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: .init(cleaner: cleaner))
         let explanation = await pipeline.explain("we we can continue", context: TextContext(settings: settings))
         let ids = explanation.stages.map(\.stageID)
-        XCTAssertEqual(ids, ["disfluency", "cleanup", "dedupe", "format", "commands", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware", "lineformat", "normalize", "modelNames", "techDictionary"])
+        XCTAssertEqual(ids, ["preCleanupRepair", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "cleanup", "postCleanupRepair", "dedupe", "format", "commands", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware", "lineformat", "normalize", "modelNames", "techDictionary"])
         XCTAssertTrue(ids.contains("disfluency"))
         XCTAssertFalse(ids.contains("polish"))
         XCTAssertFalse(ids.contains("structure"))
