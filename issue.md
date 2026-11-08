@@ -82,8 +82,10 @@ The user reports a crash when stopping meeting transcription; no matching local 
 
 The shortcut now opens Intelligence settings; a separate interactive assistant is not implemented.
 
-- [x] Unresolved
-- [ ] Resolved
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: right Option opens the Island assistant card (help streams the answer); WarmupGesture assistant test passes.
 
 ## Dashboard audio playback reports unavailable
 
@@ -207,10 +209,10 @@ Verification: failing-before regression now passes; all nine RecoveryTests pass,
 
 The Intelligence backend is not connected to meeting transcripts or an on-screen assistant.
 
-- [x] Unresolved
-- [ ] Resolved
+- [ ] Unresolved
+- [x] Resolved
 
-Evidence: shortcut now routes to meeting capture; no app code instantiates MeetingIntelligence or feeds its transcript buffer.
+Verification: AppEnvironment owns the buffer; bridge instantiates MeetingIntelligence on hotkey, feeds the last transcript, streams into the Island.
 
 ## Reflection cleanup barely edits spoken transcripts
 
@@ -511,7 +513,7 @@ Production TextContext constructors omit activeAppBundleID, preventing developer
 
 Evidence: identifier appears in TextContext and gate, but no production caller supplies it. Mixed-language false positives also require policy review.
 
-Latest resolution: Keychain prompt blocks Intelligence navigation — auth-UI-fail check passes with instant navigation.
+Latest resolution: Island assistant built — right Option opens the card and streams help about the latest transcript.
 
 ## Short ASR first result is late
 
