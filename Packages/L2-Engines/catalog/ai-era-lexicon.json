@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "terms": [
+    {"canonical": "vibe coding", "category": "practice", "meaning": "Writing code by prompting an AI and iterating on its output.", "casing": "lower", "boost": 3, "variants": ["vipe coding", "vipe codeing", "vipcoding"]},
+    {"canonical": "vibe code", "category": "practice", "meaning": "Verb: to build code by prompting an AI.", "casing": "lower", "boost": 3, "variants": ["vipe code", "vip code"]},
+    {"canonical": "vibe coded", "category": "practice", "meaning": "Past tense of vibe coding: code produced by prompting.", "casing": "lower", "boost": 3, "variants": ["vipcode", "vipcoded", "vipe coded"]},
+    {"canonical": "vibe coder", "category": "practice", "meaning": "A person who builds by prompting an AI.", "casing": "lower", "boost": 3, "variants": ["vibe coder", "vipe coder"]},
+    {"canonical": "vibe coders", "category": "practice", "meaning": "People who build by prompting an AI.", "casing": "lower", "boost": 3, "variants": ["vibe coders", "vipe coders"]},
+    {"canonical": "agentic", "category": "ai", "meaning": "Describes AI agents that act autonomously with tools.", "casing": "lower", "boost": 2, "variants": ["agentic", "agentically"]},
+    {"canonical": "agentic engineer", "category": "ai", "meaning": "An engineer who builds with autonomous AI agents.", "casing": "lower", "boost": 3, "variants": ["agentic engineer", "agent engineer", "agentic engineers"]},
+    {"canonical": "agentic engineering", "category": "ai", "meaning": "Building autonomous AI agent systems.", "casing": "lower", "boost": 3, "variants": ["agentic engineering", "agent engineering"]},
+    {"canonical": "AI", "category": "ai", "meaning": "Artificial intelligence.", "casing": "upper", "boost": 3, "variants": ["ai", "a i", "artificial intelligence"]},
+    {"canonical": "LLM", "category": "ai", "meaning": "Large language model.", "casing": "upper", "boost": 3, "variants": ["llm", "l l m"]},
+    {"canonical": "RAG", "category": "ai", "meaning": "Retrieval-augmented generation.", "casing": "upper", "boost": 2, "variants": ["rag", "r a g"]},
+    {"canonical": "MCP", "category": "ai", "meaning": "Model Context Protocol.", "casing": "upper", "boost": 2, "variants": ["mcp", "m c p"]},
+    {"canonical": "GPU", "category": "hardware", "meaning": "Graphics processing unit.", "casing": "upper", "boost": 2, "variants": ["gpu", "g p u"]},
+    {"canonical": "API", "category": "ai", "meaning": "Application programming interface.", "casing": "upper", "boost": 2, "variants": ["api", "a p i"]},
+    {"canonical": "subagent", "category": "ai", "meaning": "A delegated AI agent.", "casing": "lower", "boost": 2, "variants": ["subagent", "sub agent"]},
+    {"canonical": "context engineering", "category": "ai", "meaning": "Designing what context an AI model receives.", "casing": "lower", "boost": 2, "variants": ["context engineering"]},
+    {"canonical": "prompt engineering", "category": "ai", "meaning": "Crafting prompts for AI models.", "casing": "lower", "boost": 2, "variants": ["prompt engineering"]},
+    {"canonical": "tool calling", "category": "ai", "meaning": "A model invoking external tools.", "casing": "lower", "boost": 2, "variants": ["tool calling", "tools calling"]},
+    {"canonical": "function calling", "category": "ai", "meaning": "A model invoking functions.", "casing": "lower", "boost": 2, "variants": ["function calling", "functions calling"]},
+    {"canonical": "evals", "category": "ai", "meaning": "Evaluations measuring AI system quality.", "casing": "lower", "boost": 2, "variants": ["evals", "eval", "evaluation"]},
+    {"canonical": "fine-tuning", "category": "ai", "meaning": "Training a model further on specific data.", "casing": "lower", "boost": 2, "variants": ["fine tuning", "fine-tune"]},
+    {"canonical": "guardrails", "category": "ai", "meaning": "Safety controls on AI outputs.", "casing": "lower", "boost": 2, "variants": ["guardrails", "guard rail"]},
+    {"canonical": "harness", "category": "ai", "meaning": "Infrastructure wrapping an AI model.", "casing": "lower", "boost": 2, "variants": ["harness"]},
+    {"canonical": "Claude Code", "category": "product", "meaning": "Anthropic's command-line coding agent.", "casing": "canonical", "boost": 3, "variants": ["claude code", "clod code"]},
+    {"canonical": "Codex", "category": "product", "meaning": "OpenAI's coding agent.", "casing": "canonical", "boost": 3, "variants": ["codex", "code ex"]},
+    {"canonical": "Cursor", "category": "product", "meaning": "AI code editor.", "casing": "canonical", "boost": 2, "variants": ["cursor"]}
+  ]
+}

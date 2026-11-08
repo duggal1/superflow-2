@@ -45,6 +45,7 @@ public enum TextPipelineBuilder {
                             dependencies: TextPipelineDependencies = TextPipelineDependencies()) -> TextPipeline {
         var stages: [any SuperflowPorts.TextStage] = []
         stages.append(TranscriptionRepairStage(id: "preCleanupRepair"))
+        stages.append(AIEraResolverStage(id: "aiEraPreCleanup"))
         stages.append(PreCleanupModelNameStage())
         let preGate = TechDictionaryGate(userEntries: dependencies.lexiconEntries,
                                          project: dependencies.project)
@@ -66,6 +67,7 @@ public enum TextPipelineBuilder {
             stages.append(CleanupStage(service: cleaner))
         }
         stages.append(TranscriptionRepairStage(id: "postCleanupRepair"))
+        stages.append(AIEraResolverStage(id: "aiEraPostCleanup"))
         stages.append(PostDedupeStage())
         stages.append(FormattingStage())
         if settings.commandsEnabled {

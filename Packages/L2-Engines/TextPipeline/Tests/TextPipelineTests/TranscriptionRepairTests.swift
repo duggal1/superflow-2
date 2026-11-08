@@ -1,5 +1,6 @@
 import XCTest
 import SuperflowKernel
+import SuperflowTechDictionary
 @testable import SuperflowTextPipeline
 
 final class TranscriptionRepairTests: XCTestCase {
@@ -72,6 +73,28 @@ final class TranscriptionRepairTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: settings)
         let result = await pipeline.run("hmm im gonna be late", context: TextContext(settings: settings))
         XCTAssertTrue(result.text.first?.isUppercase == true, result.text)
+    }
+
+    func testFixture3VibeCoding() async {
+        let pipeline = TextPipelineBuilder.make(settings: .default)
+        let result = await pipeline.run("Honestly, I do not vipe code. I never vipcode in my life. I'm a seniors AI engineer or you can call it agentic engineer. I do serious agentic engineering all day.", context: TextContext())
+        XCTAssertTrue(result.text.contains("vibe code"), result.text)
+        XCTAssertTrue(result.text.contains("vibe coded"), result.text)
+        XCTAssertTrue(result.text.contains("agentic engineer"), result.text)
+        XCTAssertFalse(result.text.contains("vipe"), result.text)
+        XCTAssertFalse(result.text.contains("vipcode"), result.text)
+    }
+
+    func testAICasingWholeTokenOnly() {
+        XCTAssertEqual(AIEraResolver.enforceCasing("it said the rain"), "it said the rain")
+        XCTAssertEqual(AIEraResolver.enforceCasing("i am an ai engineer"), "i am an AI engineer")
+        XCTAssertEqual(AIEraResolver.enforceCasing("ai works with llm and api and mcp and gpu"), "AI works with LLM and API and MCP and GPU")
+    }
+
+    func testNewTermNeedsNoCodeChange() {
+        let custom = AIEraLexicon.Term(canonical: "vibecoding", category: "practice", meaning: "test term", casing: "lower", boost: 1, variants: ["vibe-coding"])
+        let resolved = AIEraResolver.apply("i love vibe-coding", terms: [custom])
+        XCTAssertTrue(resolved.text.contains("vibecoding"), resolved.text)
     }
 
     func testPipelineOrderRunsNormalizationBeforeCleanup() async {

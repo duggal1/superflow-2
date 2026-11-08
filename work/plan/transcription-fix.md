@@ -1,14 +1,16 @@
-# Plan: transcription quality fix (corrected)
-## Root causes (verified)
-- S1-mini trained on exact system prompt; any wording change degrades it.
-  Prior prompt expansion was wrong — prompt must stay byte-identical.
-- Deterministic LineFormat (capitalize + finalPeriod) overrides S1 styling:
-  casual/semi-casual lowercase gets re-capitalized and punctuated.
-- FormattingStage always list-shapes prose, overriding S1 Structure: prose.
-- Pre-cleanup normalization order kept (model names before model).
-## Files
-- s1-prompt.json: REVERT to exact trained prompt + pinned hashes.
-- TextPipelineBuilder: effective LineFormat from cleanupStyling.
-- FormattingStage/shapeOutput: gate list shaping on cleanupStructure.
-- Tests: styling preservation, structure gating, live S1 run.
-## Verify: swift test TextPipeline/TextCleanup/LLMLlamaCpp + live model run.
+# Plan: transcription fix + F12 AI-era lexicon + audio leveler
+## Verified facts
+- S1-mini must keep exact trained prompt; back to byte-identical + hashes.
+- HAL: first channel only, Float32, AVAudioConverter high-quality to 16k mono once; no double resample, no AGC. Enhancer adds fixed 1.32x gain, peak cap 0.98.
+- Nemotron 3.5 0.6B: 16k mono, 320ms chunks (ModelProfile). Mel/norm inside audio.cpp, unverified locally.
+- audiocpp.h exposes generic model options, no hotwords/bias setter; STT bias = resolver-only until proven.
+- Textract/Cloudflare/Next.js already Tier B-gated; Fable/Mythos generic families added.
+## F12 (do now)
+- ai-era-lexicon.json data (canonical, category, meaning, casing, variants, boost); seed vibe/agentic/AI terms.
+- Loader + resolver stage pre+post cleanup, whole-token casing (AI/LLM/API/MCP/GPU).
+- Fixture #3 target + casing + add-term-no-code-change tests.
+## Audio (do now, WER honest)
+- Root cause: no AGC, level depends on macOS input volume; gain 1.32x only.
+- Add causal AGC leveler (-20 dBFS RMS target, fast attack, frozen silence, -1dBFS limiter) after denoise; toggleable. Single resample stays at HAL.
+- WER with real clips needs user audio; report as not-verified, no invented numbers.
+## Verify: TextPipeline, TextCleanup, AudioEnhancement, LLMLlamaCpp tests + lint.
