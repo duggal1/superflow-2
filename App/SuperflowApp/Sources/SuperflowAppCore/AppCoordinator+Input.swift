@@ -153,6 +153,8 @@ extension AppCoordinator {
 
     func handleKeyEvent(_ event: KeyEvent) async {
         if event.kind == .intelligenceDown {
+            Logger(subsystem: "com.superflow.app", category: "KeyboardGesture")
+                .notice("edge=intelligenceDown routing to Intelligence page")
             mainWindowController.show(.intelligence)
             return
         }
