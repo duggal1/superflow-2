@@ -92,7 +92,14 @@ public struct FormattingStage: SuperflowPorts.TextStage {
               !draft.text.contains("```"), !draft.text.contains("~~~") else { return draft }
         var output = draft
         var counters = FormatCounters()
-        output.text = shapeOutput(draft.text, config: FormatConfig.defaults(for: context),
+        var config = FormatConfig.defaults(for: context)
+        // S1-mini owns the Structure axis: under prose the model keeps
+        // enumerations inline, and deterministic list shaping must not
+        // re-invent bullets the model deliberately withheld.
+        let structure = context.settings.cleanupStructure
+            .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if structure == "prose" { config.lists = false }
+        output.text = shapeOutput(draft.text, config: config,
                                   counters: &counters)
         if counters.listReverts > 0 {
             output.diagnostics.append(Diagnostic(stage: id,

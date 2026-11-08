@@ -85,7 +85,17 @@ public enum TextPipelineBuilder {
             stages.append(CodeAwareStage(settings: settings.codeAware,
                                          project: dependencies.project))
         }
-        stages.append(LineFormatStage(settings: settings.lineFormat))
+        // S1-mini owns casing and final punctuation per its Styling axis.
+        // Casual and semi-casual keep lowercase sentence starts with no final
+        // period; the deterministic formatter must not re-impose formal
+        // casing on top of the model output.
+        var effectiveLineFormat = settings.lineFormat
+        let styling = settings.cleanupStyling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if styling == "casual" || styling == "semi-casual" {
+            effectiveLineFormat.capitalize = false
+            effectiveLineFormat.finalPeriod = false
+        }
+        stages.append(LineFormatStage(settings: effectiveLineFormat))
         stages.append(NormalizeAdapter())
         stages.append(ModelNameStage())
         // Final deterministic layer. The dictionary is loaded once and is never

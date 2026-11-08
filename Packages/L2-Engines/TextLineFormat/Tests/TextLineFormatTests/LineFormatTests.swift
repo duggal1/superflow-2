@@ -46,7 +46,7 @@ final class LineFormatTests: XCTestCase {
 
     func testExistingNewlinesAreHardBoundaries() {
         let out = format("one line\n- list item one\n- list item two")
-        XCTAssertEqual(out, "One line\n\n- list item one\n\n- list item two.")
+        XCTAssertEqual(out, "One line\n\n- list item one\n\n- list item two")
     }
 
     func testFencedCodeIsPreservedVerbatim() {

@@ -52,6 +52,28 @@ final class TranscriptionRepairTests: XCTestCase {
         XCTAssertTrue(result.text.contains("HomePod"), result.text)
     }
 
+    func testCasualStylingSkipsDeterministicCapitalize() async {
+        var settings = AppSettings.default
+        settings.cleanupStyling = "casual"
+        let pipeline = TextPipelineBuilder.make(settings: settings)
+        let result = await pipeline.run("hmm im gonna be late", context: TextContext(settings: settings))
+        XCTAssertFalse(result.text.isEmpty)
+        // With no cleaner injected the deterministic formatter must still
+        // respect casual styling instead of re-capitalizing the line.
+        if let first = result.text.first {
+            XCTAssertTrue(first.isLowercase || first == "-", "expected casual lowercase, got: \(result.text)")
+        }
+        XCTAssertFalse(result.text.hasSuffix("late."), "casual must not force final period: \(result.text)")
+    }
+
+    func testSemiFormalKeepsCapitalizeAndPeriod() async {
+        var settings = AppSettings.default
+        settings.cleanupStyling = "semi-formal"
+        let pipeline = TextPipelineBuilder.make(settings: settings)
+        let result = await pipeline.run("hmm im gonna be late", context: TextContext(settings: settings))
+        XCTAssertTrue(result.text.first?.isUppercase == true, result.text)
+    }
+
     func testPipelineOrderRunsNormalizationBeforeCleanup() async {
         let pipeline = TextPipelineBuilder.make(settings: .default)
         let ids = pipeline.stageIDs

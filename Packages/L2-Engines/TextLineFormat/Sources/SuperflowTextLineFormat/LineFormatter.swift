@@ -302,6 +302,11 @@ public struct LineFormatter: Sendable {
 
     private func shouldAddFinalPeriod(_ block: String) -> Bool {
         guard settings.finalPeriod else { return false }
+        // S1-mini list items carry no closing period by design. A deterministic
+        // period on the last bullet is a visible override of the model output.
+        if ListFormatter.isListLine(block) { return false }
+        if let lastLine = block.components(separatedBy: "\n").last,
+           ListFormatter.isListLine(lastLine) { return false }
         let total = pending.reduce(0) { $0 + wordCount($1) } + wordCount(block) + currentWords
         guard total > 3 else { return false }
         guard let last = block.last else { return false }
