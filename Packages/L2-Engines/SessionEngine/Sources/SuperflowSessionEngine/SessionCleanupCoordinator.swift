@@ -45,9 +45,8 @@ public actor SessionCleanupCoordinator {
 
     public func start(workerCount: Int) {
         guard workerTasks.isEmpty else { return }
-        // Match the helper's two inference contexts. Extra coordinator workers
-        // cannot improve throughput and create an additional hidden queue.
-        let count = min(2, max(1, workerCount))
+        // Match the helper's six inference contexts for long-transcript parallelism.
+        let count = min(6, max(1, workerCount))
         workerTasks = (0..<count).map { _ in Task { await self.runWorker() } }
     }
 

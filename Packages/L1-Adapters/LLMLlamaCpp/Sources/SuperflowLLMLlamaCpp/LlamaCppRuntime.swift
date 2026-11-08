@@ -45,11 +45,10 @@ public actor LlamaCppRuntime: LlamaRuntime {
     private var loadedURL: URL?
     private let sessionCount: Int
 
-    /// Two contexts match the measured throughput ceiling: on this class of
-    /// hardware a third stream adds memory and steals GPU time from streaming
-    /// ASR without generating more tokens per second.
-    public init(sessions: Int = 2) {
-        sessionCount = min(4, max(1, sessions))
+    /// Six contexts let long transcripts split into parallel S1 chunks (850-token
+    /// cap each) instead of queueing behind two lanes.
+    public init(sessions: Int = 6) {
+        sessionCount = min(6, max(1, sessions))
     }
 
     public func load(modelURL: URL, compute: ModelCompute) async throws {

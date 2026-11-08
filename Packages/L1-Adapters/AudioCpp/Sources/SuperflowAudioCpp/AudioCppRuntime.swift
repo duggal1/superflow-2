@@ -141,7 +141,11 @@ actor AudioCppRuntime {
         guard idle.isEmpty && slots.isEmpty else { return }
         do {
             let stream = try start(source: asset.isSpeech ? .mic : .system)
-            close(id: stream.id)
+            // Hex-style prewarm: run a short silence pass so Metal compiles
+            // encoder kernels at launch, not on the first dictation.
+            let source: AudioSourceKind = asset.isSpeech ? .mic : .system
+            feed(AudioChunk(samples: [Float](repeating: 0, count: 24_000), startSample: 0, source: source), id: stream.id)
+            finish(id: stream.id)
             guard !idle.isEmpty else {
                 throw SuperflowError.modelUnavailable("audio.cpp session preparation failed")
             }

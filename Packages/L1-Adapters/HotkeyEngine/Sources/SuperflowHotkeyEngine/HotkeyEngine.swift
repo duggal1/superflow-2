@@ -26,7 +26,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     /// The physical modifier that counts as the dictation key. Read on the tap
     /// thread, so it lives under the same lock as the taps.
     private var dictationKey: DictationKey = .fn
-    private var intelligenceTriggerKey: IntelligenceTriggerKey = .leftControl
+    private var intelligenceTriggerKey: IntelligenceTriggerKey = .rightOption
     private var lifecycle = HotkeyLifecycle()
     private var wakeObserver: NSObjectProtocol?
     private var healthTimer: DispatchSourceTimer?

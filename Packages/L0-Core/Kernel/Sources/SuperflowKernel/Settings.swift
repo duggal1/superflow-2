@@ -127,8 +127,9 @@ public struct GestureConfig: Codable, Sendable, Equatable {
 }
 
 public struct AppSettings: Codable, Sendable, Equatable {
-    /// Version 2 migrates the legacy CPU default; version 3 enables list formatting.
-    public static let currentVersion = 3
+    /// Version 2 migrates the legacy CPU default; version 3 enables list formatting;
+    /// version 4 raises cleanup workers to 6 for long-transcript parallelism.
+    public static let currentVersion = 4
     public var settingsVersion = AppSettings.currentVersion
     public var theme: ThemeMode = .system
     /// Nemotron 3.5 ASR Streaming 0.6B is the model the app installs and runs. It is
@@ -170,7 +171,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var cleanupContext = "general"
     public var interactiveDeadlineMs = 1500
     public var backgroundDeadlineMs = 30_000
-    public var cleanupWorkers = 2
+    public var cleanupWorkers = 6
     /// Compute the cleanup model runs on. GPU is the default because it is far
     /// faster on Apple silicon; CPU is the escape hatch when Metal is busy,
     /// unsupported, or the machine is better spent elsewhere.
@@ -234,6 +235,9 @@ public struct AppSettings: Codable, Sendable, Equatable {
         interactiveDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .interactiveDeadlineMs) ?? d.interactiveDeadlineMs
         backgroundDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .backgroundDeadlineMs) ?? d.backgroundDeadlineMs
         cleanupWorkers = try c.decodeIfPresent(Int.self, forKey: .cleanupWorkers) ?? d.cleanupWorkers
+        // Version 3 installs persisted 2; version 4 moves them to 6 so long
+        // transcripts use six parallel S1 lanes without a settings visit.
+        if storedVersion < 4, cleanupWorkers == 2 { cleanupWorkers = 6 }
         cleanupCompute = try c.decodeIfPresent(ModelCompute.self, forKey: .cleanupCompute) ?? d.cleanupCompute
         // Version 1 shipped with CPU as the saved value for many installs even
         // though GPU is the product default. Migrate that legacy value once; a

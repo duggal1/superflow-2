@@ -10,7 +10,7 @@ struct IntelligenceTab: View {
     let query: String
     @AppStorage("intelligence.effort") private var effort = ReasoningEffort.low.rawValue
     @AppStorage("intelligence.mode") private var mode = MeetingMode.normal.rawValue
-    @AppStorage("intelligence.trigger") private var trigger = IntelligenceTriggerKey.leftControl.rawValue
+    @AppStorage("intelligence.trigger") private var trigger = IntelligenceTriggerKey.rightOption.rawValue
     @AppStorage("intelligence.screenAware") private var screenAware = false
     @AppStorage("intelligence.customInstructions") private var custom = ""
     @State private var key = ""
@@ -68,8 +68,10 @@ struct IntelligenceTab: View {
                 .appType(.body).foregroundStyle(Tok.text2)
         }
         .task {
-            do { hasKey = try credentials.load() != nil }
-            catch { status = "Couldn't access Keychain." }
+            // Off the main actor so opening Intelligence can never block on Keychain.
+            hasKey = await Task.detached(priority: .userInitiated) { [credentials] in
+                credentials.exists()
+            }.value
         }
         .onDisappear { request?.cancel(); request = nil; testing = false; key = "" }
     }

@@ -187,8 +187,8 @@ extension AppCoordinator {
 
     private func selectedIntelligenceTriggerKey() -> IntelligenceTriggerKey {
         let rawValue = UserDefaults.standard.object(forKey: "intelligence.trigger") as? Int
-            ?? IntelligenceTriggerKey.leftControl.rawValue
-        return IntelligenceTriggerKey(rawValue: rawValue) ?? .leftControl
+            ?? IntelligenceTriggerKey.rightOption.rawValue
+        return IntelligenceTriggerKey(rawValue: rawValue) ?? .rightOption
     }
 
     private func observeIntelligenceTriggerSetting() {
