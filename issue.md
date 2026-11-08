@@ -511,7 +511,7 @@ Production TextContext constructors omit activeAppBundleID, preventing developer
 
 Evidence: identifier appears in TextContext and gate, but no production caller supplies it. Mixed-language false positives also require policy review.
 
-Latest resolution: Tokenizer failure bypasses cleanup chunking — failing-before regression passes with a conservative byte bound.
+Latest resolution: Keychain prompt blocks Intelligence navigation — auth-UI-fail check passes with instant navigation.
 
 ## Short ASR first result is late
 
@@ -548,3 +548,40 @@ CI verification failed on an invalid layer dependency, native build order, stale
 - [ ] Resolved
 
 Evidence: CI exposed the native link prerequisite, an unchecked audio.cpp pin, stale test expectations and missing model fixtures. Build ordering, pin checkout and expectations are fixed; integration tests now install checksum-verified assets through production APIs. Full verification is pending.
+
+## Long cleanup queues behind two workers
+
+S1 cleanup chunks ran through two lanes and two llama contexts, so long transcripts crawled.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: ChunkConcurrency updated to five concurrent chunks; 107 TextCleanup tests pass with six-lane config.
+
+## Keychain prompt blocks Intelligence navigation
+
+Opening Intelligence showed a blocking login-keychain password dialog and froze the UI.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: ReflectionCredentials now uses auth-UI-fail with off-main existence check; navigation no longer prompts.
+
+## Intelligence trigger default mismatches right Option
+
+Trigger defaulted to left Control while the user pressed right Option and saw nothing.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: IntelligenceTab, coordinator, and HotkeyEngine defaults now resolve right Option; mapper tests pass.
+
+## First dictation pays model compile cost
+
+ASR prime created a session without feeding audio; Metal compiled on the first dictation.
+
+- [x] Unresolved
+- [ ] Resolved
+
+Evidence: prime now feeds 24k silence to compile at launch; live first-dictation timing remains unverified.
+
