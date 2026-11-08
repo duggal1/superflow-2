@@ -10,6 +10,11 @@ extension TextInsertionService {
         var verified: Bool
         var posted: Bool
         var steps: [String]
+        /// False when verification was impossible by design (no AX baseline).
+        /// A posted paste with no verifiable target is accepted as landed
+        /// instead of failing, so the Island never shows the copy card for a
+        /// paste that actually worked.
+        var canVerify: Bool
     }
 
     /// Content first, count second: one AX round trip per signal is enough.
@@ -29,7 +34,7 @@ extension TextInsertionService {
         let posted = await poster.postPaste(keyCode: keyCode, tap: primary)
         var steps = [posted ? InsertionStep.cmdvPosted : InsertionStep.cmdvFailed]
         guard posted else {
-            return (InsertionAttempt(inserted: false, verified: false, posted: false, steps: steps),
+            return (InsertionAttempt(inserted: false, verified: false, posted: false, steps: steps, canVerify: true),
                     UInt16(keyCode))
         }
         guard let baseline, baseline.isUsable else {
@@ -37,7 +42,7 @@ extension TextInsertionService {
             // not claim verification. Never retry here, because a second chord
             // could paste twice with no way to observe either one.
             steps.append(InsertionStep.unverifiable)
-            return (InsertionAttempt(inserted: true, verified: false, posted: true, steps: steps),
+            return (InsertionAttempt(inserted: true, verified: false, posted: true, steps: steps, canVerify: false),
                     UInt16(keyCode))
         }
         let expected = baseline.expectedValue(afterInserting: text)
@@ -50,7 +55,7 @@ extension TextInsertionService {
         // A posted chord may have landed while AX still exposes stale content.
         // Observation is advisory: a second mutation risks duplicate insertion.
         steps.append(InsertionStep.unverifiable)
-        return (InsertionAttempt(inserted: true, verified: false, posted: true, steps: steps),
+        return (InsertionAttempt(inserted: true, verified: false, posted: true, steps: steps, canVerify: true),
                 UInt16(keyCode))
     }
 
@@ -59,10 +64,10 @@ extension TextInsertionService {
         switch observation {
         case .exact:
             steps.append(InsertionStep.valueVerified)
-            return InsertionAttempt(inserted: true, verified: true, posted: true, steps: steps)
+            return InsertionAttempt(inserted: true, verified: true, posted: true, steps: steps, canVerify: true)
         case .changed, .countChanged:
             steps.append(InsertionStep.verified)
-            return InsertionAttempt(inserted: true, verified: true, posted: true, steps: steps)
+            return InsertionAttempt(inserted: true, verified: true, posted: true, steps: steps, canVerify: true)
         case .nothing:
             return nil
         }
@@ -77,11 +82,11 @@ extension TextInsertionService {
         let result = menuPaster.pressPaste(pid: pid)
         var steps = [InsertionStep.menu(result)]
         guard result == .pressed else {
-            return InsertionAttempt(inserted: false, verified: false, posted: false, steps: steps)
+            return InsertionAttempt(inserted: false, verified: false, posted: false, steps: steps, canVerify: true)
         }
         guard let baseline, baseline.isUsable else {
             steps.append(InsertionStep.unverifiable)
-            return InsertionAttempt(inserted: true, verified: false, posted: false, steps: steps)
+            return InsertionAttempt(inserted: true, verified: false, posted: false, steps: steps, canVerify: false)
         }
         let observation = await awaitContent(target: target, baseline: baseline,
                                              expected: baseline.expectedValue(afterInserting: text),
@@ -89,13 +94,13 @@ extension TextInsertionService {
         switch observation {
         case .exact:
             steps.append(InsertionStep.valueVerified)
-            return InsertionAttempt(inserted: true, verified: true, posted: false, steps: steps)
+            return InsertionAttempt(inserted: true, verified: true, posted: false, steps: steps, canVerify: true)
         case .changed, .countChanged:
             steps.append(InsertionStep.verified)
-            return InsertionAttempt(inserted: true, verified: true, posted: false, steps: steps)
+            return InsertionAttempt(inserted: true, verified: true, posted: false, steps: steps, canVerify: true)
         case .nothing:
             steps.append(InsertionStep.notObserved)
-            return InsertionAttempt(inserted: true, verified: false, posted: false, steps: steps)
+            return InsertionAttempt(inserted: true, verified: false, posted: false, steps: steps, canVerify: true)
         }
     }
 
@@ -103,16 +108,16 @@ extension TextInsertionService {
                               verifyTimeout: Duration) async -> InsertionAttempt {
         guard let target else {
             return InsertionAttempt(inserted: false, verified: false, posted: false,
-                                    steps: [InsertionStep.axSetFailed])
+                                    steps: [InsertionStep.axSetFailed], canVerify: true)
         }
         let baseline = await captureBaseline(target)
         guard await target.insertSelectedText(text) else {
             return InsertionAttempt(inserted: false, verified: false, posted: false,
-                                    steps: [InsertionStep.axSetFailed])
+                                    steps: [InsertionStep.axSetFailed], canVerify: true)
         }
         guard let baseline, baseline.isUsable else {
             return InsertionAttempt(inserted: true, verified: false, posted: false,
-                                    steps: [InsertionStep.unverifiable])
+                                    steps: [InsertionStep.unverifiable], canVerify: false)
         }
         let observation = await awaitContent(target: target, baseline: baseline,
                                              expected: baseline.expectedValue(afterInserting: text),
@@ -120,13 +125,13 @@ extension TextInsertionService {
         switch observation {
         case .exact:
             return InsertionAttempt(inserted: true, verified: true, posted: false,
-                                    steps: [InsertionStep.axValueVerified])
+                                    steps: [InsertionStep.axValueVerified], canVerify: true)
         case .changed, .countChanged:
             return InsertionAttempt(inserted: true, verified: true, posted: false,
-                                    steps: [InsertionStep.axVerified])
+                                    steps: [InsertionStep.axVerified], canVerify: true)
         case .nothing:
             return InsertionAttempt(inserted: true, verified: false, posted: false,
-                                    steps: [InsertionStep.axNotObserved])
+                                    steps: [InsertionStep.axNotObserved], canVerify: true)
         }
     }
 

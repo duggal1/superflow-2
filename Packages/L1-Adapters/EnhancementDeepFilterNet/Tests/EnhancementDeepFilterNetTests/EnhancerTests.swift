@@ -6,8 +6,8 @@ final class EnhancerTests: XCTestCase, @unchecked Sendable {
     func testOutputGainBoostsSpeechAndLimitsPeaksWithoutClipping() {
         var gain = EnhancementOutputGain()
         let boosted = gain.apply([0.2, -0.2])
-        XCTAssertEqual(boosted[0], 0.264, accuracy: 0.000001)
-        XCTAssertEqual(boosted[1], -0.264, accuracy: 0.000001)
+        XCTAssertEqual(boosted[0], 0.3, accuracy: 0.000001)
+        XCTAssertEqual(boosted[1], -0.3, accuracy: 0.000001)
 
         let limited = gain.apply([0.9, -0.9, 1.2, -1.2])
         XCTAssertLessThanOrEqual(limited.map(abs).max() ?? 0, EnhancementOutputGain.peakLimit)

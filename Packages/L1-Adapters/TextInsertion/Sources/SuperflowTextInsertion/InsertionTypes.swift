@@ -83,7 +83,7 @@ public struct TextInsertionOptions: Sendable {
                 restoreClipboard: Bool = true,
                 clipboardRestoreDelay: Duration = .milliseconds(500),
                 verifiedRestoreDelay: Duration = .milliseconds(50),
-                verifyTimeout: Duration = .milliseconds(400),
+                verifyTimeout: Duration = .milliseconds(1200),
                 modifierReleaseTimeout: Duration = .milliseconds(300),
                 allowPaste: Bool = true,
                 preferAccessibility: Bool = false,

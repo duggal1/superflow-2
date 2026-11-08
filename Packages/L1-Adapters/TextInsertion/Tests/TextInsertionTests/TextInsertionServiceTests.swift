@@ -166,14 +166,24 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertTrue(harness.menu.pressedPIDs.isEmpty)
     }
 
-    /// Without a usable baseline a second chord could paste twice, so the retry
-    /// must stay disabled even when the first chord is unobservable.
+    /// Without a usable baseline verification is impossible by design, so a
+    /// posted paste is accepted as landed (no Island copy card) and must
+    /// never be retried — a second chord could paste twice.
     func testUnverifiablePasteDoesNotRetry() async {
         let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"), count: nil)
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
-        XCTAssertEqual(report.result, .notInserted(.pasteNotObserved, textOnClipboard: true))
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
         let taps = await harness.poster.taps
         XCTAssertEqual(taps, [.cgSessionEventTap])
+    }
+
+    /// Regression: a posted paste into an unverifiable target (Electron /
+    /// terminal class) must report inserted so the Island shows no copy card.
+    func testPostedPasteIntoUnverifiableTargetIsLanded() async {
+        let harness = makeHarness(focus: .unknown(reason: "role-AXApplication"), count: nil)
+        let report = await harness.service.insert("hello", options: TextInsertionOptions())
+        XCTAssertEqual(report.result, .inserted(method: .paste, verified: false))
+        XCTAssertTrue(report.steps.contains(InsertionStep.unverifiable))
     }
 
     func testVerifiedPasteReportsRestore() async {

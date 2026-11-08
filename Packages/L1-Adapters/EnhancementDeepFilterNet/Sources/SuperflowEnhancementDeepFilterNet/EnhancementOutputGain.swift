@@ -1,5 +1,5 @@
 struct EnhancementOutputGain: Sendable {
-    static let targetGain: Float = 1.32
+    static let targetGain: Float = 1.5
     static let peakLimit: Float = 0.98
     private static let releaseStep: Float = 0.2
 

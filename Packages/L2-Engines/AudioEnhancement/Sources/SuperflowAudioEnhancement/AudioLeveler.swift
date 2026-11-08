@@ -15,7 +15,9 @@ public struct AudioLeveler: Sendable {
     public static let maxGain: Float = 12.0
     public static let releaseStep: Float = 0.05
 
-    private var currentGain: Float = 1.0
+    /// Baseline 150% boost, always on as the default. The AGC then rides
+    /// around it toward the RMS target.
+    private var currentGain: Float = 1.5
 
     public init() {}
 
@@ -52,7 +54,7 @@ public struct AudioLeveler: Sendable {
     }
 
     public mutating func reset() {
-        currentGain = 1.0
+        currentGain = 1.5
     }
 
     public var gain: Float { currentGain }

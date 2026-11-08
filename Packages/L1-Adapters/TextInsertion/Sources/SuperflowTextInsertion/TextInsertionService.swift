@@ -199,6 +199,7 @@ public actor TextInsertionService {
 
         var inserted = false
         var verified = false
+        var canVerify = true
         var method: InsertionMethod?
         var axAttempted = false
 
@@ -238,6 +239,7 @@ public actor TextInsertionService {
                 if attempt.attempt.inserted {
                     inserted = true
                     verified = attempt.attempt.verified
+                    canVerify = attempt.attempt.canVerify
                     method = .paste
                 }
             }
@@ -252,6 +254,7 @@ public actor TextInsertionService {
             if attempt.inserted {
                 inserted = true
                 verified = attempt.verified
+                canVerify = attempt.canVerify
                 method = .menuPaste
             }
         }
@@ -264,14 +267,19 @@ public actor TextInsertionService {
             if attempt.inserted {
                 inserted = true
                 verified = attempt.verified
+                canVerify = attempt.canVerify
                 method = .accessibility
             }
         }
 
-        // Posting a chord or pressing a menu item does not prove it landed.
-        // Preserve the transcript and tell the Island when observation failed.
-        // Never try a second mutation after an unverified event: that can paste twice.
-        if inserted && !verified {
+        // A posted chord does not prove it landed, but when the target exposes
+        // no AX baseline verification is impossible by design (Electron,
+        // terminals, web views). A successful post there is accepted as
+        // landed: the Island must never show its copy card for a paste that
+        // worked. Only a usable-but-unobserved baseline tells the Island.
+        // Never try a second mutation after an unverified event: that can
+        // paste twice.
+        if inserted && !verified && canVerify {
             var onClipboard = ourChangeCount != nil
             if !onClipboard {
                 onClipboard = await writeIfNeeded(text, enabled: options.writeClipboardOnFailure)
