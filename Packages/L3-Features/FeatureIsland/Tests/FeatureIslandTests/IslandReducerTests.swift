@@ -65,6 +65,19 @@ final class IslandReducerTests: XCTestCase {
         }
     }
 
+    func testAssistantOpensExceptWhileBusy() {
+        XCTAssertEqual(IslandReducer.reduce(.idle, .assistantOpened), .assistant)
+        XCTAssertEqual(IslandReducer.reduce(.hover, .assistantOpened), .assistant)
+        XCTAssertEqual(IslandReducer.reduce(.recent(nil), .assistantOpened), .assistant)
+        XCTAssertEqual(IslandReducer.reduce(.assistant, .assistantOpened), .assistant)
+        for phase in [IslandPhase.listening, .handsFree, .meeting, .meetingPanel, .processing] {
+            XCTAssertEqual(IslandReducer.reduce(phase, .assistantOpened), phase)
+        }
+        XCTAssertEqual(IslandReducer.reduce(.assistant, .dismissed), .idle)
+        // An owner-opened card persists through capture edges.
+        XCTAssertEqual(IslandReducer.reduce(.assistant, .cancelled), .assistant)
+    }
+
     func testSamplePhaseIsListening() {
         XCTAssertEqual(sample, .listening)
     }

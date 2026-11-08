@@ -34,6 +34,8 @@ public extension IslandModel {
             go(prefs.alwaysOn ? .history : .recent(feed.lastTranscript()))
         case .recent, .history:
             go(.idle)
+        case .assistant:
+            assistantCancel()
         case .failed, .undo, .notice, .landed, .listening, .handsFree, .processing:
             break
         }

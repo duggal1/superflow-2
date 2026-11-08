@@ -12,6 +12,8 @@ public enum IslandPhase: Equatable, Sendable {
     case meeting
     /// The meeting wings clicked open: timer, word count, talk share.
     case meetingPanel
+    /// The assistant: a streamed answer about the latest transcript.
+    case assistant
     case processing
     case landed(words: Int)
     case undo(IslandUndo)
@@ -29,7 +31,7 @@ public extension IslandPhase {
         switch self {
         case .idle, .hover: .rest
         case .listening, .handsFree, .meeting, .processing, .landed: .wings
-        case .failed, .recent, .history, .undo, .notice, .meetingPanel: .card
+        case .failed, .recent, .history, .undo, .notice, .meetingPanel, .assistant: .card
         }
     }
 
@@ -38,7 +40,7 @@ public extension IslandPhase {
     var isBusy: Bool {
         switch self {
         case .listening, .handsFree, .meeting, .meetingPanel, .processing: true
-        case .idle, .hover, .landed, .undo, .failed, .recent, .history, .notice: false
+        case .idle, .hover, .landed, .undo, .failed, .recent, .history, .notice, .assistant: false
         }
     }
 
@@ -46,7 +48,7 @@ public extension IslandPhase {
     /// recording. The panel collapses instead.
     var isDismissable: Bool {
         switch self {
-        case .failed, .recent, .history, .landed, .undo, .notice, .meetingPanel: true
+        case .failed, .recent, .history, .landed, .undo, .notice, .meetingPanel, .assistant: true
         case .idle, .hover, .listening, .handsFree, .meeting, .processing: false
         }
     }
@@ -183,6 +185,8 @@ public enum IslandLayout {
             return wings(2 * wingWidth(.processing, gap: gap))
         case .meetingPanel:
             return card(live ? 208 : 176)
+        case .assistant:
+            return card(208)
         case .failed:
             return card(132)
         case .history:

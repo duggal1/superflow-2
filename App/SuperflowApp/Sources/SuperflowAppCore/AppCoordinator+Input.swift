@@ -154,8 +154,15 @@ extension AppCoordinator {
     func handleKeyEvent(_ event: KeyEvent) async {
         if event.kind == .intelligenceDown {
             Logger(subsystem: "com.superflow.app", category: "KeyboardGesture")
-                .notice("edge=intelligenceDown routing to Intelligence page")
-            mainWindowController.show(.intelligence)
+                .notice("edge=intelligenceDown routing to Island assistant")
+            // The Intelligence hotkey answers in the Island, not on a settings
+            // page. With no environment (startup not finished) fall back to the
+            // page so the press still does something visible.
+            if let environment, let islandBridge {
+                islandBridge.openAssistant(environment: environment)
+            } else {
+                mainWindowController.show(.intelligence)
+            }
             return
         }
         if event.kind == .escape {

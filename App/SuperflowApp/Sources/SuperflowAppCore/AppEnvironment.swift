@@ -54,6 +54,11 @@ public final class AppEnvironment {
     /// Explicitly selected project scope. Nil means cleanup is filename-only
     /// and no path is ever resolved.
     public private(set) var project: ProjectContext?
+    /// Memory-only transcript for the Island assistant. Never persisted.
+    public let assistantBuffer = TranscriptBuffer()
+    /// Keychain access for the Reflection key. Loads never prompt on the main
+    /// actor; the assistant checks off-main.
+    public let assistantCredentials = ReflectionCredentials()
 
     public init(applicationSupportDirectory: URL? = nil,
                 fileManager: FileManager = .default) throws {

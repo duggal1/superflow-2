@@ -29,6 +29,8 @@ public struct IslandRoot: View {
             } else {
                 MeetingPanel(model: model)
             }
+        case .assistant:
+            AssistantCard(model: model)
         case .failed(let transcript):
             PasteFailedCard(model: model, transcript: transcript)
         case .recent(let transcript):

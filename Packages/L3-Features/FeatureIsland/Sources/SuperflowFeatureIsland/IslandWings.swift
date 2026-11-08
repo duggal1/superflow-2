@@ -77,7 +77,7 @@ struct WingsContent: View {
         case .meeting: true
         case .listening, .handsFree: false
         case .idle, .hover, .meetingPanel, .processing, .landed, .failed,
-             .recent, .history, .undo, .notice: false
+             .recent, .history, .undo, .notice, .assistant: false
         }
     }
 
@@ -98,7 +98,7 @@ struct WingsContent: View {
             }
         case .listening, .processing, .landed:
             TargetIcon(bundleID: model.target?.bundleID)
-        case .idle, .hover, .meetingPanel, .failed, .recent, .history, .undo, .notice:
+        case .idle, .hover, .meetingPanel, .failed, .recent, .history, .undo, .notice, .assistant:
             EmptyView()
         }
     }
@@ -130,7 +130,7 @@ struct WingsContent: View {
                 }
             }
             .transition(.islandContent(reduceMotion: reduceMotion))
-        case .idle, .hover, .meetingPanel, .failed, .recent, .history, .undo, .notice:
+        case .idle, .hover, .meetingPanel, .failed, .recent, .history, .undo, .notice, .assistant:
             EmptyView()
         }
     }

@@ -10,14 +10,20 @@ import XCTest
 
 final class WarmupGestureTests: XCTestCase {
     @MainActor
-    func testIntelligenceTriggerOpensIntelligenceWithoutStartingADictationGesture() async {
+    func testIntelligenceTriggerOpensTheIslandAssistantWithoutStartingADictationGesture() async throws {
         _ = NSApplication.shared
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let coordinator = AppCoordinator(applicationSupportDirectory: directory)
         coordinator.menuBarController.setRecoveryReady(false)
+        let island = try XCTUnwrap(coordinator.islandController?.model)
         await coordinator.handleKeyEvent(KeyEvent(kind: .intelligenceDown, timestampNs: 0))
-        XCTAssertEqual(coordinator.mainWindowController.selection, .intelligence)
+        for _ in 0..<200 {
+            if island.phase == .assistant { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertEqual(island.phase, .assistant)
+        XCTAssertEqual(coordinator.mainWindowController.selection, .dashboard)
         XCTAssertNotEqual(AppSection.intelligence.icon, AppSection.meetings.icon)
         XCTAssertEqual(coordinator.gesture.state, .idle)
     }

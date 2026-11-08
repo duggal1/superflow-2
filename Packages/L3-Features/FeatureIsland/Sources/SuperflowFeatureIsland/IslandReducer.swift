@@ -23,7 +23,7 @@ public enum IslandReducer {
             return phase.isBusy ? .failed(transcript) : phase
         case .notice(let notice):
             switch phase {
-            case .failed, .undo, .recent, .history:
+            case .failed, .undo, .recent, .history, .assistant:
                 // A failure, a live undo or a card the owner opened owns the
                 // Island. A notification never covers it.
                 return phase
@@ -39,12 +39,15 @@ public enum IslandReducer {
             // The model resolves the target, because it is the only thing that
             // knows the prefs and what the feed stored.
             return phase
+        case .assistantOpened:
+            // Never hijack a live capture or a card the owner opened.
+            return phase.isBusy ? phase : .assistant
         case .dismissed:
             switch phase {
             case .meetingPanel:
                 // Never end a meeting from a click outside: collapse instead.
                 return .meeting
-            case .failed, .recent, .history, .landed, .undo, .notice:
+            case .failed, .recent, .history, .landed, .undo, .notice, .assistant:
                 return .idle
             case .idle, .hover, .listening, .handsFree, .meeting, .processing:
                 return phase

@@ -1,7 +1,9 @@
 import AppKit
+import Combine
 import Foundation
 import SuperflowFeatureIsland
 import SuperflowKernel
+import SuperflowMeetingIntelligence
 import SuperflowPorts
 import SuperflowSessionEngine
 import SuperflowMeetingEngine
@@ -32,6 +34,11 @@ final class IslandBridge {
     var meetingTask: Task<Void, Never>?
     var meetingEngine: MeetingEngine?
     var meetingMeter = MeetingPulseTracker()
+    // MARK: assistant
+    weak var model: IslandModel?
+    var intelligence: MeetingIntelligence?
+    var cancellables: Set<AnyCancellable> = []
+    weak var assistantEnvironment: AppEnvironment?
 
     init(transcripts: any TranscriptRepository) {
         box = IslandFeedBox()

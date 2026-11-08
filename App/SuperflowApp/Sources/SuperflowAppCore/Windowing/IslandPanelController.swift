@@ -186,7 +186,7 @@ public final class IslandController {
         }
 
         let interactiveCard: Bool = switch phase {
-        case .recent, .history, .meetingPanel: true
+        case .recent, .history, .meetingPanel, .assistant: true
         case .idle, .hover, .listening, .handsFree, .meeting, .processing,
              .landed, .undo, .failed, .notice: false
         }

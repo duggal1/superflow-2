@@ -182,6 +182,7 @@ enum IslandStageID: Hashable, Sendable {
     case rest, listening, processing, landed, cancelled, failed, recent, history
     case meetingWings, meetingPanel, discard
     case notice(Date)
+    case assistant
 }
 
 extension IslandPhase {
@@ -192,6 +193,7 @@ extension IslandPhase {
         case .listening, .handsFree: .listening
         case .meeting: .meetingWings
         case .meetingPanel: .meetingPanel
+        case .assistant: .assistant
         case .processing: .processing
         case .landed: .landed
         case .undo: .cancelled

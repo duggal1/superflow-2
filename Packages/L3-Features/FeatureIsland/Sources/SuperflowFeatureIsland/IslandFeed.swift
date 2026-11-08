@@ -99,6 +99,17 @@ public struct IslandNotice: Equatable, Sendable {
     }
 }
 
+/// The assistant's legible states. The bridge maps the model's own phase onto
+/// this so the Island never imports the intelligence engine.
+public enum AssistantStatus: Equatable, Sendable {
+    case idle
+    case thinking
+    case streaming
+    case done
+    case truncated
+    case failed(String)
+}
+
 public enum IslandEvent: Equatable, Sendable {
     case holdBegan(IslandTarget?)
     case handsFreeBegan(IslandTarget?)
@@ -115,6 +126,8 @@ public enum IslandEvent: Equatable, Sendable {
     /// target: history when "Always show Island" is on, the meeting panel while
     /// recording, the last dictation otherwise.
     case notchClicked
+    /// The Intelligence hotkey. Opens the assistant card; never while busy.
+    case assistantOpened
     case dismissed
 }
 

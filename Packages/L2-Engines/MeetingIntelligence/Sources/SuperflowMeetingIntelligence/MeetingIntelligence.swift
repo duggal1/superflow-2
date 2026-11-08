@@ -21,7 +21,8 @@ public final class MeetingIntelligence: ObservableObject {
         var effort: ReasoningEffort
     }
 
-    private let transcript: TranscriptBuffer
+    /// The memory-only transcript the Island bridge feeds before asking.
+    public let transcript: TranscriptBuffer
     private let client: ReflectionClient
     private let screen: ScreenReader
     private var job: Task<Void, Never>?

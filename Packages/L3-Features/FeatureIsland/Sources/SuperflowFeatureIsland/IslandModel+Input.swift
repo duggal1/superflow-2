@@ -35,7 +35,7 @@ extension IslandModel {
         case .notice(let notice):
             receiveNotice(notice)
             return
-        case .holdEnded, .cancelled, .landed, .pasteFailed, .dismissed:
+        case .holdEnded, .cancelled, .landed, .pasteFailed, .dismissed, .assistantOpened:
             break
         }
         go(IslandReducer.reduce(phase, event))
@@ -104,7 +104,7 @@ extension IslandModel {
                 scheduleNoticeTimeout()
             }
         case .hover, .listening, .handsFree, .meeting, .meetingPanel, .processing, .landed,
-             .undo, .recent, .history:
+             .undo, .recent, .history, .assistant:
             break
         }
     }

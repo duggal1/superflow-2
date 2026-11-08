@@ -54,6 +54,16 @@ public final class IslandModel {
     @ObservationIgnored public var rePaste: (IslandTranscript) -> Void = { _ in }
     /// Runs the one button a notice may carry. Set by the app.
     @ObservationIgnored public var noticeAction: (IslandNotice) -> Void = { _ in }
+    /// The assistant's legible answer and its controls. The bridge owns the
+    /// intelligence session; the model only renders what it is told.
+    public internal(set) var assistantAnswer = ""
+    public internal(set) var assistantStatus: AssistantStatus = .idle
+    public internal(set) var assistantCanDeeper = false
+    @ObservationIgnored public var assistantHelp: () -> Void = {}
+    @ObservationIgnored public var assistantDeeper: () -> Void = {}
+    @ObservationIgnored public var assistantRetry: () -> Void = {}
+    @ObservationIgnored public var assistantCancel: () -> Void = {}
+    @ObservationIgnored public var assistantOpenSettings: () -> Void = {}
 
     public var geometry: NotchGeometry
     public var box: IslandBox {
@@ -184,7 +194,7 @@ public final class IslandModel {
             startTicker()
         case .processing:
             startTicker()
-        case .idle, .hover, .landed, .undo, .failed, .recent, .history, .notice:
+        case .idle, .hover, .landed, .undo, .failed, .recent, .history, .notice, .assistant:
             stopTicker()
             elapsed = 0
         }
@@ -220,7 +230,7 @@ public final class IslandModel {
         case .hover:
             schedulePendingNotice()
         case .listening, .handsFree, .meeting, .meetingPanel, .processing,
-             .recent, .history:
+             .recent, .history, .assistant:
             break
         }
     }
@@ -278,12 +288,12 @@ public final class IslandModel {
                 guard !Task.isCancelled else { return }
                 self?.setHint(false)
             }
-        case .idle, .hover, .listening, .processing, .landed, .undo, .failed, .recent, .history, .meetingPanel, .notice:
+        case .idle, .hover, .listening, .processing, .landed, .undo, .failed, .recent, .history, .meetingPanel, .notice, .assistant:
             setHint(false)
         }
     }
 
-    private func setHint(_ on: Bool) {
+    func setHint(_ on: Bool) {
         guard hint != on else { return }
         let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         if reduce {
@@ -291,6 +301,14 @@ public final class IslandModel {
         } else {
             withAnimation(.smooth(duration: 0.30)) { hint = on }
         }
+    }
+
+    /// The bridge pushes the assistant's legible answer here; the model only
+    /// renders it. Called off any token stream, on the main actor.
+    public func setAssistant(answer: String, status: AssistantStatus, canDeeper: Bool) {
+        assistantAnswer = answer
+        assistantStatus = status
+        assistantCanDeeper = canDeeper
     }
 
     func after(_ ms: Int, _ body: @escaping @MainActor () -> Void) {

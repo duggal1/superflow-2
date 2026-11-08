@@ -15,6 +15,7 @@ extension IslandModel {
         case .notice(let notice):
             performer.perform(.alignment, performanceTime: .default)
             if notice.kind == .milestone || notice.kind == .knowledge { playMilestoneSound() }
+        case .assistant: performer.perform(.alignment, performanceTime: .default)
         case .idle, .hover, .processing, .recent, .history: break
         }
 
@@ -28,6 +29,7 @@ extension IslandModel {
         case .undo: "Escape pressed. Was that a mistake? Undo is available for six seconds."
         case .notice(let notice): notice.title
         case .history: "Recent dictations."
+        case .assistant: "Assistant."
         case .idle, .hover, .processing, .recent: nil
         }
         if let line {

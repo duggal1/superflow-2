@@ -169,7 +169,7 @@ struct IslandStage<Content: View>: View {
         case .idle: model.geometry.hasNotch || model.prefs.alwaysOn
         case .hover, .meeting: true
         case .listening, .handsFree, .meetingPanel, .processing, .landed, .undo,
-             .failed, .recent, .history, .notice: false
+             .failed, .recent, .history, .notice, .assistant: false
         }
     }
 
@@ -179,7 +179,7 @@ struct IslandStage<Content: View>: View {
         case .idle, .hover:
             model.prefs.alwaysOn ? "Show recent dictations" : "Show last dictation"
         case .listening, .handsFree, .meetingPanel, .processing, .landed, .undo,
-             .failed, .recent, .history, .notice:
+             .failed, .recent, .history, .notice, .assistant:
             "Show last dictation"
         }
     }
