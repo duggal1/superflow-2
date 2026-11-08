@@ -13,10 +13,17 @@ final class StrictCleanupTests: XCTestCase {
         let inserter = RecordingInserter()
         let audio = ScriptedAudioSource(samples: Array(repeating: 0.2, count: 80_000))
         let recognizer = FakeSpeechRecognizer(script: ["hello world"], samplesPerSegment: 80_000)
-        let pipeline = TextPipelineBuilder.make(settings: .default,
+        // Raw means verbatim: disable deterministic capitalization and retain
+        // journals so sample coverage is observable after completion.
+        var settings = AppSettings.default
+        settings.lineFormat.capitalize = false
+        settings.lineFormat.finalPeriod = false
+        settings.keepJournals = true
+        let pipeline = TextPipelineBuilder.make(settings: settings,
             dependencies: TextPipelineDependencies(cleaner: CleanupService(cleaner: FakeTextCleaner(.fail))))
         let engine = SessionEngine(audio: audio, recognizer: recognizer, pipeline: pipeline,
-                                   repository: repository, journals: journals, inserter: inserter)
+                                   repository: repository, journals: journals, inserter: inserter,
+                                   settings: settings)
         let id = try await engine.start()
         _ = await engine.stop()
         let inserted = await inserter.inserted

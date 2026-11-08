@@ -213,7 +213,7 @@ final class ModelsViewTests: XCTestCase {
         let speech = try XCTUnwrap(vm.items.first { $0.kind == .speech })
         XCTAssertEqual(speech.state, .installed)
         XCTAssertTrue(speech.isActive)
-        XCTAssertEqual(vm.missingCount, 1)
+        XCTAssertEqual(vm.missingCount, 4)
         XCTAssertFalse(vm.isChecking)
     }
 
