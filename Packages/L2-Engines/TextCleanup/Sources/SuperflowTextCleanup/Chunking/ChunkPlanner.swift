@@ -24,16 +24,18 @@ public struct CleanupConfig: Sendable, Equatable {
     /// off except list and paragraph shaping after cleanup.
     public var format: FormatConfig
 
-    public init(softTokenTarget: Int = 250, hardTokenCap: Int = 850, interactiveDeadlineMs: Int = 1_500,
-                backgroundDeadlineMs: Int = 30_000, workers: Int = 2, ratioFloor: Double = 0.6,
+    public init(softTokenTarget: Int = 800, hardTokenCap: Int = 850, interactiveDeadlineMs: Int = 1_500,
+                backgroundDeadlineMs: Int = 30_000, workers: Int = 6, ratioFloor: Double = 0.6,
                 retryDepth: Int = 0, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_137,
                 overlapPercent: Double = 0.12, format: FormatConfig = FormatConfig()) {
         self.softTokenTarget = min(Self.maximumInputTokens, max(1, softTokenTarget))
         self.hardTokenCap = min(Self.maximumInputTokens, max(1, hardTokenCap))
         self.interactiveDeadlineMs = interactiveDeadlineMs
         self.backgroundDeadlineMs = backgroundDeadlineMs
-        // Two llama.cpp contexts exist; more workers just queue and steal GPU time.
-        self.workers = min(2, max(1, workers))
+        // Six contexts run long-transcript chunks in parallel; more would queue.
+        // The 800-token target packs each chunk near the model's ~1,000-token
+        // budget so a 10-minute transcript needs ~3 calls, not ~8.
+        self.workers = min(6, max(1, workers))
         self.ratioFloor = ratioFloor
         self.retryDepth = retryDepth
         self.hallucinationFloor = hallucinationFloor
