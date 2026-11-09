@@ -39,14 +39,14 @@ extension IslandBridge {
         guard let transcript = box.lastTranscript, !transcript.text.isEmpty else {
             model?.setAssistant(answer: "Dictate something first, then ask.",
                                 status: .failed("Dictate something first, then ask."),
-                                canDeeper: false)
+                                canDeeper: false, needsSettings: false)
             return
         }
         let intelligence = await makeIntelligence(environment: environment)
         guard let intelligence else {
             model?.setAssistant(answer: "Save your Reflection key in Intelligence to ask.",
                                 status: .failed("Save your Reflection key in Intelligence to ask."),
-                                canDeeper: false)
+                                canDeeper: false, needsSettings: true)
             return
         }
         self.intelligence = intelligence

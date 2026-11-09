@@ -59,6 +59,9 @@ public final class IslandModel {
     public internal(set) var assistantAnswer = ""
     public internal(set) var assistantStatus: AssistantStatus = .idle
     public internal(set) var assistantCanDeeper = false
+    /// True only when the answer is missing because no Reflection key is saved,
+    /// so the card can offer the settings shortcut instead of a blind retry.
+    public internal(set) var assistantNeedsSettings = false
     @ObservationIgnored public var assistantHelp: () -> Void = {}
     @ObservationIgnored public var assistantDeeper: () -> Void = {}
     @ObservationIgnored public var assistantRetry: () -> Void = {}
@@ -305,10 +308,12 @@ public final class IslandModel {
 
     /// The bridge pushes the assistant's legible answer here; the model only
     /// renders it. Called off any token stream, on the main actor.
-    public func setAssistant(answer: String, status: AssistantStatus, canDeeper: Bool) {
+    public func setAssistant(answer: String, status: AssistantStatus, canDeeper: Bool,
+                              needsSettings: Bool = false) {
         assistantAnswer = answer
         assistantStatus = status
         assistantCanDeeper = canDeeper
+        assistantNeedsSettings = needsSettings
     }
 
     func after(_ ms: Int, _ body: @escaping @MainActor () -> Void) {

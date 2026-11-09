@@ -4,8 +4,8 @@ import SuperflowUIComponents
 import SwiftUI
 
 /// The assistant card: a streamed answer about the latest transcript.
-/// Titles and actions speak state; the answer itself scrolls nothing — it is
-/// capped at the card, and the full text lives in History.
+/// Titles and actions speak state; the answer tile truncates with a fade and
+/// stays selectable, the full text living in History.
 struct AssistantCard: View {
     let model: IslandModel
 
@@ -17,21 +17,18 @@ struct AssistantCard: View {
 
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    PixelBitmap(rows: PixelBitmap.spark, cell: 2, gap: 1, tone: Ramp.blue[4])
-                    Text("Assistant")
-                        .appType(.label)
-                        .foregroundStyle(Tok.text)
-                }
-                .fixedSize()
-                .padding(.leading, pad)
-                .frame(width: side, alignment: .leading)
+                Text("Assistant")
+                    .appType(.label)
+                    .foregroundStyle(Tok.text)
+                    .padding(.leading, pad)
+                    .frame(width: side, alignment: .leading)
+                    .accessibilityLabel("Assistant")
 
                 if geometry.hasNotch {
                     Color.clear.frame(width: geometry.notch.width)
                 }
 
-                BarIconButton(glyph: .close, label: "Close") {
+                BarIconButton(glyph: .close, label: "Dismiss") {
                     model.assistantCancel()
                 }
                 .padding(.trailing, pad - 8)
@@ -40,31 +37,39 @@ struct AssistantCard: View {
             .frame(height: geometry.band)
 
             VStack(alignment: .leading, spacing: 12) {
-                if model.assistantStatus == .idle {
-                    Text("Ask about your latest transcript.")
-                        .appType(.reading)
-                        .foregroundStyle(Tok.text2)
+                switch model.assistantStatus {
+                case .thinking:
+                    IslandWait()
                         .islandReveal(0)
-                } else if model.assistantStatus == .thinking {
-                    Text("Thinking…")
-                        .appType(.reading)
-                        .foregroundStyle(Tok.text2)
-                        .islandReveal(0)
-                } else if model.assistantStatus == .streaming || model.assistantStatus == .done || model.assistantStatus == .truncated {
+                case .streaming, .done, .truncated:
                     Text(model.assistantAnswer)
                         .appType(.reading)
+                        .lineSpacing(6)
                         .foregroundStyle(Tok.text)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(6)
+                        .lineLimit(5)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, minHeight: 52, maxHeight: 52,
+                               alignment: .topLeading)
+                        .modifier(AssistantFade(active: model.assistantAnswer.count > 120))
+                        .padding(12)
+                        .textSelection(.enabled)
+                        .background(Tok.well,
+                                    in: .rect(cornerRadius: Radius.nested, style: .continuous))
                         .accessibilityLabel("Assistant answer")
                         .islandReveal(0)
-                } else if case .failed(let message) = model.assistantStatus {
+                case .failed(let message):
                     Text(message)
                         .appType(.reading)
+                        .lineSpacing(6)
                         .foregroundStyle(Tok.text2)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(4)
                         .accessibilityLabel("Assistant error")
+                        .islandReveal(0)
+                case .idle:
+                    Text("Ask about your latest transcript.")
+                        .appType(.reading)
+                        .foregroundStyle(Tok.text2)
                         .islandReveal(0)
                 }
 
@@ -84,23 +89,17 @@ struct AssistantCard: View {
                                 model.assistantDeeper()
                             }
                         }
-                        if model.assistantAnswer.contains("key") || model.assistantAnswer.contains("Key") {
-                            AppButton("Open Intelligence", glyph: nil, kind: .secondary, height: IslandLayout.actionHeight) {
-                                model.assistantOpenSettings()
-                            }
-                        }
                     case .truncated:
                         AppButton("Continue", glyph: nil, kind: .secondary, height: IslandLayout.actionHeight) {
                             model.assistantRetry()
                         }
                     case .failed:
-                        if model.assistantAnswer.contains("key") || model.assistantAnswer.contains("Key") {
+                        AppButton("Retry", glyph: nil, kind: .secondary, height: IslandLayout.actionHeight) {
+                            model.assistantRetry()
+                        }
+                        if model.assistantNeedsSettings {
                             AppButton("Open Intelligence", glyph: nil, kind: .secondary, height: IslandLayout.actionHeight) {
                                 model.assistantOpenSettings()
-                            }
-                        } else {
-                            AppButton("Retry", glyph: nil, kind: .secondary, height: IslandLayout.actionHeight) {
-                                model.assistantRetry()
                             }
                         }
                     }
@@ -113,6 +112,18 @@ struct AssistantCard: View {
             .padding(.bottom, pad)
 
             Spacer(minLength: 0)
+        }
+    }
+}
+
+private struct AssistantFade: ViewModifier {
+    let active: Bool
+
+    func body(content: Content) -> some View {
+        if active {
+            content.modifier(EdgeFadeBottom(length: 20))
+        } else {
+            content
         }
     }
 }
