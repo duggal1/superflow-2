@@ -61,8 +61,10 @@ final class IslandPanelControllerTests: XCTestCase {
         XCTAssertTrue(host.containsPoint(CGPoint(x: IslandLayout.canvas.width / 2, y: 10)))
         model.send(.holdBegan(nil))
         RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+        // Dictation no longer renders a live-text shelf (ae636dc): the
+        // listening silhouette is band-tall, so clicks must land inside it.
         XCTAssertTrue(host.containsPoint(CGPoint(x: IslandLayout.canvas.width / 2,
-                                                 y: model.geometry.band + 20)))
+                                                 y: model.geometry.band - 8)))
         model.send(.pasteFailed(Feed().transcript))
         XCTAssertFalse(panel.canBecomeKey)
         XCTAssertFalse(host.containsPoint(CGPoint(x: 0, y: IslandLayout.canvas.height - 1)))
