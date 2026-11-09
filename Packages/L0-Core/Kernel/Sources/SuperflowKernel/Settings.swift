@@ -128,7 +128,7 @@ public struct GestureConfig: Codable, Sendable, Equatable {
 
 public struct AppSettings: Codable, Sendable, Equatable {
     /// Version 2 migrates the legacy CPU default; version 3 enables list formatting;
-    /// version 4 raises cleanup workers to 6 for long-transcript parallelism.
+    /// version 4 keeps the measured two-context S1 ceiling (six contexts starve streaming ASR).
     public static let currentVersion = 4
     public var settingsVersion = AppSettings.currentVersion
     public var theme: ThemeMode = .system
@@ -171,7 +171,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var cleanupContext = "general"
     public var interactiveDeadlineMs = 1500
     public var backgroundDeadlineMs = 30_000
-    public var cleanupWorkers = 6
+    public var cleanupWorkers = 2
     /// Compute the cleanup model runs on. GPU is the default because it is far
     /// faster on Apple silicon; CPU is the escape hatch when Metal is busy,
     /// unsupported, or the machine is better spent elsewhere.
@@ -235,9 +235,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
         interactiveDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .interactiveDeadlineMs) ?? d.interactiveDeadlineMs
         backgroundDeadlineMs = try c.decodeIfPresent(Int.self, forKey: .backgroundDeadlineMs) ?? d.backgroundDeadlineMs
         cleanupWorkers = try c.decodeIfPresent(Int.self, forKey: .cleanupWorkers) ?? d.cleanupWorkers
-        // Version 3 installs persisted 2; version 4 moves them to 6 so long
-        // transcripts use six parallel S1 lanes without a settings visit.
-        if storedVersion < 4, cleanupWorkers == 2 { cleanupWorkers = 6 }
+        // Persisted 6 from the short-lived v4 experiment stays honored (the
+        // Settings row clamps to what the two-context runtime serves).
         cleanupCompute = try c.decodeIfPresent(ModelCompute.self, forKey: .cleanupCompute) ?? d.cleanupCompute
         // Version 1 shipped with CPU as the saved value for many installs even
         // though GPU is the product default. Migrate that legacy value once; a

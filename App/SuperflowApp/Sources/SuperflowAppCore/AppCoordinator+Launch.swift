@@ -8,15 +8,15 @@ import SuperflowKernel
 @MainActor
 extension AppCoordinator {
     func startModelPreparation(environment: AppEnvironment, log: Logger) {
-        // Hex-style launch: serialize ASR then S1-mini on one utility lane so
-        // first dictation is hot, without contending the GPU.
+        // S1-mini loads lazily on first use (LlamaCleaner.clean calls prepare()
+        // when cold); an eager launch load parks a second GPU model on the
+        // machine and starves streaming ASR. Only ASR prewarms here.
         Task(priority: .utility) { [weak self] in
             guard let self else { return }
             let started = DispatchTime.now().uptimeNanoseconds
             let asr = await environment.sessionEngine.prewarm()
-            let cleanup = await environment.prepareInstalledCleanupModel(compute: self.settings.cleanupCompute)
             let elapsed = (DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
-            log.info("Model preparation: \(elapsed) ms; ASR ready: \(asr); cleanup ready: \(cleanup)")
+            log.info("Model preparation: \(elapsed) ms; ASR ready: \(asr); cleanup deferred (lazy)")
         }
     }
 

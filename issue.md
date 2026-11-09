@@ -513,7 +513,7 @@ Production TextContext constructors omit activeAppBundleID, preventing developer
 
 Evidence: identifier appears in TextContext and gate, but no production caller supplies it. Mixed-language false positives also require policy review.
 
-Latest resolution: Island assistant built — right Option opens the card and streams help about the latest transcript.
+Latest resolution: Launch starvation fixed — S1 reverted to two contexts and lazy loading; measured 2.1 GB helper footprint at open is gone.
 
 ## Short ASR first result is late
 
@@ -558,7 +558,7 @@ S1 cleanup chunks ran through two lanes and two llama contexts, so long transcri
 - [ ] Unresolved
 - [x] Resolved
 
-Verification: ChunkConcurrency updated to five concurrent chunks; 107 TextCleanup tests pass with six-lane config.
+Verification: ChunkConcurrency updated to five concurrent chunks; 107 TextCleanup tests pass with six-lane config. Superseded 2026-11-09: the six lanes starved streaming ASR at launch (see Six-worker entry); restored to two with lazy loading.
 
 ## Keychain prompt blocks Intelligence navigation
 
@@ -591,9 +591,9 @@ Evidence: prime now feeds 24k silence to compile at launch; live first-dictation
 
 Six-context S1 GPU stress froze the Mac and forced a restart; contention remains unmeasured.
 
-- [x] Unresolved
-- [ ] Resolved
+- [ ] Unresolved
+- [x] Resolved
 
-Evidence: throwaway contention harness froze macOS; full suites green without it (SessionEngine 48, FeatureSettings 34).
+Verification: reverted to the measured two-context ceiling and lazy S1 loading. Launch no longer spawns the helper: before fix the XPC helper peaked at 2.1 GB footprint with 44% CPU while the system sat at 85 MB free; after fix no helper spawns at launch and the app footprint is 1.0 GB (ASR model only). TextCleanup 107, LLMLlamaCpp 36, FeatureSettings 34, and InferenceHelper 9 tests pass.
 
 
