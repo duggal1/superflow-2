@@ -10,7 +10,7 @@ final class InsertionTypesTests: XCTestCase {
         XCTAssertTrue(options.restoreClipboard)
         XCTAssertEqual(options.clipboardRestoreDelay, .milliseconds(500))
         XCTAssertEqual(options.verifiedRestoreDelay, .milliseconds(50))
-        XCTAssertEqual(options.verifyTimeout, .milliseconds(400))
+        XCTAssertEqual(options.verifyTimeout, .milliseconds(1200))
         XCTAssertEqual(options.modifierReleaseTimeout, .milliseconds(300))
         XCTAssertTrue(options.allowPaste)
         XCTAssertFalse(options.preferAccessibility)
