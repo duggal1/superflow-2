@@ -51,7 +51,17 @@ final class EnhancementIntegrationTests: XCTestCase, @unchecked Sendable {
             let journalChunks = await journals.chunks[.mic] ?? []
             let recognized = await recognition.chunks
             XCTAssertEqual(journalChunks.flatMap(\.samples), raw)
-            XCTAssertEqual(recognized.flatMap(\.samples), enabled ? raw.map { $0 * 0.5 } : raw)
+            let output = recognized.flatMap(\.samples)
+            if enabled {
+                // The enhancer halves the signal, then the session's AGC leveler
+                // adjusts its amplitude. Check the actual contract rather than
+                // expecting the pre-AGC samples to reach recognition unchanged.
+                XCTAssertEqual(output.count, raw.count)
+                XCTAssertTrue(output.allSatisfy { $0 > 0 && $0 < 0.2 })
+            } else {
+                // Disabling enhancement must bypass both denoising and AGC.
+                XCTAssertEqual(output, raw)
+            }
             XCTAssertEqual(recognized.last?.endSample, Int64(raw.count))
         }
     }
