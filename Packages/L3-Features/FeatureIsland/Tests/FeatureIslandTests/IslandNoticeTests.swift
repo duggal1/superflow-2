@@ -52,7 +52,12 @@ final class IslandNoticeTests: XCTestCase {
         XCTAssertEqual(soundCount, 0)
         model.send(.cancelled)
         XCTAssertEqual(model.phase, .idle)
-        try await Task.sleep(for: .milliseconds(700))
+        // CI runners can delay main-actor scheduling well beyond the nominal
+        // 600 ms notice delay. Wait for the observable state, with a deadline.
+        let deadline = Date().addingTimeInterval(5)
+        while model.phase != .notice(notice) && Date() < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
         XCTAssertEqual(model.phase, .notice(notice))
         XCTAssertEqual(soundCount, 1)
         model.send(.dismissed)
