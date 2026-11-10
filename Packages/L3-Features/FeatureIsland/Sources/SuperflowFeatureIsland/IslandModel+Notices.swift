@@ -14,7 +14,11 @@ extension IslandModel {
     func schedulePendingNotice() {
         guard !pendingNotices.isEmpty else { return }
         noticeTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(600))
+            do {
+                try await Task.sleep(for: .milliseconds(600))
+            } catch {
+                return
+            }
             guard !Task.isCancelled, let self, self.phase.isRest else { return }
             self.pendingNotices.removeAll { Date().timeIntervalSince($0.postedAt) > 120 }
             guard !self.pendingNotices.isEmpty else { return }
