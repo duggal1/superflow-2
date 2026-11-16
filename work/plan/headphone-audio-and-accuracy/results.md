@@ -48,3 +48,37 @@ DeepFilterNet → VoiceClarity → AudioLeveler → journal archive → streamin
   claims are UNVERIFIED.
 - Dynamic 10–50-entry per-session vocabulary and Technical/Professional profile switching
   are not implemented; the bundled catalog still contains 2,212 aliases.
+
+## Aggressive headless accuracy probes (second pass)
+
+Enabled only by env vars; run with `swift test --package-path ... --filter <name>`.
+
+1. `HeadlessAccuracyProbeTests.headlessASRAccuracyProbe` synthesizes 10 read-aloud
+   technical sentences with macOS `say`, converts to 16 kHz mono, runs the real
+   Nemotron 3.5 ASR and writes raw commits. Result: clean speech is recognized almost
+   perfectly. `time to first token`, `tokens per second`, `intermittent`, `evaluate
+   Metal GPU utilization and model accuracy`, `ensure`, `why`, `Kubernetes`,
+   `OpenTelemetry`, `CI/CD` all survive. Only `Redis cache invalidation` →
+   `rediscache and validation` and `OAuth` → `Off` were acoustic errors.
+2. `HeadlessStageAttributionTests` ran those exact raw strings through every
+   deterministic stage. No stage invented `intermediate`, `Insured`, `More accuracy`,
+   `while` or `Jeration`. `Numbers` correctly formats `five hundred three` → `503`.
+3. `headlessBoundaryPauseProbe` inserted 900 ms silence at phrase and mid-word
+   boundaries. Phrase pauses produce 3 ASR segments; a mid-word pause turns
+   `token` into `two` / `Can`. Feed cadence 512 vs 5,120 samples gives identical
+   results, so the 600 ms RMS endpoint — not feed chunk size — is the boundary
+   failure mode. This confirms the segmentation diagnosis and refutes the
+   cleanup-model theory for those errors.
+4. `HeadlessS1ProbeTests` ran the real pinned S1-mini via `LlamaCppRuntime` headlessly.
+   It preserved all reported words; it did rewrite spoken `five hundred three` to
+   `530`. `HeadlessGuardProbeTests` proves production `CleanGuard.verify` rejects
+   that mutation (it also conservatively rejects benign `two point zero` → `2.0`,
+   so deterministic Numbers owns numeric formatting).
+5. One real deterministic defect found and fixed: `rediscache` matched the spaced
+   trigger `redis cache` and collapsed to `Redis`, dropping `cache`. `LexiconStage`
+   now rejects only compressed-token matches where the canonical is a prefix of the
+   trigger and drops an entire trailing word; phonetic repairs still work.
+
+Final `make verify` passes every suite except the pre-existing stale
+`StreamingProfileTests.selectableSpeechModelsHaveNativeIncrementalOutputPaths`
+assertion from commit 61f5c7e (retired models), which was deliberately not touched.

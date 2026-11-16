@@ -614,6 +614,15 @@ Verification: PCM decoder now handles integer/float formats callback-safely; hea
 
 Verification: new failing-before regression passes; all 84 TextPipeline tests pass.
 
+## Compressed token match drops a whole word
+
+`rediscache` matched the spaced trigger `redis cache` and was replaced with `Redis`, losing `cache`.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: new failing-before regression passes; phonetic repairs still work; TextLexicon and TextPipeline suites pass.
+
 ## Six-worker stress froze macOS
 
 Six-context S1 GPU stress froze the Mac and forced a restart; contention remains unmeasured.

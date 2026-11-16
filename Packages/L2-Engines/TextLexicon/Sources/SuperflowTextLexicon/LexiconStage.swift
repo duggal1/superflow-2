@@ -176,7 +176,19 @@ public struct LexiconStage: ExplainingTextStage {
                             let core = stream.tokens[$0].core
                             return core == "dot" || core.filter(\.isLetter).count <= 1
                         }
+                        // A compressed ASR token ("rediscache") may match a
+                        // spaced trigger ("redis cache"). Reject only the case
+                        // where the canonical is a prefix of that trigger and
+                        // drops an entire trailing word ("cache"); phonetic
+                        // repairs such as "monsloft" -> "Unsloth" stay allowed.
+                        let triggerKey = LexiconNormalizer.key(trigger)
+                        let canonicalKey = LexiconNormalizer.key(canonical)
+                        let dropsWholeWord = consumed == 1 && !spelled && triggerTokens > 1
+                            && triggerKey.hasPrefix(canonicalKey)
+                            && triggerKey.count - canonicalKey.count >= 3
+                        let preservesContent = !dropsWholeWord
                         let accepts = (consumed <= max(1, triggerTokens) || spelled)
+                            && preservesContent
                             && (filter?(trigger, canonical, line, context) ?? true)
                         if accepts {
                             let lead = stream.tokens[index].lead

@@ -32,6 +32,11 @@ final class MeaningPreservationTests: XCTestCase {
         XCTAssertFalse(text.localizedCaseInsensitiveContains("thursday"), text)
     }
 
+    func testCompressedTokenNeverLosesContent() async {
+        let text = await output("The rediscache and validation is broken")
+        XCTAssertTrue(text.localizedCaseInsensitiveContains("cache"), text)
+    }
+
     func testOrdinaryActuallyNoIsNeverDeleted() async {
         let text = await output("I actually no longer need the report tomorrow")
         XCTAssertTrue(text.localizedCaseInsensitiveContains("actually no"), text)
