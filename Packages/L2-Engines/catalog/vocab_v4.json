@@ -14519,6 +14519,154 @@
         }
       ],
       "enabled_default": true
+    },
+    {
+      "id": "asr-nextjs-endpoint",
+      "canonical": "Next.js API endpoint",
+      "kind": "term",
+      "pack": "web",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "next years apoint",
+          "tier": "A"
+        },
+        {
+          "t": "next year's apoint",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-intermittent-latency",
+      "canonical": "intermittent latency",
+      "kind": "term",
+      "pack": "core",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "intermediate illitency",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-redis-cache",
+      "canonical": "Redis cache",
+      "kind": "term",
+      "pack": "infra",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "redish cash",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-opentelemetry",
+      "canonical": "OpenTelemetry",
+      "kind": "term",
+      "pack": "web",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "open trace",
+          "tier": "A"
+        },
+        {
+          "t": "open traces",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-kubernetes",
+      "canonical": "Kubernetes",
+      "kind": "term",
+      "pack": "infra",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "identifys",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-speculative",
+      "canonical": "speculative decoding",
+      "kind": "term",
+      "pack": "ai",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "skeptical decoding",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-autoregressive",
+      "canonical": "autoregressive",
+      "kind": "term",
+      "pack": "ai",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "autoaggressive",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-kv-cache",
+      "canonical": "KV cache",
+      "kind": "term",
+      "pack": "ai",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "kv cash",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-without-output",
+      "canonical": "without output",
+      "kind": "term",
+      "pack": "core",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "withoutput",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
+    },
+    {
+      "id": "asr-tokens-per-second",
+      "canonical": "tokens per second",
+      "kind": "term",
+      "pack": "ai",
+      "case": "canonical",
+      "aliases": [
+        {
+          "t": "token per second",
+          "tier": "A"
+        }
+      ],
+      "enabled_default": true
     }
   ]
 }

@@ -16,6 +16,14 @@ public enum FormatGuard {
     public static func preserves(_ before: String, _ after: String) -> Bool {
         canonical(before) == canonical(after)
     }
+
+    /// Folding a spoken "A and B and C" into bullets consumes the connecting
+    /// words. No other word may move or disappear.
+    public static func preservesListConnectors(_ before: String, _ after: String) -> Bool {
+        let connectors: Set<String> = ["and", "then", "also"]
+        let strip = { (s: String) in canonical(s).filter { !connectors.contains($0) } }
+        return strip(before) == strip(after)
+    }
 }
 
 /// Counters only. Never transcript text.

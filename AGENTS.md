@@ -47,7 +47,7 @@ Ship the requested behavior completely. Preserve correctness, privacy, accessibi
 - After fixing an issue, verify the fix and mark it `Resolved` in issue.md. If it remains unfixed or unverified, leave it `Unresolved`.
 - When resolving an issue, update the latest resolution below with its title and verification.
 
-Latest resolution: S1-mini output rejected before reaching the transcript — 40/40 headless transcripts now clean with zero fallback; up to ten dynamic llama.cpp workers; app rebuilt, pinned to Dock and reopened from /Applications.
+Latest resolution: Aggressive messy-transcript quality — 15/15 headless quality checks pass with bounded ASR repairs, deterministic list folding and spoken-email repair; 40/40 zero fallback; app rebuilt, installed in /Applications and reopened.
 
 <!-- INIT-RULES:START — do not remove this marker. Managed by `init rules`. -->
 Read [GIT-SKILLS.md](GIT-SKILLS.md) before Git writes. Read [RULES.md](RULES.md) for substantial engineering work. Small, low-risk edits use inspect → edit → verify.

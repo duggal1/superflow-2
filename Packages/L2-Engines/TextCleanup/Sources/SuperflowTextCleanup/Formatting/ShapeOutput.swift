@@ -49,6 +49,27 @@ public func shapeOutput(_ cleaned: String, config: FormatConfig,
                         counters: inout FormatCounters) -> String {
     var text = cleaned
     if config.lists, !text.contains("```"), !text.contains("~~~") {
+        // Deterministic enumeration planning runs after S1-mini: it only
+        // reformats words the model already produced, never invents content.
+        let segments = ListPlanner.plan(text)
+        if segments.contains(where: {
+            if case .list = $0 { return true }
+            return false
+        }) {
+            let shaped = segments.map { segment -> String in
+                switch segment {
+                case .prose(let prose): return prose
+                case .list(let lead, let items):
+                    return ([lead] + items.map { "- " + $0 }).joined(separator: "\n")
+                }
+            }.joined(separator: "\n")
+            if FormatGuard.preservesListConnectors(text, shaped) {
+                text = shaped
+                counters.listsFormatted += 1
+            } else {
+                counters.listReverts += 1
+            }
+        }
         let spoken = SpokenEnumerationShaper.apply(text)
         if spoken != text {
             text = spoken

@@ -18,6 +18,41 @@ public enum ListPlanner {
         text.components(separatedBy: "\n").flatMap { line in planLine(line, protected: protected, timings: timings) }
     }
 
+    /// A post-cleanup sentence such as "for the trip we need to pack sunscreen
+    /// and a first aid kit and chargers" is a three-item enumeration even without
+    /// ordinal cues. Only "need to <verb>" leads qualify, so ordinary prose with
+    /// a few "and"s stays prose.
+    private static func planAndList(words: [Token], keys: [String]) -> [CleanupSegment]? {
+        guard let need = keys.firstIndex(of: "need") else { return nil }
+        // "I need you to open the file ..." is an instruction, not a packing
+        // list. Only "we/I need to <verb>" leads qualify.
+        guard need == 0 || ["we", "i"].contains(keys[need - 1]) else { return nil }
+        guard need + 1 < keys.count, keys[need + 1] != "you" else { return nil }
+        var cursor = need + 1
+        if cursor < keys.count, keys[cursor] == "to" { cursor += 1 }
+        guard cursor < keys.count else { return nil }
+        cursor += 1 // the verb ("pack", "buy", "check")
+        var items: [[Int]] = []
+        var current: [Int] = []
+        for index in cursor..<keys.count {
+            let key = keys[index]
+            if key == "and" {
+                if !current.isEmpty { items.append(current); current = [] }
+                continue
+            }
+            if ["then", "also", "um", "uh", "please"].contains(key) { continue }
+            current.append(index)
+        }
+        if !current.isEmpty { items.append(current) }
+        guard items.count >= 3,
+              items.allSatisfy({ $0.count >= 1 && $0.count <= 6 }),
+              keys.count <= 30 else { return nil }
+        let lead = words[0..<cursor].map { $0.full }.joined(separator: " ")
+        return [.list(lead: lead, items: items.map { group in
+            group.map { words[$0].full }.joined(separator: " ")
+        })]
+    }
+
     private static func planLine(_ text: String, protected: Protected, timings: [WordTiming]) -> [CleanupSegment] {
         let words = Tokenizer.tokens(in: text)
         let timed = WordTimingProjection.apply(to: Tokenizer.words(text, protected: protected), timings: timings)
@@ -50,6 +85,7 @@ public enum ListPlanner {
         }
         let explicitList = keys.contains { ["list", "steps", "items", "things", "following", "checklist"].contains($0) }
         let numbered = explicitList ? (sequence(cardinals.map { [$0] }) ?? sequence((1...10).map { [String($0)] })) : nil
+        if let andList = planAndList(words: words, keys: keys) { return andList }
         guard let chain = sequence(ordinals.map { [$0] }) ?? sequence(cardinals.map { ["number", $0] }) ?? numbered ?? (bullets.count >= 2 ? bullets : nil),
               let first = chain.first else { return [.prose(text)] }
         func joined(_ range: Range<Int>) -> String { words[range].map(\.full).joined(separator: " ") }

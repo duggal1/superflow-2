@@ -106,6 +106,24 @@ Headless chain with the real installed Q4_K_M model and its direct llama.cpp run
   and grammar intact. Remaining wrong terms (`redish cash`, `APOINT`, `open trace`,
   `KV cash`, `skeptical decoding`, `withoutput`) are ASR acoustic errors upstream of
   S1-mini; they are not fixed by guard changes and are not claimed as fixed.
+## Aggressive messy-transcript quality harness
+`HeadlessQualityHarnessTests.testMessyTranscriptQuality` runs 15 deliberately
+broken ASR transcripts through the real S1-mini chain and scores required facts,
+forbidden artifacts and formatting. First run: 6/9. After fixes: **15/15**.
+- Added ten bounded, high-signal ASR repair aliases (e.g. `redish cash` -> `Redis
+  cache`, `skeptical decoding` -> `speculative decoding`, `identifys` -> `Kubernetes`,
+  `token per second` -> `tokens per second`, `next years apoint` -> `Next.js API
+  endpoint`). These are Tier A because the triggers are distinctive garble, not
+  ordinary English; no large catalog was added.
+- Extended the existing `ListPlanner` to recognise "we need to pack A and B and C"
+  and taught `ShapeOutput` to fold it into bullets; `FormatGuard` allows only
+  `and/then/also` to be consumed by that fold. Regression: "I need you to open
+  the file ..." stays prose.
+- Added a narrow spoken-email repair in `TranscriptionRepair`:
+  `john at john dot example dot com` -> `john@john.example.com`.
+- All TextPipeline/TextCleanup/TextLexicon/SessionEngine/App suites pass;
+  `make verify` only fails the pre-existing stale `StreamingProfileTests`.
+
 ## Final fallback survey and parallel workers
 - 40-case varied corpus with real S1-mini: `cleaned=40 fallback=0`. Earlier the same
   survey showed `cleaned=27 fallback=13`; each rejection class was fixed generally

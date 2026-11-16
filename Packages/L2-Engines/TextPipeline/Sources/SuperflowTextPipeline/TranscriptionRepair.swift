@@ -10,11 +10,33 @@ enum TranscriptionRepair: Sendable {
     static func apply(_ input: String, protected: Protected = Protected()) -> String {
         guard !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return input }
         var text = input
+        text = repairSpokenEmail(text)
         text = repairMissingSpaceAfterPunctuation(text)
         text = repairDoubledCapital(text, protected: protected)
         text = removeRepeatedSentences(text)
         text = collapseExcessSpaces(text)
         return text
+    }
+
+    /// "john at john dot example dot com" → "john@john.example.com". Only a
+    /// complete spoken address with two "dot" separators is rewritten.
+    private static func repairSpokenEmail(_ input: String) -> String {
+        guard let regex = try? NSRegularExpression(
+            pattern: #"(?i)\b([a-z0-9._%+\-]+)\s+at\s+([a-z0-9\-]+)\s+dot\s+([a-z0-9\-]+)\s+dot\s+([a-z]{2,})\b"#
+        ) else { return input }
+        let ns = input as NSString
+        let matches = regex.matches(in: input, range: NSRange(location: 0, length: ns.length))
+        guard !matches.isEmpty else { return input }
+        var output = ""
+        var cursor = 0
+        for match in matches {
+            func group(_ index: Int) -> String { ns.substring(with: match.range(at: index)) }
+            output += ns.substring(with: NSRange(location: cursor, length: match.range.location - cursor))
+            output += "\(group(1))@\(group(2)).\(group(3)).\(group(4))"
+            cursor = NSMaxRange(match.range)
+        }
+        output += ns.substring(from: cursor)
+        return output
     }
 
     /// "you.Hey" → "you. Hey". Only when an uppercase letter follows terminal
