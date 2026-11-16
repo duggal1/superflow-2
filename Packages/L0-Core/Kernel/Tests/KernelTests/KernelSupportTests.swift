@@ -160,8 +160,7 @@ final class KernelSupportTests: XCTestCase {
     }
 
     func testCatalogContainsOnlyModelsWithNativeLivePartialImplementations() {
-        XCTAssertEqual(ModelProfile.all, [.nemotron35Streaming, .qwen3ASR06B,
-                                         .qwen3ASR17B, .voxtralRealtime])
+        XCTAssertEqual(ModelProfile.all, [.nemotron35Streaming, .qwen3ASR06B])
         XCTAssertEqual(ModelProfile.all.filter { $0.vendor == "NVIDIA" }, [.nemotron35Streaming])
         XCTAssertTrue(ModelProfile.all.allSatisfy(\.supportsLiveDictation))
         XCTAssertFalse(ModelProfile.all.contains { $0.id.contains("moonshine") })

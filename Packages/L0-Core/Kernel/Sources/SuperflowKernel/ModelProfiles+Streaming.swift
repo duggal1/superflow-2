@@ -1,6 +1,9 @@
 import Foundation
 
 extension ModelProfile {
+    /// Retired profiles: kept defined so saved settings and installed artifacts
+    /// still resolve, but they are no longer offered for dictation or download.
+    public static let retiredProfiles: [ModelProfile] = [.qwen3ASR17B, .voxtralRealtime]
     /// Upstream streaming families with pinned audio.cpp native GGUF packages.
     /// Unverified means the implementation still requires a real-device
     /// capture-time partial/final transcript test before claiming a benchmark.
