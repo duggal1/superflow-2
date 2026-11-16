@@ -596,6 +596,24 @@ Evidence: prime now feeds 24k silence to compile at launch; live first-dictation
 
 Verification: buildfix now builds the helper with the shared artifacts symlink; `make run` packaged, codesigned and opened the app (PID confirmed); `tools/test-buildfix` passes.
 
+## External headsets capture near-silent crackly audio
+
+`HALInputStream` accepted only Float32 device formats, which external headsets often lack.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: PCM decoder now handles integer/float formats callback-safely; headless encoding tests pass. Hardware with AirPods remains unverified.
+
+## Explicit self-corrections keep the abandoned value
+
+"Thursday actually no Wednesday" retained Thursday in the final transcript.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: new failing-before regression passes; all 84 TextPipeline tests pass.
+
 ## Six-worker stress froze macOS
 
 Six-context S1 GPU stress froze the Mac and forced a restart; contention remains unmeasured.

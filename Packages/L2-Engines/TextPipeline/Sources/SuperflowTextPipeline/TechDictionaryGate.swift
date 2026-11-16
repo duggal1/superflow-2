@@ -21,6 +21,12 @@ struct TechDictionaryGate: Sendable {
         "repo", "component", "model", "edit", "build", "config",
     ]
 
+    /// Ordinary English that must never be promoted to a technical term merely
+    /// because the speaker is a developer. Checked before any catalog rule.
+    private static let ordinaryPhrases: Set<String> = [
+        "nextyear", "nextyears", "openeye"
+    ]
+
     private static let devApps: Set<String> = [
         "com.microsoft.VSCode", "com.todesktop.230313mzl4w4u92", "dev.zed.Zed",
         "com.apple.dt.Xcode", "com.jetbrains.intellij", "com.jetbrains.WebStorm",
@@ -36,6 +42,10 @@ struct TechDictionaryGate: Sendable {
     }
 
     func accepts(trigger: String, canonical: String, line: String, context: TextContext) -> Bool {
+        // An explicit personal pin still wins; otherwise ordinary language is
+        // never a technical term, regardless of app, project, or catalog tier.
+        if !pinned.contains(Self.normalized(canonical)),
+           Self.ordinaryPhrases.contains(Self.normalized(trigger)) { return false }
         guard let rule = TechDictionary.rule(trigger: trigger, canonical: canonical) else {
             return true
         }

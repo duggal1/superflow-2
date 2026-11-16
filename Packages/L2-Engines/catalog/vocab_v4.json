@@ -6869,40 +6869,6 @@
           "tier": "B"
         },
         {
-          "t": "next year",
-          "tier": "B",
-          "requires": [
-            "app",
-            "pages",
-            "react",
-            "router",
-            "vercel"
-          ]
-        },
-        {
-          "t": "next year's",
-          "tier": "B"
-        },
-        {
-          "t": "next years",
-          "tier": "B",
-          "requires": [
-            "app",
-            "pages",
-            "react",
-            "router",
-            "vercel"
-          ]
-        },
-        {
-          "t": "nexts year",
-          "tier": "B"
-        },
-        {
-          "t": "nexts years",
-          "tier": "B"
-        },
-        {
           "t": "next dot js",
           "tier": "B"
         },
@@ -6917,10 +6883,6 @@
         {
           "t": "next yeah ess",
           "tier": "A"
-        },
-        {
-          "t": "next year js",
-          "tier": "B"
         },
         {
           "t": "next dot j s",
@@ -7638,10 +7600,6 @@
         },
         {
           "t": "open ai",
-          "tier": "A"
-        },
-        {
-          "t": "open eye",
           "tier": "A"
         },
         {

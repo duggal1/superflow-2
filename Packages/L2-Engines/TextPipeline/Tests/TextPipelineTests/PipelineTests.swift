@@ -55,8 +55,8 @@ final class PipelineTests: XCTestCase {
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         // Safe pre-normalization runs before the model; the model still runs
         // before all formatting. Harper never runs.
-        XCTAssertEqual(pipeline.stageIDs.first, "preCleanupRepair")
-        XCTAssertEqual(pipeline.stageIDs.firstIndex(of: "cleanup"), 5)
+        XCTAssertEqual(pipeline.stageIDs.first, "selfCorrection")
+        XCTAssertEqual(pipeline.stageIDs.firstIndex(of: "cleanup"), 6)
         XCTAssertFalse(pipeline.stageIDs.contains("grammar"))
     }
 
@@ -64,7 +64,7 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
-            "preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "cleanup", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware",
+            "selfCorrection", "preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "cleanup", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware",
             "lineformat", "normalize", "modelNames", "techDictionary",
         ])
     }
@@ -76,7 +76,7 @@ final class PipelineTests: XCTestCase {
         settings.harperEnabled = false
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
         XCTAssertEqual(pipeline.stageIDs,
-                       ["preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "shortcuts", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware", "lineformat",
+                       ["selfCorrection", "preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "shortcuts", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware", "lineformat",
                         "normalize", "modelNames", "techDictionary"])
     }
 
@@ -90,8 +90,8 @@ final class PipelineTests: XCTestCase {
 
         settings.codeSpeakEnabled = true
         let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: dependencies())
-        XCTAssertEqual(Array(pipeline.stageIDs.prefix(14)),
-                       ["preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "codingLanguage", "numbers"])
+        XCTAssertEqual(Array(pipeline.stageIDs.prefix(15)),
+                       ["selfCorrection", "preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "codingLanguage", "numbers"])
         let index = pipeline.stageIDs.firstIndex(of: "codeSpeak")
         XCTAssertEqual(index.map { pipeline.stageIDs[$0 + 1] }, "lexicon")
 

@@ -244,7 +244,6 @@ the team uses ollama runtime for the current task	the team uses Ollama runtime f
 the team uses open a i for the current task	the team uses OpenAI for the current task
 the team uses open ai api for the current task	the team uses OpenAI API for the current task
 the team uses open ai sdk for the current task	the team uses OpenAI SDK for the current task
-the team uses open eye for the current task	the team uses OpenAI for the current task
 the team uses kwen ai for the current task	the team uses Qwen for the current task
 the team uses kwen model for the current task	the team uses Qwen for the current task
 the team uses quen 3 235b for the current task	the team uses Qwen for the current task

@@ -1,5 +1,6 @@
 import XCTest
 import SuperflowKernel
+import SuperflowTechDictionary
 import SuperflowTextLexicon
 @testable import SuperflowTextPipeline
 
@@ -27,11 +28,28 @@ final class TechDictionaryGateTests: XCTestCase {
             XCTAssertFalse(gate.accepts(trigger: trigger, canonical: "Next.js",
                                         line: line, context: TextContext()), line)
         }
-        // Same words with genuine dev context do fire.
-        XCTAssertTrue(gate.accepts(trigger: "next year", canonical: "Next.js",
-                                   line: "deploy the next year app to vercel", context: TextContext()))
+        // Even with dev co-words, the ordinary phrase stays ordinary.
+        XCTAssertFalse(gate.accepts(trigger: "next year", canonical: "Next.js",
+                                    line: "deploy the next year app to vercel", context: TextContext()))
         XCTAssertTrue(gate.accepts(trigger: "next js", canonical: "Next.js",
                                    line: "deploy the next js app", context: TextContext()))
+    }
+
+    func testEverydayPhrasesStayOrdinaryInDeveloperApp() {
+        let gate = TechDictionaryGate(userEntries: [], project: nil)
+        let developer = TextContext(activeAppBundleID: "com.microsoft.VSCode")
+        XCTAssertFalse(gate.accepts(trigger: "next year's", canonical: "Next.js",
+                                    line: "next year's plan", context: developer))
+        XCTAssertFalse(gate.accepts(trigger: "next years", canonical: "Next.js",
+                                    line: "next years plan", context: developer))
+    }
+
+    func testBundledCatalogHasNoOrdinaryLanguageTriggers() {
+        for trigger in ["open eye", "next year", "next year's", "next years",
+                        "nexts year", "nexts years", "next year js"] {
+            XCTAssertNil(TechDictionary.rule(trigger: trigger, canonical: trigger == "open eye" ? "OpenAI" : "Next.js"),
+                         "ordinary phrase '\(trigger)' must not be a bundled technical trigger")
+        }
     }
 
     func testDisabledPersonalTermDoesNotPinTierB() {

@@ -44,6 +44,7 @@ public enum TextPipelineBuilder {
     public static func make(settings: AppSettings,
                             dependencies: TextPipelineDependencies = TextPipelineDependencies()) -> TextPipeline {
         var stages: [any SuperflowPorts.TextStage] = []
+        stages.append(SelfCorrectionStage())
         stages.append(TranscriptionRepairStage(id: "preCleanupRepair"))
         stages.append(AIEraResolverStage(id: "aiEraPreCleanup"))
         stages.append(PreCleanupModelNameStage())
