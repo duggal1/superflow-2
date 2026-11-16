@@ -1,4 +1,5 @@
 import Foundation
+import LocalAuthentication
 import Security
 
 public struct ReflectionCredentials: Sendable {
@@ -9,10 +10,9 @@ public struct ReflectionCredentials: Sendable {
     /// opening Intelligence cannot block on a login-keychain password dialog.
     /// An auth-blocked item still counts as saved; only "not found" is false.
     public func exists() -> Bool {
-        var query = identity
+        var query = noPromptQuery
         query[kSecReturnAttributes] = true
         query[kSecMatchLimit] = kSecMatchLimitOne
-        query[kSecUseAuthenticationUI] = kSecUseAuthenticationUIFail
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         return status == errSecSuccess
@@ -21,10 +21,9 @@ public struct ReflectionCredentials: Sendable {
     }
 
     public func load() throws -> String? {
-        var query = identity
+        var query = noPromptQuery
         query[kSecReturnData] = true
         query[kSecMatchLimit] = kSecMatchLimitOne
-        query[kSecUseAuthenticationUI] = kSecUseAuthenticationUIFail
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         if status == errSecItemNotFound { return nil }
@@ -54,6 +53,15 @@ public struct ReflectionCredentials: Sendable {
 
     private var identity: [CFString: Any] {
         [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: "api-key"]
+    }
+
+    /// Same no-prompt behavior as the retired kSecUseAuthenticationUIFail.
+    private var noPromptQuery: [CFString: Any] {
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        var query = identity
+        query[kSecUseAuthenticationContext] = context
+        return query
     }
 
     private struct Failure: LocalizedError {

@@ -277,7 +277,7 @@ final class ChunkTransfer: NSObject, URLSessionDataDelegate, @unchecked Sendable
         sawRangeResponse = true
         if handle == nil {
             handle = try? FileHandle(forWritingTo: partURL)
-            try? handle?.seekToEnd()
+            _ = try? handle?.seekToEnd()
         }
         completionHandler(.allow)
     }

@@ -11,8 +11,7 @@ extension AppCoordinator {
         // S1-mini loads lazily on first use (LlamaCleaner.clean calls prepare()
         // when cold); an eager launch load parks a second GPU model on the
         // machine and starves streaming ASR. Only ASR prewarms here.
-        Task(priority: .utility) { [weak self] in
-            guard let self else { return }
+        Task(priority: .utility) {
             let started = DispatchTime.now().uptimeNanoseconds
             let asr = await environment.sessionEngine.prewarm()
             let elapsed = (DispatchTime.now().uptimeNanoseconds - started) / 1_000_000

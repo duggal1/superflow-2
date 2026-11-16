@@ -31,8 +31,6 @@ enum AIEraResolver {
                 map[key] = (record.canonical, record.casing)
             }
         }
-        // Longest variant first so "vibe coding" beats a "vibe" prefix.
-        let variants = map.keys.sorted { $0.count > $1.count }
         let source = input as NSString
         let tokenPattern = #"[A-Za-z]+(?:-[A-Za-z]+)?"#
         guard let regex = try? NSRegularExpression(pattern: tokenPattern) else { return (input, []) }
@@ -55,7 +53,7 @@ enum AIEraResolver {
             let token = tokens[index]
             let word = tokenText(token).lowercased()
             var matched: (canonical: String, casing: String, span: Int)? = nil
-            // Try multi-word variants starting here (up to 3 tokens).
+            // Longest span first so "vibe coding" beats a "vibe" prefix.
             for span in stride(from: min(3, tokens.count - index), through: 1, by: -1) {
                 let slice = (index..<(index + span)).map { tokenText(tokens[$0]).lowercased() }
                 let joined = normalized(slice.joined(separator: " "))
