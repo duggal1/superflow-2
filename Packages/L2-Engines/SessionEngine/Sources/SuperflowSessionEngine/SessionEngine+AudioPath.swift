@@ -29,6 +29,7 @@ extension SessionEngine {
         // speech, never the noise floor. It follows the same Enhancement
         // toggle as the denoiser; off means byte-identical passthrough.
         var leveler = AudioLeveler()
+        var clarity = VoiceClarity()
         var cleanCursor: Int64 = 0
         var warned = false
         for await chunk in samples {
@@ -49,7 +50,10 @@ extension SessionEngine {
             }
             let enhanceStart = DispatchTime.now().uptimeNanoseconds
             var clean = await stage.push(chunk.samples)
-            if enhancing { _ = leveler.level(&clean) }
+            if enhancing {
+                clarity.apply(&clean)
+                _ = leveler.level(&clean)
+            }
             if levelCounter % 32 == 0 {
                 metrics.record("session.audio.enhancement.ms",
                                valueMs: Double((DispatchTime.now().uptimeNanoseconds - enhanceStart) / 1_000_000))
@@ -63,7 +67,10 @@ extension SessionEngine {
             }
         }
         var tail = await stage.finish()
-        if enhancing { _ = leveler.level(&tail) }
+        if enhancing {
+            clarity.apply(&tail)
+            _ = leveler.level(&tail)
+        }
         if !tail.isEmpty {
             let chunk = AudioChunk(samples: tail, startSample: cleanCursor, source: .mic)
             await archive?.append(chunk)

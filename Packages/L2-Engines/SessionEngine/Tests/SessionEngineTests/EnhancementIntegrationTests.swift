@@ -41,7 +41,11 @@ final class EnhancementIntegrationTests: XCTestCase, @unchecked Sendable {
             settings.cleanupEnabled = false
             settings.speechEnhancementEnabled = enabled
             let pipeline = TextPipelineBuilder.make(settings: settings, dependencies: TextPipelineDependencies())
-            let raw = [Float](repeating: 0.2, count: 3_201)
+            // Speech-like alternating input: a DC step is legitimately removed
+            // by the pre-ASR high-pass and would not exercise the level contract.
+            let raw = (0..<3_201).map { index in
+                0.2 * sin(2 * Float.pi * 200 * Float(index) / 16_000)
+            }
             let engine = SessionEngine(audio: ScriptedAudioSource(samples: raw),
                 recognizer: RecordingRecognizer(stream: recognition), pipeline: pipeline,
                 repository: InMemoryRepository(), journals: journals, inserter: RecordingInserter(),
@@ -57,7 +61,9 @@ final class EnhancementIntegrationTests: XCTestCase, @unchecked Sendable {
                 // adjusts its amplitude. Check the actual contract rather than
                 // expecting the pre-AGC samples to reach recognition unchanged.
                 XCTAssertEqual(output.count, raw.count)
-                XCTAssertTrue(output.allSatisfy { $0 > 0 && $0 < 0.2 })
+                XCTAssertTrue(output.allSatisfy(\.isFinite))
+                XCTAssertLessThan(output.map(abs).max() ?? 0, 0.2)
+                XCTAssertGreaterThan(output.filter { abs($0) > 0.01 }.count, output.count / 2)
             } else {
                 // Disabling enhancement must bypass both denoising and AGC.
                 XCTAssertEqual(output, raw)
