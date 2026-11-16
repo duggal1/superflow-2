@@ -47,7 +47,7 @@ Ship the requested behavior completely. Preserve correctness, privacy, accessibi
 - After fixing an issue, verify the fix and mark it `Resolved` in issue.md. If it remains unfixed or unverified, leave it `Unresolved`.
 - When resolving an issue, update the latest resolution below with its title and verification.
 
-Latest resolution: None recorded.
+Latest resolution: buildfix never builds the inference helper — buildfix now builds the helper; `make run` packaged, signed and opened the app, `tools/test-buildfix` passes.
 
 <!-- INIT-RULES:START — do not remove this marker. Managed by `init rules`. -->
 Read [GIT-SKILLS.md](GIT-SKILLS.md) before Git writes. Read [RULES.md](RULES.md) for substantial engineering work. Small, low-risk edits use inspect → edit → verify.

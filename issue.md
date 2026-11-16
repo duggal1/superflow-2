@@ -587,6 +587,15 @@ ASR prime created a session without feeding audio; Metal compiled on the first d
 
 Evidence: prime now feeds 24k silence to compile at launch; live first-dictation timing remains unverified.
 
+## buildfix never builds the inference helper
+
+`make buildfix` packaged the app without ever building the required XPC helper.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: buildfix now builds the helper with the shared artifacts symlink; `make run` packaged, codesigned and opened the app (PID confirmed); `tools/test-buildfix` passes.
+
 ## Six-worker stress froze macOS
 
 Six-context S1 GPU stress froze the Mac and forced a restart; contention remains unmeasured.
