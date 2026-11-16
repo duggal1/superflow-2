@@ -16,12 +16,28 @@ enum MeaningCarriers {
         "wouldnt": "wouldn't", "havent": "haven't", "hasnt": "hasn't", "hadnt": "hadn't",
     ]
     private static let revisionCues: Set<String> = ["sorry", "wait", "actually", "mean", "nope"]
+    private static let numberWords: Set<String> = [
+        "zero", "oh", "one", "two", "three", "four", "five", "six", "seven", "eight",
+        "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+        "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
+        "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "million", "billion",
+    ]
+    private static let calendarWords: Set<String> = [
+        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+        "january", "february", "march", "april", "may", "june", "july", "august",
+        "september", "october", "november", "december", "tomorrow", "today",
+    ]
 
     static func hasRevisionCue(_ text: String) -> Bool {
         let tokens = words(text)
-        for (index, word) in tokens.enumerated() where revisionCues.contains(word) {
-            if index == 0 || tokens[index - 1] == "no" || tokens[index - 1] == "i" { return true }
+        if tokens.contains(where: { revisionCues.contains($0) }) { return true }
+        for (index, word) in tokens.enumerated() where word == "no" {
+            guard index + 1 < tokens.count else { continue }
+            if calendarWords.contains(tokens[index + 1]) { return true }
         }
+        // A transcript ending in a spoken number is about to be rendered as
+        // digits ("three thirty" -> "3:30"), which changes lemma heads.
+        if let last = tokens.last, numberWords.contains(last) { return true }
         return tokens.contains("make") && tokens.contains("that")
     }
 
@@ -72,8 +88,10 @@ enum MeaningCarriers {
         for (index, word) in words.enumerated() {
             // "no wait / no sorry / no actually" revises a value; it is not a
             // negation of the clause that follows.
-            if word == "no", index + 1 < words.count,
-               revisionCues.contains(words[index + 1]) { previous = nil; continue }
+            let followsCue = index > 0 && revisionCues.contains(words[index - 1])
+            let revisesValue = index + 1 < words.count
+                && (revisionCues.contains(words[index + 1]) || calendarWords.contains(words[index + 1]))
+            if word == "no", followsCue || revisesValue { previous = nil; continue }
             if predicate(word) { if previous != word { count += 1 }; previous = word }
             else { previous = nil }
         }

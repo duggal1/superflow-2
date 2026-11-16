@@ -34,8 +34,18 @@ public struct TruncationDetector: Sendable {
         s.lowercased().trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.whitespacesAndNewlines))
     }
 
+    private static let numberWords: Set<String> = [
+        "zero", "oh", "one", "two", "three", "four", "five", "six", "seven", "eight",
+        "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+        "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
+        "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "million", "billion",
+    ]
+
     private func isEquivalentTail(_ input: String, _ output: String) -> Bool {
         if input == output { return true }
+        // "three thirty" -> "3:30" and "four bit" -> "4-bit" are rendering
+        // changes, not a dropped tail.
+        if Self.numberWords.contains(input), output.contains(where: \.isNumber) { return true }
         guard !input.isEmpty, !output.isEmpty, abs(input.count - output.count) <= 1 else { return false }
         let lhs = Array(input)
         let rhs = Array(output)

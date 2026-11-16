@@ -106,6 +106,18 @@ Headless chain with the real installed Q4_K_M model and its direct llama.cpp run
   and grammar intact. Remaining wrong terms (`redish cash`, `APOINT`, `open trace`,
   `KV cash`, `skeptical decoding`, `withoutput`) are ASR acoustic errors upstream of
   S1-mini; they are not fixed by guard changes and are not claimed as fixed.
+## Brutal headless battery (final)
+- Added `testBrutalInvariants`: ten general cases (negation, 503/403/500/200,
+  paths, URLs, weekday revision, numeric self-correction, apostrophe negation,
+  bullets, 55-step long dictation) asserting only facts that must survive.
+- It found two more real fallbacks: `actually no Wednesday` counted as a negation,
+  and `three thirty` -> `3:30` flagged as a missing tail. Fixed generally in
+  `MeaningCarriers` (revision cues, calendar and trailing-number words) and
+  `TruncationDetector` (spoken-number tail equivalence). All ten cases pass.
+- Full probe battery re-run green: ASR accuracy, boundary pauses, S1 grammar/lists,
+  stage attribution, and end-to-end transcripts. `make verify` green except the
+  pre-existing stale `StreamingProfileTests` assertion.
+
 - Pre-ASR audio raised: leveler target -20 -> -15 dBFS, baseline gain 1.5 -> 2.0,
   enhancer output gain 1.5 -> 2.0, presence +1.5 -> +3 dB, mud cut -1.2 -> -2 dB,
   high-pass 70 -> 80 Hz. Tests updated to the new measured targets.

@@ -47,7 +47,7 @@ Ship the requested behavior completely. Preserve correctness, privacy, accessibi
 - After fixing an issue, verify the fix and mark it `Resolved` in issue.md. If it remains unfixed or unverified, leave it `Unresolved`.
 - When resolving an issue, update the latest resolution below with its title and verification.
 
-Latest resolution: S1-mini output rejected before reaching the transcript — general guard/limits fixes; both transcripts clean headlessly; audio raised to -15 dBFS; `make verify` passes except pre-existing stale model test.
+Latest resolution: S1-mini output rejected before reaching the transcript — brutal headless invariants exposed two more guard bugs; all fixed, full probe battery and focused suites pass; app rebuilt and reopened.
 
 <!-- INIT-RULES:START — do not remove this marker. Managed by `init rules`. -->
 Read [GIT-SKILLS.md](GIT-SKILLS.md) before Git writes. Read [RULES.md](RULES.md) for substantial engineering work. Small, low-risk edits use inspect → edit → verify.
