@@ -121,4 +121,65 @@ final class HeadlessEndToEndCleanupTests: XCTestCase {
         }
         XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
     }
+
+    /// Measures the fallback rate over a varied corpus with real S1-mini.
+    /// Enable with SUPERFLOW_E2E_PROBE=1.
+    func testFallbackRateSurvey() async throws {
+        guard ProcessInfo.processInfo.environment["SUPERFLOW_E2E_PROBE"] == "1" else { return }
+        let output = ProcessInfo.processInfo.environment["SUPERFLOW_FALLBACK_OUT"]
+            ?? "/private/var/folders/ct/cwpf7vpn059fkp932tq9zm4m0000gn/T/opencode/fallback-survey.txt"
+        let model = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/Superflow/Models/s1-mini-q4-k-m/s1-mini-q4_k_m.gguf")
+        guard FileManager.default.fileExists(atPath: model.path) else { throw XCTSkip("S1-mini not installed") }
+        LlamaLogging.silence()
+        let runtime = LlamaCppRuntime(sessions: 2)
+        let cleaner = LlamaCleaner(modelProvider: LocalModelProvider(url: model), runtime: runtime)
+        try await cleaner.prepare(compute: .gpu)
+        var settings = AppSettings.default
+        settings.cleanupEnabled = true
+        let pipeline = TextPipelineBuilder.make(
+            settings: settings,
+            dependencies: TextPipelineDependencies(cleaner: CleanupService(cleaner: cleaner)))
+        let context = TextContext(settings: settings)
+
+        var corpus: [String] = [
+            "hey sarah can you send the report by friday",
+            "the build failed on the ci cd pipeline",
+            "i need to inspect redis cache configuration and open telemetry traces",
+            "no don't delete the file",
+            "the request returned 503 not 403",
+            "move the meeting to thursday actually no wednesday at three thirty",
+            "i think the answer is forty two no sorry forty three",
+            "first open the app second press record third copy the text",
+            "for the trip we need sunscreen a first aid kit and chargers",
+            "he dont have no money and we cant send it",
+            "let us meet at half past two tomorrow actually make it three fifteen p m",
+            "send it to support at superwhisper dot com",
+            "the invoice came to twenty three thousand four hundred dollars",
+            "um",
+            "please verify the oauth two point zero flow and the jwt refresh token",
+        ]
+        for index in 0..<25 {
+            corpus.append("step \(index + 1) check the kubernetes pod and report the p \(90 + index) latency")
+        }
+        var cleaned = 0
+        var fallback = 0
+        var reasons: [String] = []
+        for input in corpus {
+            let result = await pipeline.run(input, context: context)
+            if result.draft.cleanupState == .fallback {
+                fallback += 1
+                let why = result.draft.diagnostics.filter { $0.stage.hasPrefix("cleanup") }
+                    .map(\.message).joined(separator: ",")
+                let s1 = (try? await cleaner.clean(input, options: CleanOptions(deadlineMs: 10_000)).text) ?? "<timeout>"
+                reasons.append("FALLBACK [\(why)]\n  IN: \(input)\n  S1: \(s1)\n  OUT: \(result.text)")
+            } else {
+                cleaned += 1
+            }
+        }
+        let report = "total=\(corpus.count) cleaned=\(cleaned) fallback=\(fallback)\n"
+            + reasons.joined(separator: "\n") + "\n"
+        try report.write(to: URL(fileURLWithPath: output), atomically: true, encoding: .utf8)
+        XCTAssertEqual(fallback, 0, report)
+    }
 }

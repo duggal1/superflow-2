@@ -35,7 +35,7 @@ public struct CleanupConfig: Sendable, Equatable {
         // Six contexts run long-transcript chunks in parallel; more would queue.
         // The 800-token target packs each chunk near the model's ~1,000-token
         // budget so a 10-minute transcript needs ~3 calls, not ~8.
-        self.workers = min(6, max(1, workers))
+        self.workers = min(10, max(1, workers))
         self.ratioFloor = ratioFloor
         self.retryDepth = retryDepth
         self.hallucinationFloor = hallucinationFloor

@@ -45,11 +45,19 @@ public actor LlamaCppRuntime: LlamaRuntime {
     private var loadedURL: URL?
     private let sessionCount: Int
 
-    /// Six contexts let long transcripts split into parallel S1 chunks (850-token
-    /// cap each) instead of queueing behind two lanes. Loaded lazily on first
-    /// dictation, so app launch never parks this memory.
-    public init(sessions: Int = 6) {
-        sessionCount = min(6, max(1, sessions))
+    /// Up to ten contexts let a long transcript fan out across ~800-token S1
+    /// chunks. Loaded lazily on first dictation, so launch never parks memory.
+    /// The count is bounded by installed RAM; tiny machines keep fewer lanes.
+    public static let maximumSessions = 10
+    public static var recommendedSessionCount: Int {
+        let gigabytes = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
+        if gigabytes >= 16 { return maximumSessions }
+        if gigabytes >= 8 { return 8 }
+        return 6
+    }
+
+    public init(sessions: Int = LlamaCppRuntime.recommendedSessionCount) {
+        sessionCount = min(LlamaCppRuntime.maximumSessions, max(1, sessions))
     }
 
     public func load(modelURL: URL, compute: ModelCompute) async throws {

@@ -13,12 +13,16 @@ public struct TruncationDetector: Sendable {
     public var ratioFloor: Double
     public init(ratioFloor: Double = 0.6) { self.ratioFloor = ratioFloor }
 
-    public func detect(input: String, output: String, hitTokenCap: Bool) -> TruncationReason? {
+    public func detect(input: String, output: String, hitTokenCap: Bool,
+                       allowsRevision: Bool = false) -> TruncationReason? {
         if hitTokenCap { return .hitTokenCap }
         let outputWords = wordCount(output)
         if outputWords == 0 { return .emptyOutput }
         let inputWords = wordCount(input)
-        if inputWords > 6, Double(outputWords) / Double(inputWords) < ratioFloor { return .ratioBelowFloor }
+        // An explicit revision legitimately discards the abandoned clause, so
+        // the output is supposed to be shorter than the input.
+        if !allowsRevision, inputWords > 6,
+           Double(outputWords) / Double(inputWords) < ratioFloor { return .ratioBelowFloor }
 
         let inputTail = Tokenizer.words(in: input).last.map(normalize) ?? ""
         let outputTail = Tokenizer.words(in: output).last.map(normalize) ?? ""
@@ -46,6 +50,11 @@ public struct TruncationDetector: Sendable {
         // "three thirty" -> "3:30" and "four bit" -> "4-bit" are rendering
         // changes, not a dropped tail.
         if Self.numberWords.contains(input), output.contains(where: \.isNumber) { return true }
+        // Spoken email domains and currency are rendered as compact values.
+        if ["com", "org", "net", "io", "dev", "app"].contains(input), output.contains(input) { return true }
+        if ["dollars", "pounds", "euros", "bucks"].contains(input), output.contains(where: \.isNumber) { return true }
+        // "three fifteen p m" becomes one token "3:15pm".
+        if input == "m", output.contains("pm") || output.contains("am") { return true }
         guard !input.isEmpty, !output.isEmpty, abs(input.count - output.count) <= 1 else { return false }
         let lhs = Array(input)
         let rhs = Array(output)

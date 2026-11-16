@@ -57,7 +57,7 @@ public actor CleanupService {
         self.metrics = metrics
         var bounded = config
         bounded.hardTokenCap = min(CleanupConfig.maximumInputTokens, max(1, config.hardTokenCap))
-        bounded.workers = min(6, max(1, config.workers))
+        bounded.workers = min(10, max(1, config.workers))
         self.config = bounded
         self.semaphore = AsyncSemaphore(bounded.workers)
         self.structureMapping = structureMapping
@@ -121,9 +121,15 @@ public actor CleanupService {
         plans = await coalesceEnumerationSeams(plans)
         guard !plans.isEmpty else { return ("", []) }
         var results = [ChunkOutcome](repeating: ChunkOutcome(index: 0, text: "", state: .pending), count: plans.count)
+        // Long dictation is split into ~800-token chunks. Run one worker per
+        // chunk, up to ten, so a 20-minute transcript fans out instead of
+        // queueing behind a fixed small pool. Short input stays cheap.
+        let totalTokens = plans.reduce(0) { $0 + $1.tokens }
+        let neededChunks = max(1, (totalTokens + 799) / 800)
+        let workerCount = min(config.workers, plans.count, max(2, neededChunks))
         await withTaskGroup(of: ChunkOutcome.self) { group in
             var next = 0
-            for _ in 0..<min(config.workers, plans.count) {
+            for _ in 0..<workerCount {
                 let plan = plans[next]; next += 1
                 group.addTask { await self.cleanChunk(plan, styling: styling, structure: structure, protected: protected, context: context) }
             }

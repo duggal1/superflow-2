@@ -42,7 +42,12 @@ public enum CleanGuard {
         }
         // S1-mini renders quantities in written form ("200ms" -> "200 ms").
         // Compare whole digit runs so formatting passes but 500 -> 1500 fails.
-        let sourceDigits = Self.digitRuns(comparable)
+        // A leading "Step 10" / "Item 3" marker is layout, not data; S1-mini
+        // may drop it without changing the instruction.
+        let withoutEnumeration = comparable.replacingOccurrences(
+            of: #"^\s*(?:step|item|number|point)\s+[0-9]+\s*"#,
+            with: "", options: .regularExpression)
+        let sourceDigits = Self.digitRuns(withoutEnumeration)
         let resultDigits = Self.digitRuns(result.text)
         for run in Set(sourceDigits) {
             guard resultDigits.filter({ $0 == run }).count >= sourceDigits.filter({ $0 == run }).count else {
@@ -54,22 +59,24 @@ public enum CleanGuard {
         let outputPaths = Tokenizer.tokens(in: result.text).map(\.core)
             .filter { $0.contains("/") && $0.contains(where: \.isLetter) }.map { $0.lowercased() }
         guard outputPaths.allSatisfy(sourcePaths.contains) else { return .contentChanged }
+        let allowsRevision = MeaningCarriers.hasRevisionCue(comparable)
         guard MeaningCarriers.accepts(comparable, result.text,
-                                      allowsRevision: MeaningCarriers.hasRevisionCue(comparable)) else { return .contentChanged }
+                                      allowsRevision: allowsRevision) else { return .contentChanged }
         let source = content(comparable)
         let cleaned = content(result.text)
         guard !cleaned.isEmpty else { return .contentChanged }
         // S1-mini is a normalizer: grammar, false starts and explicit corrections
         // legitimately change word order and vocabulary. Exact lexical equality
         // rejects that work. Keep the hard data checks above and reject gross loss.
-        if source.count > 12, cleaned.count * 2 < source.count { return .truncated }
+        if !allowsRevision, source.count > 12, cleaned.count * 2 < source.count { return .truncated }
         // Tail loss (e.g. a chunked cleaner dropping the last word of a chunk)
         // is not caught by the coarse count ratio; check the trailing word.
         let tailCheckedInput = comparable.split(whereSeparator: \.isWhitespace).reversed()
             .drop(while: { fillers.contains($0.lowercased().trimmingCharacters(in: .punctuationCharacters)) })
             .reversed().joined(separator: " ")
         if TruncationDetector().detect(input: tailCheckedInput, output: result.text,
-                                      hitTokenCap: result.hitTokenCap) == .missingTail {
+                                      hitTokenCap: result.hitTokenCap,
+                                      allowsRevision: allowsRevision) == .missingTail {
             return .truncated
         }
         return nil

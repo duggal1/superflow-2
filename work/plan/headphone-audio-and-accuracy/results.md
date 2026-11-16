@@ -106,6 +106,19 @@ Headless chain with the real installed Q4_K_M model and its direct llama.cpp run
   and grammar intact. Remaining wrong terms (`redish cash`, `APOINT`, `open trace`,
   `KV cash`, `skeptical decoding`, `withoutput`) are ASR acoustic errors upstream of
   S1-mini; they are not fixed by guard changes and are not claimed as fixed.
+## Final fallback survey and parallel workers
+- 40-case varied corpus with real S1-mini: `cleaned=40 fallback=0`. Earlier the same
+  survey showed `cleaned=27 fallback=13`; each rejection class was fixed generally
+  (digit runs, contraction/casing, revision cues, number/email/currency/meridiem
+  tail rendering, leading `Step N` markers).
+- Cleanup now fans out one worker per ~800-token chunk up to ten contexts instead
+  of a fixed six. `LlamaCppRuntime` allows ten sessions, with a RAM-aware default
+  (16 GB → 10, 8 GB → 8, smaller → 6), and settings migrate to ten workers.
+- Island placement follows `DESIGN.md §8.18`: panel frame top is `screen.frame.maxY`,
+  centred on the notch, no drag, no persisted origin, `constrainFrameRect` overridden
+  so AppKit cannot push it below the menu bar. No UI change was needed; the app is
+  also pinned to the macOS Dock.
+
 ## Brutal headless battery (final)
 - Added `testBrutalInvariants`: ten general cases (negation, 503/403/500/200,
   paths, URLs, weekday revision, numeric self-correction, apostrophe negation,

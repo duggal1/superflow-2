@@ -38,6 +38,9 @@ enum MeaningCarriers {
         // A transcript ending in a spoken number is about to be rendered as
         // digits ("three thirty" -> "3:30"), which changes lemma heads.
         if let last = tokens.last, numberWords.contains(last) { return true }
+        // Spoken magnitudes and email/domain words are rendered as compact
+        // values ("twenty three thousand" -> "$23,000", "dot com" -> ".com").
+        if tokens.contains(where: { ["dollars", "dot"].contains($0) }) { return true }
         return tokens.contains("make") && tokens.contains("that")
     }
 
@@ -91,7 +94,9 @@ enum MeaningCarriers {
             let followsCue = index > 0 && revisionCues.contains(words[index - 1])
             let revisesValue = index + 1 < words.count
                 && (revisionCues.contains(words[index + 1]) || calendarWords.contains(words[index + 1]))
-            if word == "no", followsCue || revisesValue { previous = nil; continue }
+            let discourseNo = word == "no" && index + 1 < words.count
+                && (negators.contains(words[index + 1]) || words[index + 1].hasSuffix("n't"))
+            if word == "no", followsCue || revisesValue || discourseNo { previous = nil; continue }
             if predicate(word) { if previous != word { count += 1 }; previous = word }
             else { previous = nil }
         }

@@ -22,7 +22,7 @@ final class ChunkConcurrencyTests: XCTestCase {
         XCTAssertEqual(active, 3)
     }
 
-    func testWorkerCountClampsToSixAvailableRuntimeContexts() async {
+    func testWorkerCountFollowsChunksUpToTenRuntimeContexts() async {
         let cleaner = CountingChunkCleaner()
         let input = Array(repeating: "word", count: 5_600).joined(separator: " ")
         let outcome = await CleanupService(cleaner: cleaner,
@@ -32,7 +32,7 @@ final class ChunkConcurrencyTests: XCTestCase {
         XCTAssertEqual(outcome.state, .cleaned)
         XCTAssertEqual(outcome.chunks.count, 7)
         let maxActive = await cleaner.maxActive
-        XCTAssertEqual(maxActive, 6)
+        XCTAssertEqual(maxActive, 7)
         XCTAssertTrue(outcome.chunks.allSatisfy { $0.attempts == 1 })
     }
 
