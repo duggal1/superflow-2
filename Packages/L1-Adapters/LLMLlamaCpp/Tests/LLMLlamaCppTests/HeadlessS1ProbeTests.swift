@@ -50,6 +50,28 @@ final class HeadlessS1ProbeTests: XCTestCase {
             let result = try await cleaner.clean(raw, options: CleanOptions())
             report += "RAW:     \(raw)\nCLEANED: \(result.text)\ntokens=\(result.tokensIn)/\(result.tokensOut) cap=\(result.hitTokenCap)\n\n"
         }
+        report += "== grammar and list control-line cases ==\n"
+        let directed: [(String, CleanOptions)] = [
+            ("so for the trip we need to pack sunscreen and then also a first aid kit and um chargers for everything",
+             CleanOptions(structure: "lists")),
+            ("so for the trip we need to pack sunscreen and then also a first aid kit and um chargers for everything",
+             CleanOptions(structure: "prose")),
+            ("first we need to pack sunscreen second a first aid kit and third chargers for everything",
+             CleanOptions(structure: "lists")),
+            ("here are the steps first open the app second press record third copy the text",
+             CleanOptions(structure: "lists")),
+            ("for the trip we need to pack sunscreen a first aid kit and chargers for everything",
+             CleanOptions(structure: "lists")),
+            ("i think the answer is forty two no sorry forty three", CleanOptions()),
+            ("he dont have no money and we cant send the report", CleanOptions()),
+            ("um so like the report is due friday no wait make that thursday", CleanOptions()),
+            ("hey sarah just wanted to follow up on the proposal can you send the numbers by end of week thanks john",
+             CleanOptions(context: "email")),
+        ]
+        for (raw, options) in directed {
+            let result = try await cleaner.clean(raw, options: options)
+            report += "STRUCT=\(options.structure) CTX=\(options.context)\nRAW:     \(raw)\nCLEANED: \(result.text)\n\n"
+        }
         try report.write(to: URL(fileURLWithPath: output), atomically: true, encoding: .utf8)
     }
 }

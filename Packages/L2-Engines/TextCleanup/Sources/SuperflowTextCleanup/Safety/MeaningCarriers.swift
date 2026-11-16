@@ -6,37 +6,74 @@ enum MeaningCarriers {
     private static let negators: Set<String> = ["not", "no", "never", "none", "nothing", "nobody", "neither", "nor", "cannot", "without"]
     private static let quantifiers: Set<String> = ["always", "only", "all", "every", "any", "more", "less", "fewer", "most", "least", "before", "after"]
     private static let stop: Set<String> = Set("a an the and or but so if then than that this these those of to in on at for with by from as is are was were be been being am i me my we our you your he she it its they them their do does did have has had just like really very actually basically well okay ok oh yeah um uh there here what when where how why which who will would can could should also too now mean wait make 't n't ca".split(separator: " ").map(String.init))
+    /// S1-mini normalizes apostrophes per its Styling axis ("dont" -> "don't").
+    /// Without this, the same negation is counted twice in the raw transcript
+    /// and once in the cleaned one, and valid cleanup falls back to raw text.
+    private static let contractions: [String: String] = [
+        "dont": "don't", "cant": "can't", "wont": "won't", "isnt": "isn't",
+        "arent": "aren't", "wasnt": "wasn't", "werent": "weren't", "didnt": "didn't",
+        "doesnt": "doesn't", "shouldnt": "shouldn't", "couldnt": "couldn't",
+        "wouldnt": "wouldn't", "havent": "haven't", "hasnt": "hasn't", "hadnt": "hadn't",
+    ]
+    private static let revisionCues: Set<String> = ["sorry", "wait", "actually", "mean", "nope"]
 
-    static func accepts(_ input: String, _ output: String) -> Bool {
+    static func hasRevisionCue(_ text: String) -> Bool {
+        let tokens = words(text)
+        for (index, word) in tokens.enumerated() where revisionCues.contains(word) {
+            if index == 0 || tokens[index - 1] == "no" || tokens[index - 1] == "i" { return true }
+        }
+        return tokens.contains("make") && tokens.contains("that")
+    }
+
+    static func accepts(_ input: String, _ output: String, allowsRevision: Bool = false) -> Bool {
         let source = words(input), target = words(output)
         guard count(source, matching: { negators.contains($0) || $0.hasSuffix("n't") }) ==
                 count(target, matching: { negators.contains($0) || $0.hasSuffix("n't") }),
               quantifierCounts(source) == quantifierCounts(target) else { return false }
-        for magnitude in ["hundred", "thousand", "million", "billion", "trillion"] {
-            if source.filter({ $0 == magnitude }).count != target.filter({ $0 == magnitude }).count { return false }
+        if !allowsRevision {
+            for magnitude in ["hundred", "thousand", "million", "billion", "trillion"] {
+                if source.filter({ $0 == magnitude }).count != target.filter({ $0 == magnitude }).count { return false }
+            }
         }
         var sentenceStart = true
-        let outputWords = Set(output.split(whereSeparator: \.isWhitespace).map { $0.trimmingCharacters(in: .punctuationCharacters) })
+        let outputWords = Set(output.split(whereSeparator: \.isWhitespace)
+            .map { String($0.trimmingCharacters(in: .punctuationCharacters)).lowercased() })
         for raw in input.split(whereSeparator: \.isWhitespace) {
             let word = raw.trimmingCharacters(in: .punctuationCharacters)
-            if !sentenceStart, word.first?.isUppercase == true, word != "I", !word.hasPrefix("I'"), !word.hasPrefix("I’"), !outputWords.contains(word) { return false }
+            let lowered = word.lowercased()
+            // Single-letter tokens ("P 95" -> "P95") are formatting, not a
+            // capitalized entity that could have been dropped.
+            if word.count > 1, !sentenceStart, word.first?.isUppercase == true,
+               word != "I", !word.hasPrefix("I'"), !word.hasPrefix("I’"),
+               !outputWords.contains(lowered) { return false }
             sentenceStart = raw.last.map { ".?!…".contains($0) } ?? false
         }
         if source == target { return true }
         let before = lemmas(input), after = lemmas(output)
-        return before.subtracting(after).count <= max(1, before.count / 12)
-            && after.subtracting(before).count <= (after.count <= 25 ? 0 : 1)
+        // An explicit correction legitimately replaces the abandoned value and
+        // its magnitude word with the value the speaker landed on.
+        // Longer dictation legitimately gains and loses more lemma heads as
+        // S1-mini normalizes grammar; hard checks above (negation, quantifiers,
+        // magnitudes) still guard meaning.
+        let allowance = allowsRevision ? max(1, before.count) : max(1, before.count / 6)
+        let newWordAllowance = max(1, after.count / 6)
+        return before.subtracting(after).count <= allowance
+            && after.subtracting(before).count <= newWordAllowance
     }
 
     private static func words(_ text: String) -> [String] {
         text.lowercased().replacingOccurrences(of: "’", with: "'")
-            .split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" }).map(String.init)
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" })
+            .map { token in contractions[String(token)] ?? String(token) }
     }
     private static func count(_ words: [String], matching predicate: (String) -> Bool) -> Int {
         var previous: String?
         var count = 0
         for (index, word) in words.enumerated() {
-            if word == "no", index + 1 < words.count, words[index + 1] == "wait" { previous = nil; continue }
+            // "no wait / no sorry / no actually" revises a value; it is not a
+            // negation of the clause that follows.
+            if word == "no", index + 1 < words.count,
+               revisionCues.contains(words[index + 1]) { previous = nil; continue }
             if predicate(word) { if previous != word { count += 1 }; previous = word }
             else { previous = nil }
         }

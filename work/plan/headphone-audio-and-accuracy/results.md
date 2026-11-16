@@ -82,3 +82,30 @@ Enabled only by env vars; run with `swift test --package-path ... --filter <name
 Final `make verify` passes every suite except the pre-existing stale
 `StreamingProfileTests.selectableSpeechModelsHaveNativeIncrementalOutputPaths`
 assertion from commit 61f5c7e (retired models), which was deliberately not touched.
+
+## S1-mini rejection investigation (third pass)
+Plan: `work/plan/s1-guard-split/plan.md`.
+
+Headless chain with the real installed Q4_K_M model and its direct llama.cpp runtime:
+- S1-mini itself produces correct grammar, self-corrections, bullets, numbered lists
+  and email layout. Cleanup was being rejected *after* the model ran.
+- Both of the user's long transcripts ended in `STATE: fallback` before the fix.
+  Reject reasons, in order, were `protectedLost` (literal numeric formatting),
+  `timeout("cleanup")` (fixed 1.5 s deadline on a ~150-token input), and
+  `contentChanged` from `MeaningCarriers` (apostrophe/casing changes, a single-letter
+  `P 95` -> `P95`, and strict lemma churn limits on long text). A standalone replica
+  of every check isolated the final failure to the `P` casing rule.
+- Fixes, all general (no sentence-specific rules): numeric data compared as whole
+  digit runs (so `200ms` -> `200 ms` passes but `500` -> `1500` fails); paths/dotted
+  identifiers still exact; contraction spellings normalized before negation counts;
+  casing compared case-insensitively and single-letter tokens ignored; revision cues
+  (`no sorry/wait/actually`) relax lemma limits; interactive deadline scales with
+  input tokens (12 ms per token above 60, capped by the 30 s background ceiling).
+- No retry loop exists in `CleanupService`; one model call per chunk, fallback only.
+- Final headless result: both transcripts finish `STATE: cleaned` with S1's bullets
+  and grammar intact. Remaining wrong terms (`redish cash`, `APOINT`, `open trace`,
+  `KV cash`, `skeptical decoding`, `withoutput`) are ASR acoustic errors upstream of
+  S1-mini; they are not fixed by guard changes and are not claimed as fixed.
+- Pre-ASR audio raised: leveler target -20 -> -15 dBFS, baseline gain 1.5 -> 2.0,
+  enhancer output gain 1.5 -> 2.0, presence +1.5 -> +3 dB, mud cut -1.2 -> -2 dB,
+  high-pass 70 -> 80 Hz. Tests updated to the new measured targets.

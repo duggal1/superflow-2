@@ -105,6 +105,8 @@ let package = Package(
                 .product(name: "SuperflowTestKit", package: "TestKit"),
                 .product(name: "SuperflowTextCleanup", package: "TextCleanup"),
                 .product(name: "SuperflowTextPipeline", package: "TextPipeline"),
+                .product(name: "SuperflowLLMCore", package: "LLMLlamaCpp"),
+                .product(name: "SuperflowLLMLlamaCpp", package: "LLMLlamaCpp"),
             ]
         ),
     ],

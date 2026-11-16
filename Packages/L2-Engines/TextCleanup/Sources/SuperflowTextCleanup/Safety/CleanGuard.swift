@@ -32,19 +32,30 @@ public enum CleanGuard {
         let data = Tokenizer.tokens(in: comparable).filter {
             $0.core.contains(where: \.isNumber) || $0.core.contains("_") || $0.core.contains("/") || $0.core.contains(".")
         }.map(\.core)
-        cursor = result.text.startIndex
-        for literal in data {
-            guard let match = result.text.range(of: literal, options: .caseInsensitive, range: cursor..<result.text.endIndex),
+        // Paths and dotted identifiers still need an exact match; a modified
+        // one ("hero.tsxbackup") must never pass as formatting.
+        for literal in data where !literal.contains(where: \.isNumber) {
+            guard let match = result.text.range(of: literal, options: .caseInsensitive,
+                                                range: result.text.startIndex..<result.text.endIndex),
                   boundary(result.text, match.lowerBound, before: true),
                   boundary(result.text, match.upperBound, before: false) else { return .protectedLost }
-            cursor = match.upperBound
+        }
+        // S1-mini renders quantities in written form ("200ms" -> "200 ms").
+        // Compare whole digit runs so formatting passes but 500 -> 1500 fails.
+        let sourceDigits = Self.digitRuns(comparable)
+        let resultDigits = Self.digitRuns(result.text)
+        for run in Set(sourceDigits) {
+            guard resultDigits.filter({ $0 == run }).count >= sourceDigits.filter({ $0 == run }).count else {
+                return .protectedLost
+            }
         }
         let sourcePaths = Set(Tokenizer.tokens(in: comparable).map(\.core)
             .filter { $0.contains("/") && $0.contains(where: \.isLetter) }.map { $0.lowercased() })
         let outputPaths = Tokenizer.tokens(in: result.text).map(\.core)
             .filter { $0.contains("/") && $0.contains(where: \.isLetter) }.map { $0.lowercased() }
         guard outputPaths.allSatisfy(sourcePaths.contains) else { return .contentChanged }
-        guard MeaningCarriers.accepts(comparable, result.text) else { return .contentChanged }
+        guard MeaningCarriers.accepts(comparable, result.text,
+                                      allowsRevision: MeaningCarriers.hasRevisionCue(comparable)) else { return .contentChanged }
         let source = content(comparable)
         let cleaned = content(result.text)
         guard !cleaned.isEmpty else { return .contentChanged }
@@ -62,6 +73,13 @@ public enum CleanGuard {
             return .truncated
         }
         return nil
+    }
+
+    private static func digitRuns(_ text: String) -> [String] {
+        guard let regex = try? NSRegularExpression(pattern: "[0-9]+") else { return [] }
+        let ns = text as NSString
+        return regex.matches(in: text, range: NSRange(location: 0, length: ns.length))
+            .map { ns.substring(with: $0.range) }
     }
 
     private static func boundary(_ text: String, _ index: String.Index, before: Bool) -> Bool {

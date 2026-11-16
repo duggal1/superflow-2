@@ -174,7 +174,13 @@ public actor CleanupService {
         let start = ContinuousClock.now
         let configured = context.interactive ? context.settings.interactiveDeadlineMs : context.settings.backgroundDeadlineMs
         let ceiling = context.interactive ? config.interactiveDeadlineMs : config.backgroundDeadlineMs
-        let deadline = min(max(1, configured), max(1, ceiling))
+        let base = min(max(1, configured), max(1, ceiling))
+        // A 1.5 s budget is right for a short utterance, but a 150-token
+        // engineering transcript needs longer to decode than a 20-token one.
+        // Scale only the excess over a short baseline and never exceed the
+        // background ceiling, so short dictation keeps its fast fallback.
+        let scaled = context.interactive ? base + max(0, plan.tokens - 60) * 12 : base
+        let deadline = min(scaled, max(1, config.backgroundDeadlineMs))
         let measuredTokens: Int
         if plan.tokens > 0 { measuredTokens = plan.tokens }
         else { measuredTokens = await cleaner.countTokens(plan.text) }

@@ -9,15 +9,17 @@ import Foundation
 /// - The right RMS target depends on the ASR model; it is tuned against
 ///   measured WER (start -20 dBFS speech RMS), not assumed.
 public struct AudioLeveler: Sendable {
-    public static let targetRMS: Float = 0.1 // -20 dBFS
+    /// -15 dBFS: streamed dictation input was too quiet for reliable VAD and
+    /// ASR on headphones; the limiter below still protects against clipping.
+    public static let targetRMS: Float = 0.18
     public static let peakLimit: Float = 0.891 // -1 dBFS
     public static let silenceRMS: Float = 0.005
-    public static let maxGain: Float = 12.0
+    public static let maxGain: Float = 16.0
     public static let releaseStep: Float = 0.05
 
     /// Baseline 150% boost, always on as the default. The AGC then rides
     /// around it toward the RMS target.
-    private var currentGain: Float = 1.5
+    private var currentGain: Float = 2.0
 
     public init() {}
 
@@ -54,7 +56,7 @@ public struct AudioLeveler: Sendable {
     }
 
     public mutating func reset() {
-        currentGain = 1.5
+        currentGain = 2.0
     }
 
     public var gain: Float { currentGain }

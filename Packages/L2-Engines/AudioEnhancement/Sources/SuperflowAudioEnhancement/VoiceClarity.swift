@@ -16,9 +16,9 @@ public struct VoiceClarity: Sendable {
     public init(sampleRate: Float = 16_000) {
         let rate = sampleRate.isFinite && sampleRate > 1_000 ? sampleRate : 16_000
         self.rate = rate
-        highPass = .highpass(70, rate)
-        mud = .peaking(300, q: 0.9, db: -1.2, rate)
-        presence = .peaking(3_000, q: 0.9, db: 1.5, rate)
+        highPass = .highpass(80, rate)
+        mud = .peaking(300, q: 0.9, db: -2.0, rate)
+        presence = .peaking(3_000, q: 0.9, db: 3.0, rate)
         attack = Self.coefficient(seconds: 0.010, rate: rate)
         release = Self.coefficient(seconds: 0.120, rate: rate)
     }
@@ -41,18 +41,18 @@ public struct VoiceClarity: Sendable {
             envelope = magnitude > envelope
                 ? magnitude + attack * (envelope - magnitude)
                 : magnitude + release * (envelope - magnitude)
-            // -24 dBFS threshold, 2:1, capped at 2 dB: firm enough to steady
-            // headphones, too gentle to flatten speech or pump the noise floor.
-            let over = 20 * log10(envelope + 1e-6) + 24
-            let reduction = min(2, max(0, over * 0.5))
+            // -22 dBFS threshold, 2.2:1, capped at 2.5 dB: steadier headphones
+            // without flattening speech or pumping the noise floor.
+            let over = 20 * log10(envelope + 1e-6) + 22
+            let reduction = min(2.5, max(0, over * 0.45))
             samples[index] = value * pow(10, -reduction / 20)
         }
     }
 
     public mutating func reset() {
-        highPass = .highpass(70, rate)
-        mud = .peaking(300, q: 0.9, db: -1.2, rate)
-        presence = .peaking(3_000, q: 0.9, db: 1.5, rate)
+        highPass = .highpass(80, rate)
+        mud = .peaking(300, q: 0.9, db: -2.0, rate)
+        presence = .peaking(3_000, q: 0.9, db: 3.0, rate)
         envelope = 0
     }
 }

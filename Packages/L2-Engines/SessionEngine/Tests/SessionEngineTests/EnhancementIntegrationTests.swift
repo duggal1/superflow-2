@@ -62,7 +62,9 @@ final class EnhancementIntegrationTests: XCTestCase, @unchecked Sendable {
                 // expecting the pre-AGC samples to reach recognition unchanged.
                 XCTAssertEqual(output.count, raw.count)
                 XCTAssertTrue(output.allSatisfy(\.isFinite))
-                XCTAssertLessThan(output.map(abs).max() ?? 0, 0.2)
+                // The leveler now targets -15 dBFS so VAD and ASR receive a
+                // fuller signal; the true-peak limiter still prevents clipping.
+                XCTAssertLessThan(output.map(abs).max() ?? 0, 0.3)
                 XCTAssertGreaterThan(output.filter { abs($0) > 0.01 }.count, output.count / 2)
             } else {
                 // Disabling enhancement must bypass both denoising and AGC.

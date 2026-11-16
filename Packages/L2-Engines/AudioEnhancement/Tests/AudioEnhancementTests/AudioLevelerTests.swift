@@ -10,7 +10,7 @@ final class AudioLevelerTests: XCTestCase {
         _ = leveler.level(&block)
         let boostedRMS = (block.map { $0 * $0 }.reduce(0, +) / Float(block.count)).squareRoot()
         XCTAssertGreaterThan(boostedRMS, 0.02)
-        XCTAssertLessThan(boostedRMS, 0.105)
+        XCTAssertLessThan(boostedRMS, AudioLeveler.targetRMS + 0.005)
     }
 
     func testLoudSpeechIsLimitedNotClipped() {

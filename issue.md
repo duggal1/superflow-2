@@ -623,6 +623,15 @@ Verification: new failing-before regression passes; all 84 TextPipeline tests pa
 
 Verification: new failing-before regression passes; phonetic repairs still work; TextLexicon and TextPipeline suites pass.
 
+## S1-mini output rejected before reaching the transcript
+
+CleanGuard rejected valid S1 output (number formatting, apostrophes, casing), forcing raw fallback.
+
+- [ ] Unresolved
+- [x] Resolved
+
+Verification: headless real-S1 chain on both user transcripts now ends `STATE: cleaned`; guard, cleanup, TextPipeline and app suites pass.
+
 ## Six-worker stress froze macOS
 
 Six-context S1 GPU stress froze the Mac and forced a restart; contention remains unmeasured.

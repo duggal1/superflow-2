@@ -42,6 +42,22 @@ final class HeadlessStageAttributionTests: XCTestCase {
             report += "FINAL: \(draft.text)\n\n"
         }
 
+        report += "== S1-mini list outputs through downstream stages ==\n"
+        for cleaned in [
+            "For the trip, we need to pack:\n- Sunscreen\n- A first aid kit\n- Chargers for everything",
+            "Here are the steps:\n1. Open the app.\n2. Press record.\n3. Copy the text.",
+            "Hey Sarah,\n\nJust wanted to follow up on the proposal.\n\nThanks,\nJohn",
+        ] {
+            report += "S1: \(cleaned)\n"
+            var draft = TranscriptDraft(text: cleaned)
+            for stage in pipeline.stages {
+                let before = draft.text
+                draft = await stage.apply(draft, context: context)
+                if draft.text != before { report += "  \(stage.id): \(before) -> \(draft.text)\n" }
+            }
+            report += "FINAL: \(draft.text)\n\n"
+        }
+
         // Counterfactual: can any deterministic stage invent the reported
         // meaning-changing substitutions from correctly recognized words?
         for raw in ["The intermittent failures", "Please ensure the GPU is ready",
