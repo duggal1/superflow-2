@@ -1,4 +1,5 @@
 import AppKit
+import ClearlyStealth
 import SuperflowFeatureIsland
 import SuperflowUIComponents
 import SwiftUI
@@ -44,6 +45,13 @@ final class IslandPanel: NSPanel {
         isReleasedWhenClosed = false
         animationBehavior = .none
         appearance = NSAppearance(named: .darkAqua)
+
+        // Clearly stealth — the only public mechanism. Apply BEFORE the first
+        // orderFront so the panel is never capturable, even for one frame.
+        // Empty title + Windows-menu exclusion shrink the shareable-window list.
+        title = ""
+        isExcludedFromWindowsMenu = true
+        sharingType = .none
     }
 }
 
@@ -85,6 +93,7 @@ public final class IslandController {
     public let model: IslandModel
 
     private let panel = IslandPanel()
+    private let windowGuard = AppWindowGuard(assertInDebug: false)
     private let host: IslandHostingView
     private var observers: [NSObjectProtocol] = []
     private var outsideMonitors: [Any] = []
@@ -128,23 +137,53 @@ public final class IslandController {
         didStart = true
         place(.home)
         panel.orderFrontRegardless()
+        enforceStealth()
 
         let center = NotificationCenter.default
         let workspace = NSWorkspace.shared.notificationCenter
         observers = [
+            // Any app-owned window updating (a new SwiftUI popover, menu,
+            // alert, or the main window being shown) must be forced to .none.
+            center.addObserver(forName: NSWindow.didUpdateNotification,
+                               object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.enforceStealth() }
+            },
             center.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.screensChanged() }
             },
             workspace.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification,
                                   object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.panel.orderFrontRegardless() }
+                MainActor.assumeIsolated { self?.spaceChanged() }
             },
             workspace.addObserver(forName: NSWorkspace.screensDidWakeNotification,
                                   object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.screensChanged() }
             },
         ]
+    }
+
+    // MARK: stealth
+
+    /// Clearly stealth WindowGuard. Re-applies the ONLY public mechanism —
+    /// `NSWindow.sharingType = .none` — to every window the app owns. Kept
+    /// self-contained so the app gets the guaranteed part of hiding without a
+    /// new package dependency; the ClearlyStealth package holds the reusable,
+    /// headless-tested form. Idempotent: a window already `.none` is untouched.
+    private func enforceStealth() {
+        for window in NSApp.windows where window.sharingType != .none {
+            window.sharingType = .none
+        }
+        #if DEBUG
+        let leaked = NSApp.windows.filter { $0.sharingType != .none }
+        assert(leaked.isEmpty,
+               "Stealth invariant violated: \(leaked.count) capturable app window(s)")
+        #endif
+    }
+
+    private func spaceChanged() {
+        panel.orderFrontRegardless()
+        enforceStealth()
     }
 
     // MARK: placement
@@ -167,6 +206,9 @@ public final class IslandController {
         panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height),
                        display: false)
         panel.orderFrontRegardless()
+        windowGuard.islandShown()
+        // Every Island show / re-seat re-asserts the invariant.
+        enforceStealth()
     }
 
     private func screensChanged() {
@@ -184,6 +226,8 @@ public final class IslandController {
             pendingReseat = false
             place(.home)
         }
+        // Every Island show / phase transition re-asserts the window invariant.
+        enforceStealth()
 
         let interactiveCard: Bool = switch phase {
         case .recent, .history, .meetingPanel, .assistant: true

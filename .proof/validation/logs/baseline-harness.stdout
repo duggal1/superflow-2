@@ -1,0 +1,23 @@
+[PASS       ] 01  Read rules.yaml, git.yaml, DESIGN-RULES.MD, DESIGN.md, DYNAMIC-I
+[PASS       ] 02  Launch five sub-agents, each given the design documents to read,
+[PASS       ] 03  Delete the current Island UI layer and rebuild it clean; keep an
+[PASS       ] 04  Declare one token set (Tokens.swift: type, spacing, radii, color
+[PASS       ] 05  Build a pure enum + reducer state machine first: collapsed → com
+[PASS       ] 06  Attached top-center borderless non-activating NSPanel: notched M
+[FAIL       ] 07  Right Option is the ONLY trigger: hold = listening with pixel wa
+[PASS       ] 08  Delete the trigger-key picker from settings; migrate/clear store
+[FAIL       ] 09  Left Control toggles continuous meeting start/end; transcription
+[PASS       ] 10  Typed input: click collapsed Island, placeholder "Enter any data
+[PASS       ] 11  Messy-transcript intent extraction in ONE reusable system prompt
+[PASS       ] 12  Screen reading on by default; capture per send (Island excluded)
+[FAIL       ] 13  Prompt/theme selector enumerates every existing prompt/theme fro
+[PASS       ] 14  Settings icon expands Island in place; port every old setting ex
+[FAIL       ] 15  History is an Island state: list, open full transcript+answers, 
+[FAIL       ] 16  Output view: fully expanded, selectable/copyable text, Markdown 
+[PASS       ] 17  Stealth: Island visible to user but excluded from Google Meet/Zo
+[PASS       ] 18  All testing headless: native apps launched background/hidden, no
+[FAIL       ] 19  Aggressive testing: every requirement happy path, edges, hostile
+[UNVERIFIED ] 20  Existing functionality must not regress; build, lint, focused te
+[UNVERIFIED ] 21  Commit/push per git.yaml (6–12 word messages); open a PR and do 
+
+Wrote .proof/validation/matrix.md: PASS 13 / FAIL 6 / UNVERIFIED 2

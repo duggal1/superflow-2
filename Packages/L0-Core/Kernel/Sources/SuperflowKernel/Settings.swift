@@ -91,7 +91,22 @@ public enum DictationKey: String, Codable, Sendable, CaseIterable, Identifiable,
     }
 }
 
-/// The physical modifier that opens the Intelligence page.
+/// The trigger-key picker was removed. Right Option is now the only
+/// push-to-talk key (Left Control toggles meetings), so the old stored choice
+/// must never be read again. This key exists only so launch can delete it.
+public enum IntelligenceTriggerMigration {
+    public static let legacyDefaultsKey = "intelligence.trigger"
+
+    /// Idempotent migration: drop a stored trigger choice from any previous
+    /// build. Safe to call on every launch and on every settings save.
+    public static func clear(defaults: UserDefaults = .standard) {
+        defaults.removeObject(forKey: legacyDefaultsKey)
+    }
+}
+
+/// Kept only as a decoding type for older persisted records and the hotkey
+/// port's legacy setter. No UI offers these choices any more: input is fixed
+/// to Right Option (intelligence) and Left Control (meeting).
 public enum IntelligenceTriggerKey: Int, Sendable, CaseIterable, Identifiable, Hashable {
     case leftOption = 58
     case leftControl = 59

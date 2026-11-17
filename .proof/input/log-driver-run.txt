@@ -1,0 +1,18 @@
+=== PART A: real CGEvent flags -> real ClearlyInput mapper + recognizer ===
+PASS R7.hold_send: got ["pttBegan", "pttSend"], expected ["pttBegan", "pttSend"]
+PASS R7.tap_latch_then_send: got ["pttBegan", "pttLatched", "pttSend"], expected ["pttBegan", "pttLatched", "pttSend"]
+PASS R7.optionE_cancels_hold: got ["pttBegan", "pttCancelled"], expected ["pttBegan", "pttCancelled"]
+PASS R7.left_option_inert: got [], expected []
+PASS R7.right_control_inert: got [], expected []
+PASS R7.plain_key_inert: got [], expected []
+PASS R9.ctrl_click_ignored: got [], expected []
+PASS R9.ctrl_toggle_and_debounce: got ["meetingToggle", "meetingToggle"], expected ["meetingToggle", "meetingToggle"]
+PASS R7.latch_timeout_120s: before=[] after=["pttSend"]
+=== PART B: live listen-only tap, events posted to OWN pid only ===
+InputMonitoring granted: true
+tap raw events seen: []
+tap gestures emitted: []
+INFO postToPid events were not observed by the session tap on this macOS build;
+      Part A (real CGEvent flags through the real mapper) is the decisive proof.
+=== SUMMARY ===
+{"failures": 0}

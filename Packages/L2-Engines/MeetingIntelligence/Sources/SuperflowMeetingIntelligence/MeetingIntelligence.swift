@@ -11,7 +11,7 @@ public final class MeetingIntelligence: ObservableObject {
     @Published public private(set) var answer = ""
     @Published public var effort: ReasoningEffort = .low
     @Published public var mode: MeetingMode = .normal
-    @Published public var screenAware = false
+    @Published public var screenAware = true
     @Published public var customInstructions = ""
     @Published public var background = ""
 

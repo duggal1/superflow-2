@@ -19,7 +19,7 @@ struct PixelBitmap: View {
     @State private var born = Date()
     @State private var finished = false
     @Environment(\.displayScale) private var scale
-    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.islandReduceMotion) private var reduce
 
     static let check = [
         "......#",
@@ -153,7 +153,7 @@ struct PixelCountdown: View {
 /// is the announcement.
 struct PixelBurst: View {
     @State private var born = Date()
-    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.islandReduceMotion) private var reduce
     private let burstCells = 14
 
     @Environment(\.displayScale) private var scale
@@ -206,7 +206,7 @@ struct PixelBurst: View {
 /// holds all three lit, because a frozen three-cell mark still reads as "busy"
 /// while a single frozen cell reads as "done".
 struct IslandWait: View {
-    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.islandReduceMotion) private var reduce
 
     @Environment(\.displayScale) private var scale
 

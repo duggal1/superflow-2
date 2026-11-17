@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""
+validate-headless
+=================
+
+Enumerate every requirement in .proof/requirements.md, run the matching check
+script, and record PASS / FAIL / UNVERIFIED with one line of evidence into
+.proof/validation/matrix.md (and matrix.json).
+
+All checks are headless. No GUI, no browser, no global keystrokes, no cursor
+movement. Native apps, if a check launches one, go through `open -g -j` and are
+driven by the Accessibility API / events posted to their own pid.
+
+Usage:
+  tools/validate-headless/validate-headless [--only N[,N...]] [--no-fail]
+                                            [--out FILE] [--checks DIR]
+
+Environment:
+  VH_TIMEOUT   per-check timeout in seconds (default 300)
+  VH_PROOF     override .proof/validation directory
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import os
+import pathlib
+import re
+import subprocess
+import sys
+
+HERE = pathlib.Path(__file__).resolve().parent
+ROOT = HERE.parent.parent
+REQ_FILE = ROOT / ".proof" / "requirements.md"
+DEFAULT_CHECKS = HERE / "checks"
+DEFAULT_PROOF = ROOT / ".proof" / "validation"
+REQ_RE = re.compile(r"^\s*(\d+)\.\s+(.*\S)\s*$")
+VALID = {"PASS", "FAIL", "UNVERIFIED"}
+
+
+def parse_requirements(path: pathlib.Path):
+    reqs = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = REQ_RE.match(line)
+        if m:
+            reqs.append((int(m.group(1)), m.group(2)))
+    return reqs
+
+
+def git_info():
+    def q(args):
+        try:
+            return subprocess.check_output(["git", *args], cwd=ROOT,
+                                           stderr=subprocess.DEVNULL,
+                                           text=True).strip()
+        except Exception:
+            return "n/a"
+    return {
+        "commit": q(["rev-parse", "--short", "HEAD"]),
+        "branch": q(["branch", "--show-current"]),
+        "status": q(["status", "--short"]).replace("\n", "; ") or "clean",
+    }
+
+
+def run_check(script: pathlib.Path, timeout: int):
+    """Return (status, evidence, raw_output, returncode)."""
+    if not script.exists():
+        return "UNVERIFIED", f"no check script at {script.relative_to(ROOT)}", "", 127
+    try:
+        proc = subprocess.run(
+            ["bash", str(script)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={**os.environ, "ROOT": str(ROOT), "PROOF": str(os.environ.get("VH_PROOF", str(DEFAULT_PROOF)))},
+        )
+    except subprocess.TimeoutExpired as e:
+        return "UNVERIFIED", f"check timed out after {timeout}s", (e.stdout or "").decode(errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or ""), 124
+
+    raw = (proc.stdout or "") + (("\n[stderr]\n" + proc.stderr) if proc.stderr else "")
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    if not lines:
+        return "UNVERIFIED", f"check produced no verdict line (rc={proc.returncode})", raw, proc.returncode
+    first = lines[0]
+    if "\t" in first:
+        status, evidence = first.split("\t", 1)
+    else:
+        status, evidence = first, "(no tab-delimited evidence)"
+    status = status.strip().upper()
+    if status not in VALID:
+        return "UNVERIFIED", f"bad verdict {status!r}: {first[:160]}", raw, proc.returncode
+    return status, evidence.strip(), raw, proc.returncode
+
+
+def esc_md(s: str) -> str:
+    return s.replace("|", "\\|").replace("\n", " ")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--only", help="comma-separated requirement numbers")
+    ap.add_argument("--no-fail", action="store_true", help="exit 0 even with FAIL/UNVERIFIED")
+    ap.add_argument("--out", default=str(DEFAULT_PROOF / "matrix.md"))
+    ap.add_argument("--checks", default=str(DEFAULT_CHECKS))
+    args = ap.parse_args()
+
+    proof = pathlib.Path(os.environ.get("VH_PROOF", str(DEFAULT_PROOF)))
+    proof.mkdir(parents=True, exist_ok=True)
+    (proof / "logs").mkdir(exist_ok=True)
+    checks_dir = pathlib.Path(args.checks)
+    timeout = int(os.environ.get("VH_TIMEOUT", "300"))
+
+    reqs = parse_requirements(REQ_FILE)
+    wanted = None
+    if args.only:
+        wanted = {int(x) for x in args.only.split(",") if x.strip()}
+
+    gi = git_info()
+    results = []
+    for num, text in reqs:
+        if wanted is not None and num not in wanted:
+            continue
+        script = checks_dir / f"check-{num:02d}.sh"
+        status, evidence, raw, rc = run_check(script, timeout)
+        (proof / "logs" / f"check-{num:02d}.log").write_text(
+            f"# requirement {num}: {text}\n# script: {script.relative_to(ROOT)}\n"
+            f"# status: {status}  rc: {rc}\n\n" + raw, encoding="utf-8")
+        results.append({"id": num, "requirement": text, "status": status,
+                        "evidence": evidence, "rc": rc,
+                        "script": str(script.relative_to(ROOT))})
+        print(f"[{status:11}] {num:02d}  {text[:64]}")
+
+    out_path = pathlib.Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+    counts = {s: sum(1 for r in results if r["status"] == s) for s in VALID}
+
+    md = [
+        "# Validation matrix — Dynamic Island intelligence rebuild",
+        "",
+        f"- Generated: {now}",
+        f"- Source: `.proof/requirements.md` ({len(results)} requirement(s) enumerated)",
+        f"- Runner: `tools/validate-headless/validate-headless` (headless; no GUI, no global keys)",
+        f"- Commit: `{gi['commit']}` on `{gi['branch']}` — working tree: {gi['status']}",
+        f"- Totals: **PASS {counts['PASS']} / FAIL {counts['FAIL']} / UNVERIFIED {counts['UNVERIFIED']}**",
+        "",
+        "Status key: PASS = exercised the real thing and it held; FAIL = exercised and it broke "
+        "or is absent; UNVERIFIED = could not exercise (other agents still editing, permission "
+        "missing, or no driver yet). UNVERIFIED is never PASS.",
+        "",
+        "| # | Requirement | Status | Evidence (command → output, or screenshot path) |",
+        "|---|-------------|--------|-----------------------------------------------|",
+    ]
+    for r in results:
+        ev = esc_md(r["evidence"]) or "(none)"
+        md.append(f"| {r['id']} | {esc_md(r['requirement'])} | **{r['status']}** | `{ev}` |")
+    md += [
+        "",
+        "Raw output per check: `.proof/validation/logs/check-NN.log`.",
+        "Screenshots and two-pass review: `.proof/validation/screens/`, `screenshot-review.md`.",
+        "Independent grading: `.proof/validation/review.md`.",
+        "",
+    ]
+    out_path.write_text("\n".join(md), encoding="utf-8")
+    (proof / "matrix.json").write_text(json.dumps({
+        "generated": now, "git": gi, "totals": counts, "results": results,
+    }, indent=2), encoding="utf-8")
+
+    print(f"\nWrote {out_path.relative_to(ROOT)}: "
+          f"PASS {counts['PASS']} / FAIL {counts['FAIL']} / UNVERIFIED {counts['UNVERIFIED']}")
+    if not args.no_fail and (counts["FAIL"] or counts["UNVERIFIED"]):
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

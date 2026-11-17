@@ -1,6 +1,8 @@
 import Foundation
 
-public enum MeetingMode: String, CaseIterable, Sendable { case normal, codingInterview, sales, custom }
+public enum MeetingMode: String, CaseIterable, Sendable {
+    case normal, codingInterview, sales, journal, custom
+}
 
 public enum Prompts {
     public static func system(mode: MeetingMode, custom: String) -> String {
@@ -95,6 +97,12 @@ public enum Prompts {
         If code is on SCREEN, reason about that code, point out the bug, and give the smallest fix.
         Give full code only when TASK asks for it or ME is at the code step. Idiomatic, meaningful names, short comments only where logic is tricky.
         Spoken style: what ME should say out loud, then what ME should type.
+        """
+        case .journal: return """
+        MODE: Journal / personal reflection. ME is thinking aloud, with no other party present.
+        Treat the transcript as private notes, not a conversation. Preserve ME's own words, dates and decisions exactly.
+        Produce a short first-person reflection: what happened, what ME decided, and one concrete next step.
+        Do not invent facts, people, or feelings ME did not express.
         """
         case .sales: return """
         MODE: Sales call. ME is the seller. THEM is the prospect.

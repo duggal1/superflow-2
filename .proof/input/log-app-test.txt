@@ -1,0 +1,714 @@
+Building for debugging...
+[Computing dependencies]
+[Provisioning 1 / 141]
+[Constructing description]
+[Pre-planning 1 / 2363]
+[Planning 1 / 2363]
+[Planning 1021 / 2363]
+[Planning 1919 / 2363]
+[Planning deferred tasks]
+[Describing: 847 / 5769]
+[Constructing 248 / 5769]
+[Constructing 1923 / 5769]
+[Constructing 5263 / 5769]
+[Starting]
+warning: missing creator for mutated node: ('/Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[69 / 1291] TechDictionary_SuperflowTechDictionary
+[335 / 1291] SuperflowFeatureHistory
+[500 / 1291] mlx-swift_Cmlx
+[504 / 1298] SuperflowMeetingIntelligence
+[506 / 1298] SuperflowInferenceHelperProtocol
+[507 / 1298] RealModule
+[509 / 1310] Crypto
+[510 / 1310] ClearlyStealthCore
+[511 / 1346]
+[512 / 1355]
+[513 / 1355]
+[514 / 1394]
+[515 / 1394]
+[515 / 1394] SuperflowMeetingIntelligence
+[517 / 1398] SuperflowMeetingIntelligence
+[520 / 1427]
+[523 / 1444]
+[526 / 1453]
+[529 / 1453]
+[531 / 1453]
+[535 / 1453] UIComponents_SuperflowUIComponents
+[540 / 1453] RealModule
+[542 / 1465] RealModule
+[543 / 1465] _NumericsShims
+[545 / 1465]
+[547 / 1465]
+[549 / 1465]
+[550 / 1465]
+[553 / 1465]
+[555 / 1465]
+[563 / 1465]
+[564 / 1465]
+[567 / 1465] _NumericsShims
+[569 / 1465] RealModule
+[571 / 1465]
+[572 / 1465]
+[573 / 1465]
+[575 / 1465] RealModule
+[576 / 1465] RealModule
+[578 / 1465] ComplexModule
+[580 / 1465]
+[584 / 1466] Cmlx
+[587 / 1475]
+[588 / 1475] Cmlx
+[590 / 1475] Cmlx
+[590 / 1475]
+[592 / 1475]
+[593 / 1475]
+[594 / 1475]
+[595 / 1475]
+[603 / 1475]
+[607 / 1475]
+In file included from /Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/steel_attention.metal:6:
+In file included from /Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:3:
+In file included from /Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/attn.h:6:
+In file included from /Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/../../steel/attn/mma.h:11:
+/Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/../../steel/utils/integral_constant.h:108:6: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+  if constexpr (start < stop) {
+     ^
+In file included from /Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/steel_attention.metal:6:
+/Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:361:16: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+            if constexpr (is_bool) {
+               ^
+/Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:431:14: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+          if constexpr (BD == 128) {
+             ^
+/Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/checkouts/mlx-swift/Source/Cmlx/mlx-generated/metal/steel/attn/kernels/../../../steel/attn/kernels/steel_attention.h:441:14: warning: constexpr if is a C++17 extension [-Wc++17-extensions]
+          if constexpr (BD == 128) {
+             ^
+4 warnings generated.
+[611 / 1475]
+[613 / 1475]
+[615 / 1475]
+[616 / 1475]
+[618 / 1475]
+[619 / 1475]
+[620 / 1475]
+[620 / 1475] Cmlx
+[621 / 1475]
+[622 / 1475]
+[624 / 1475]
+[627 / 1475]
+[628 / 1475]
+[630 / 1475] Cmlx
+[633 / 1475] Cmlx
+[634 / 1475]
+[635 / 1475] EventSource
+[636 / 1475]
+[637 / 1475]
+[640 / 1475] EventSource
+[642 / 1475] EventSource
+[649 / 1475] Crypto
+[651 / 1475] Crypto
+[656 / 1475]
+[658 / 1475] Cmlx
+[659 / 1475]
+[662 / 1475] SuperflowInferenceHelperProtocol
+[664 / 1475] SuperflowInferenceHelperProtocol
+[677 / 1475]
+[678 / 1475] SuperflowKernel
+[680 / 1475] SuperflowKernel
+[685 / 1475]
+[687 / 1475]
+[690 / 1475]
+[692 / 1475]
+[692 / 1475] Cmlx
+[695 / 1475]
+[696 / 1475]
+[697 / 1475]
+[698 / 1475] Cmlx
+[698 / 1475]
+[700 / 1475]
+[701 / 1475]
+[702 / 1475] Cmlx
+[703 / 1475]
+[704 / 1475]
+[706 / 1475]
+[706 / 1475] Cmlx
+[707 / 1475]
+[708 / 1475]
+[709 / 1475]
+[711 / 1475]
+[712 / 1475]
+[713 / 1475]
+[714 / 1475] Cmlx
+[718 / 1475] Cmlx
+[721 / 1475] Cmlx
+[723 / 1475] Cmlx
+[726 / 1475] Cmlx
+[728 / 1475] Cmlx
+[729 / 1475] Cmlx
+[730 / 1475] Cmlx
+[731 / 1475] Cmlx
+[733 / 1475] Cmlx
+[734 / 1475] SuperflowMeetingIntelligence
+[735 / 1475] Cmlx
+[736 / 1475] Cmlx
+[737 / 1475] SuperflowMeetingIntelligence
+[738 / 1475] Cmlx
+[742 / 1475] SuperflowMeetingIntelligence
+[745 / 1475] Cmlx
+[747 / 1475] Cmlx
+[749 / 1475] Cmlx
+[750 / 1475] Cmlx
+[752 / 1475] Cmlx
+[754 / 1475] Cmlx
+[755 / 1475] Cmlx
+[756 / 1475] Cmlx
+[759 / 1475] Cmlx
+[763 / 1475] Cmlx
+[765 / 1475] Cmlx
+[767 / 1475] Cmlx
+[768 / 1475] Cmlx
+[769 / 1475] Cmlx
+[770 / 1475] Cmlx
+[771 / 1475] Cmlx
+[772 / 1475] Cmlx
+[774 / 1475] Cmlx
+[775 / 1475] Cmlx
+[777 / 1475] Cmlx
+[778 / 1475] Cmlx
+[780 / 1475] Cmlx
+[781 / 1475] Cmlx
+[783 / 1475] Cmlx
+[784 / 1475] Cmlx
+[786 / 1475] Cmlx
+[788 / 1475] Cmlx
+[790 / 1475] Cmlx
+[791 / 1475] Cmlx
+[792 / 1475] Cmlx
+[794 / 1475] Cmlx
+[795 / 1475] Cmlx
+[798 / 1475] Cmlx
+[799 / 1475] Cmlx
+[801 / 1475] Cmlx
+[802 / 1475] Cmlx
+[803 / 1475] Cmlx
+[806 / 1475] Cmlx
+[807 / 1475] Cmlx
+[809 / 1475] Cmlx
+[811 / 1475] Cmlx
+[815 / 1475] Cmlx
+[817 / 1475] Cmlx
+[818 / 1475] Cmlx
+[820 / 1475] Cmlx
+[822 / 1475] Cmlx
+[823 / 1475] Cmlx
+[824 / 1475] Cmlx
+[825 / 1475] Cmlx
+[826 / 1475] Cmlx
+[827 / 1475] Cmlx
+[828 / 1475] Cmlx
+[830 / 1475] Cmlx
+[831 / 1475] Cmlx
+[832 / 1475] Cmlx
+[834 / 1475] Cmlx
+[836 / 1475] Cmlx
+[838 / 1475] Cmlx
+[839 / 1475] Cmlx
+[840 / 1475] Cmlx
+[841 / 1475] Cmlx
+[842 / 1475] Cmlx
+[843 / 1475] Cmlx
+[845 / 1475] Cmlx
+[846 / 1475] Cmlx
+[847 / 1475] Cmlx
+[848 / 1475] Cmlx
+[849 / 1475] Cmlx
+[851 / 1475] Cmlx
+[852 / 1475] Cmlx
+[854 / 1475] Cmlx
+[856 / 1475] Cmlx
+[857 / 1475] Cmlx
+[859 / 1475] Cmlx
+[860 / 1475] Cmlx
+[861 / 1475] Cmlx
+[862 / 1475] Cmlx
+[863 / 1475] Cmlx
+[864 / 1475] Cmlx
+[865 / 1475] Cmlx
+[867 / 1475] Cmlx
+[869 / 1475] Cmlx
+[870 / 1475] Cmlx
+[872 / 1475] Cmlx
+[874 / 1475] Cmlx
+[876 / 1475] Cmlx
+[877 / 1475] Cmlx
+[882 / 1475] TechDictionary_SuperflowTechDictionary
+[885 / 1475] Cmlx
+[886 / 1475] SuperflowMeetingIntelligence-product
+[888 / 1475] Cmlx
+[889 / 1475] mlx-swift_Cmlx
+[890 / 1475] Cmlx
+[892 / 1475] SuperflowKernel
+[893 / 1475] SuperflowKernel
+[896 / 1475] SuperflowMeetingIntelligence
+[897 / 1475] SuperflowKernel
+[899 / 1475] SuperflowKernel
+[900 / 1475] SuperflowKernel
+[919 / 1475] EventSource
+[921 / 1475] EventSource
+[922 / 1475] EventSource-product
+[924 / 1475] Crypto
+[925 / 1475] Crypto-product
+[927 / 1475] HuggingFace
+[928 / 1475] HuggingFace
+[930 / 1475] ComplexModule
+[931 / 1475] Numerics
+[935 / 1475] ComplexModule
+[936 / 1475] ComplexModule
+[937 / 1475] ComplexModule
+[938 / 1475] ComplexModule
+[940 / 1475] ClearlyStealthCore
+[943 / 1475] ComplexModule
+[947 / 1475] ClearlyStealthCore
+[948 / 1475] ClearlyStealth
+[951 / 1483] SuperflowStatsEngine
+[953 / 1483] SuperflowPorts
+[956 / 1514] SuperflowContextProfiles
+[957 / 1518] SuperflowTechDictionary
+[959 / 1522] SuperflowStatsEngine
+[962 / 1533] Numerics
+[962 / 1533] SuperflowDesignSystem
+[968 / 1546] SuperflowProjectIndex
+[979 / 1546] SuperflowStatsEngine
+[985 / 1546]
+[989 / 1546]
+[995 / 1546] SuperflowTechDictionary
+[1004 / 1546]
+[1005 / 1546]
+[1007 / 1546] SuperflowContextProfiles
+[1022 / 1546]
+[1023 / 1546]
+[1027 / 1547] HuggingFace
+[1028 / 1555] SuperflowTechDictionary
+[1029 / 1555] SuperflowDesignSystem
+[1032 / 1555]
+[1043 / 1555] SuperflowPorts
+[1044 / 1555] SuperflowStatsEngine
+[1052 / 1555]
+[1054 / 1555] SuperflowTextShortcuts
+[1056 / 1555] SuperflowPorts
+[1059 / 1555]
+[1060 / 1555] SuperflowDesignSystem-product
+[1062 / 1555] SuperflowPorts
+[1066 / 1555]
+[1068 / 1555]
+[1070 / 1555]
+[1071 / 1555] SuperflowDesignSystem
+[1074 / 1555] SuperflowDesignSystem
+[1075 / 1555] SuperflowDesignSystem
+[1078 / 1555] SuperflowDesignSystem
+[1083 / 1555] ModelStore_SuperflowModelStore
+[1086 / 1555] SuperflowContextProfiles
+[1090 / 1555] HuggingFace
+[1099 / 1555] HuggingFace
+[1102 / 1584] SuperflowTextShortcuts
+[1103 / 1586] HuggingFace
+[1104 / 1586] SuperflowTextShortcuts
+[1107 / 1595] HuggingFace
+[1113 / 1595] SuperflowTextLineFormat
+[1118 / 1606] SuperflowTextNumbers
+[1125 / 1611] SuperflowTextGrammarGate
+[1127 / 1620] SuperflowTextLineFormat
+[1140 / 1620] SuperflowTextCodeSpeak
+[1143 / 1620] SuperflowTextGrammarGate
+[1148 / 1626] SuperflowTextCommands
+[1151 / 1628] SuperflowTextDisfluency
+[1158 / 1641] SuperflowTextInsertion
+[1168 / 1641] SuperflowTextCommands
+[1174 / 1641] SuperflowRecoveryEngine
+[1175 / 1651] SuperflowPermissionsKit
+[1182 / 1660] SuperflowTextCodeSpeak
+[1185 / 1660] SuperflowTextCodeAware
+[1190 / 1660] SuperflowLLMCore
+[1191 / 1667] SuperflowStorageSQLite
+[1193 / 1679] SuperflowRecoveryEngine
+[1194 / 1685] SuperflowModelStore
+[1195 / 1691] SuperflowPermissionsKit
+[1196 / 1695] SuperflowTestKit
+[1216 / 1695] SuperflowIcons
+[1218 / 1702] SuperflowIcons
+[1219 / 1702] SuperflowClearlyInput
+[1220 / 1702] SuperflowPermissionsKit
+[1229 / 1702] SuperflowLLMCore
+[1240 / 1702] SuperflowAudioCpp
+[1241 / 1705] SuperflowGestureKit
+[1241 / 1707] SuperflowHotkeyEngine
+[1242 / 1713] SuperflowGestureKit
+[1244 / 1713] SuperflowGestureKit
+[1254 / 1730] SuperflowIcons
+[1266 / 1734] SuperflowDiagnostics
+[1271 / 1734]
+[1275 / 1734] SuperflowHotkeyEngine
+[1287 / 1734]
+[1292 / 1744]
+[1295 / 1785] SuperflowClearlyInput
+[1310 / 1785] SuperflowAudioJournal
+[1321 / 1785] SuperflowStorageSQLite
+[1329 / 1790] SuperflowTextShortcuts-product
+[1331 / 1790]
+[1343 / 1790] SuperflowTextCleanup
+[1356 / 1790] SuperflowTextLineFormat
+[1356 / 1790] SuperflowTextNumbers
+[1359 / 1790]
+[1361 / 1790] SuperflowTextNumbers
+[1365 / 1790] SuperflowTextLineFormat-product
+[1367 / 1790] SuperflowTextNumbers
+[1371 / 1790] SuperflowTextLexicon
+[1372 / 1790] SuperflowTextLexicon
+[1374 / 1790] SuperflowTextNumbers
+[1377 / 1790] SuperflowTextLineFormat
+[1379 / 1790] SuperflowTextInsertion
+[1380 / 1790] SuperflowTextInsertion-product
+[1382 / 1790] SuperflowTextInsertion
+[1386 / 1790] SuperflowTextLexicon
+[1390 / 1790]
+[1392 / 1790]
+[1395 / 1790]
+[1396 / 1790] SuperflowTextGrammarGate
+[1399 / 1790] SuperflowTextDisfluency
+[1402 / 1790] SuperflowTextDisfluency-product
+[1405 / 1790] SuperflowTextInsertion
+[1407 / 1790]
+[1408 / 1790] SuperflowTextCommands
+[1409 / 1790] SuperflowTextDisfluency
+[1413 / 1790] SuperflowTextCodeSpeak-product
+[1416 / 1790] SuperflowTextCodeSpeak
+[1418 / 1790] SuperflowTextCodeSpeak
+[1422 / 1790] SuperflowTextCodeAware-product
+[1426 / 1790] SuperflowTextCleanup
+[1428 / 1790] SuperflowTextCleanup-product
+[1429 / 1790] SuperflowTextCleanup
+[1432 / 1790] SuperflowTextPipeline
+[1435 / 1790] SuperflowTextCleanup
+[1438 / 1790]
+[1439 / 1790] SuperflowTestKit-product
+[1441 / 1790]
+[1446 / 1790] SuperflowSystemAudioCapture
+[1448 / 1790] SuperflowSystemAudioCapture-product
+[1449 / 1790] SuperflowSystemAudioCapture
+[1450 / 1790] SuperflowSystemAudioCapture-product
+[1452 / 1790] SuperflowTestKit
+[1454 / 1790] SuperflowStorageSQLite
+[1455 / 1790] SuperflowStorageSQLite-product
+[1458 / 1790] SuperflowStorageSQLite
+[1460 / 1790] SuperflowStorageSQLite
+[1462 / 1790] SuperflowRecoveryEngine
+[1465 / 1790] SuperflowStorageSQLite
+[1468 / 1790] SuperflowPermissionsKit
+[1478 / 1790] SuperflowModelStore-product
+[1479 / 1790] SuperflowModelStore-product
+[1480 / 1790] SuperflowPermissionsKit
+[1481 / 1790] SuperflowLLMCore
+[1487 / 1790] SuperflowKernel-product
+[1492 / 1790] SuperflowProjectIndex
+[1494 / 1790] SuperflowPorts
+[1496 / 1790] SuperflowIcons
+[1498 / 1790] SuperflowHotkeyEngine
+[1501 / 1790] SuperflowModelStore
+[1506 / 1790] SuperflowContextProfiles
+[1509 / 1790] SuperflowGestureKit
+[1510 / 1790] SuperflowHotkeyEngine
+[1513 / 1790] SuperflowClearlyInput-product
+[1517 / 1790] SuperflowTestKit
+[1519 / 1790] SuperflowClearlyInput
+[1522 / 1790] SuperflowAudioEnhancement-product
+[1526 / 1790] SuperflowAudioCpp-product
+[1529 / 1790] SuperflowAudioEnhancement
+[1530 / 1790] SuperflowDiagnostics
+[1532 / 1790] SuperflowAudioCapture-product
+[1537 / 1790] MLX
+[1538 / 1790] SuperflowAudioCapture
+[1540 / 1790] MLX
+[1542 / 1790] MLXNN
+[1543 / 1790] SuperflowAudioCpp
+[1545 / 1790] MLX
+[1550 / 1790] HuggingFace-product
+[1551 / 1790] EventSource
+[1552 / 1790] EventSource-product
+[1553 / 1790] ClearlyStealth
+[1556 / 1795] SuperflowLLMLlamaCpp
+/Users/harshitduggal/workspace/superflow/Packages/L1-Adapters/ClearlyStealth/Sources/ClearlyStealth/StealthSystem.swift:14:16: [1;33mwarning: [1;39m'init(cString:)' is deprecated: Use String(decoding: array, as: UTF8.self) instead, after truncating the null termination.[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
+[0;36m12 |[0;0m         var buffer = [CChar](repeating: 0, count: size)
+[0;36m13 |[0;0m         sysctlbyname("kern.osversion", &buffer, &size, nil, 0)
+[0;36m14 |[0;0m         return String(cString: buffer).trimmingCharacters(in: .whitespacesAndNewlines)
+   [0;36m|[0;0m                `- [1;33mwarning: [1;39m'init(cString:)' is deprecated: Use String(decoding: array, as: UTF8.self) instead, after truncating the null termination.[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
+[0;36m15 |[0;0m     }
+[0;36m16 |[0;0m 
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+/Users/harshitduggal/workspace/superflow/Packages/L1-Adapters/ClearlyStealth/Sources/ClearlyStealth/StealthWindowController.swift:10:34: [1;33mwarning: [1;39m'readWrite' was deprecated in macOS 15.0: Use NSWindowSharingReadOnly instead[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
+ [0;36m8 |[0;0m         case .none: return .none
+ [0;36m9 |[0;0m         case .readOnly: return .readOnly
+[0;36m10 |[0;0m         case .readWrite: return .readWrite
+   [0;36m|[0;0m                                  `- [1;33mwarning: [1;39m'readWrite' was deprecated in macOS 15.0: Use NSWindowSharingReadOnly instead[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
+[0;36m11 |[0;0m         }
+[0;36m12 |[0;0m     }
+
+/Users/harshitduggal/workspace/superflow/Packages/L1-Adapters/ClearlyStealth/Sources/ClearlyStealth/StealthWindowController.swift:23:19: [1;33mwarning: [1;39m'readWrite' was deprecated in macOS 15.0: Use NSWindowSharingReadOnly instead[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
+[0;36m21 |[0;0m             case .none: return .none
+[0;36m22 |[0;0m             case .readOnly: return .readOnly
+[0;36m23 |[0;0m             case .readWrite: return .readWrite
+   [0;36m|[0;0m                   `- [1;33mwarning: [1;39m'readWrite' was deprecated in macOS 15.0: Use NSWindowSharingReadOnly instead[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration\DeprecatedDeclaration]8;;\]
+[0;36m24 |[0;0m             @unknown default: return .readOnly  // unknown == treat as capturable
+[0;36m25 |[0;0m             }
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[1557 / 1795] MLXNN
+[1558 / 1795] MLXFast
+[1559 / 1807] MLX
+[1566 / 1825] SuperflowUIComponents
+[1568 / 1825] SuperflowUIComponents
+[1570 / 1828] SuperflowTextPipeline
+[1583 / 1828] SuperflowUIComponents
+[1583 / 1828] MLXNN
+[1596 / 1828] MLX
+[1598 / 1828] SuperflowUIComponents
+[1600 / 1828] SuperflowTextPipeline
+[1602 / 1828] SuperflowUIComponents
+[1608 / 1828] SuperflowTextPipeline
+[1609 / 1828] SuperflowUIComponents-product
+[1611 / 1828] SuperflowUIComponents
+[1613 / 1828] SuperflowTextPipeline
+[1614 / 1828] SuperflowTextPipeline
+[1617 / 1828] SuperflowTextPipeline
+[1618 / 1828] SuperflowTextPipeline
+[1621 / 1828] SuperflowTextLineFormat
+[1624 / 1828] SuperflowTextDisfluency
+[1627 / 1828] SuperflowTextCodeAware
+[1630 / 1828] SuperflowTestKit
+[1639 / 1828] SuperflowAudioEnhancement
+[1645 / 1828] SuperflowLLMLlamaCpp
+[1647 / 1828] SuperflowLLMLlamaCpp
+[1648 / 1828] MLXNN
+[1650 / 1828] MLXFast
+[1656 / 1828] ComplexModule
+[1660 / 1838] SuperflowFeatureShortcuts
+[1661 / 1838] SuperflowFeatureSettings
+[1662 / 1838] SuperflowFeatureOnboarding
+[1663 / 1838] SuperflowFeatureIntelligence
+[1665 / 1847] SuperflowMeetingEngine
+[1666 / 1856] SuperflowSessionEngine
+[1667 / 1856] SuperflowFeatureDictionary
+[1670 / 1862] SuperflowMeetingEngine
+[1684 / 1880] SuperflowFeatureSettings
+[1685 / 1884] SuperflowFeatureHistory
+[1687 / 1893] SuperflowFeatureIntelligence
+[1687 / 1893] SuperflowFeatureDashboard
+[1704 / 1909] SuperflowTextInsertion-product
+[1706 / 1920] SuperflowTextInsertion-product
+[1708 / 1920] SuperflowSystemAudioCapture-product
+[1715 / 1920] SuperflowFeatureIntelligence
+[1716 / 1920] SuperflowSessionEngine
+[1719 / 1920] SuperflowFeatureIntelligence
+[1731 / 1920] SuperflowSessionEngine
+[1733 / 1920] SuperflowSessionEngine
+[1741 / 1920] SuperflowSessionEngine
+[1748 / 1920] SuperflowPermissionsKit-product
+[1750 / 1920] DeepFilterNetMLX
+[1752 / 1920] DeepFilterNetMLX
+[1757 / 1920] SuperflowMeetingEngine-product
+[1758 / 1920] SuperflowMeetingEngine
+[1760 / 1920] SuperflowHotkeyEngine
+[1762 / 1920] SuperflowHotkeyEngine-product
+[1763 / 1920] SuperflowMeetingEngine
+[1767 / 1920] SuperflowFeatureSettings-product
+[1769 / 1920] SuperflowFeatureSettings
+[1771 / 1920] SuperflowFeatureShortcuts
+[1773 / 1920] SuperflowSessionEngine
+[1775 / 1920] SuperflowFeatureSettings
+[1779 / 1920] SuperflowFeatureOnboarding
+[1779 / 1920] SuperflowFeatureSettings
+[1780 / 1920] SuperflowFeatureOnboarding
+[1781 / 1920] SuperflowFeatureOnboarding
+[1783 / 1920] SuperflowFeatureOnboarding-product
+[1785 / 1920] SuperflowFeatureIntelligence
+[1786 / 1920] SuperflowFeatureIntelligence
+[1788 / 1920] SuperflowFeatureIntelligence-product
+[1789 / 1920] SuperflowFeatureIntelligence-product
+[1791 / 1920] SuperflowFeatureIntelligence
+[1792 / 1920] SuperflowFeatureSettings
+[1793 / 1920] SuperflowFeatureOnboarding
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIntelligence/Sources/SuperflowFeatureIntelligence/MarkdownAnswer.swift:19:13: [1;33mwarning: [1;39mvariable 'lines' was never mutated; consider changing to 'let' constant[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated\VariableNeverMutated]8;;\]
+[0;36m17 |[0;0m         var result: [Block] = []
+[0;36m18 |[0;0m         var prose = ""
+[0;36m19 |[0;0m         var lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+   [0;36m|[0;0m             `- [1;33mwarning: [1;39mvariable 'lines' was never mutated; consider changing to 'let' constant[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated\VariableNeverMutated]8;;\]
+[0;36m20 |[0;0m         var index = 0
+[0;36m21 |[0;0m         while index < lines.count {
+
+[#VariableNeverMutated]: <https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated>
+[1798 / 1920] SuperflowFeatureHistory
+[1799 / 1920] SuperflowFeatureIntelligence
+[1800 / 1920] SuperflowFeatureIntelligence
+[1801 / 1920] SuperflowFeatureHistory
+[1804 / 1920] SuperflowFeatureDashboard
+[1805 / 1920] SuperflowFeatureDashboard-product
+[1806 / 1920] SuperflowFeatureDashboard-product
+[1808 / 1920] SuperflowFeatureDashboard
+[1811 / 1920] SuperflowFeatureHistory
+[1817 / 1920] SuperflowLLMCore
+[1819 / 1920] SuperflowFeatureDashboard
+[1820 / 1920] DeepFilterNetMLX
+[1821 / 1920] SuperflowFeatureDashboard
+[1823 / 1920] DeepFilterNetMLX
+[1824 / 1920] DeepFilterNetMLX
+[1827 / 1922] SuperflowTextGrammarGate
+[1831 / 1923] Numerics
+[1833 / 1923] ClearlyStealth
+[1835 / 1923] SuperflowSessionEngine
+[1837 / 1925] SuperflowFeatureMeetings
+[1844 / 1941] SuperflowFeatureIsland
+[1845 / 1945] DeepFilterNetCoreML
+[1860 / 1945] SuperflowFeatureMeetings
+[1863 / 1945] SuperflowFeatureMeetings
+[1873 / 1945] SuperflowFeatureIsland-product
+[1874 / 1945] SuperflowFeatureIsland
+[1877 / 1945] SuperflowFeatureIsland
+[1879 / 1945] MLX
+[1880 / 1945] SuperflowEnhancementDeepFilterNet
+[1884 / 1946] SuperflowFeatureShortcuts
+[1886 / 1946] SuperflowFeatureOnboarding
+[1888 / 1946] SuperflowFeatureHistory
+[1891 / 1946] SuperflowFeatureShortcuts
+[1892 / 1946] DeepFilterNetCoreML
+[1892 / 1946] SuperflowEnhancementDeepFilterNet
+[1896 / 1952] DeepFilterNetCoreML
+[1904 / 1953] SuperflowAppCore
+[1905 / 1953] SuperflowEnhancementDeepFilterNet
+[1905 / 1953] DeepFilterNetCoreML
+[1908 / 1953] DeepFilterNetCoreML
+[1909 / 1953] SuperflowEnhancementDeepFilterNet
+[1909 / 1953] SuperflowAppCore
+[1912 / 1963] SuperflowFeatureIsland
+[1912 / 1963]
+[1920 / 1963] SuperflowAppCore
+[1922 / 1963] SuperflowAppCore
+[1932 / 1964] SuperflowAppCoreTests-product
+/Users/harshitduggal/workspace/superflow/App/SuperflowApp/Sources/SuperflowAppCore/AppCoordinator+Input.swift:120:33: [1;33mwarning: [1;39mresult of call to 'run(resultType:body:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m118 |[0;0m             meetingToggle: { [weak self] start in
+[0;36m119 |[0;0m                 guard let self else { return }
+[0;36m120 |[0;0m                 await MainActor.run [4;39m{[0;0m
+    [0;36m|[0;0m                                 `- [1;33mwarning: [1;39mresult of call to 'run(resultType:body:)' is unused[0;0m [#]8;;https://docs.swift.org/compiler/documentation/diagnostics/no-usage\NoUsage]8;;\]
+[0;36m121 |[0;0m                     Task { @MainActor [weak self] in
+[0;36m122 |[0;0m                         guard let self else { return }
+
+[#NoUsage]: <https://docs.swift.org/compiler/documentation/diagnostics/no-usage>
+[1932 / 1964] SuperflowAppCore
+[1932 / 1964] SuperflowApp-product
+[1934 / 1966] SuperflowApp-product
+[1935 / 1966] SuperflowAppCore
+[1935 / 1966] SuperflowApp-product
+[1936 / 1966] SuperflowAppCore
+[1948 / 1967] SuperflowAppCoreTests-product
+[1954 / 1967] SuperflowAppCoreTests-product
+[1954 / 1967] SuperflowAppCore-product
+[1954 / 1967] SuperflowAppCoreTests-product
+[1956 / 1981]
+[1958 / 1981]
+[1959 / 1981] SuperflowApp-product
+[1960 / 1981]
+[1968 / 1981] SuperflowAppCoreTests-product
+[1969 / 1981] SuperflowAppCoreTests-product
+[1970 / 1981] SuperflowAppCoreTests-product
+[1975 / 1981] SuperflowAppCoreTests-product
+[1976 / 1981] SuperflowAppCoreTests-product
+[1977 / 1981] SuperflowAppCoreTests-product
+[1978 / 1981] SuperflowAppCoreTests-product
+[1979 / 1981] SuperflowAppCoreTests-product
+Build complete! (266.11 sec)
+Test Suite 'Selected tests' started at 2026-11-17 17:02:04.593.
+Test Suite 'SuperflowAppCoreTests.xctest' started at 2026-11-17 17:02:04.596.
+Test Suite 'ClearlyInputGestureTests' started at 2026-11-17 17:02:04.596.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlLongHold_doesNotToggle]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlLongHold_doesNotToggle]' passed (0.001 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlPressedInterference_ignored]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlPressedInterference_ignored]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlStrayUp_doesNothing]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlStrayUp_doesNothing]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlTap_toggles]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlTap_toggles]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlToggleDebounce_suppressesRapidRepeat]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testCtrlToggleDebounce_suppressesRapidRepeat]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testIdleLeftControlDown_armsWithoutGesture]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testIdleLeftControlDown_armsWithoutGesture]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testIdleRightOptionDown_becomesPressed_andEmitsBegan]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testIdleRightOptionDown_becomesPressed_andEmitsBegan]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testInterferenceCancelsPTT_andDisarmsCtrlTogether]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testInterferenceCancelsPTT_andDisarmsCtrlTogether]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLatchedDownInterference_doesNothing]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLatchedDownInterference_doesNothing]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLatchedInterference_doesNothing]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLatchedInterference_doesNothing]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLatchedPress_doesNothing_andArmsSend]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLatchedPress_doesNothing_andArmsSend]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLatchedTimeout_sends]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLatchedTimeout_sends]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLeftOptionAndRightControl_areInterference_noGesturesInIdle]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testLeftOptionAndRightControl_areInterference_noGesturesInIdle]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testOptionPlusKey_thenFreshPress_stillWorks]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testOptionPlusKey_thenFreshPress_stillWorks]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testPressedInterference_cancels]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testPressedInterference_cancels]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testPressedReleaseAfterHold_sends]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testPressedReleaseAfterHold_sends]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testPressedReleaseBeforeHold_latches]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testPressedReleaseBeforeHold_latches]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testPTTduringMeeting_isIndependent]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testPTTduringMeeting_isIndependent]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testRepeatedPTTCycles_doNotLeakState]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputGestureTests testRepeatedPTTCycles_doNotLeakState]' passed (0.000 seconds).
+Test Suite 'ClearlyInputGestureTests' passed at 2026-11-17 17:02:04.601.
+	 Executed 19 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'ClearlyInputMappingTests' started at 2026-11-17 17:02:04.601.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testAnyKeyDown_isInterference]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testAnyKeyDown_isInterference]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testConstantsMatchTheLockedBindings]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testConstantsMatchTheLockedBindings]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testLeftControlUsesDeviceBit]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testLeftControlUsesDeviceBit]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testLeftOptionAndRightControlDoNothing]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testLeftOptionAndRightControlDoNothing]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testMouseDown_isInterference]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testMouseDown_isInterference]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testRightOptionUsesDeviceBit]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMappingTests testRightOptionUsesDeviceBit]' passed (0.000 seconds).
+Test Suite 'ClearlyInputMappingTests' passed at 2026-11-17 17:02:04.603.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'ClearlyInputMigrationTests' started at 2026-11-17 17:02:04.603.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMigrationTests testClear_isIdempotent]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMigrationTests testClear_isIdempotent]' passed (0.002 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMigrationTests testClear_leavesUnrelatedSettingsAlone]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMigrationTests testClear_leavesUnrelatedSettingsAlone]' passed (0.002 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMigrationTests testLegacyKeyName_isTheDocumentedOne]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMigrationTests testLegacyKeyName_isTheDocumentedOne]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMigrationTests testLegacyTriggerPreference_isCleared]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputMigrationTests testLegacyTriggerPreference_isCleared]' passed (0.002 seconds).
+Test Suite 'ClearlyInputMigrationTests' passed at 2026-11-17 17:02:04.609.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.006 (0.006) seconds
+Test Suite 'ClearlyInputSessionTests' started at 2026-11-17 17:02:04.609.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testHoldSend_wiresBeganWaveformAndSend]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testHoldSend_wiresBeganWaveformAndSend]' passed (0.025 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testInterference_wiresCancel_andNoWaveform]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testInterference_wiresCancel_andNoWaveform]' passed (0.026 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testMeetingToggle_startsAndEnds]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testMeetingToggle_startsAndEnds]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testPTTinsideMeeting_suppressesQuestionDetector]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testPTTinsideMeeting_suppressesQuestionDetector]' passed (0.025 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testSecureInputPause_isSurfaced]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testSecureInputPause_isSurfaced]' passed (0.000 seconds).
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testTapLatch_thenSend]' started.
+Test Case '-[SuperflowAppCoreTests.ClearlyInputSessionTests testTapLatch_thenSend]' passed (0.025 seconds).
+Test Suite 'ClearlyInputSessionTests' passed at 2026-11-17 17:02:04.712.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.102 (0.103) seconds
+Test Suite 'SuperflowAppCoreTests.xctest' passed at 2026-11-17 17:02:04.712.
+	 Executed 35 tests, with 0 failures (0 unexpected) in 0.112 (0.115) seconds
+Test Suite 'Selected tests' passed at 2026-11-17 17:02:04.712.
+	 Executed 35 tests, with 0 failures (0 unexpected) in 0.112 (0.119) seconds

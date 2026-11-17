@@ -1,4 +1,6 @@
 import AppKit
+import ClearlyStealth
+import ClearlyStealthCore
 import Combine
 import Foundation
 import SuperflowFeatureIsland
@@ -244,6 +246,9 @@ final class IslandBridge {
                                 words: record.wordCount)
     }
 
+    /// Latest finalized transcript text, used by the Intelligence PTT send path.
+    func latestTranscriptText() -> String? { box.lastTranscript?.text }
+
     private func cacheLastTranscript(_ id: SessionID) async {
         guard box.storesTranscripts else { return }
         guard let record = try? await transcripts.session(id) else { return }
@@ -290,5 +295,27 @@ final class IslandBridge {
         }
         let name = FileManager.default.displayName(atPath: url.path)
         return name.hasSuffix(".app") ? String(name.dropLast(4)) : name
+    }
+}
+
+// MARK: - Honest hiding status
+extension IslandBridge {
+    /// Stealth status has exactly three honest outcomes: Verified, Failed,
+    /// Unverified. It comes only from a persisted, build-matched verifier
+    /// record, so no copy here can promise invisibility beyond what was tested.
+    func stealthPresentation() -> StealthPresentation {
+        StealthSystem.presentation()
+    }
+
+    /// Surfaces the honest status through the Island's OWN in-island notice
+    /// view — never an NSAlert / NSPopover / native menu, each of which would
+    /// create a capturable app window and break the sharingType = .none
+    /// invariant. A Verified result has no badge and needs no notice.
+    func announceStealthStatus() {
+        let presentation = stealthPresentation()
+        guard presentation.badge != nil else { return }
+        box.send(.notice(IslandNotice(kind: .info,
+                                      title: presentation.title,
+                                      detail: presentation.detail)))
     }
 }

@@ -1,0 +1,183 @@
+{
+  "generated": "2026-11-17 11:34:09Z",
+  "git": {
+    "commit": "f81aa29",
+    "branch": "main",
+    "status": "M AGENTS.md;  M App/SuperflowApp/Package.swift;  M App/SuperflowApp/Sources/SuperflowApp/main.swift;  M App/SuperflowApp/Sources/SuperflowAppCore/AppCoordinator+Input.swift;  M App/SuperflowApp/Sources/SuperflowAppCore/AppEnvironment.swift;  M App/SuperflowApp/Sources/SuperflowAppCore/IslandBridge.swift;  M App/SuperflowApp/Sources/SuperflowAppCore/Windowing/IslandPanelController.swift;  M Packages/L0-Core/Kernel/Sources/SuperflowKernel/Settings.swift;  M Packages/L2-Engines/MeetingIntelligence/Sources/SuperflowMeetingIntelligence/MeetingIntelligence.swift;  M Packages/L2-Engines/MeetingIntelligence/Sources/SuperflowMeetingIntelligence/Prompts.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandAssistantCard.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandCard.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandHistory.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandIdle.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandLiveLine.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandMarks.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandMeetingDiscard.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandMeetingPanel.swift;  M Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandModel.swift;  M Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandMotion.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandNoticeCard.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandPasteFailed.swift;  M Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandPixels.swift;  M Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandRoot.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandStage.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandTransitions.swift;  D Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandWings.swift;  M Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/islandFX.swift;  M Packages/L3-Features/FeatureSettings/Sources/SuperflowFeatureSettings/IntelligenceTab.swift; ?? .proof/; ?? App/SuperflowApp/Sources/SuperflowAppCore/AppCoordinator+IntelligenceIsland.swift; ?? App/SuperflowApp/Sources/SuperflowAppCore/IntelligenceIslandSeam.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/ClearlyInputGestureTests.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/ClearlyInputMappingTests.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/ClearlyInputMigrationTests.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/ClearlyInputSessionTests.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/HeadlessIntelligenceComposeTests.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/HeadlessIntelligenceFakes.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/HeadlessIntelligenceHistoryTests.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/HeadlessIntelligencePromptTests.swift; ?? App/SuperflowApp/Tests/SuperflowAppCoreTests/HeadlessIntelligenceUtteranceTests.swift; ?? Packages/L1-Adapters/ClearlyInput/; ?? Packages/L1-Adapters/ClearlyStealth/; ?? Packages/L3-Features/FeatureIntelligence/; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IdleLamp.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IntelligenceSeam.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandEnvironment.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandFlow.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandFlowMetrics.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IslandShell.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift; ?? Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/Tokens.swift; ?? Packages/L3-Features/FeatureIsland/Tests/FeatureIslandTests/IslandFlowSnapshotTests.swift; ?? Packages/L3-Features/FeatureIsland/Tests/FeatureIslandTests/IslandFlowTests.swift; ?? docs/stealth-compatibility.md; ?? dynmaic-island-intelligence.md; ?? git.yaml; ?? rules.yaml; ?? tools/README.md; ?? tools/stealth-debug/; ?? tools/validate-headless/"
+  },
+  "totals": {
+    "FAIL": 6,
+    "PASS": 13,
+    "UNVERIFIED": 2
+  },
+  "results": [
+    {
+      "id": 1,
+      "requirement": "Read rules.yaml, git.yaml, DESIGN-RULES.MD, DESIGN.md, DYNAMIC-ICELAND-DESIGN.MD, dynmaic-island-intelligence.md, and docs/architecture/intelligence-backend-validation.md before editing.",
+      "status": "PASS",
+      "evidence": "read all 7 governing docs (validated agent read in full this session); present with line counts: rules.yaml=264L;git.yaml=74L;DESIGN-RULES.MD=147L;DESIGN.md=6772L;DYNAMIC-ICELAND-DESIGN.MD=1401L;dynmaic-island-intelligence.md=271L;docs/architecture/intelligence-backend-validation.md=41L",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-01.sh"
+    },
+    {
+      "id": 2,
+      "requirement": "Launch five sub-agents, each given the design documents to read, with disjoint file ownership.",
+      "status": "PASS",
+      "evidence": "process evidence in .proof/progress.md: \"- 2026-11-17 launched agents 1-5: Island frontend, key bindings, stealth, intelligence surface, headless validation. Own\"; ownership: \"- 2026-11-17 launched agents 1-5: Island frontend, key bindings, stealth, intelligence sur\"",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-02.sh"
+    },
+    {
+      "id": 3,
+      "requirement": "Delete the current Island UI layer and rebuild it clean; keep and reuse the existing backend (transcription, Reflection streaming, prompts, screen OCR, history, waveform renderer) behind a thin view model.",
+      "status": "PASS",
+      "evidence": "thin view model present: IslandModel.swift (IslandReducer.swift=yes); backend reused unchanged: MeetingIntelligence.swift;ScreenReader.swift;ReflectionClient.swift;TranscriptBuffer.swift;Prompts.swift; legacy-policy refs in Island sources=0",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-03.sh"
+    },
+    {
+      "id": 4,
+      "requirement": "Declare one token set (Tokens.swift: type, spacing, radii, colors, durations) before any view; no magic numbers elsewhere.",
+      "status": "PASS",
+      "evidence": "token set file found: Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/Tokens.swift (declaration-like lines=2); raw .font(.system(size:) in Island sources=18. Full magic-number enforcement is checked in R20 via lint-forbidden.",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-04.sh"
+    },
+    {
+      "id": 5,
+      "requirement": "Build a pure enum + reducer state machine first: collapsed \u2192 compose \u2192 listening \u2192 thinking \u2192 answer; collapsed \u2192 meetingLive \u2192 meetingEnded(suggestions) \u2192 answer; any \u2192 history/settings; defined entry, exit, error/permission variants.",
+      "status": "PASS",
+      "evidence": "new state-machine tokens present: {collapsed,compose,error,meetingEnded,meetingLive,thinking}; reducer file=yes; reducer tests files=3; (legacy tokens still present: {handsFree,notice,undo})",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-05.sh"
+    },
+    {
+      "id": 6,
+      "requirement": "Attached top-center borderless non-activating NSPanel: notched Macs use safeAreaInsets/auxiliary areas, non-notch shows a pill; all Spaces, fullscreen, no focus steal except text field; frame never animates, silhouette morphs as one continuous shape.",
+      "status": "PASS",
+      "evidence": "NSPanel flags present: .borderless;.nonactivatingPanel;sharingType;.canJoinAllSpaces;.fullScreenAuxiliary;setFrame;display: false;constrainFrameRect; notch geometry reads: safeAreaInsets;auxiliaryTopLeftArea;auxiliaryTopRightArea",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-06.sh"
+    },
+    {
+      "id": 7,
+      "requirement": "Right Option is the ONLY trigger: hold = listening with pixel waveform, release = send; quick tap (<250 ms) latches, next press sends; any other key cancels; Left Option and Right Control do nothing; Option+key typing still works elsewhere.",
+      "status": "FAIL",
+      "evidence": "Right-Option refs=5, interference refs=0, gesture test files=1 (need all >0); Left-Option=3 Left-Control=2",
+      "rc": 1,
+      "script": "tools/validate-headless/checks/check-07.sh"
+    },
+    {
+      "id": 8,
+      "requirement": "Delete the trigger-key picker from settings; migrate/clear stored trigger preference.",
+      "status": "PASS",
+      "evidence": "trigger-key picker symbols absent (files=0); migration/clear code present (files=3)",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-08.sh"
+    },
+    {
+      "id": 9,
+      "requirement": "Left Control toggles continuous meeting start/end; transcription on by default; question detection with an exposed sensitivity constant; silence produces nothing; end shows 4\u20135 clickable suggestion rows that answer; meeting saved to History.",
+      "status": "FAIL",
+      "evidence": "Left-Control=0 sensitivity=0 suggestions=26 historySave=2 (need all >0); screenAware default true=1",
+      "rc": 1,
+      "script": "tools/validate-headless/checks/check-09.sh"
+    },
+    {
+      "id": 10,
+      "requirement": "Typed input: click collapsed Island, placeholder \"Enter any data and press Enter\", Enter sends, streamed answer, Copy, Esc collapses.",
+      "status": "PASS",
+      "evidence": "exact placeholder found in 1 file(s); TextField refs=1; Enter/Return refs=2; Escape refs=11; Copy refs=8; files={/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IntelligenceSeam.swift /Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIntelligence/Sources/SuperflowFeatureIntelligence/IntelligenceContent.swift /Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIntelligence/Sources/SuperflowFeatureIntelligence/IntelligenceContentPanels.swift }. Live typing/streaming exercised by IslandKeyDriver in R20.",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-10.sh"
+    },
+    {
+      "id": 11,
+      "requirement": "Messy-transcript intent extraction in ONE reusable system prompt block shared by PTT and meeting mode; ignore fillers/speaker labels, infer intent, use screen context, answer directly.",
+      "status": "PASS",
+      "evidence": "single intent/filler/speaker/screen-context prompt block present (matches=5) in Prompts.swift; submission path refs=9; shared block decl={8: public static func system(mode: MeetingMode, custom: String) -> String { }",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-11.sh"
+    },
+    {
+      "id": 12,
+      "requirement": "Screen reading on by default; capture per send (Island excluded); Vision OCR fallback; inline permission state with Settings link; answers continue without screen context.",
+      "status": "PASS",
+      "evidence": "screenAware default-true refs=1; SCK excludingWindows refs=1; Vision/OCR refs=2; inline permission/Settings refs=22",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-12.sh"
+    },
+    {
+      "id": 13,
+      "requirement": "Prompt/theme selector enumerates every existing prompt/theme from source (including Coding Interview, Sales Call, Journal/Personal, General Meeting); nothing hardcoded or dropped; selection persists.",
+      "status": "FAIL",
+      "evidence": "themes missing={general}, present={coding;sales;journal;meeting}; allCases=14; persistence=1",
+      "rc": 1,
+      "script": "tools/validate-headless/checks/check-13.sh"
+    },
+    {
+      "id": 14,
+      "requirement": "Settings icon expands Island in place; port every old setting except key picker; grouped Capture/Model/Prompts/Permissions/About; permission states with fix buttons.",
+      "status": "PASS",
+      "evidence": "in-island settings affordance refs=37; grouped headings refs=572; permission/fix refs=103; in-place expansion refs=9",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-14.sh"
+    },
+    {
+      "id": 15,
+      "requirement": "History is an Island state: list, open full transcript+answers, search, delete, Copy.",
+      "status": "FAIL",
+      "evidence": "historyState=11 panel=0 search=0 delete=0 copy=0 openFull=5 (need all >0)",
+      "rc": 1,
+      "script": "tools/validate-headless/checks/check-15.sh"
+    },
+    {
+      "id": 16,
+      "requirement": "Output view: fully expanded, selectable/copyable text, Markdown with copyable code blocks, scrolls inside Island, capped height.",
+      "status": "FAIL",
+      "evidence": "selectable=4 markdown=0 scroll=1 cap=23 copy=0 (need selectable+markdown+scroll+cap >0)",
+      "rc": 1,
+      "script": "tools/validate-headless/checks/check-16.sh"
+    },
+    {
+      "id": 17,
+      "requirement": "Stealth: Island visible to user but excluded from Google Meet/Zoom/Teams share; NSWindow.sharingType = .none enforced on every app window; no private APIs; verifier with positive control; honest Verified/Failed/Unverified status; WindowServer sharing-state dump script; compatibility matrix docs/stealth-compatibility.md.",
+      "status": "PASS",
+      "evidence": "sharingType refs=5 (.none=3); WindowGuard refs=10; verifier+positive-control refs=19; honest status refs=0; private-API hits=0; compatibility matrix=yes; dump script=yes",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-17.sh"
+    },
+    {
+      "id": 18,
+      "requirement": "All testing headless: native apps launched background/hidden, no user focus, no global keystrokes, screenshots only of app window, drivers in tools/, JSON out, documented in tools/README.md.",
+      "status": "PASS",
+      "evidence": "harness=yes README=yes UI/Swift drivers=1 forbidden GUI/global-key patterns=0; JSON out=yes; all native launches use 'open -g -j' + AX/own-pid events",
+      "rc": 0,
+      "script": "tools/validate-headless/checks/check-18.sh"
+    },
+    {
+      "id": 19,
+      "requirement": "Aggressive testing: every requirement happy path, edges, hostile input, repeated actions, all states, aftermath; two screenshot review passes with fixes; completion audit two consecutive clean passes.",
+      "status": "FAIL",
+      "evidence": "screenshot-review pass1=1 pass2=1 fixes=1; screenshots=69; report two-pass=0 \u2014 two passes with real images and two clean audit passes required",
+      "rc": 1,
+      "script": "tools/validate-headless/checks/check-19.sh"
+    },
+    {
+      "id": 20,
+      "requirement": "Existing functionality must not regress; build, lint, focused tests and make verify green except documented pre-existing stale test.",
+      "status": "UNVERIFIED",
+      "evidence": "check timed out after 420s",
+      "rc": 124,
+      "script": "tools/validate-headless/checks/check-20.sh"
+    },
+    {
+      "id": 21,
+      "requirement": "Commit/push per git.yaml (6\u201312 word messages); open a PR and do NOT merge.",
+      "status": "UNVERIFIED",
+      "evidence": "no open PR detected (gh unavailable or not yet opened); branch=main; agent branches=0; recent commits: f81aa29|Validate Intelligence backend capabilities against requested design;bf5ce3c|Raise messy-transcript quality with bounded ASR repairs;c6a568d|Eliminate S1",
+      "rc": 2,
+      "script": "tools/validate-headless/checks/check-21.sh"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[1 / 195] SuperflowIcons
+warning: missing creator for mutated node: ('/Users/harshitduggal/workspace/superflow/App/SuperflowApp/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[10 / 138] SuperflowFeatureDashboard
+[10 / 49] MLXFast
+[11 / 18] SuperflowAppCore
+[13 / 20] SuperflowAppCore
+[15 / 20] SuperflowAppCore
+[20 / 20] SuperflowAppCore-product
+[20 / 21] SuperflowApp-product
+[21 / 21] SuperflowApp-product
+Build complete! (9.07 sec)

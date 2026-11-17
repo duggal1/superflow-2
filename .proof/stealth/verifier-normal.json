@@ -1,0 +1,18 @@
+{
+  "controlMinimum" : 0.90000000000000002,
+  "copy" : {
+    "badge" : null,
+    "detail" : "Checked on macOS 26B123. Other capture apps and share modes were not tested — see the compatibility matrix.",
+    "title" : "Hidden from screen capture on this Mac"
+  },
+  "forceCapturable" : false,
+  "isCurrentProof" : true,
+  "islandMaximum" : 0.01,
+  "measurement" : {
+    "controlMatchedRatio" : 0.99609375,
+    "islandMatchedRatio" : 0
+  },
+  "osBuild" : "26B123",
+  "reason" : null,
+  "status" : "verified"
+}

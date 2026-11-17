@@ -40,7 +40,7 @@ public enum SettingsIssue: Hashable, Sendable {
         case .backgroundDeadlineOutOfRange:
             "The background cleanup deadline must be between 5 and 120 seconds."
         case .cleanupWorkersOutOfRange:
-            "Cleanup workers must be between 1 and 8."
+            "Cleanup workers must be between 1 and 10."
         }
     }
 }
@@ -57,7 +57,9 @@ public enum SettingsValidation {
     public static let retentionRange = 1...3_650
     public static let interactiveDeadlineRange = 500...5_000
     public static let backgroundDeadlineRange = 5_000...120_000
-    public static let cleanupWorkersRange = 1...8
+    /// The default is 10 workers (the S1 cleanup pool). Validation must admit
+    /// the shipped default or every save is rejected out of the box; 12 is out.
+    public static let cleanupWorkersRange = 1...10
     public static let maxDisplayNameLength = 40
 
     public static func issues(_ settings: AppSettings) -> [SettingsIssue] {
