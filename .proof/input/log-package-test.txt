@@ -1,0 +1,66 @@
+Building for debugging...
+[Constructing description]
+[Planning deferred tasks]
+[40 / 80]
+[41 / 81] SuperflowKernel
+[50 / 124]
+[53 / 124]
+[56 / 124]
+[58 / 124]
+[60 / 124]
+[64 / 124]
+[66 / 124]
+[69 / 124]
+[72 / 124]
+[73 / 124]
+[74 / 124]
+[75 / 124]
+[84 / 124] SuperflowKernel
+[85 / 124] SuperflowKernel
+[93 / 125] SuperflowKernel
+[93 / 125] SuperflowPorts
+[102 / 134] SuperflowPorts
+[111 / 135] SuperflowPorts
+[111 / 135] SuperflowClearlyInput
+[120 / 180]
+[124 / 180]
+[129 / 180]
+[134 / 180]
+[136 / 180]
+[138 / 180]
+[141 / 180]
+[145 / 180]
+[148 / 180]
+[149 / 180]
+[156 / 180] SuperflowClearlyInput
+[164 / 180] SuperflowClearlyInput
+[170 / 181] SuperflowClearlyInputTests-product
+[172 / 189]
+[174 / 189]
+[175 / 189]
+[178 / 189] SuperflowClearlyInputTests-product
+[183 / 189] SuperflowClearlyInputTests-product
+[185 / 189] SuperflowClearlyInputTests-product
+[187 / 189] SuperflowClearlyInputTests-product
+Build complete! (17.73 sec)
+Test Suite 'All tests' started at 2026-11-17 16:57:12.915.
+Test Suite 'SuperflowClearlyInputTests.xctest' started at 2026-11-17 16:57:12.916.
+Test Suite 'GestureTableTests' started at 2026-11-17 16:57:12.916.
+Test Case '-[SuperflowClearlyInputTests.GestureTableTests testInterferenceCancelsPressedOnly]' started.
+Test Case '-[SuperflowClearlyInputTests.GestureTableTests testInterferenceCancelsPressedOnly]' passed (0.001 seconds).
+Test Case '-[SuperflowClearlyInputTests.GestureTableTests testLatchTimeout]' started.
+Test Case '-[SuperflowClearlyInputTests.GestureTableTests testLatchTimeout]' passed (0.000 seconds).
+Test Case '-[SuperflowClearlyInputTests.GestureTableTests testMeetingTable]' started.
+Test Case '-[SuperflowClearlyInputTests.GestureTableTests testMeetingTable]' passed (0.000 seconds).
+Test Case '-[SuperflowClearlyInputTests.GestureTableTests testPushToTalkTable]' started.
+Test Case '-[SuperflowClearlyInputTests.GestureTableTests testPushToTalkTable]' passed (0.000 seconds).
+Test Suite 'GestureTableTests' passed at 2026-11-17 16:57:12.918.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'SuperflowClearlyInputTests.xctest' passed at 2026-11-17 16:57:12.918.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'All tests' passed at 2026-11-17 16:57:12.918.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.001 (0.004) seconds
+◇ Test run started.
+↳ Testing Library Version: 2403
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

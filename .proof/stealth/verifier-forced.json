@@ -1,0 +1,18 @@
+{
+  "controlMinimum" : 0.90000000000000002,
+  "copy" : {
+    "badge" : "Visible in share",
+    "detail" : "The Island appeared in a local capture test. Do not rely on hiding.",
+    "title" : "Visible to screen share on this Mac"
+  },
+  "forceCapturable" : true,
+  "isCurrentProof" : true,
+  "islandMaximum" : 0.01,
+  "measurement" : {
+    "controlMatchedRatio" : 0.99609375,
+    "islandMatchedRatio" : 0.998046875
+  },
+  "osBuild" : "26B123",
+  "reason" : null,
+  "status" : "failed"
+}

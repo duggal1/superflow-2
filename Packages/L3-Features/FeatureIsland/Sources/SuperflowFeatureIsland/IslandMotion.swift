@@ -272,7 +272,7 @@ struct Entrance: ViewModifier {
 
     @State private var born = Date()
     @State private var done = false
-    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.islandReduceMotion) private var reduce
 
     func body(content: Content) -> some View {
         let reduce = reduce

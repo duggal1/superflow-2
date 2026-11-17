@@ -9,7 +9,7 @@ struct PixelDissolve: View {
     @State private var born = Date()
     @State private var done = false
     @Environment(\.displayScale) private var scale
-    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.islandReduceMotion) private var reduce
 
     var body: some View {
         let trail = trail, reduce = reduce
@@ -51,7 +51,7 @@ struct PixelDissolve: View {
 
 /// Submitting. A compact blue pulse travels along the meter's centerline.
 struct PixelSweep: View {
-    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.islandReduceMotion) private var reduce
     @Environment(\.displayScale) private var scale
     var body: some View {
         TimelineView(.animation(paused: reduce)) { timeline in

@@ -1,0 +1,12 @@
+Building for debugging...
+[Computing dependencies]
+[1 / 22]
+[2 / 17] SuperflowClearlyInput
+[5 / 20] SuperflowClearlyInput
+[8 / 15] InputProof-product
+[10 / 17] InputProof-product
+[11 / 17] InputProof-product
+[12 / 17] SuperflowClearlyInput
+[13 / 18] SuperflowClearlyInput
+[16 / 18] InputProof-product
+Build complete! (5.23 sec)

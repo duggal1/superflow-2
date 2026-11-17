@@ -1,0 +1,53 @@
+Use structured logging instead of print().
+/Users/harshitduggal/workspace/superflow/Packages/L1-Adapters/ClearlyStealth/Sources/StealthVerifyDriver/StealthVerifyDriver.swift:80:            print(json)
+Feature packages must use shared interactive components and may not manage cursors directly.
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:102:                Button(action: context.actions.dismiss) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:209:        Button(action: context.actions.dismiss) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:251:                Button(action: context.actions.dismiss) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IntelligenceSeam.swift:70:            TextField("Ask about your meeting", text: $draft)
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IntelligenceSeam.swift:115:            Button(action: onCopy) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:38:            Button(action: context.actions.openSettings) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:108:                Button(action: context.actions.dismiss) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift:124:                Button(action: context.actions.dismiss) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift:154:        Button(action: action) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:24:            Button(action: context.actions.endMeeting) {
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:55:                Button(action: context.actions.dismiss) {
+Use the shared Icon view instead of Image(systemName:).
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:103:                    Image(systemName: "xmark")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:182:                Image(systemName: "exclamationmark")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:210:            Image(systemName: "xmark")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:245:                Image(systemName: symbol)
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:252:                    Image(systemName: "xmark")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:32:            Image(systemName: "sparkles")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:39:                Image(systemName: "slider.horizontal.3")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:66:            Image(systemName: "mic")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:102:                Image(systemName: "sparkles")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:109:                    Image(systemName: "xmark")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:14:            Image(systemName: "record.circle")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:25:                Image(systemName: "xmark.circle")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:49:                Image(systemName: "checkmark")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:56:                    Image(systemName: "xmark")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift:96:                Image(systemName: "doc.on.doc")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift:125:                    Image(systemName: "xmark")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift:156:                Image(systemName: selected ? "checkmark" : "circle")
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IntelligenceSeam.swift:80:                Image(systemName: "arrow.up")
+Text size must come from AppType; only SF Mono (design: .monospaced) is exempt.
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:104:                        .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:183:                    .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:211:                .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:246:                    .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/FlowContent.swift:253:                        .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:33:                .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:40:                    .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:67:                .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:103:                    .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/ComposeAndAnswer.swift:110:                        .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:15:                .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:26:                    .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:50:                    .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/MeetingViews.swift:57:                        .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift:97:                    .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift:126:                        .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/PanelViews.swift:157:                    .font(.system(size: IslandTokens.Size.glyph))
+/Users/harshitduggal/workspace/superflow/Packages/L3-Features/FeatureIsland/Sources/SuperflowFeatureIsland/IntelligenceSeam.swift:81:                    .font(.system(size: IslandTokens.Size.glyph, weight: .regular))
+Forbidden-pattern lint found 4 violation(s).
