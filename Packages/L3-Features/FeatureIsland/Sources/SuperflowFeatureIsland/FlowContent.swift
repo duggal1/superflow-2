@@ -87,6 +87,20 @@ private struct CollapsedView: View {
     }
 }
 
+/// The pixel band that runs along the bottom of a card. Quiet at rest, a live
+/// signal while the card is doing work. One more place the readout is made of
+/// cells rather than a generic progress bar.
+private struct PixelCardFooter: View {
+    var active: Bool = false
+
+    var body: some View {
+        VStack(spacing: IslandTokens.Space.xs) {
+            PixelRule(tone: Ramp.blue[1])
+            PixelBand(active: active, cells: 24)
+        }
+    }
+}
+
 /// The six-second "was that a mistake?" card. The microphone is already closed,
 /// so Undo keeps the words by copying them. The accent button is the only blue
 /// element and stays inside the content gutter however long the transcript is.
@@ -96,15 +110,11 @@ private struct UndoView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("Cancelled.").appType(IslandTokens.TypeRole.label)
-                    .foregroundStyle(IslandTokens.Color.ink)
-                Spacer(minLength: 0)
-                IconButton(.close, label: "Dismiss", size: IslandTokens.Size.glyph,
-                           tint: IslandTokens.Color.ink2, action: context.actions.dismiss)
-                    .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
-            }
-            .frame(height: IslandTokens.Size.band)
+            PixelHeading(glyph: PixelGlyphs.warning, title: "Cancelled.", tone: Ramp.blue[3])
+                .padding(.horizontal, IslandTokens.Size.cardPad)
+                .frame(height: IslandTokens.Size.band)
+            PixelFlowRail(active: 2)
+                .padding(.horizontal, IslandTokens.Size.cardPad)
 
             HStack(spacing: IslandTokens.Space.md) {
                 Text(text.replacingOccurrences(of: "\n", with: " "))
@@ -126,8 +136,11 @@ private struct UndoView: View {
             .padding(.horizontal, IslandTokens.Size.cardPad)
             .frame(height: IslandTokens.Size.row + IslandTokens.Space.md)
             Spacer(minLength: 0)
+            PixelCardFooter(active: false)
+                .padding(.horizontal, IslandTokens.Size.cardPad)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pixelFramed()
     }
 }
 
@@ -141,28 +154,29 @@ private struct ThinkingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
-            Text("Thinking").appType(IslandTokens.TypeRole.label)
-                .foregroundStyle(IslandTokens.Color.ink)
+            PixelHeading(glyph: PixelGlyphs.thinking, title: "Thinking", tone: Ramp.blue[3])
+            PixelFlowRail(active: 3)
             if !query.isEmpty {
                 Text(query).appType(IslandTokens.TypeRole.body)
                     .foregroundStyle(IslandTokens.Color.ink2)
                     .lineLimit(2)
             }
-            TimelineView(.animation(paused: reduce)) { timeline in
-                let phase = reduce ? 1 : timeline.date.timeIntervalSinceReferenceDate
-                    .truncatingRemainder(dividingBy: 1) * 3
-                HStack(spacing: IslandTokens.Space.sm) {
-                    ForEach(0..<3, id: \.self) { i in
-                        Rectangle()
-                            .fill(IslandTokens.Color.wave)
-                            .opacity(reduce ? 1 : (Double(i) <= phase ? 1 : 0.25))
-                            .frame(width: IslandTokens.Space.sm, height: IslandTokens.Size.hairline * 2)
-                    }
-                }
+            // The one live mark: a pixel sweep travelling the data band instead
+            // of three generic stepping rectangles.
+            HStack(spacing: IslandTokens.Space.md) {
+                PixelSweep()
+                PixelBand(active: !reduce, cells: 18)
             }
+            if reduce {
+                Text("Working").appType(IslandTokens.TypeRole.caption)
+                    .foregroundStyle(IslandTokens.Color.ink2)
+            }
+            Spacer(minLength: 0)
+            PixelRule(tone: Ramp.blue[1])
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pixelFramed(tone: Ramp.blue[2], hot: Ramp.blue[3])
     }
 }
 
@@ -175,12 +189,14 @@ private struct ErrorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
             HStack(spacing: IslandTokens.Space.sm) {
-                IconView(.alert, size: IslandTokens.Size.glyph, tint: IslandTokens.Color.danger)
+                PixelBitmap(rows: PixelGlyphs.warning, cell: PixelInstrument.cell,
+                            gap: PixelInstrument.gap, tone: IslandTokens.Color.danger)
                 Text("Something went wrong").appType(IslandTokens.TypeRole.label)
                     .foregroundStyle(IslandTokens.Color.ink)
                 Spacer(minLength: 0)
                 dismiss
             }
+            .frame(height: IslandTokens.Size.glyph)
             Text(message).appType(IslandTokens.TypeRole.body)
                 .foregroundStyle(IslandTokens.Color.ink2)
                 .textSelection(.enabled)
@@ -194,9 +210,11 @@ private struct ErrorView: View {
                 }
                 Spacer(minLength: 0)
             }
+            PixelRule(tone: Ramp.blue[1])
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pixelFramed(tone: Ramp.blue[2], hot: IslandTokens.Color.danger)
     }
 
     private var dismiss: some View {
@@ -220,18 +238,19 @@ private struct PermissionView: View {
         }
     }
 
-    private var glyph: Icon {
+    private var glyph: [String] {
         switch kind {
-        case .microphone: .mic
-        case .screenRecording: .eyeSlash
-        case .inputMonitoring: .keyboard
+        case .microphone: PixelGlyphs.listening
+        case .screenRecording: PixelGlyphs.answer
+        case .inputMonitoring: PixelGlyphs.settings
         }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
             HStack(spacing: IslandTokens.Space.sm) {
-                IconView(glyph, size: IslandTokens.Size.glyph, tint: IslandTokens.Color.ink)
+                PixelBitmap(rows: glyph, cell: PixelInstrument.cell,
+                            gap: PixelInstrument.gap, tone: IslandTokens.Color.wavePeak)
                 Text(title).appType(IslandTokens.TypeRole.label)
                     .foregroundStyle(IslandTokens.Color.ink)
                 Spacer(minLength: 0)
@@ -239,6 +258,7 @@ private struct PermissionView: View {
                            tint: IslandTokens.Color.ink2, action: context.actions.dismiss)
                     .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
             }
+            .frame(height: IslandTokens.Size.glyph)
             Text("Superflow needs this permission to answer here. Nothing else changes.")
                 .appType(IslandTokens.TypeRole.body)
                 .foregroundStyle(IslandTokens.Color.ink2)
@@ -248,8 +268,10 @@ private struct PermissionView: View {
                           height: IslandTokens.Size.control, action: context.actions.openPermissionSettings)
                 Spacer(minLength: 0)
             }
+            PixelRule(tone: Ramp.blue[1])
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pixelFramed(tone: Ramp.blue[2], hot: IslandTokens.Color.danger)
     }
 }

@@ -53,6 +53,13 @@ public struct TruncationDetector: Sendable {
         // Spoken email domains and currency are rendered as compact values.
         if ["com", "org", "net", "io", "dev", "app"].contains(input), output.contains(input) { return true }
         if ["dollars", "pounds", "euros", "bucks"].contains(input), output.contains(where: \.isNumber) { return true }
+        // Unit abbreviations are expanded by the model ("ms" -> "milliseconds",
+        // "k" -> "thousand"). The tail is complete, just spelled out.
+        let unitExpansions: [String: String] = [
+            "ms": "milliseconds", "sec": "seconds", "s": "seconds",
+            "min": "minutes", "hr": "hours", "k": "thousand",
+        ]
+        if let expanded = unitExpansions[input], output.contains(expanded) { return true }
         // "three fifteen p m" becomes one token "3:15pm".
         if input == "m", output.contains("pm") || output.contains("am") { return true }
         guard !input.isEmpty, !output.isEmpty, abs(input.count - output.count) <= 1 else { return false }

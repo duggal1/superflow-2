@@ -58,7 +58,28 @@ public enum CleanGuard {
             .filter { $0.contains("/") && $0.contains(where: \.isLetter) }.map { $0.lowercased() })
         let outputPaths = Tokenizer.tokens(in: result.text).map(\.core)
             .filter { $0.contains("/") && $0.contains(where: \.isLetter) }.map { $0.lowercased() }
-        guard outputPaths.allSatisfy(sourcePaths.contains) else { return .contentChanged }
+        // A model may legitimately COMPLETE a spoken path: Tier 0 stops at the
+        // first path token ("lib/backend/.../prospect") while the model joins the
+        // spoken "dash main dash engine dot t s" suffix into the same path. An
+        // output path is accepted when it equals a source path or extends one at
+        // a token boundary; a different or shortened path is still rejected.
+        if !sourcePaths.isEmpty {
+            guard outputPaths.allSatisfy({ output in
+                sourcePaths.contains { source in
+                    output == source || output.hasPrefix(source + "/") || output.hasPrefix(source + "-")
+                        || output.hasPrefix(source + ".")
+                }
+            }) else { return .contentChanged }
+        } else if !outputPaths.isEmpty {
+            // No literal path in the source. A model may only introduce one when
+            // the speaker actually dictated separators ("lib slash backend").
+            // Otherwise this is an invented separator in ordinary prose and is
+            // still rejected.
+            let spokenSeparators: Set<String> = ["slash", "backslash", "dot", "dash", "hyphen", "underscore"]
+            let hasSpokenPath = Tokenizer.tokens(in: comparable)
+                .contains { spokenSeparators.contains($0.core.lowercased()) }
+            if !hasSpokenPath { return .contentChanged }
+        }
         let allowsRevision = MeaningCarriers.hasRevisionCue(comparable)
         guard MeaningCarriers.accepts(comparable, result.text,
                                       allowsRevision: allowsRevision) else { return .contentChanged }

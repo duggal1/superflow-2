@@ -6,14 +6,30 @@ import SwiftUI
 // MARK: compose
 
 /// A typed question. The Intelligence host owns the field and the send glyph;
-/// the Island only supplies the target and settings affordances around it.
+/// the Island registers the surface in pixel corners and draws its own signal
+/// band underneath so the compose state reads as an instrument, not a form.
 struct ComposeView: View {
     let draft: String
     let context: FlowContext
 
     var body: some View {
-        VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
-            header(title: "Ask Superflow")
+        VStack(alignment: .leading, spacing: IslandTokens.Space.sm) {
+            HStack(spacing: IslandTokens.Space.sm) {
+                PixelBitmap(rows: PixelGlyphs.compose, cell: PixelInstrument.cell,
+                            gap: PixelInstrument.gap, tone: Ramp.blue[4])
+                Text("Ask Superflow").appType(IslandTokens.TypeRole.label)
+                    .foregroundStyle(IslandTokens.Color.ink)
+                PixelRule(tone: Ramp.blue[2])
+                SurfaceButton("Island settings", action: context.actions.openSettings)
+                    .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
+                    .overlay {
+                        PixelBitmap(rows: PixelGlyphs.settings, cell: 1, gap: 0, tone: Ramp.blue[3])
+                            .allowsHitTesting(false)
+                    }
+            }
+            .frame(height: IslandTokens.Size.glyph)
+            PixelFlowRail(active: 1)
+
             if let hosted = context.hostedView {
                 hosted
             } else {
@@ -21,58 +37,61 @@ struct ComposeView: View {
                     context.actions.send(text)
                 }
             }
+
+            // The draft's own cell trace: an instrument readout of what you are
+            // about to send, with the caret marking the next character.
+            HStack(spacing: IslandTokens.Space.sm) {
+                PixelCaret()
+                PixelTextSignal(text: draft, columns: 34)
+            }
             Spacer(minLength: 0)
-            hint("Right Option to dictate · ⏎ to send")
+            Text("Right Option to dictate · ⏎ to send")
+                .appType(IslandTokens.TypeRole.caption)
+                .foregroundStyle(IslandTokens.Color.ink2)
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func header(title: String) -> some View {
-        HStack(spacing: IslandTokens.Space.sm) {
-            IconView(.intelligence, size: IslandTokens.Size.glyph, tint: IslandTokens.Color.ink)
-            Text(title).appType(IslandTokens.TypeRole.label)
-                .foregroundStyle(IslandTokens.Color.ink)
-            Spacer(minLength: 0)
-            IconButton(.settings, label: "Island settings", size: IslandTokens.Size.glyph,
-                       tint: IslandTokens.Color.ink2, action: context.actions.openSettings)
-                .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
-        }
-    }
-
-    private func hint(_ text: String) -> some View {
-        Text(text).appType(IslandTokens.TypeRole.caption)
-            .foregroundStyle(IslandTokens.Color.ink2)
+        .pixelFramed()
     }
 }
 
 // MARK: listening
 
-/// Live dictation. The pixel waveform is the existing renderer, reused as-is:
-/// the same symmetric 11-column meter the pre-rebuild Island drew. The live
-/// transcript sits beside the caret and fades toward the older words.
+/// Live dictation. The pixel meter is the same symmetric cell envelope the
+/// notch always drew; the live transcript sits beside it and fades toward the
+/// older words. The mark on the left is a pixel cavity, not a boxed icon.
 struct ListeningView: View {
     let target: String?
     let context: FlowContext
 
     var body: some View {
-        HStack(spacing: IslandTokens.Space.md) {
-            IconView(.mic, size: IslandTokens.Size.glyph, tint: IslandTokens.Color.ink)
-                .frame(width: IslandTokens.Size.row, alignment: .leading)
-            VStack(alignment: .leading, spacing: IslandTokens.Space.xs) {
-                if let target, !target.isEmpty {
-                    Text(target).appType(IslandTokens.TypeRole.caption)
-                        .foregroundStyle(IslandTokens.Color.ink2)
-                        .lineLimit(1)
+        VStack(spacing: 0) {
+            HStack(spacing: IslandTokens.Space.md) {
+                PixelBitmap(rows: PixelGlyphs.listening, cell: PixelInstrument.cell,
+                            gap: PixelInstrument.gap, tone: Ramp.blue[4])
+                    .frame(width: IslandTokens.Size.row, alignment: .leading)
+                VStack(alignment: .leading, spacing: IslandTokens.Space.xs) {
+                    if let target, !target.isEmpty {
+                        Text(target).appType(IslandTokens.TypeRole.caption)
+                            .foregroundStyle(IslandTokens.Color.ink2)
+                            .lineLimit(1)
+                    }
+                    HStack(spacing: IslandTokens.Space.xs) {
+                        Text(context.live.isEmpty ? "Listening" : context.live)
+                            .appType(IslandTokens.TypeRole.body)
+                            .foregroundStyle(context.live.isEmpty ? IslandTokens.Color.ink2 : IslandTokens.Color.ink)
+                            .lineLimit(1)
+                            .contentTransition(.opacity)
+                        PixelCaret()
+                    }
                 }
-                Text(context.live.isEmpty ? "Listening…" : context.live)
-                    .appType(IslandTokens.TypeRole.body)
-                    .foregroundStyle(context.live.isEmpty ? IslandTokens.Color.ink2 : IslandTokens.Color.ink)
-                    .lineLimit(1)
-                    .contentTransition(.opacity)
+                Spacer(minLength: 0)
+                IslandPixelMeter(meter: context.meter, columns: 11)
             }
+            .frame(height: IslandTokens.Size.band)
             Spacer(minLength: 0)
-            IslandPixelMeter(meter: context.meter, columns: 11)
+            PixelRule(tone: Ramp.blue[1])
+                .padding(.horizontal, IslandTokens.Space.sm)
         }
         .padding(.horizontal, IslandTokens.Space.lg)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -81,8 +100,9 @@ struct ListeningView: View {
 
 // MARK: answer
 
-/// The streamed answer, presented by the Intelligence host, with the fixed-width
-/// Copy control and any follow-up chips from a finished meeting.
+/// The streamed answer. The host still renders the text (selectable Markdown);
+/// the Island supplies a pixel readout header, a live data band while streaming
+/// and pixel suggestion chips after a meeting.
 struct AnswerView: View {
     let text: String
     let streaming: Bool
@@ -91,14 +111,20 @@ struct AnswerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
             HStack(spacing: IslandTokens.Space.sm) {
-                IconView(.intelligence, size: IslandTokens.Size.glyph, tint: IslandTokens.Color.ink)
-                Text(streaming ? "Answering" : "Answer").appType(IslandTokens.TypeRole.label)
+                PixelBitmap(rows: PixelGlyphs.answer, cell: PixelInstrument.cell,
+                            gap: PixelInstrument.gap, tone: streaming ? Ramp.blue[4] : Ramp.blue[3])
+                Text(streaming ? "Streaming" : "Answer").appType(IslandTokens.TypeRole.label)
                     .foregroundStyle(IslandTokens.Color.ink)
+                if streaming {
+                    PixelBand(active: true, cells: 16)
+                }
                 Spacer(minLength: 0)
                 IconButton(.close, label: "Dismiss", size: IslandTokens.Size.glyph,
                            tint: IslandTokens.Color.ink2, action: context.actions.dismiss)
                     .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
             }
+            .frame(height: IslandTokens.Size.glyph)
+            PixelFlowRail(active: streaming ? 3 : 4)
 
             if let hosted = context.hostedView {
                 hosted
@@ -106,13 +132,19 @@ struct AnswerView: View {
                 context.seam.answerView(content: answerContent, onCopy: context.actions.copyAnswer)
             }
 
+            // The answer's cell trace sits under the text, so even a short
+            // answer has a physical shape on the readout.
+            PixelTextSignal(text: text, columns: 40)
+
             if !context.intelligence.suggestions.isEmpty {
                 chips(context.intelligence.suggestions)
             }
             Spacer(minLength: 0)
+            PixelRule(tone: Ramp.blue[1])
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pixelFramed(tone: Ramp.blue[2], hot: streaming ? Ramp.blue[4] : Ramp.blue[3])
     }
 
     private var answerContent: IslandIntelligenceContent {
@@ -126,14 +158,38 @@ struct AnswerView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: IslandTokens.Space.sm) {
                 ForEach(suggestions, id: \.self) { suggestion in
-                    AppButton(suggestion, kind: .secondary,
-                              height: IslandTokens.Size.control) {
+                    PixelChip(title: suggestion) {
                         context.actions.suggestion(suggestion)
                     }
-                    .fixedSize(horizontal: true, vertical: false)
                 }
             }
         }
         .frame(height: IslandTokens.Size.control)
+    }
+}
+
+/// A suggestion rendered as a cell-bordered chip with a leading pixel mark.
+/// No capsule background: the registration corners do the framing.
+struct PixelChip: View {
+    let title: String
+    var action: () -> Void
+
+    var body: some View {
+        SurfaceButton(title, action: action)
+            .frame(height: IslandTokens.Size.control)
+            .pixelFramed(tone: Ramp.blue[2], hot: Ramp.blue[4])
+            .overlay {
+                HStack(spacing: IslandTokens.Space.xs) {
+                    PixelBitmap(rows: PixelGlyphs.answer, cell: 1, gap: 0, tone: Ramp.blue[4])
+                        .allowsHitTesting(false)
+                    Text(title).appType(IslandTokens.TypeRole.caption)
+                        .foregroundStyle(IslandTokens.Color.ink)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .padding(.horizontal, IslandTokens.Space.sm)
+                .allowsHitTesting(false)
+            }
+            .accessibilityHint("Ask this follow-up")
     }
 }

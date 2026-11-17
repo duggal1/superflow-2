@@ -51,10 +51,10 @@ public enum IslandFlowMetrics {
             return wings(232)
 
         case .compose, .error, .permission:
-            return card(132)
+            return card(160)
 
         case .thinking:
-            return card(120)
+            return card(140)
 
         case .answer, .meetingEnded:
             return card(208)

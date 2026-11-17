@@ -78,11 +78,12 @@ private struct LocalComposeView: View {
     }
 
     var body: some View {
-        HStack(spacing: IslandTokens.Space.md) {
+        HStack(spacing: IslandTokens.Space.sm) {
+            PixelBitmap(rows: PixelGlyphs.compose, cell: PixelInstrument.cell,
+                        gap: PixelInstrument.gap, tone: canSend ? Ramp.blue[4] : Ramp.blue[2])
             AppField("Question", prompt: "Ask about your meeting", text: $draft,
                      height: IslandTokens.Size.control, onCard: true, onSubmit: send)
-            IconButton(.arrowUp, label: "Send", size: IslandTokens.Size.glyph,
-                       tint: IslandTokens.Color.ink2, enabled: canSend, action: send)
+            PixelSendMark(enabled: canSend, action: send)
         }
     }
 }
@@ -105,15 +106,19 @@ private struct LocalAnswerView: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if content.isStreaming {
-                HStack(spacing: IslandTokens.Space.xs) {
-                    ProgressView().controlSize(.mini)
+                HStack(spacing: IslandTokens.Space.sm) {
+                    PixelBand(active: true, cells: 16)
                     Text("Streaming").appType(IslandTokens.TypeRole.caption)
                         .foregroundStyle(IslandTokens.Color.ink2)
                 }
             }
-            AppButton("Copy", glyph: .copy, kind: .quiet,
-                      height: IslandTokens.Size.control, action: onCopy)
-                .frame(width: IslandTokens.Size.copyWidth, alignment: .leading)
+            HStack(spacing: IslandTokens.Space.sm) {
+                PixelBitmap(rows: PixelBitmap.check, cell: PixelInstrument.cell,
+                            gap: PixelInstrument.gap, tone: Ramp.blue[4])
+                AppButton("Copy", glyph: nil, kind: .quiet,
+                          height: IslandTokens.Size.control, action: onCopy)
+                    .frame(width: IslandTokens.Size.copyWidth, alignment: .leading)
+            }
         }
     }
 }

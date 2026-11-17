@@ -13,18 +13,18 @@ struct IntelligenceSettingsPanel: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.sm) {
-                Text("Prompts").appType(.caption).foregroundStyle(Tok.text2)
+                IntelPixelHeading(glyph: IntelPixel.mark, title: "Prompts", tone: Ramp.blue[4])
                 ForEach(model.themes) { theme in
                     AppButton(theme.label,
                               glyph: theme.id == model.selectedThemeID ? .checkmark : nil,
                               kind: theme.id == model.selectedThemeID ? .secondary : .quiet,
                               height: 28) { model.selectTheme(theme) }
                 }
-                Text("Capture").appType(.caption).foregroundStyle(Tok.text2)
+                IntelPixelHeading(glyph: IntelPixel.mark, title: "Capture", tone: Ramp.blue[3])
                 AppButton("Screen context: \(model.screenAware ? "On" : "Off")",
                           glyph: model.screenAware ? .checkmark : nil,
                           kind: .quiet, height: 28) { model.setScreenAware(!model.screenAware) }
-                Text("Model").appType(.caption).foregroundStyle(Tok.text2)
+                IntelPixelHeading(glyph: IntelPixel.check, title: "Model", tone: Ramp.blue[3])
                 ForEach(ReasoningEffort.allCases, id: \.self) { level in
                     AppButton(level.rawValue.capitalized,
                               glyph: level == model.effort ? .checkmark : nil,
@@ -34,11 +34,11 @@ struct IntelligenceSettingsPanel: View {
                 AppField("Custom instructions", prompt: "Optional instructions",
                          text: $model.customInstructions, onCard: true,
                          onSubmit: { model.setCustomInstructions(model.customInstructions) })
-                Text("Permissions").appType(.caption).foregroundStyle(Tok.text2)
+                IntelPixelHeading(glyph: IntelPixel.lock, title: "Permissions", tone: Ramp.blue[2])
                 ForEach(IntelligencePermission.allCases) { permission in
                     permissionRow(permission)
                 }
-                Text("About").appType(.caption).foregroundStyle(Tok.text2)
+                IntelPixelHeading(glyph: IntelPixel.history, title: "About", tone: Ramp.blue[2])
                 aboutRows
             }
         }
@@ -50,8 +50,8 @@ struct IntelligenceSettingsPanel: View {
         let status = model.status(for: permission)
         return VStack(alignment: .leading, spacing: Space.xs) {
             HStack(spacing: Space.xs) {
-                IconView(status.isGranted ? .checkmark : .lock, size: 12,
-                         tint: status.isGranted ? Tok.accentText : Tok.text2)
+                PixelMark(rows: status.isGranted ? IntelPixel.check : IntelPixel.lock,
+                          cell: 1, color: status.isGranted ? Ramp.blue[4] : Ramp.blue[2])
                 Text(permission.label).appType(.label).foregroundStyle(Tok.text)
                 Text(status.label).appType(.caption).foregroundStyle(Tok.text2)
                 Spacer(minLength: 0)

@@ -42,6 +42,36 @@ public struct CleanupOutcome: Sendable, Equatable {
     }
 }
 
+/// Collapses an exactly repeated path segment emitted twice by the model
+/// (`lib/backend/backend/main` -> `lib/backend/main`). Only an identical
+/// adjacent segment is removed; a real `foo/foo` path in the source is rare and
+/// the protected-literal guard still compares the repaired path to the input.
+enum RepeatedPathSegment {
+    private static let pattern = try? NSRegularExpression(
+        pattern: #"(?i)/([A-Za-z0-9_.-]+)/\1(?=/|[^A-Za-z0-9_.-]|$)"#)
+
+    static func collapse(_ text: String) -> String {
+        guard let pattern else { return text }
+        var out = text
+        for _ in 0..<4 {
+            let ns = out as NSString
+            let ranges = pattern.matches(in: out, range: NSRange(location: 0, length: ns.length))
+            guard !ranges.isEmpty else { break }
+            var rebuilt = ""
+            var cursor = 0
+            for match in ranges where match.range.location >= cursor {
+                rebuilt += ns.substring(with: NSRange(location: cursor, length: match.range.location - cursor))
+                rebuilt += "/" + ns.substring(with: match.range(at: 1))
+                cursor = NSMaxRange(match.range)
+            }
+            rebuilt += ns.substring(from: cursor)
+            guard rebuilt != out else { break }
+            out = rebuilt
+        }
+        return out
+    }
+}
+
 /// Decorates the unchanged TextCleaner port with deterministic planning and fallback.
 public actor CleanupService {
     private let cleaner: any TextCleaner
@@ -221,14 +251,27 @@ public actor CleanupService {
             tokensOut = result.tokensOut
             prefillMs = result.prefillMs
             generationMs = result.generationMs
-            if let failure = CleanGuard.verify(input: modelInput, protected: protected, result: result, cap: cap) { throw failure }
-            if canQuote, !QuoteGate.preserved(input: modelInput, output: result.text) {
+            // S1-mini sometimes repeats a path segment it just emitted
+            // ("lib/backend/backend/main/..."). Collapse that exact stutter so
+            // a single mechanical slip does not discard an otherwise correct
+            // cleanup and force the much weaker Tier-0 fallback.
+            let repairedText = RepeatedPathSegment.collapse(result.text)
+            let checked = CleanResult(text: repairedText, tokensIn: result.tokensIn,
+                                      tokensOut: result.tokensOut, hitTokenCap: result.hitTokenCap,
+                                      latencyMs: result.latencyMs, prefillMs: prefillMs, generationMs: generationMs)
+            if let failure = CleanGuard.verify(input: modelInput, protected: protected, result: checked, cap: cap) { throw failure }
+            if canQuote, !QuoteGate.preserved(input: modelInput, output: repairedText) {
                 throw CleanGuard.Failure.quoteChanged
             }
             let elapsed = start.duration(to: .now)
-            return ChunkOutcome(index: plan.index, text: result.text, state: .cleaned, tokensIn: result.tokensIn,
+            return ChunkOutcome(index: plan.index, text: repairedText, state: .cleaned, tokensIn: result.tokensIn,
                                 tokensOut: result.tokensOut, latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000), attempts: 1, prefillMs: result.prefillMs, generationMs: result.generationMs)
         } catch {
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["SUPERFLOW_CLEANUP_DEBUG"] == "1" {
+                FileHandle.standardError.write(Data("CLEANUP_FALLBACK reason=\(error) input=\(plan.text)\n".utf8))
+            }
+            #endif
             let elapsed = start.duration(to: .now)
             return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
                                 tokensIn: tokensIn, tokensOut: tokensOut,

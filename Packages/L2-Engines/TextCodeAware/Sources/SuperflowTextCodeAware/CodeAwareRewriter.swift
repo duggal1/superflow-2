@@ -150,8 +150,14 @@ public enum CodeAwareRewriter {
               !CodeAwareTables.stemStopwords.contains(first) else { return nil }
         var stem = [first]
         var j = i + 1
-        while j < tokens.count, stem.count < 3 {
+        while j < tokens.count, stem.count < 5 {
             let core = tokens[j].core.lowercased()
+            // Spoken hyphen separators are not stopwords that end a filename:
+            // "prospect dash main dash engine dot t s" is one stem.
+            if (core == "dash" || core == "hyphen"), tokens[j].trail.isEmpty {
+                j += 1
+                continue
+            }
             guard CodeAwareTables.isPlainWord(tokens[j].core),
                   !CodeAwareTables.stemStopwords.contains(core),
                   tokens[j].trail.isEmpty else { break }

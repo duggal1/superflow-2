@@ -55,16 +55,22 @@ enum MeaningCarriers {
             }
         }
         var sentenceStart = true
+        let rawWords = input.split(whereSeparator: \.isWhitespace).map(String.init)
         let outputWords = Set(output.split(whereSeparator: \.isWhitespace)
             .map { String($0.trimmingCharacters(in: .punctuationCharacters)).lowercased() })
-        for raw in input.split(whereSeparator: \.isWhitespace) {
+        let wordsForRevision = words(input)
+        for (index, raw) in rawWords.enumerated() {
             let word = raw.trimmingCharacters(in: .punctuationCharacters)
             let lowered = word.lowercased()
+            // A revised-away value ("Friday actually no wait Thursday") is meant
+            // to disappear; only an unrelated dropped proper noun is a defect.
+            let revisedAway = allowsRevision && calendarWords.contains(lowered)
+                && Self.valuePrecedesRevisionCue(wordsForRevision, index)
             // Single-letter tokens ("P 95" -> "P95") are formatting, not a
             // capitalized entity that could have been dropped.
             if word.count > 1, !sentenceStart, word.first?.isUppercase == true,
                word != "I", !word.hasPrefix("I'"), !word.hasPrefix("I’"),
-               !outputWords.contains(lowered) { return false }
+               !outputWords.contains(lowered), !revisedAway { return false }
             sentenceStart = raw.last.map { ".?!…".contains($0) } ?? false
         }
         if source == target { return true }
@@ -96,12 +102,55 @@ enum MeaningCarriers {
                 && (revisionCues.contains(words[index + 1]) || calendarWords.contains(words[index + 1]))
             let discourseNo = word == "no" && index + 1 < words.count
                 && (negators.contains(words[index + 1]) || words[index + 1].hasSuffix("n't"))
+            // A false-start double negator ("don't not want") is one semantic
+            // negation spoken twice, not two. The cleanup model keeps the first.
+            let stutterNegator = (word == "not" || word == "no")
+                && index > 0 && words[index - 1].hasSuffix("n't")
+            // A negator inside an abandoned value that a revision cue replaces
+            // ("returning a 403 not a 500 wait no 429") is not a clause negation:
+            // a revision cue within a few words, followed by a concrete value,
+            // means this negator is about to be discarded along with the value.
+            let abandonedValueNegator = (negators.contains(word) || word.hasSuffix("n't"))
+                && Self.negatorPrecedesRevisedValue(words, index)
             if word == "no", followsCue || revisesValue || discourseNo { previous = nil; continue }
+            if stutterNegator || abandonedValueNegator { previous = nil; continue }
             if predicate(word) { if previous != word { count += 1 }; previous = word }
             else { previous = nil }
         }
         return count
     }
+    /// True when a concrete value is followed shortly by a revision cue, i.e.
+    /// the value the speaker abandoned ("Friday actually no wait Thursday").
+    private static func valuePrecedesRevisionCue(_ words: [String], _ index: Int) -> Bool {
+        let upper = min(5, words.count - index - 1)
+        guard upper >= 1 else { return false }
+        for offset in 1...upper where revisionCues.contains(words[index + offset]) {
+            return true
+        }
+        return false
+    }
+
+    /// True when a negator sits in an abandoned value that a nearby revision
+    /// cue replaces with a concrete number or date ("a 403 not a 500 wait no
+    /// 429"). Bounded to six words so an ordinary negation later in the clause
+    /// is never mistaken for a false start.
+    private static func negatorPrecedesRevisedValue(_ words: [String], _ index: Int) -> Bool {
+        let upper = min(6, words.count - index - 1)
+        guard upper >= 1 else { return false }
+        for offset in 1...upper {
+            guard revisionCues.contains(words[index + offset]) else { continue }
+            let afterUpper = min(index + offset + 5, words.count)
+            guard afterUpper > index + offset + 1 else { continue }
+            for after in (index + offset + 1)..<afterUpper {
+                if numberWords.contains(words[after]) || calendarWords.contains(words[after])
+                    || words[after].contains(where: \.isNumber) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
     private static func quantifierCounts(_ words: [String]) -> [String: Int] {
         var result: [String: Int] = [:]
         var previous: String?

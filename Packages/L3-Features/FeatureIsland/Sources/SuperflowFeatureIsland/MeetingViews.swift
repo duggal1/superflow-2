@@ -3,26 +3,32 @@ import SuperflowIcons
 import SuperflowUIComponents
 import SwiftUI
 
-/// A live meeting. The existing barcode renderer reads the same meter as the
-/// dictation waveform, so one measurement drives both presentations. A rolling
-/// clock says this is a duration, not a mode.
+/// A live meeting. The brand pixel disc is the record mark — a physical lamp on
+/// the instrument, not a red app icon. The barcode reads the same meter as the
+/// dictation waveform, so one measurement drives both presentations.
 struct MeetingLiveView: View {
     let elapsed: Int
     let context: FlowContext
 
     var body: some View {
-        HStack(spacing: IslandTokens.Space.md) {
-            IconView(.settingMeeting, size: IslandTokens.Size.glyph, tint: IslandTokens.Color.danger)
-                .frame(width: IslandTokens.Size.row, alignment: .leading)
-            Text(ClockText(elapsed: elapsed))
-                .appType(IslandTokens.TypeRole.metric)
-                .foregroundStyle(IslandTokens.Color.ink)
-                .monospacedDigit()
+        VStack(spacing: 0) {
+            HStack(spacing: IslandTokens.Space.md) {
+                RecordDisc()
+                    .frame(width: IslandTokens.Size.row, alignment: .leading)
+                Text(ClockText(elapsed: elapsed))
+                    .appType(IslandTokens.TypeRole.metric)
+                    .foregroundStyle(IslandTokens.Color.ink)
+                    .monospacedDigit()
+                Spacer(minLength: 0)
+                IslandPixelBarcode(meter: context.meter, columns: 24)
+                IconButton(.close, label: "End meeting", size: IslandTokens.Size.glyph,
+                           tint: IslandTokens.Color.ink2, action: context.actions.endMeeting)
+                    .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
+            }
+            .frame(height: IslandTokens.Size.band)
             Spacer(minLength: 0)
-            IslandPixelBarcode(meter: context.meter, columns: 24)
-            IconButton(.close, label: "End meeting", size: IslandTokens.Size.glyph,
-                       tint: IslandTokens.Color.ink2, action: context.actions.endMeeting)
-                .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
+            PixelRule(tone: Ramp.blue[1])
+                .padding(.horizontal, IslandTokens.Space.sm)
         }
         .padding(.horizontal, IslandTokens.Space.lg)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -31,29 +37,26 @@ struct MeetingLiveView: View {
     }
 }
 
-/// A finished meeting offers the generated follow-ups. Choosing one submits it
-/// as the next question, which moves the machine through thinking to answer.
+/// A finished meeting offers the generated follow-ups. Each one is a pixel
+/// register row: a cell caret, the question, and a dotted rule that fills the
+/// line. Choosing one submits it as the next question.
 struct MeetingEndedView: View {
     let suggestions: [String]
     let context: FlowContext
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
-            HStack(spacing: IslandTokens.Space.sm) {
-                IconView(.checkmark, size: IslandTokens.Size.glyph, tint: IslandTokens.Color.wavePeak)
-                Text("Meeting saved").appType(IslandTokens.TypeRole.label)
-                    .foregroundStyle(IslandTokens.Color.ink)
-                Spacer(minLength: 0)
-                IconButton(.close, label: "Dismiss", size: IslandTokens.Size.glyph,
-                           tint: IslandTokens.Color.ink2, action: context.actions.dismiss)
-                    .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
-            }
+            PixelHeading(glyph: PixelBitmap.check, title: "Meeting saved", tone: Ramp.blue[4])
+            PixelFlowRail(active: 5)
             Text("Ask a follow-up").appType(IslandTokens.TypeRole.caption)
                 .foregroundStyle(IslandTokens.Color.ink2)
             if suggestions.isEmpty {
-                Text("No suggestions for this meeting.")
-                    .appType(IslandTokens.TypeRole.body)
-                    .foregroundStyle(IslandTokens.Color.ink2)
+                HStack(spacing: IslandTokens.Space.sm) {
+                    PixelBand(active: false, cells: 16)
+                    Text("No suggestions for this meeting.")
+                        .appType(IslandTokens.TypeRole.body)
+                        .foregroundStyle(IslandTokens.Color.ink2)
+                }
             } else {
                 VStack(alignment: .leading, spacing: IslandTokens.Space.xs) {
                     ForEach(Array(suggestions.enumerated()), id: \.element) { i, item in
@@ -61,10 +64,8 @@ struct MeetingEndedView: View {
                             context.actions.suggestion(item)
                         } content: {
                             HStack(spacing: IslandTokens.Space.sm) {
-                                Rectangle()
-                                    .fill(IslandTokens.Color.wave)
-                                    .frame(width: IslandTokens.Size.hairline * 2,
-                                           height: IslandTokens.Size.hairline * 2)
+                                PixelBitmap(rows: PixelGlyphs.compose, cell: 1, gap: 0,
+                                            tone: i == 0 ? Ramp.blue[4] : Ramp.blue[3])
                                 Text(item).appType(IslandTokens.TypeRole.body)
                                     .foregroundStyle(IslandTokens.Color.ink)
                                     .lineLimit(1)
@@ -76,9 +77,11 @@ struct MeetingEndedView: View {
                 }
             }
             Spacer(minLength: 0)
+            PixelRule(tone: Ramp.blue[1])
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pixelFramed()
     }
 }
 

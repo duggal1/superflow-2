@@ -3,19 +3,24 @@ import SuperflowIcons
 import SuperflowUIComponents
 import SwiftUI
 
-/// Recessed answer tile with the edge fade used across the island.
+/// Recessed answer tile. The well is a background step, never a border; a row
+/// of cells at the foot of the tile is the only ornament, and it reads as a
+/// signal rather than decoration.
 struct AnswerTile: View {
     let text: String
     var body: some View {
-        Text(text)
-            .appType(IslandTokens.TypeRole.body)
-            .foregroundStyle(IslandTokens.Color.ink)
-            .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(IslandTokens.Space.md)
-            .background(IslandTokens.Color.field,
-                        in: .rect(cornerRadius: IslandTokens.Radius.chip))
-            .modifier(EdgeFade(length: IslandTokens.Size.cardPad))
+        VStack(alignment: .leading, spacing: IslandTokens.Space.sm) {
+            Text(text)
+                .appType(IslandTokens.TypeRole.body)
+                .foregroundStyle(IslandTokens.Color.ink)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .modifier(EdgeFade(length: IslandTokens.Size.cardPad))
+            PixelRule(tone: Ramp.blue[1])
+        }
+        .padding(IslandTokens.Space.md)
+        .background(IslandTokens.Color.field,
+                    in: .rect(cornerRadius: IslandTokens.Radius.chip))
     }
 }
 
@@ -41,29 +46,29 @@ struct RowReveal: ViewModifier {
 
 // MARK: history
 
-/// The last dictations. Clicking a line copies it; the time column is reserved
-/// so nothing reflows on hover.
+/// The last dictations. Each row is a pixel register: a cell caret, one faded
+/// line and a time column. Clicking a line copies it.
 struct HistoryView: View {
     let count: Int
     let context: FlowContext
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Recent").appType(IslandTokens.TypeRole.label)
-                    .foregroundStyle(IslandTokens.Color.ink)
-                Spacer(minLength: 0)
-                Text("\(count) saved").appType(IslandTokens.TypeRole.caption)
-                    .foregroundStyle(IslandTokens.Color.ink2).monospacedDigit()
-            }
-            .frame(height: IslandTokens.Size.row)
+            PixelHeading(glyph: PixelGlyphs.history, title: "Recent",
+                         tone: Ramp.blue[4], caption: "\(count) saved")
+                .frame(height: IslandTokens.Size.row)
+            PixelFlowRail(active: 0)
 
             VStack(spacing: 0) {
                 if context.history.isEmpty {
-                    Text("Nothing dictated yet.")
-                        .appType(IslandTokens.TypeRole.body)
-                        .foregroundStyle(IslandTokens.Color.ink2)
-                        .frame(maxWidth: .infinity, minHeight: IslandTokens.Size.row * 2)
+                    HStack(spacing: IslandTokens.Space.sm) {
+                        PixelBitmap(rows: PixelGlyphs.history, cell: PixelInstrument.cell,
+                                    gap: PixelInstrument.gap, tone: Ramp.blue[2])
+                        Text("Nothing dictated yet.")
+                            .appType(IslandTokens.TypeRole.body)
+                            .foregroundStyle(IslandTokens.Color.ink2)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: IslandTokens.Size.row * 2)
                 } else {
                     ForEach(Array(context.history.enumerated()), id: \.element.id) { i, item in
                         HistoryRow(item: item, context: context)
@@ -72,9 +77,11 @@ struct HistoryView: View {
                 }
             }
             Spacer(minLength: 0)
+            PixelRule(tone: Ramp.blue[1])
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pixelFramed()
     }
 }
 
@@ -88,6 +95,8 @@ private struct HistoryRow: View {
             context.actions.copyTranscript(item)
         } content: {
             HStack(spacing: IslandTokens.Space.md) {
+                PixelBitmap(rows: PixelGlyphs.compose, cell: 1, gap: 0,
+                            tone: hover ? Ramp.blue[4] : Ramp.blue[3])
                 Text(item.text.replacingOccurrences(of: "\n", with: " "))
                     .appType(IslandTokens.TypeRole.body)
                     .foregroundStyle(IslandTokens.Color.ink)
@@ -96,7 +105,7 @@ private struct HistoryRow: View {
                 Text("\(item.words) words").appType(IslandTokens.TypeRole.caption)
                     .foregroundStyle(IslandTokens.Color.ink2).monospacedDigit()
                     .opacity(hover ? 0 : 1)
-                IconView(.copy, size: IslandTokens.Size.glyph, tint: IslandTokens.Color.ink2)
+                PixelBitmap(rows: PixelBitmap.check, cell: 1, gap: 0, tone: Ramp.blue[4])
                     .opacity(hover ? 1 : 0)
             }
             .onHover { hover = $0 }
@@ -106,22 +115,16 @@ private struct HistoryRow: View {
 
 // MARK: settings
 
-/// Prompt theme selector hosted inside the Island. No native popover or menu:
-/// every control is an in-island view, which also keeps the surface stealthy.
+/// Prompt theme selector hosted inside the Island. The selected theme is a lit
+/// pixel box; the others are empty rings. No native control, no popover.
 struct SettingsView: View {
     let theme: String
     let context: FlowContext
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
-            HStack {
-                Text("Prompt theme").appType(IslandTokens.TypeRole.label)
-                    .foregroundStyle(IslandTokens.Color.ink)
-                Spacer(minLength: 0)
-                IconButton(.close, label: "Dismiss", size: IslandTokens.Size.glyph,
-                           tint: IslandTokens.Color.ink2, action: context.actions.dismiss)
-                    .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
-            }
+            PixelHeading(glyph: PixelGlyphs.settings, title: "Prompt theme", tone: Ramp.blue[4])
+            PixelFlowRail(active: 0)
             VStack(spacing: IslandTokens.Space.xs) {
                 ForEach(Array(IslandTokens.Theme.allCases.enumerated()), id: \.element) { i, option in
                     ThemeRow(title: option.rawValue, selected: theme == option.rawValue) {
@@ -131,9 +134,11 @@ struct SettingsView: View {
                 }
             }
             Spacer(minLength: 0)
+            PixelRule(tone: Ramp.blue[1])
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .pixelFramed()
     }
 }
 
@@ -145,8 +150,9 @@ private struct ThemeRow: View {
     var body: some View {
         RowButton(title, height: IslandTokens.Size.row, selected: selected, action: action) {
             HStack(spacing: IslandTokens.Space.sm) {
-                IconView(selected ? .checkmark : .circle, size: IslandTokens.Size.glyph,
-                         tint: selected ? IslandTokens.Color.accent : IslandTokens.Color.ink2)
+                PixelBitmap(rows: selected ? PixelBitmap.disc : PixelGlyphs.listening,
+                            cell: 1, gap: 0,
+                            tone: selected ? Ramp.blue[4] : Ramp.blue[2])
                 Text(title).appType(IslandTokens.TypeRole.body)
                     .foregroundStyle(IslandTokens.Color.ink)
                 Spacer(minLength: 0)
