@@ -30,12 +30,15 @@ public enum TextNumbers {
                 }
             }
             if isListMarker(words, at: i) { output.append(words[i]); i += 1; continue }
-            if let (clock, used) = NumberPieces.clock(words, i) { emit(clock, used); continue }
+            let previousKey = i > 0 ? words[i - 1].key : ""
+            let inTimeContext = ["at", "by", "around", "until", "before", "after", "from", "since"].contains(previousKey)
+            if let (clock, used) = NumberPieces.clock(words, i, timeContext: inTimeContext) { emit(clock, used); continue }
             if NumberPieces.yearContext(output), let (year, used) = NumberPieces.year(words, i) {
                 emit(String(year), used)
                 continue
             }
             if let run = NumberPieces.digitRun(words, i) { emit(run.digits, run.used); continue }
+            if let decimal = NumberPieces.spokenDecimal(words, i) { emit(decimal.value, decimal.used); continue }
             guard let parsed = NumberLex.parseCardinal(words, i) else { output.append(words[i]); i += 1; continue }
             if parsed.ordinal {
                 if let previous = output.last, !previous.hardBreak,

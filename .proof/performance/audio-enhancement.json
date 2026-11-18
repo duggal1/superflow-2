@@ -1,0 +1,15 @@
+{
+  "currentPeak" : 0.38706502318382263,
+  "currentRMS" : 0.18210329115390778,
+  "fixture" : "synthetic whisper 130 Hz + harmonics, 4 Hz syllables, 400 ms",
+  "inputPeak" : 0.006047938950359821,
+  "inputRMS" : 0.003000000724568963,
+  "legacyGainApplied" : false,
+  "legacyPeak" : 0.006047938950359821,
+  "legacyRMS" : 0.003000000724568963,
+  "noiseFloorAfter" : 0.00012499999138526618,
+  "noiseFloorBefore" : 0.0009999999310821295,
+  "snrAfter" : 1456.8264296326374,
+  "snrBefore" : 3.000000931322639,
+  "vadSpeechDetected" : true
+}

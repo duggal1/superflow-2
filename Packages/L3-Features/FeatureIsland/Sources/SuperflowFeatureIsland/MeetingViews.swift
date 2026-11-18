@@ -27,7 +27,7 @@ struct MeetingLiveView: View {
             }
             .frame(height: IslandTokens.Size.band)
             Spacer(minLength: 0)
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
                 .padding(.horizontal, IslandTokens.Space.sm)
         }
         .padding(.horizontal, IslandTokens.Space.lg)
@@ -46,7 +46,7 @@ struct MeetingEndedView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
-            PixelHeading(glyph: PixelBitmap.check, title: "Meeting saved", tone: Ramp.blue[4])
+            PixelHeading(glyph: PixelBitmap.check, title: "Meeting saved", tone: IslandRamp.step(4))
             PixelFlowRail(active: 5)
             Text("Ask a follow-up").appType(IslandTokens.TypeRole.caption)
                 .foregroundStyle(IslandTokens.Color.ink2)
@@ -65,7 +65,7 @@ struct MeetingEndedView: View {
                         } content: {
                             HStack(spacing: IslandTokens.Space.sm) {
                                 PixelBitmap(rows: PixelGlyphs.compose, cell: 1, gap: 0,
-                                            tone: i == 0 ? Ramp.blue[4] : Ramp.blue[3])
+                                            tone: i == 0 ? IslandRamp.step(4) : IslandRamp.step(3))
                                 Text(item).appType(IslandTokens.TypeRole.body)
                                     .foregroundStyle(IslandTokens.Color.ink)
                                     .lineLimit(1)
@@ -77,7 +77,7 @@ struct MeetingEndedView: View {
                 }
             }
             Spacer(minLength: 0)
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

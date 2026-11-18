@@ -1,6 +1,7 @@
 import AppKit
 import SuperflowDesignSystem
 import SuperflowFeatureDictionary
+import SuperflowIcons
 import SuperflowFeatureShortcuts
 import SuperflowKernel
 import SuperflowTextPipeline
@@ -8,19 +9,31 @@ import SuperflowUIComponents
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// `All` is a reading overview with a preview of each store; a focused scope is
+/// the working list. The same `+N more` link moves between them, so overflow is
+/// signalled one way everywhere.
 private enum KnowledgeSection: Hashable, Sendable {
     case all, dictionary, shortcuts, learned
 
     static let items: [Segmented<KnowledgeSection>.Item] = [
-        .init("All", value: .all),
-        .init("Dictionary", value: .dictionary),
-        .init("Shortcuts", value: .shortcuts),
-        .init("Learned", value: .learned),
+        .init("All", value: .all), .init("Dictionary", value: .dictionary),
+        .init("Shortcuts", value: .shortcuts), .init("Learned", value: .learned),
     ]
+
+    var label: String {
+        switch self {
+        case .all: "All"
+        case .dictionary: "Dictionary"
+        case .shortcuts: "Shortcuts"
+        case .learned: "Learned"
+        }
+    }
 }
 
-/// One page for the two existing capabilities, with the same SQLite-backed
-/// models and import/export contracts. Neither table nor expansion logic moves.
+/// Three purposes, top to bottom: what the app knows (one ledger), what you can
+/// change (one card per kind, one line per rule), what it is considering (the
+/// learning inbox) and a place to try it. Every row is one line with a
+/// predictable edge fade; controls live in fixed columns or in the edit dialog.
 struct KnowledgeView: View {
     @ObservedObject var dictionary: DictionaryViewModel
     @ObservedObject var shortcuts: ShortcutsViewModel
@@ -28,6 +41,7 @@ struct KnowledgeView: View {
     @Binding var learningEnabled: Bool
     @Binding var autoLearnEnabled: Bool
     let onLearningChange: @MainActor () async -> Void
+
     @Environment(DialogHost.self) private var dialogs
     @State private var section: KnowledgeSection = .all
     @State private var query = ""
@@ -35,6 +49,8 @@ struct KnowledgeView: View {
     @State private var importing = false
     @State private var importingShortcuts = false
     @State private var learned: [LearningCandidate] = []
+
+    private let previewLimit = 4
 
     init(dictionary: DictionaryViewModel, shortcuts: ShortcutsViewModel,
          learning: DictionaryLearningEngine, learningEnabled: Binding<Bool>,
@@ -48,13 +64,14 @@ struct KnowledgeView: View {
         self.onLearningChange = onLearningChange
     }
 
-    private var lexicon: [LexiconEntry] {
-        dictionary.visibleEntries.filter { $0.source == .user }
-    }
+    private var lexicon: [LexiconEntry] { dictionary.visibleEntries.filter { $0.source == .user } }
+    private var terms: [LexiconEntry] { lexicon.filter { $0.kind == .term } }
+    private var corrections: [LexiconEntry] { lexicon.filter { $0.kind == .correction } }
     private var phrases: [ShortcutEntry] { shortcuts.visibleEntries }
     private var showDictionary: Bool { section == .all || section == .dictionary }
     private var showShortcuts: Bool { section == .all || section == .shortcuts }
     private var showLearned: Bool { section == .all || section == .learned }
+
     private var visibleLearned: [LearningCandidate] {
         learned.filter { $0.state != .rejected }
             .filter {
@@ -62,6 +79,20 @@ struct KnowledgeView: View {
                     || $0.canonical.localizedCaseInsensitiveContains(query)
             }
     }
+
+    private var pendingCount: Int { learned.filter { $0.state == .suggested }.count }
+
+    /// Search must never hide a match behind the overview preview.
+    private func preview<T>(_ items: [T]) -> [T] {
+        (section == .all && query.isEmpty) ? Array(items.prefix(previewLimit)) : items
+    }
+
+    private var hasVisibleContent: Bool {
+        (showDictionary && !lexicon.isEmpty) || (showShortcuts && !phrases.isEmpty)
+            || (showLearned && !visibleLearned.isEmpty)
+    }
+
+    // MARK: body
 
     var body: some View {
         Page(title: "Knowledge") {
@@ -75,27 +106,24 @@ struct KnowledgeView: View {
                             .init("Export terms…") { exportTerms() },
                             .init("Export shortcuts…") { exportShortcuts() },
                          ], onAdd: add)
+            ledger
             if showDictionary {
-                if !lexicon.filter({ $0.kind == .term }).isEmpty {
-                    dictionaryGroup("Terms", entries: lexicon.filter { $0.kind == .term })
-                }
-                if !lexicon.filter({ $0.kind == .correction }).isEmpty {
-                    dictionaryGroup("Corrections", entries: lexicon.filter { $0.kind == .correction })
-                }
+                groupCard("Terms", note: "Said one way, typed another.",
+                          specs: lexiconSpecs(terms), destination: .dictionary)
+                groupCard("Corrections", note: "Short fixes you confirmed.",
+                          specs: lexiconSpecs(corrections), destination: .dictionary)
             }
-            if showShortcuts, !phrases.isEmpty {
-                shortcutsGroup
+            if showShortcuts {
+                groupCard("Shortcuts", note: "Triggers expand to your saved text.",
+                          specs: shortcutSpecs(phrases), destination: .shortcuts)
             }
             if showLearned { learningGroup }
-            if (!showDictionary || lexicon.isEmpty)
-                && (!showShortcuts || phrases.isEmpty)
-                && (!showLearned || visibleLearned.isEmpty)
-                && !dictionary.isLoading && !shortcuts.isLoading {
+            if !hasVisibleContent && !dictionary.isLoading && !shortcuts.isLoading {
                 EmptyState("Nothing here yet.",
-                           message: "Add a term or a shortcut to get started.")
+                           message: "Add a term or a shortcut, or press ⌘N to get started.")
                     .frame(minHeight: 320)
             }
-            if showDictionary { DictionaryPlayground(entries: dictionary.entries) }
+            DictionaryPlayground(entries: dictionary.entries)
         }
         .task {
             await dictionary.load()
@@ -107,9 +135,7 @@ struct KnowledgeView: View {
             shortcuts.query = newValue
         }
         .searchShortcut($searchFocus)
-        .background {
-            HiddenShortcut("Add Knowledge", key: "n") { add() }
-        }
+        .background { HiddenShortcut("Add Knowledge", key: "n") { add() } }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
             switch result {
             case .success(let url):
@@ -128,36 +154,64 @@ struct KnowledgeView: View {
         }
     }
 
-    private func dictionaryGroup(_ title: String, entries: [LexiconEntry]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title, note: "\(entries.count) entries")
-            Card(padding: 8) {
-                VStack(spacing: 2) {
-                    ForEach(entries) { entry in
-                        EntryRow(trigger: entry.triggers.first ?? entry.canonical,
-                                 result: entry.canonical,
-                                 isDisabled: !entry.enabled,
-                                 onOpen: { edit(entry) },
-                                 onDelete: { Task { await dictionary.delete(entry) } })
-                    }
+    // MARK: sections
+
+    /// Counts are of the whole library, not the current filter, so they never
+    /// jitter while the user searches.
+    private var ledger: some View {
+        Card {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                SectionHeader("Knowledge base", note: "Stored locally. Applied as you dictate.")
+                HStack(alignment: .top, spacing: Space.lg) {
+                    Metric("Terms", value: "\(terms.count)", glyph: .dictionary)
+                    Metric("Shortcuts", value: "\(phrases.count)", glyph: .shortcuts)
+                    Metric("Suggestions", value: "\(pendingCount)", glyph: .intelligence)
                 }
             }
         }
     }
 
-    private var shortcutsGroup: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("Shortcuts", note: "\(phrases.count) saved phrases")
-            Card(padding: 8) {
-                VStack(spacing: 2) {
-                    ForEach(phrases) { entry in
-                        EntryRow(trigger: entry.trigger,
-                                 result: entry.content.components(separatedBy: .newlines).first ?? "",
-                                 badge: entry.match == .inline ? "Inline" : nil,
-                                 badgeVariant: .blue,
-                                 isDisabled: !entry.enabled,
-                                 onOpen: { edit(entry) },
-                                 onDelete: { Task { await shortcuts.delete(entry) } })
+    private func lexiconSpecs(_ entries: [LexiconEntry]) -> [KnowledgeRowSpec] {
+        entries.map { entry in
+            KnowledgeRowSpec(id: entry.id,
+                             trigger: entry.triggers.first ?? entry.canonical,
+                             result: entry.canonical,
+                             badge: entry.enabled ? nil : "Off", variant: .neutral,
+                             dimmed: !entry.enabled,
+                             open: { edit(entry) },
+                             delete: { Task { await dictionary.delete(entry) } })
+        }
+    }
+
+    private func shortcutSpecs(_ entries: [ShortcutEntry]) -> [KnowledgeRowSpec] {
+        entries.map { entry in
+            let first = (entry.content.components(separatedBy: .newlines).first ?? "")
+                .trimmingCharacters(in: .whitespaces)
+            return KnowledgeRowSpec(id: entry.id, trigger: entry.trigger, result: first,
+                                    badge: entry.match == .inline ? "Inline" : (entry.enabled ? nil : "Off"),
+                                    variant: .blue, dimmed: !entry.enabled,
+                                    open: { edit(entry) },
+                                    delete: { Task { await shortcuts.delete(entry) } })
+        }
+    }
+
+    private func groupCard(_ title: String, note: String, specs: [KnowledgeRowSpec],
+                           destination: KnowledgeSection) -> some View {
+        let shown = preview(specs)
+        let hidden = specs.count - shown.count
+        return VStack(alignment: .leading, spacing: Space.xs) {
+            if !shown.isEmpty {
+                Card(padding: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        SectionHeader(title, note: note).padding(.horizontal, Space.sm)
+                        ForEach(shown) { KnowledgeRow(spec: $0) }
+                        if hidden > 0 {
+                            AppButton("+\(hidden) more", kind: .link, height: ControlHeight.small) {
+                                section = destination
+                            }
+                            .accessibilityLabel("Show \(hidden) more in \(destination.label)")
+                            .padding(.horizontal, Space.sm).padding(.top, Space.xxs)
+                        }
                     }
                 }
             }
@@ -165,48 +219,31 @@ struct KnowledgeView: View {
     }
 
     private var learningGroup: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("Learning", note: "Suggestions require confirmation.")
-            HStack(spacing: 16) {
-                AppToggle("Observe short corrections", isOn: $learningEnabled)
-                AppToggle("Auto-add repeated corrections", isOn: $autoLearnEnabled,
-                          enabled: learningEnabled)
-            }
-            Text("Local only. Short, editable text fields; never passwords or full documents.")
-                .appType(.caption).foregroundStyle(Tok.text2)
-            if !visibleLearned.isEmpty {
-                Card(padding: 8) {
-                    VStack(spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            SectionHeader("Learning", note: "Suggestions wait for your confirmation.")
+            Card(padding: 8) {
+                VStack(alignment: .leading, spacing: Space.sm) {
+                    AppToggle("Observe short corrections", isOn: $learningEnabled)
+                    AppToggle("Auto-add repeated corrections", isOn: $autoLearnEnabled,
+                              enabled: learningEnabled)
+                    Text("Local only. Short, editable text fields; never passwords or full documents.")
+                        .appType(.caption).foregroundStyle(Tok.text2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !visibleLearned.isEmpty {
                         ForEach(visibleLearned) { candidate in
-                            HStack(spacing: 12) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(candidate.heard + " → " + candidate.canonical)
-                                        .appType(.body).foregroundStyle(Tok.text)
-                                    Text(candidate.appScope ?? "All apps")
-                                        .appType(.caption).foregroundStyle(Tok.text2)
-                                }
-                                Spacer(minLength: 12)
-                                if candidate.state == .suggested {
-                                    AppButton("Confirm", kind: .quiet, height: 28) {
-                                        Task { await confirm(candidate) }
-                                    }
-                                    AppButton("Reject", kind: .quiet, height: 28) {
-                                        Task { await reject(candidate) }
-                                    }
-                                } else {
-                                    AppButton("Undo", kind: .quiet, height: 28) {
-                                        Task { await undo(candidate) }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 12).frame(minHeight: 44)
-                            .accessibilityElement(children: .contain)
+                            LearningRow(candidate: candidate,
+                                        onConfirm: { Task { await confirm(candidate) } },
+                                        onReject: { Task { await reject(candidate) } },
+                                        onUndo: { Task { await undo(candidate) } })
                         }
                     }
                 }
+                .padding(.horizontal, Space.sm)
             }
         }
     }
+
+    // MARK: learning actions
 
     private func loadLearned() async {
         do { learned = try await learning.candidates() }
@@ -216,76 +253,50 @@ struct KnowledgeView: View {
     private func confirm(_ candidate: LearningCandidate) async {
         do {
             try await learning.confirm(id: candidate.id)
-            await dictionary.load()
-            await loadLearned()
-            await onLearningChange()
+            await dictionary.load(); await loadLearned(); await onLearningChange()
             dictionary.toast.show("Added to Knowledge.", style: .success)
-        } catch {
-            dictionary.toast.show("Could not confirm correction.", style: .error)
-        }
+        } catch { dictionary.toast.show("Could not confirm correction.", style: .error) }
     }
 
     private func reject(_ candidate: LearningCandidate) async {
-        do {
-            try await learning.reject(id: candidate.id)
-            await loadLearned()
-        } catch {
-            dictionary.toast.show("Could not reject correction.", style: .error)
-        }
+        do { try await learning.reject(id: candidate.id); await loadLearned() }
+        catch { dictionary.toast.show("Could not reject correction.", style: .error) }
     }
 
     private func undo(_ candidate: LearningCandidate) async {
         do {
             try await learning.undo(id: candidate.id)
-            await dictionary.load()
-            await loadLearned()
-            await onLearningChange()
+            await dictionary.load(); await loadLearned(); await onLearningChange()
             dictionary.toast.show("Learned correction removed.", style: .success)
-        } catch {
-            dictionary.toast.show("Could not undo correction.", style: .error)
-        }
+        } catch { dictionary.toast.show("Could not undo correction.", style: .error) }
     }
 
-    private func add() {
-        if section == .shortcuts { addShortcut() }
-        else { addTerm() }
-    }
+    // MARK: add / edit / files
+
+    private func add() { section == .shortcuts ? addShortcut() : addTerm() }
 
     private func addTerm() {
-        dialogs.present {
-            TermDialog { draft in Task { _ = await dictionary.save(draft) } }
-        }
+        dialogs.present { TermDialog { draft in Task { _ = await dictionary.save(draft) } } }
     }
 
     private func addShortcut() {
-        dialogs.present {
-            ShortcutDialog { draft in Task { _ = await shortcuts.save(draft) } }
-        }
+        dialogs.present { ShortcutDialog { draft in Task { _ = await shortcuts.save(draft) } } }
     }
 
     private func edit(_ entry: LexiconEntry) {
         dialogs.present {
-            TermDialog(existing: entry) { draft in
-                Task { _ = await dictionary.save(draft) }
-            }
+            TermDialog(existing: entry) { draft in Task { _ = await dictionary.save(draft) } }
         }
     }
 
     private func edit(_ entry: ShortcutEntry) {
         dialogs.present {
-            ShortcutDialog(existing: entry) { draft in
-                Task { _ = await shortcuts.save(draft) }
-            }
+            ShortcutDialog(existing: entry) { draft in Task { _ = await shortcuts.save(draft) } }
         }
     }
 
-    private func exportTerms() {
-        save(dictionary.exportData(), name: "superflow-dictionary.json")
-    }
-
-    private func exportShortcuts() {
-        save(shortcuts.exportData(), name: "superflow-shortcuts.json")
-    }
+    private func exportTerms() { save(dictionary.exportData(), name: "superflow-dictionary.json") }
+    private func exportShortcuts() { save(shortcuts.exportData(), name: "superflow-shortcuts.json") }
 
     private func save(_ data: Data?, name: String) {
         guard let data else { return }
@@ -299,5 +310,80 @@ struct KnowledgeView: View {
         } catch {
             dictionary.toast.show("Could not export. \(error.localizedDescription)", style: .error)
         }
+    }
+}
+
+/// One rule: fixed trigger column, flexible result with an edge fade, status
+/// badge in its own frame. No text length can move or clip the badge.
+private struct KnowledgeRowSpec: Identifiable {
+    let id: String
+    let trigger: String
+    let result: String
+    let badge: String?
+    let variant: BadgeVariant
+    let dimmed: Bool
+    let open: () -> Void
+    let delete: () -> Void
+}
+
+private struct KnowledgeRow: View {
+    let spec: KnowledgeRowSpec
+
+    var body: some View {
+        RowButton("\(spec.trigger), becomes \(spec.result)", height: 44) {
+            spec.open()
+        } content: {
+            HStack(spacing: Space.sm) {
+                Text(spec.trigger)
+                    .appType(.label).foregroundStyle(spec.dimmed ? Tok.text2 : Tok.text)
+                    .lineLimit(1).frame(width: 168, alignment: .leading)
+                    .modifier(TextFade(length: 12))
+                IconView(.arrow, size: 12, tint: Tok.text2).frame(width: 12)
+                Text(spec.result)
+                    .appType(.body).foregroundStyle(spec.dimmed ? Tok.text2 : Tok.text)
+                    .lineLimit(1).frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .modifier(TextFade(length: 24)).textSelection(.enabled)
+                if let badge = spec.badge {
+                    Badge(badge, variant: spec.variant, size: .sm).fixedSize()
+                }
+            }
+            .padding(.horizontal, Space.sm)
+        }
+        .contextMenu { Button("Delete", role: .destructive, action: spec.delete) }
+    }
+}
+
+/// Candidate text flexes; the control cluster is fixed and gets layout priority.
+private struct LearningRow: View {
+    let candidate: LearningCandidate
+    let onConfirm: () -> Void
+    let onReject: () -> Void
+    let onUndo: () -> Void
+
+    var body: some View {
+        HStack(spacing: Space.sm) {
+            VStack(alignment: .leading, spacing: Space.xxs) {
+                Text("\(candidate.heard) → \(candidate.canonical)")
+                    .appType(.body).foregroundStyle(Tok.text).lineLimit(1)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .modifier(TextFade(length: 24)).textSelection(.enabled)
+                Text(candidate.appScope ?? "All apps")
+                    .appType(.caption).foregroundStyle(Tok.text2).lineLimit(1)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: Space.xs) {
+                if candidate.state == .suggested {
+                    AppButton("Confirm", kind: .secondary, height: ControlHeight.regular, action: onConfirm)
+                    AppButton("Reject", kind: .quiet, height: ControlHeight.regular, action: onReject)
+                } else {
+                    Badge("Added", variant: .green, size: .sm)
+                    AppButton("Undo", kind: .quiet, height: ControlHeight.regular, action: onUndo)
+                }
+            }
+            .fixedSize(horizontal: true, vertical: false).layoutPriority(1)
+        }
+        .padding(.horizontal, Space.sm).frame(height: 56)
+        .accessibilityElement(children: .contain)
     }
 }

@@ -55,9 +55,19 @@ enum NumberParser {
                     break loop
                 }
             } else if let ten = NumberTables.tens[word] {
-                guard kind == .none || kind == .hundred || kind == .scale else { break loop }
-                current += ten
-                kind = .tens
+                if kind == .unit, (1...9).contains(current) {
+                    // Spoken implied hundreds: "one forty" is 140, "two fifty" is
+                    // 250. Without this the parser emitted "one 40", corrupting
+                    // facts in medical dictation ("blood pressure one forty over
+                    // ninety"). A bare digit run ("five five six") stays a digit
+                    // run: the next word is a unit, not a decade.
+                    current = current * 100 + ten
+                    kind = .tens
+                } else {
+                    guard kind == .none || kind == .hundred || kind == .scale else { break loop }
+                    current += ten
+                    kind = .tens
+                }
             } else if word == "hundred" {
                 guard kind == .unit || kind == .teen, current > 0 else { break loop }
                 current *= 100

@@ -80,7 +80,7 @@ private struct LocalComposeView: View {
     var body: some View {
         HStack(spacing: IslandTokens.Space.sm) {
             PixelBitmap(rows: PixelGlyphs.compose, cell: PixelInstrument.cell,
-                        gap: PixelInstrument.gap, tone: canSend ? Ramp.blue[4] : Ramp.blue[2])
+                        gap: PixelInstrument.gap, tone: canSend ? IslandRamp.step(4) : IslandRamp.step(2))
             AppField("Question", prompt: "Ask about your meeting", text: $draft,
                      height: IslandTokens.Size.control, onCard: true, onSubmit: send)
             PixelSendMark(enabled: canSend, action: send)
@@ -114,7 +114,7 @@ private struct LocalAnswerView: View {
             }
             HStack(spacing: IslandTokens.Space.sm) {
                 PixelBitmap(rows: PixelBitmap.check, cell: PixelInstrument.cell,
-                            gap: PixelInstrument.gap, tone: Ramp.blue[4])
+                            gap: PixelInstrument.gap, tone: IslandRamp.step(4))
                 AppButton("Copy", glyph: nil, kind: .quiet,
                           height: IslandTokens.Size.control, action: onCopy)
                     .frame(width: IslandTokens.Size.copyWidth, alignment: .leading)

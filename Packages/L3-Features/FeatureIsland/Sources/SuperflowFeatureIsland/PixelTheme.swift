@@ -22,8 +22,8 @@ enum PixelInstrument {
 /// brighter so the eye finds the top-left first.
 struct PixelCorners: View {
     var arm: Int = 4
-    var tone: Color = Ramp.blue[3]
-    var hot: Color = Ramp.blue[4]
+    var tone: Color = IslandRamp.step(3)
+    var hot: Color = IslandRamp.step(4)
     /// Brackets sit inside the content so the silhouette's clip never eats them.
     var inset: CGFloat = IslandTokens.Space.sm
 
@@ -65,7 +65,7 @@ struct PixelCorners: View {
 
 extension View {
     /// Registers a readout with pixel corner brackets instead of a border.
-    func pixelFramed(tone: Color = Ramp.blue[3], hot: Color = Ramp.blue[4]) -> some View {
+    func pixelFramed(tone: Color = IslandRamp.step(3), hot: Color = IslandRamp.step(4)) -> some View {
         overlay { PixelCorners(tone: tone, hot: hot) }
     }
 }
@@ -75,7 +75,7 @@ extension View {
 /// A single row of cells used instead of a hairline. It never reaches the
 /// corners, so the registration marks stay clean.
 struct PixelRule: View {
-    var tone: Color = Ramp.blue[1]
+    var tone: Color = IslandRamp.step(1)
     var inset: CGFloat = IslandTokens.Space.sm
 
     @Environment(\.displayScale) private var scale
@@ -111,7 +111,7 @@ struct PixelRule: View {
 struct PixelHeading: View {
     let glyph: [String]
     let title: String
-    var tone: Color = Ramp.blue[4]
+    var tone: Color = IslandRamp.step(4)
     var caption: String?
 
     var body: some View {
@@ -124,7 +124,7 @@ struct PixelHeading: View {
                 Text(caption).appType(IslandTokens.TypeRole.caption)
                     .foregroundStyle(IslandTokens.Color.ink2)
             }
-            PixelRule(tone: Ramp.blue[2])
+            PixelRule(tone: IslandRamp.step(2))
         }
         .frame(height: IslandTokens.Size.glyph)
     }
@@ -199,7 +199,7 @@ enum PixelGlyphs {
 struct PixelBand: View {
     var active: Bool = false
     var cells: Int = 24
-    var tone: Color = Ramp.blue[4]
+    var tone: Color = IslandRamp.step(4)
 
     @Environment(\.displayScale) private var scale
     @Environment(\.islandReduceMotion) private var reduce
@@ -215,9 +215,9 @@ struct PixelBand: View {
                     let distance = abs(index - head)
                     let color: Color
                     if distance == 0 { color = tone }
-                    else if distance <= 2 && active { color = Ramp.blue[3] }
-                    else if distance <= 4 && active { color = Ramp.blue[2] }
-                    else { color = Ramp.blue[1] }
+                    else if distance <= 2 && active { color = IslandRamp.step(3) }
+                    else if distance <= 4 && active { color = IslandRamp.step(2) }
+                    else { color = IslandRamp.step(1) }
                     context.fill(Path(grid.rect(CGRect(x: CGFloat(index) * PixelInstrument.pitch,
                                                        y: 0,
                                                        width: PixelInstrument.cell,
@@ -245,7 +245,7 @@ struct PixelSendMark: View {
             .overlay {
                 PixelBitmap(rows: PixelGlyphs.compose, cell: PixelInstrument.cell,
                             gap: PixelInstrument.gap,
-                            tone: enabled ? Ramp.blue[4] : Ramp.blue[2])
+                            tone: enabled ? IslandRamp.step(4) : IslandRamp.step(2))
                     .allowsHitTesting(false)
             }
             .disabled(!enabled)
@@ -280,9 +280,9 @@ struct PixelFlowRail: View {
                 for cell in 0..<cellsPerChannel {
                     let tone: Color
                     if isActive {
-                        tone = cell == cellsPerChannel / 2 ? Ramp.blue[4] : Ramp.blue[3]
+                        tone = cell == cellsPerChannel / 2 ? IslandRamp.step(4) : IslandRamp.step(3)
                     } else {
-                        tone = Ramp.blue[1]
+                        tone = IslandRamp.step(1)
                     }
                     context.fill(Path(grid.rect(CGRect(x: origin + CGFloat(cell) * pitch,
                                                        y: 0,
@@ -295,7 +295,7 @@ struct PixelFlowRail: View {
                                                        y: 0,
                                                        width: PixelInstrument.cell,
                                                        height: PixelInstrument.cell))),
-                                 with: .color(Ramp.blue[1]), style: FillStyle(antialiased: false))
+                                 with: .color(IslandRamp.step(1)), style: FillStyle(antialiased: false))
                 }
             }
         }
@@ -338,11 +338,11 @@ struct PixelTextSignal: View {
                                                        y: CGFloat(mid) * PixelInstrument.pitch,
                                                        width: PixelInstrument.cell,
                                                        height: PixelInstrument.cell))),
-                                 with: .color(Ramp.blue[2]), style: FillStyle(antialiased: false))
+                                 with: .color(IslandRamp.step(2)), style: FillStyle(antialiased: false))
                     continue
                 }
                 for row in (mid - height)...(mid + height) {
-                    let tone = row == mid - height || row == mid + height ? Ramp.blue[4] : Ramp.blue[3]
+                    let tone = row == mid - height || row == mid + height ? IslandRamp.step(4) : IslandRamp.step(3)
                     context.fill(Path(grid.rect(CGRect(x: x,
                                                        y: CGFloat(row) * PixelInstrument.pitch,
                                                        width: PixelInstrument.cell,
@@ -361,7 +361,7 @@ struct PixelTextSignal: View {
 
 /// A two-pixel caret that marks where the next character lands.
 struct PixelCaret: View {
-    var tone: Color = Ramp.blue[4]
+    var tone: Color = IslandRamp.step(4)
     @Environment(\.displayScale) private var scale
 
     var body: some View {

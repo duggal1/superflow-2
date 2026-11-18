@@ -22,6 +22,27 @@ enum NumberPieces {
         return digits.isEmpty ? nil : (digits, j - start)
     }
 
+    /// A spoken multi-digit integer immediately followed by "point":
+    /// "three seven point four" -> "37.4", "one one two point eight" -> "112.8".
+    /// Without this, the integer head is emitted as separate numbers and the
+    /// coordinate is corrupted ("3 7.4"). Runs of one digit are left to the
+    /// cardinal parser, which already handles them.
+    static func spokenDecimal(_ words: [Word], _ i: Int) -> (value: String, used: Int)? {
+        var whole = ""
+        var j = i
+        while NumberLex.editable(words, j),
+              let digit = NumberLex.units[words[j].key], (1...9).contains(digit) {
+            whole += String(digit)
+            j += 1
+            if words[j - 1].hardBreak { return nil }
+        }
+        guard whole.count >= 2, whole.count <= 4,
+              NumberLex.editable(words, j), words[j].key == "point",
+              !words[j].hardBreak,
+              let fraction = digitsAfter(words, j + 1) else { return nil }
+        return ("\(whole).\(fraction.digits)", j + 1 + fraction.used - i)
+    }
+
     static func digitRun(_ words: [Word], _ i: Int) -> (digits: String, used: Int)? {
         guard words[i].key != "oh", let run = digitsAfter(words, i), run.used >= 3 else { return nil }
         let last = i + run.used - 1
@@ -59,8 +80,11 @@ enum NumberPieces {
         return (head * 100 + Int(tail), used)
     }
 
-    static func clock(_ words: [Word], _ i: Int) -> (String, Int)? {
-        guard let hour = NumberLex.parseCardinal(words, i), !hour.ordinal, !hour.big,
+    static func clock(_ words: [Word], _ i: Int, timeContext: Bool = false) -> (String, Int)? {
+        // A clock hour is never implied hundreds: "three thirty" is 3:30,
+        // not 330. The general cardinal parser must not apply that rule here.
+        guard let hour = NumberLex.parseCardinal(words, i, impliedHundreds: false),
+              !hour.ordinal, !hour.big,
               (1...12).contains(hour.value), !words[i + hour.used - 1].hardBreak else { return nil }
         var j = i + hour.used
         var minutes: UInt64?
@@ -84,6 +108,12 @@ enum NumberPieces {
         } else if ["am", "pm"].contains(key) {
             meridiem = key
             used = 1
+        } else if timeContext, minutes != nil {
+            // "at three thirty" / "by nine twenty" are times even without an
+            // explicit AM/PM. Without this, "three thirty" falls through to the
+            // cardinal parser and becomes 330.
+            meridiem = ""
+            used = 0
         } else { return nil }
         let time = minutes.map { String(hour.value) + ":" + String(format: "%02d", Int($0)) } ?? String(hour.value)
         return (time + meridiem, j + used - i)

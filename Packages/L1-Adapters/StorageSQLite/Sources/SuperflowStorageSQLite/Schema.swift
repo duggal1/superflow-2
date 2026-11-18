@@ -3,7 +3,7 @@ import Foundation
 /// Versioned migrations. Each version is applied inside its own transaction so
 /// a failed upgrade leaves the previous schema intact.
 enum Schema {
-    static let currentVersion: Int32 = 5
+    static let currentVersion: Int32 = 6
 
     static func migrate(_ connection: SQLiteConnection) throws {
         let version = try connection.userVersion
@@ -36,6 +36,17 @@ enum Schema {
             try connection.transaction {
                 try connection.execute(v5)
                 try connection.setUserVersion(5)
+            }
+        }
+        if version < 6 {
+            try connection.transaction {
+                try connection.execute(v6)
+                // External-content FTS tables are populated from their content
+                // tables. `rebuild` is idempotent, so re-running the migration
+                // never duplicates index rows.
+                try connection.execute("INSERT INTO lexicon_search(lexicon_search) VALUES('rebuild')")
+                try connection.execute("INSERT INTO shortcut_search(shortcut_search) VALUES('rebuild')")
+                try connection.setUserVersion(6)
             }
         }
     }
@@ -174,6 +185,52 @@ enum Schema {
     ON learning_candidates(heard, canonical, COALESCE(app_scope, ''));
     CREATE INDEX IF NOT EXISTS learning_candidates_state
     ON learning_candidates(state, updated_at DESC);
+    """
+
+    /// v6 gives the knowledge surface real SQLite full-text search. The FTS
+    /// tables use external content, and triggers keep them in lockstep with
+    /// every insert/update/delete — including writes made outside this file.
+    /// `id` is UNINDEXED because it is a join key, never searchable text.
+    static let v6 = """
+    CREATE VIRTUAL TABLE IF NOT EXISTS lexicon_search USING fts5(
+        id UNINDEXED, canonical, triggers,
+        content='lexicon_entries', content_rowid='rowid',
+        tokenize='porter unicode61'
+    );
+    CREATE TRIGGER IF NOT EXISTS lexicon_search_ai AFTER INSERT ON lexicon_entries BEGIN
+        INSERT INTO lexicon_search(rowid, id, canonical, triggers)
+        VALUES (new.rowid, new.id, new.canonical, new.triggers);
+    END;
+    CREATE TRIGGER IF NOT EXISTS lexicon_search_ad AFTER DELETE ON lexicon_entries BEGIN
+        INSERT INTO lexicon_search(lexicon_search, rowid, id, canonical, triggers)
+        VALUES ('delete', old.rowid, old.id, old.canonical, old.triggers);
+    END;
+    CREATE TRIGGER IF NOT EXISTS lexicon_search_au AFTER UPDATE ON lexicon_entries BEGIN
+        INSERT INTO lexicon_search(lexicon_search, rowid, id, canonical, triggers)
+        VALUES ('delete', old.rowid, old.id, old.canonical, old.triggers);
+        INSERT INTO lexicon_search(rowid, id, canonical, triggers)
+        VALUES (new.rowid, new.id, new.canonical, new.triggers);
+    END;
+
+    CREATE VIRTUAL TABLE IF NOT EXISTS shortcut_search USING fts5(
+        id UNINDEXED, "trigger", content,
+        content='shortcuts', content_rowid='rowid',
+        tokenize='porter unicode61'
+    );
+    CREATE TRIGGER IF NOT EXISTS shortcut_search_ai AFTER INSERT ON shortcuts BEGIN
+        INSERT INTO shortcut_search(rowid, id, "trigger", content)
+        VALUES (new.rowid, new.id, new."trigger", new.content);
+    END;
+    CREATE TRIGGER IF NOT EXISTS shortcut_search_ad AFTER DELETE ON shortcuts BEGIN
+        INSERT INTO shortcut_search(shortcut_search, rowid, id, "trigger", content)
+        VALUES ('delete', old.rowid, old.id, old."trigger", old.content);
+    END;
+    CREATE TRIGGER IF NOT EXISTS shortcut_search_au AFTER UPDATE ON shortcuts BEGIN
+        INSERT INTO shortcut_search(shortcut_search, rowid, id, "trigger", content)
+        VALUES ('delete', old.rowid, old.id, old."trigger", old.content);
+        INSERT INTO shortcut_search(rowid, id, "trigger", content)
+        VALUES (new.rowid, new.id, new."trigger", new.content);
+    END;
     """
 
 }

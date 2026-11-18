@@ -71,8 +71,21 @@ public struct LineFormatter: Sendable {
                 var formatter = LineFormatter(settings: settings)
                 var blocks = formatter.feed(masked)
                 blocks.append(contentsOf: formatter.finish())
-                let formatted = preserver.restore(preserveLists ? joinBlocks(blocks, separator: formatter.separator)
+                var formatted = preserver.restore(preserveLists ? joinBlocks(blocks, separator: formatter.separator)
                     : blocks.joined(separator: formatter.separator))
+                // A trailing hard break can flush the last block from `feed`
+                // before `finish` runs, leaving its pending buffer empty. Close
+                // the final prose line here as a safety net; the guards make it
+                // a no-op when `finish` already added the period, and preserve
+                // the short-text rule from `shouldAddFinalPeriod` (no period
+                // for three words or fewer).
+                if settings.finalPeriod, wordCount(formatted) > 3,
+                   !formatted.isEmpty,
+                   let last = formatted.last, !".?!…:;".contains(last),
+                   let lastLine = formatted.components(separatedBy: "\n").last,
+                   !ListFormatter.isListLine(lastLine) {
+                    formatted.append(".")
+                }
                 if !formatted.isEmpty { output.append(formatted) }
             }
         }

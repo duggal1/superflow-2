@@ -95,7 +95,7 @@ private struct PixelCardFooter: View {
 
     var body: some View {
         VStack(spacing: IslandTokens.Space.xs) {
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
             PixelBand(active: active, cells: 24)
         }
     }
@@ -110,7 +110,7 @@ private struct UndoView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PixelHeading(glyph: PixelGlyphs.warning, title: "Cancelled.", tone: Ramp.blue[3])
+            PixelHeading(glyph: PixelGlyphs.warning, title: "Cancelled.", tone: IslandRamp.step(3))
                 .padding(.horizontal, IslandTokens.Size.cardPad)
                 .frame(height: IslandTokens.Size.band)
             PixelFlowRail(active: 2)
@@ -154,7 +154,7 @@ private struct ThinkingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
-            PixelHeading(glyph: PixelGlyphs.thinking, title: "Thinking", tone: Ramp.blue[3])
+            PixelHeading(glyph: PixelGlyphs.thinking, title: "Thinking", tone: IslandRamp.step(3))
             PixelFlowRail(active: 3)
             if !query.isEmpty {
                 Text(query).appType(IslandTokens.TypeRole.body)
@@ -172,11 +172,11 @@ private struct ThinkingView: View {
                     .foregroundStyle(IslandTokens.Color.ink2)
             }
             Spacer(minLength: 0)
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .pixelFramed(tone: Ramp.blue[2], hot: Ramp.blue[3])
+        .pixelFramed(tone: IslandRamp.step(2), hot: IslandRamp.step(3))
     }
 }
 
@@ -210,11 +210,11 @@ private struct ErrorView: View {
                 }
                 Spacer(minLength: 0)
             }
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .pixelFramed(tone: Ramp.blue[2], hot: IslandTokens.Color.danger)
+        .pixelFramed(tone: IslandRamp.step(2), hot: IslandTokens.Color.danger)
     }
 
     private var dismiss: some View {
@@ -268,10 +268,10 @@ private struct PermissionView: View {
                           height: IslandTokens.Size.control, action: context.actions.openPermissionSettings)
                 Spacer(minLength: 0)
             }
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .pixelFramed(tone: Ramp.blue[2], hot: IslandTokens.Color.danger)
+        .pixelFramed(tone: IslandRamp.step(2), hot: IslandTokens.Color.danger)
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import os
 import llama
 import SuperflowKernel
 import SuperflowPorts
@@ -45,16 +46,27 @@ public actor LlamaCppRuntime: LlamaRuntime {
     private var loadedURL: URL?
     private let sessionCount: Int
 
-    /// Up to ten contexts let a long transcript fan out across ~800-token S1
-    /// chunks. Loaded lazily on first dictation, so launch never parks memory.
-    /// The count is bounded by installed RAM; tiny machines keep fewer lanes.
+    /// A pool this large is only useful on a machine with enough memory *and*
+    /// cores. HEX's reconnaissance found that more native threads than usable
+    /// CPUs made tail latency worse without improving medians. On this app the
+    /// same applies to contexts: six concurrent Metal contexts on an 8 GB M1
+    /// made `llama_decode` fail during warm-up, so S1 never became ready.
     public static let maximumSessions = 10
     public static var recommendedSessionCount: Int {
         let gigabytes = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
-        if gigabytes >= 16 { return maximumSessions }
-        if gigabytes >= 8 { return 8 }
-        return 6
+        let cores = ProcessInfo.processInfo.activeProcessorCount
+        // One decode lane needs ~2 compute threads; never oversubscribe.
+        let byMemory = Int(gigabytes / 2)
+        let byCores = cores / 2
+        return min(maximumSessions, max(3, min(byMemory, byCores)))
     }
+
+    private static let runtimeLog = Logger(subsystem: "com.superflow.llm", category: "runtime")
+
+    /// Contexts that survived warm-up. A context that fails its first decode is
+    /// discarded rather than poisoning later requests; if none survive, load
+    /// fails loudly instead of pretending S1 is ready.
+    public private(set) var activeSessionCount: Int = 0
 
     public init(sessions: Int = LlamaCppRuntime.recommendedSessionCount) {
         sessionCount = min(LlamaCppRuntime.maximumSessions, max(1, sessions))
@@ -73,14 +85,17 @@ public actor LlamaCppRuntime: LlamaRuntime {
             throw SuperflowError.modelUnavailable("llama.cpp could not access the model vocabulary")
         }
         let loadedModel = LlamaModel(pointer: pointer, vocabulary: vocabulary)
-        let cores = ProcessInfo.processInfo.activeProcessorCount
-        let generationThreads = Int32(max(2, cores / 2))
-        let batchThreads = Int32(max(2, cores))
+        let cores = max(2, ProcessInfo.processInfo.activeProcessorCount)
+        // Split the CPU budget across contexts instead of giving every context
+        // all cores. 2 sessions x 4 threads is 8 threads on this M1; the old
+        // 6 sessions x 8 threads was 48 threads fighting for 8 cores.
+        let generationThreads = Int32(max(2, min(4, cores / max(1, sessionCount))))
+        let batchThreads = Int32(min(cores, Int(generationThreads) + 2))
         var sessions: [LlamaSession] = []
         for _ in 0..<sessionCount {
             var params = llama_context_default_params()
             // Leave room for the S1 prompt, up to 850 input tokens, and the
-            // model's 1.3x + 32 output budget without clipping generation.
+            // output budget without clipping generation.
             params.n_ctx = 3_072
             params.n_batch = 1_024
             params.n_ubatch = 512
@@ -91,20 +106,28 @@ public actor LlamaCppRuntime: LlamaRuntime {
             }
             sessions.append(LlamaSession(model: loadedModel, context: context))
         }
-        // Sessions own independent contexts. Warming them one after another paid
-        // the graph/buffer warm-up cost N times in series on every load.
-        let warmupPrompt = LlamaPrompt.render(text: "hello there", options: CleanOptions())
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            for session in sessions {
-                group.addTask {
-                    _ = try Self.decode(prompt: warmupPrompt, maxTokens: 32, session: session,
-                                        deadline: .now.advanced(by: .seconds(30)))
-                }
+        // Warm-up is sequential and short. Six simultaneous Metal graph builds
+        // exhausted the 8 GB M1 and made llama_decode fail before any session
+        // became useful. A small greedy pass still installs the Metal pipeline.
+        let warmupPrompt = LlamaPrompt.render(text: "hello", options: CleanOptions())
+        var warmed: [LlamaSession] = []
+        warmed.reserveCapacity(sessions.count)
+        for session in sessions {
+            do {
+                _ = try Self.decode(prompt: warmupPrompt, maxTokens: 8, session: session,
+                                    deadline: .now.advanced(by: .seconds(15)))
+                warmed.append(session)
+            } catch {
+                Self.runtimeLog.warning("Dropping S1 context after warm-up failure: \(error.localizedDescription, privacy: .public)")
             }
-            try await group.waitForAll()
         }
+        guard !warmed.isEmpty else {
+            throw SuperflowError.modelUnavailable("llama.cpp could not warm any S1 context")
+        }
+        Self.runtimeLog.info("S1 ready: \(warmed.count, privacy: .public)/\(sessions.count, privacy: .public) contexts, \(generationThreads, privacy: .public) threads each")
         model = loadedModel
-        pool = WorkerPool(sessions)
+        pool = WorkerPool(warmed)
+        activeSessionCount = warmed.count
         loadedCompute = compute
         loadedURL = modelURL
     }

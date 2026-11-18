@@ -36,7 +36,7 @@ enum NumberLex {
         var big = false
     }
 
-    static func parseCardinal(_ words: [Word], _ start: Int) -> Parsed? {
+    static func parseCardinal(_ words: [Word], _ start: Int, impliedHundreds: Bool = true) -> Parsed? {
         enum Last { case start, unit, teen, tens, tensUnit, hundred, scale }
         guard editable(words, start) else { return nil }
         var last = Last.start
@@ -71,8 +71,16 @@ enum NumberLex {
                 guard let next = add(current, unit) else { return nil }
                 current = next
             } else if let ten = tens[key] {
-                guard [.start, .hundred, .scale].contains(last), let next = add(current, ten) else { break loop }
-                current = next
+                if impliedHundreds, last == .unit, (1...9).contains(current) {
+                    // Spoken implied hundreds: "one forty" is 140, "one thirty
+                    // over eighty" is 130 over 80. Without this the active
+                    // pipeline emits "one 40" and corrupts medical facts.
+                    guard let scaled = multiply(current, 100), let next = add(scaled, ten) else { break loop }
+                    current = next
+                } else {
+                    guard [.start, .hundred, .scale].contains(last), let next = add(current, ten) else { break loop }
+                    current = next
+                }
                 last = .tens
             } else if key == "hundred" {
                 guard [.unit, .teen].contains(last), current < 100,

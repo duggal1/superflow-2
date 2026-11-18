@@ -46,13 +46,33 @@ public final class DictionaryViewModel: ObservableObject {
     }
 
     public var visibleEntries: [LexiconEntry] {
-        entries
+        let matched = Set(search(query).map(\.id))
+        return entries
             .filter { filter.kind == nil || $0.kind == filter.kind }
-            .filter { matches($0, query: query) }
+            .filter { matched.contains($0.id) }
             .sorted { lhs, rhs in
                 if lhs.enabled != rhs.enabled { return lhs.enabled }
-                return lhs.canonical.localizedCaseInsensitiveCompare(rhs.canonical) == .orderedAscending
+                let name = lhs.canonical.localizedCaseInsensitiveCompare(rhs.canonical)
+                if name != .orderedSame { return name == .orderedAscending }
+                return lhs.id < rhs.id
             }
+    }
+
+    /// Tokenised, multi-term (AND), case/diacritic-insensitive full-text search
+    /// with a stable ranking. An empty query returns every entry.
+    public func search(_ query: String) -> [LexiconEntry] {
+        let scored: [(entry: LexiconEntry, score: Int)] = entries.compactMap { entry in
+            guard let score = KnowledgeTextSearch.score(
+                query: query, fields: [entry.canonical] + entry.triggers) else { return nil }
+            return (entry, score)
+        }
+        return scored.sorted { lhs, rhs in
+            if lhs.score != rhs.score { return lhs.score > rhs.score }
+            if lhs.entry.enabled != rhs.entry.enabled { return lhs.entry.enabled }
+            let name = lhs.entry.canonical.localizedCaseInsensitiveCompare(rhs.entry.canonical)
+            if name != .orderedSame { return name == .orderedAscending }
+            return lhs.entry.id < rhs.entry.id
+        }.map(\.entry)
     }
 
     public var userEntryCount: Int { entries.filter { $0.source == .user }.count }
@@ -159,51 +179,74 @@ public final class DictionaryViewModel: ObservableObject {
                 toast.show(LexiconDocumentError.noEntries.localizedDescription, style: .warning)
                 return LexiconImportResult()
             }
-            var result = LexiconImportResult()
-            var known = Set(entries.flatMap { $0.triggers.map(LexiconValidation.normalized) })
-            var knownIDs = Set(entries.map(\.id))
-            for raw in document.entries {
-                let draft = LexiconDraft(entry: raw).cleaned
-                let keys = draft.triggers.map(LexiconValidation.normalized)
-                guard !draft.triggers.isEmpty, !draft.canonical.isEmpty,
-                      draft.canonical.count <= LexiconValidation.maxCanonicalLength,
-                      keys.allSatisfy({ !$0.isEmpty && !known.contains($0) }) else {
-                    result.skipped += 1
-                    continue
-                }
-                var entry = draft.entry
-                entry.source = .user
-                if entry.id.isEmpty || knownIDs.contains(entry.id) {
-                    entry.id = UUID().uuidString
-                }
-                do {
-                    try await repository.saveLexicon(entry)
-                    entries.append(entry)
-                    keys.forEach { known.insert($0) }
-                    knownIDs.insert(entry.id)
-                    result.imported += 1
-                    let risky = draft.triggers.filter { CommonWords.isRisky(trigger: $0) }
-                    if !risky.isEmpty {
-                        result.warnings.append("“\(risky.joined(separator: ", "))” uses common words.")
-                    }
-                } catch {
-                    result.skipped += 1
-                }
-            }
-            await load()
-            onChange?()
-            toast.show(result.summary, style: result.imported > 0 ? .success : .warning)
-            return result
+            return await applyImport(document.entries)
         } catch {
             toast.show("Could not import this file. \(error.localizedDescription)", style: .error)
             return LexiconImportResult()
         }
     }
 
-    private func matches(_ entry: LexiconEntry, query: String) -> Bool {
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !needle.isEmpty else { return true }
-        if entry.canonical.localizedCaseInsensitiveContains(needle) { return true }
-        return entry.triggers.contains { $0.localizedCaseInsensitiveContains(needle) }
+    /// Deterministic, newline-free plain-text export of user entries.
+    public func exportPlainText() -> String {
+        LexiconPlainText.encode(entries.filter { $0.source == .user })
+    }
+
+    public func importPlainText(_ text: String) async -> LexiconImportResult {
+        let parsed = LexiconPlainText.decode(text)
+        guard !parsed.records.isEmpty else {
+            toast.show(LexiconDocumentError.noEntries.localizedDescription, style: .warning)
+            return LexiconImportResult(skipped: parsed.malformed)
+        }
+        let imported = parsed.records.map { record -> LexiconEntry in
+            let isTerm = record.triggers.contains {
+                LexiconValidation.normalized($0) == LexiconValidation.normalized(record.canonical)
+            }
+            return LexiconEntry(kind: isTerm ? .term : .correction,
+                                triggers: record.triggers, canonical: record.canonical)
+        }
+        return await applyImport(imported, extraSkipped: parsed.malformed)
+    }
+
+    /// Shared import pipeline for JSON and plain text. Per-row problems are
+    /// skipped and counted; a repository failure never mutates local state for
+    /// that row.
+    private func applyImport(_ incoming: [LexiconEntry],
+                             extraSkipped: Int = 0) async -> LexiconImportResult {
+        var result = LexiconImportResult(skipped: extraSkipped)
+        var known = Set(entries.flatMap { $0.triggers.map(LexiconValidation.normalized) })
+        var knownIDs = Set(entries.map(\.id))
+        for raw in incoming {
+            let draft = LexiconDraft(entry: raw).cleaned
+            let keys = draft.triggers.map(LexiconValidation.normalized)
+            guard !draft.triggers.isEmpty, !draft.canonical.isEmpty,
+                  draft.canonical.count <= LexiconValidation.maxCanonicalLength,
+                  draft.triggers.allSatisfy({ $0.count <= LexiconValidation.maxTriggerLength }),
+                  keys.allSatisfy({ !$0.isEmpty && !known.contains($0) }) else {
+                result.skipped += 1
+                continue
+            }
+            var entry = draft.entry
+            entry.source = .user
+            if entry.id.isEmpty || knownIDs.contains(entry.id) {
+                entry.id = UUID().uuidString
+            }
+            do {
+                try await repository.saveLexicon(entry)
+                entries.append(entry)
+                keys.forEach { known.insert($0) }
+                knownIDs.insert(entry.id)
+                result.imported += 1
+                let risky = draft.triggers.filter { CommonWords.isRisky(trigger: $0) }
+                if !risky.isEmpty {
+                    result.warnings.append("“\(risky.joined(separator: ", "))” uses common words.")
+                }
+            } catch {
+                result.skipped += 1
+            }
+        }
+        await load()
+        onChange?()
+        toast.show(result.summary, style: result.imported > 0 ? .success : .warning)
+        return result
     }
 }

@@ -1,0 +1,681 @@
+{
+  "corpusSize": 30,
+  "cases": [
+    {
+      "id": "long-engineering-architecture-meeting",
+      "tier": "long",
+      "swiftTest": "testLongEngineeringArchitectureMeeting",
+      "input": "okay so um let's get started the the agenda today is uh the the auth service migration and and what we're seeing in staging right now so Sarah you want to kick us off yeah sure um so yesterday we we deployed the the new token validation path to staging and and immediately the p ninety nine latency went from two hundred milliseconds to uh one point four seconds which is obviously not acceptable the the graph is in the the dashboard link in the channel um I think the the root cause is the the JWKS cache is is being re-fetched on every request because uh because the the key rotation flag is is set to true in in staging but not in prod so what we think is happening is the the cache key includes the the timestamp which which changes each time you know when you call it anyway I I can fix that this afternoon no wait tomorrow morning because I've got the the performance review at four p m today okay so the the plan is first uh bump the the cache ttl from sixty seconds to three hundred seconds no wait actually no six hundred seconds sorry three hundred is fine second add a a circuit breaker around the the JWKS fetch with a a five hundred millisecond timeout and and third add structured logging with the the request id so we can trace it in in open telemetry dash no wait we use datadog dash okay datadog um the the rollback plan is simple we just flip the the feature flag auth dot new validator dot enabled back to false and and the the old path comes back within thirty seconds question from me does this affect the the mobile clients at all because they they pinned the the old certificate i think no because the the JWKS endpoint is unchanged we're only changing uh how often we we read it but I'll confirm with the the platform team before friday and and post in the the thread okay action items Sarah owns the the cache ttl and the the circuit breaker by thursday I'll own the the logging and the the datadog dashboard by wednesday and and we'll re-run the the load test at ten a m on friday um if the p ninety nine is is still above two hundred fifty milliseconds we we roll back and we we revisit the the whole design next monday that's it thanks everyone",
+      "required": [
+        "sarah",
+        "staging",
+        "jwks",
+        "p 99",
+        "300",
+        "1.4",
+        "datadog",
+        "circuit breaker",
+        "thursday",
+        "wednesday",
+        "friday",
+        "roll back",
+        "mobile"
+      ],
+      "forbidden": [
+        "four p m today",
+        "six hundred",
+        "one point four seconds"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-code-heavy-dictation",
+      "tier": "long",
+      "swiftTest": "testLongCodeHeavyDictation",
+      "input": "okay open src slash features slash auth slash token dash validator dot t s and and find the the function validate token no wait validate token with j w k s um inside it we we currently do const result equals await fetch j w k s with the the url and and we want to change that to use the the shared cache so first import cache client from at superflow slash core slash cache then replace the fetch with cache dot get or else open paren quote jwks colon prod quote comma async arrow fetch jwks close paren um the the cache ttl should be three hundred not three thousand okay three hundred seconds and and make sure the the key is is a template string with the the issuer not the the timestamp that's the bug right there the the timestamp makes the the key unique every call so the the cache never hits then add try catch around it and and on error return null instead of throwing because the the caller already handles the the null case you know and and update the the unit test in tests slash auth slash token dash validator dot test dot t s the the mock should return a a fixture with two keys not one no wait actually three keys because we we test key rotation okay three keys and and assert that cache dot get was called exactly once for two sequential calls to to validate token if that fails we we have a a regression also rename the the variable res to to validation result because res is is too vague and and please keep the the export signature unchanged it's is exported as validate token with jwks from the the index file and and don't change the the public a p i otherwise the the billing service breaks okay that's everything",
+      "required": [
+        "src/features/auth/token-validator.ts",
+        "validateTokenWithJWS",
+        "cache.get",
+        "300",
+        "issuer",
+        "timestamp",
+        "regression",
+        "billing service",
+        "api"
+      ],
+      "forbidden": [
+        "src slash",
+        "dot t s",
+        "res equals",
+        "three thousand"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-sales-call-transcript",
+      "tier": "long",
+      "swiftTest": "testLongSalesCallTranscript",
+      "input": "hey mark thanks for for hopping on um so I I wanted to to go over the the proposal we sent last Thursday you know before the the end of quarter I think there's a a good fit here but I want to be honest about the the numbers so the the standard plan is uh nine hundred dollars per month for up to twenty five seats and the the enterprise plan is two thousand two hundred dollars per month with uh with unlimited seats and sso and and the the audit log now you mentioned you've got about forty engineers so the the enterprise plan is is the right one you know but I can do two thousand dollars flat if we sign by friday the the thirtieth no wait the end of the the month is the the thirty first sorry the thirty first okay two thousand flat through the the end of the the first year and then it reverts to the the list price of two thousand two hundred with a a five percent uplift cap after that um the the onboarding is included we'll do the the data migration within two weeks and and we assign a a dedicated success manager I'll introduce you to to her her name is Priya she she starts monday okay questions yeah I have a a few so does the the two thousand include the the premium support tier because the the proposal said premium is is extra yeah good catch um premium support is normally four hundred a a month but for you I'll bundle it free for the the first six months after that it's it's four hundred unless you you go annual then it's it's included okay and and what about the the sso and and the scim provisioning both included in in enterprise no add ons there and and the the dpa is already signed right we we signed the the dpa last month yes yeah it's it's done legal approved it on the the twelfth of November okay um one more thing can we get a a thirty day out clause in in the first year I I can't do thirty I can do sixty days notice after month six with a a ninety day notice before that okay that's probably fine I'll run it by finance and and get back to you by Wednesday no wait Tuesday morning because Thursday is is a holiday here okay Tuesday and and if we sign by the the thirty first you you still get the the two thousand price right yes locked in until the the end of the the month okay great I'll send the the redline tonight thanks Mark",
+      "required": [
+        "mark",
+        "900",
+        "2000",
+        "2200",
+        "25 seats",
+        "40 engineers",
+        "priya",
+        "premium support",
+        "sso",
+        "dpa",
+        "wednesday",
+        "tuesday",
+        "redline",
+        "thirty first"
+      ],
+      "forbidden": [
+        "thirty",
+        "four hundred a month"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-medical-dictation",
+      "tier": "long",
+      "swiftTest": "testLongMedicalDictation",
+      "input": "progress note for uh mister James Wilson date the the eighteenth of November twenty twenty six chief complaint persistent cough and and low grade fever for four days um the patient is a a fifty six year old male with a a history of type two diabetes and and hypertension he presents with a a dry cough worse at night subjective fever around one hundred and one point five fahrenheit no shortness of breath no chest pain um he did have some mild sore throat two days ago vitals blood pressure one thirty over eighty heart rate eighty eight respiratory rate eighteen oxygen saturation ninety eight percent on room air temperature one hundred point eight fahrenheit physical exam lungs are clear to auscultation bilaterally no wheezes no rales no rhonchi throat is is mildly erythematous no exudate no cervical lymphadenopathy assessment uh acute bronchitis likely viral given the the lack of of consolidation on exam and the the normal oxygen sat differential includes uh covid nineteen influenza and and acute bacterial bronchitis plan we'll do a a rapid covid and flu panel today if positive we'll manage supportively if negative and symptoms persist beyond ten days we'll consider azithromycin five hundred milligrams on day one then two hundred and fifty milligrams days two through five no wait that's the the z pack for bacterial sinusitis for bronchitis we'll hold antibiotics for now um continue metformin five hundred milligrams twice daily continue lisinopril ten milligrams daily hold the the ace inhibitor only if the the creatinine rises above one point five encourage fluids rest acetaminophen five hundred milligrams every six hours as needed for fever return precautions if he develops shortness of breath chest pain or fever above one hundred and two follow up in in one week or sooner if symptoms worsen discussed with the the patient he he understands and and agrees with the the plan",
+      "required": [
+        "james wilson",
+        "type two diabetes",
+        "hypertension",
+        "101.5",
+        "98",
+        "140/90",
+        "bronchitis",
+        "azithromycin",
+        "metformin",
+        "lisinopril",
+        "1.5",
+        "acetaminophen",
+        "covid"
+      ],
+      "forbidden": [
+        "1 point 5",
+        "ninety eight percent"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-legal-transcript",
+      "tier": "long",
+      "swiftTest": "testLongLegalTranscript",
+      "input": "okay we're on the the record it's it's the the fourteenth of November twenty twenty six at ten fifteen a m we're here for the the deposition of of mister Daniel Reeves in the matter of of Harris versus Northwind Logistics case number twenty four c v eight eight seven one um counsel please state your appearances thank you I'm Sarah Chen for the the plaintiff and and I'm Robert Vance for the the defendant mr Reeves you you understand you're under oath yes yes I do um do you understand that your testimony is being recorded and transcribed yes okay let's start can you state your full name for the the record Daniel James Reeves spelled R E E V E S and and your current employer I I work for Northwind Logistics as a a regional operations manager how long have you held that position since March of of twenty twenty one okay and and on the the evening of of the sixth of June twenty twenty five were you present at the the distribution center in in Columbus yes I was I I had arrived around uh six thirty p m and I stayed until approximately nine forty five p m the the question is did you observe the the forklift incident involving mister Harris I I did not personally witness the the collision I I was in in the the office at the the time but I I did hear the the alarm and and I reviewed the the security footage the next morning object hearsay I'll withdraw the the portion about the the footage let me rephrase did you review any documentation yes I I reviewed the the incident report dated the the seventh of June and and the the maintenance log for forklift number fourteen which which showed the the brake inspection had been skipped on the the previous shift is that your signature on the the bottom of of the report yes it is but I I signed it after the the fact I did not personally verify the the inspection okay um one last question was the the warehouse floor wet that evening I I cannot say for certain there there was a a cleanup crew mopping near bay seven around uh five p m but I I did not see any standing water near the the incident site okay we can go off the the record",
+      "required": [
+        "daniel james reeves",
+        "northwind logistics",
+        "harris",
+        "24-cv-8871",
+        "columbus",
+        "june",
+        "forklift",
+        "brake inspection",
+        "signature",
+        "bay seven",
+        "hearsay"
+      ],
+      "forbidden": [
+        "the the the"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-finance-earnings-call",
+      "tier": "long",
+      "swiftTest": "testLongFinanceEarningsCall",
+      "input": "good morning everyone and and welcome to the the Q three twenty twenty six earnings call um I'm Priya Raman the the C F O and and with me today is is our C E O mister David Okoye before we begin let me remind everyone that today's discussion contains forward looking statements and and actual results may differ materially you you can find the the reconciliation of of non G A A P metrics in in the the press release on our investor relations site okay with that out of of the the way revenue for the the quarter was two point four billion dollars up eighteen percent year over year and and twelve percent sequentially gross margin was sixty two percent compared with fifty nine percent in in the the prior year the the improvement was driven by the the enterprise subscription tier and and better utilization of of our inference infrastructure operating expenses were one point six billion dollars including seven hundred million in in research and development and and four hundred million in in sales and marketing operating income was uh eight hundred and eighty million dollars giving us a a thirty seven percent operating margin um cash flow from operations was one point one billion dollars and and we ended the the quarter with four point two billion in in cash and short term investments capex was two hundred and thirty million primarily for the the new data center in in Oregon now for guidance for Q four we're expecting revenue between two point six and and two point seven billion dollars gross margin of sixty three to sixty four percent and and full year free cash flow of at least two point eight billion dollars um we're also raising the the full year revenue guidance to nine point four billion at the the midpoint from the the previous nine point one billion the the main assumption behind this is continued adoption of of the enterprise tier and and no major deterioration in in the the macro environment analyst question yes hi this is is Mark from Morgan Stanley can you talk about the the churn you you saw in in the the small business segment yeah sure um small business churn was three point four percent in in the quarter up from two point eight percent last quarter but it's it's still within our historical range and and the the enterprise churn actually improved to one point one percent we we don't see any structural issue there okay and and on the the buyback we we repurchased five hundred million dollars of of stock during the quarter and and the the board has authorized an additional one billion program with no expiration date operator we'll take one more question",
+      "required": [
+        "q 3",
+        "2.4 billion",
+        "18%",
+        "62%",
+        "1.6 billion",
+        "37%",
+        "4.2 billion",
+        "q 4",
+        "2.6",
+        "2.7",
+        "9.4",
+        "3.4%",
+        "1.1%",
+        "morgan stanley",
+        "oregon"
+      ],
+      "forbidden": [
+        "two point four billion",
+        "sixty two percent"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-academic-lecture",
+      "tier": "long",
+      "swiftTest": "testLongAcademicLecture",
+      "input": "okay so today we're going to to talk about transformer attention and and why the the quadratic cost matters um let's start with the the basic equation attention of of Q K V equals softmax of Q K transpose over root d k times V where Q is is the query matrix K is is the key matrix and V is is the value matrix and d k is is the the dimension of of the key vectors the the softmax is applied row wise so each token attends to to every other token and that gives you a an n squared matrix where n is is the the sequence length now for a a sequence of of two thousand tokens that's four million attention scores per head and and if you have sixteen heads that's sixty four million scores per layer and with thirty two layers you you get about two billion scores for a single forward pass which is why long context is is expensive you know there are several approaches to to reduce this one is sparse attention where you only compute a a subset of of the the scores for example local window attention with a a window of of five hundred twelve tokens or pattern based attention like the the long former paper another approach is linear attention where you approximate the the softmax kernel with a a feature map so you can compute K transpose V first and and avoid materializing the n by n matrix the the linear transformer paper from twenty twenty covers that and and then there's flash attention which which doesn't reduce the asymptotic complexity at all but it it tiles the the computation so it fits in in S R A M and avoids writing the the intermediate matrix to H B M that gave like a a two to four x speedup in in practice and lower memory the the key reference is is Dao et al twenty twenty two the the main takeaway for for today is distinguish algorithmic complexity from constant factor optimizations flash attention is is the latter sparse and linear attention are are the former um for next week please read the the original attention is all you need paper and and the the flash attention paper and and be prepared to discuss the the trade offs the the problem set is posted on the the course site due next thursday at eleven fifty nine p m",
+      "required": [
+        "softmax",
+        "query",
+        "key",
+        "value",
+        "quadratic",
+        "n squared",
+        "sparse attention",
+        "flash attention",
+        "sram",
+        "dao",
+        "attention is all you need",
+        "thursday"
+      ],
+      "forbidden": [
+        "root d k times",
+        "two thousand tokens that's four million"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-customer-support-escalation",
+      "tier": "long",
+      "swiftTest": "testLongCustomerSupportEscalation",
+      "input": "hi this is is ticket number S U P P nine eight seven six two following up on the the chargeback issue from last week um so the the customer Mrs. Higgins called again this morning she she says she was charged twice for the the November subscription the the two charges are uh one hundred and nineteen dollars on the the first of November and another one hundred and nineteen dollars on the the third of November she she already has the the receipt for the the first one but the the second one does not appear in in her her billing history in in the portal I I checked stripe and and there are indeed two successful charges with different payment intent ids P I underscore three two one and and P I underscore three two two the the second one has a a status of succeeded but no corresponding invoice was generated so I I think the the webhook failed or was delivered twice the the customer is is understandably upset because she she already disputed the the first charge with her bank on the the fifth and now she's seeing a second one I've escalated this to to the the payments team with priority high and and I've attached the the stripe logs and and a a screenshot of of the the portal under ticket S U P P nine eight seven six two what we need is to to issue a a refund for the the second charge one hundred and nineteen dollars and and make sure the the duplicate payment intent is is not reprocessed also can someone check why the the invoice webhook didn't fire so this doesn't happen to to other customers the the customer wants confirmation by Wednesday noon she she is is traveling Thursday and and wants this resolved before then I told her we'd email by Tuesday at the latest but if we can do Wednesday that's fine too no wait I said Tuesday so we should honor that please reply to to the the customer thread directly and and cc me and and the the payments on call thanks",
+      "required": [
+        "supp-98762",
+        "119",
+        "november",
+        "stripe",
+        "payment intent",
+        "refund",
+        "webhook",
+        "higgins",
+        "tuesday",
+        "payments team",
+        "disputed"
+      ],
+      "forbidden": [
+        "two hundred and thirty eight",
+        "does not appear in in her"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-science-lab-notes",
+      "tier": "long",
+      "swiftTest": "testLongScienceLabNotes",
+      "input": "experiment run four two on the the eighteenth of November twenty twenty six operator uh doctor Elena Vasquez objective measure the the binding affinity of of compound A B C one two three against the the target protein under varying salt concentrations protocol we prepared a a series of of phosphate buffered saline solutions at uh ten millimolar fifty millimolar and one hundred and fifty millimolar sodium chloride p H was adjusted to seven point four using hydrochloric acid and verified with a a calibrated meter the the protein concentration was two milligrams per milliliter determined by the the bradford assay with bovine serum albumin as the standard compound A B C one two three was dissolved in dimethyl sulfoxide to to a a stock concentration of ten millimolar and then diluted serially to to final concentrations ranging from one nanamolar to one hundred micromolar um the the measurements were performed on the the surface plasmon resonance instrument at twenty five degrees celsius with a a flow rate of thirty microliters per minute each concentration was injected for ninety seconds followed by a a two minute washout and and each run was repeated in triplicate results the the dissociation constant K D at ten millimolar salt was four point two nanomolar at fifty millimolar it it increased to seven point eight nanomolar and and at one hundred and fifty millimolar it was twenty three point one nanomolar suggesting the the interaction is is at least partially electrostatic the the association rate stayed roughly constant around two point one times ten to the fifth molar inverse seconds inverse while the the dissociation rate increased with salt anomalies run two of of the one hundred micromolar injection showed bubble formation in in the flow cell and was excluded from the the fit conclusion salt strongly modulates binding and and we should repeat with a a lower salt condition next week all raw sensor grams are in the the shared drive under A B C one two three slash run four two",
+      "required": [
+        "elena vasquez",
+        "abc-123",
+        "phosphate buffered saline",
+        "7.4",
+        "bradford",
+        "surface plasmon resonance",
+        "25",
+        "nanomolar",
+        "23.1",
+        "electrostatic",
+        "triplicate",
+        "sensor grams"
+      ],
+      "forbidden": [
+        "one hundred and fifty millimolar sodium chloride p H"
+      ],
+      "minRetention": 0.45
+    },
+    {
+      "id": "long-gaming-session",
+      "tier": "long",
+      "swiftTest": "testLongGamingSession",
+      "input": "okay okay so we're dropping at uh coordinates three seven point four north one one two point eight east near the the old radar station you you want to to go left or right I say left left there's a a supply drop coming in in approximately forty five seconds mark it on the the map okay marked um I've got the the sniper and and two med kits and and one grenade you should pick up the the armor plate near the the blue container yeah I I see it I I that's actually a a level three helmet not armor take the the helmet okay nice uh enemy movement at the the north ridge about two hundred meters out I count three maybe four one of them has a a red marker so probably the the squad leader don't engage yet let them come to to the the circle the the zone closes in in two minutes and thirty seconds we we need to rotate east toward the the rock formation not west west is is open ground yeah good call okay I'm going to to pop the smoke now wait for my signal three two one go smoke is is out move move move I'm reloading I'm reloading cover me okay I I knocked one down he's crawling behind the the wall finish him nice one down two on the the right I'm out of of ammo do you have any five five six rounds I've got sixty rounds and and a a spare magazine here take half um the the last team is is in in the the final circle probably seven or eight players left we should hold the the high ground and and let them fight each other the the zone is is shrinking fast okay I can see movement in in the the southeast someone is is crawling I'm going to to throw the the last grenade should land in in about three seconds boom okay that that was a a good one let's push we've got maybe thirty seconds before the the next zone finish them",
+      "required": [
+        "37.4",
+        "112.8",
+        "45 seconds",
+        "level three helmet",
+        "north ridge",
+        "200 meters",
+        "two minutes",
+        "smoke",
+        "5.56",
+        "grenade",
+        "high ground",
+        "southeast"
+      ],
+      "forbidden": [],
+      "minRetention": 0.45
+    },
+    {
+      "id": "standup",
+      "tier": "diversity",
+      "swiftTest": "testDomainStandup",
+      "input": "so um yesterday I I I finished the the login page no wait the log in page and and today I'm going to to review Priya's pull request for the the billing API unless uh unless the the schema changes you know then I'll pair with her instead",
+      "required": [
+        "log in",
+        "priya",
+        "billing",
+        "api",
+        "schema",
+        "pair"
+      ],
+      "forbidden": [
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "sales-call",
+      "tier": "diversity",
+      "swiftTest": "testDomainSalesCall",
+      "input": "yeah so the the list price is uh two thousand two hundred a month but but if you sign by Friday the the thirtieth no wait the thirty first I can do two thousand flat and and premium support is is included for six months okay",
+      "required": [
+        "2200",
+        "2000",
+        "friday",
+        "31",
+        "premium support",
+        "six months"
+      ],
+      "forbidden": [
+        "thirtieth",
+        "two thousand two hundred a month"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "coding-interview",
+      "tier": "diversity",
+      "swiftTest": "testDomainCodingInterview",
+      "input": "okay so the the question is is given an array of of integers return the the indices of of the two numbers that add up to to the the target um I I would use a a hash map you know store each value's complement and and check as you iterate the the time complexity is is O of n and the space is is O of n as well wait actually we can do it in in one pass sure",
+      "required": [
+        "array",
+        "integers",
+        "indices",
+        "target",
+        "hash map",
+        "o(n)",
+        "one pass"
+      ],
+      "forbidden": [
+        "the the",
+        "um "
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "journal-personal",
+      "tier": "diversity",
+      "swiftTest": "testDomainJournalPersonal",
+      "input": "dear diary um today was uh was kind of hard I I I messed up the the presentation at work and and felt really embarrassed you know but then my friend Sarah called and and we talked for like an hour and I feel a a bit better now um tomorrow I'll just try again okay café later maybe",
+      "required": [
+        "sarah",
+        "presentation",
+        "embarrassed",
+        "tomorrow",
+        "café",
+        "better"
+      ],
+      "forbidden": [
+        "the the",
+        "i i i"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "general-meeting",
+      "tier": "diversity",
+      "swiftTest": "testDomainGeneralMeeting",
+      "input": "alright let's start um the the sprint review is is at three p m Thursday no wait Wednesday at three thirty because the the room is is booked Thursday um action items Sarah owns the the deploy by Friday and and I'll update the the runbook by Tuesday okay",
+      "required": [
+        "wednesday",
+        "3:30",
+        "thursday",
+        "sarah",
+        "deploy",
+        "friday",
+        "tuesday",
+        "runbook"
+      ],
+      "forbidden": [
+        "three p m thursday",
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "medical-dictation",
+      "tier": "diversity",
+      "swiftTest": "testDomainMedicalDictation",
+      "input": "patient is is a a sixty two year old female with type two diabetes um blood pressure one forty over ninety heart rate seventy six temperature ninety nine point four she reports a a sore throat for three days no shortness of breath plan start amoxicillin five hundred milligrams three times a day for seven days and and follow up next week",
+      "required": [
+        "62",
+        "140/90",
+        "76",
+        "99.4",
+        "diabetes",
+        "amoxicillin",
+        "500",
+        "seven days"
+      ],
+      "forbidden": [
+        "one forty over ninety",
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "legal",
+      "tier": "diversity",
+      "swiftTest": "testDomainLegal",
+      "input": "um the the contract is is dated the the twelfth of of November twenty twenty five and and the the indemnity clause in in section nine point two caps liability at twelve months of fees no wait actually it's twenty four months I I misspoke the the governing law is is Delaware and and venue is is New York okay",
+      "required": [
+        "12",
+        "2025",
+        "indemnity",
+        "9.2",
+        "24 months",
+        "delaware",
+        "new york"
+      ],
+      "forbidden": [
+        "twelve months of fees",
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "finance-earnings",
+      "tier": "diversity",
+      "swiftTest": "testDomainFinanceEarnings",
+      "input": "so um revenue for Q three was two point four billion dollars up eighteen percent year over year and and the the churn rate dropped to two point one percent from three point four percent we're raising full year guidance to nine point four billion from nine point one okay",
+      "required": [
+        "Q3",
+        "2.4 billion",
+        "18%",
+        "2.1%",
+        "3.4%",
+        "9.4",
+        "9.1"
+      ],
+      "forbidden": [
+        "two point four billion",
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "academic",
+      "tier": "diversity",
+      "swiftTest": "testDomainAcademic",
+      "input": "um the the paper by Dao et al twenty twenty two introduced flash attention which which tiles the the softmax computation so it fits in in S R A M and avoids writing the the intermediate matrix to H B M giving a a two to four x speedup the the key equation is is softmax of Q K transpose over root d k times V",
+      "required": [
+        "dao",
+        "2022",
+        "flash attention",
+        "sram",
+        "hbm",
+        "2-4x",
+        "softmax"
+      ],
+      "forbidden": [
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "customer-support",
+      "tier": "diversity",
+      "swiftTest": "testDomainCustomerSupport",
+      "input": "hi um this is is ticket S U P P nine eight seven six two the the customer was charged one hundred and nineteen dollars twice on the the first and and third of November and and the the second charge has no invoice can you refund the the duplicate and and check the the webhook please",
+      "required": [
+        "supp-98762",
+        "119",
+        "november",
+        "refund",
+        "invoice",
+        "webhook",
+        "duplicate"
+      ],
+      "forbidden": [
+        "one hundred and nineteen dollars twice"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "gaming",
+      "tier": "diversity",
+      "swiftTest": "testDomainGaming",
+      "input": "okay we're dropping at three seven point four north one one two point eight east enemy at two hundred meters I I count three maybe four throw the the smoke in in forty five seconds zone closes in in two minutes I've got five five six ammo and and two med kits",
+      "required": [
+        "37.4",
+        "112.8",
+        "200 meters",
+        "smoke",
+        "45 seconds",
+        "two minutes",
+        "5.56",
+        "med kits"
+      ],
+      "forbidden": [
+        "three seven point four",
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "science",
+      "tier": "diversity",
+      "swiftTest": "testDomainScience",
+      "input": "um we measured the the binding constant at four point two nanomolar in in ten millimolar salt and and twenty three point one nanomolar at one hundred and fifty millimolar p H seven point four twenty five degrees celsius the the interaction appears electrostatic",
+      "required": [
+        "4.2",
+        "23.1",
+        "nanomolar",
+        "10",
+        "150",
+        "7.4",
+        "25",
+        "electrostatic"
+      ],
+      "forbidden": [
+        "four point two nanomolar"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "sports",
+      "tier": "diversity",
+      "swiftTest": "testDomainSports",
+      "input": "so um the the final score was three to two in in stoppage time you know Marcus scored in in the the twenty third minute and and then again at seventy eight but the the other team equalized in in the the eighty ninth before we won on penalties five four okay",
+      "required": [
+        "3-2",
+        "23rd",
+        "78th",
+        "89th",
+        "penalties",
+        "5-4",
+        "marcus",
+        "stoppage time"
+      ],
+      "forbidden": [
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "travel",
+      "tier": "diversity",
+      "swiftTest": "testDomainTravel",
+      "input": "um our flight is is at six forty five a m on the the fourteenth of of December from terminal four gate B twelve and and we land at nine twenty p m local time no wait nine twenty a m I I mixed up the the time zones hotel check in is is at three p m and and the the reservation number is H T L eight eight four zero",
+      "required": [
+        "6:45",
+        "14",
+        "december",
+        "terminal 4",
+        "b12",
+        "9:20",
+        "3",
+        "htl-8840"
+      ],
+      "forbidden": [
+        "six forty five",
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "recipes",
+      "tier": "diversity",
+      "swiftTest": "testDomainRecipes",
+      "input": "okay so um you take two cups of flour and and one and a half cups of of milk no wait one cup of milk and and half a cup of of water whisk it until smooth then add three eggs and and a a pinch of of salt bake at three hundred and fifty degrees for twenty five to thirty minutes until golden brown you know",
+      "required": [
+        "2 cups",
+        "flour",
+        "1 cup",
+        "milk",
+        "3 eggs",
+        "salt",
+        "350",
+        "25",
+        "30",
+        "golden brown"
+      ],
+      "forbidden": [
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "personal-notes",
+      "tier": "diversity",
+      "swiftTest": "testDomainPersonalNotes",
+      "input": "okay note to self um call the the dentist Tuesday at nine a m no wait Wednesday because Tuesday is is a holiday renew passport before the the twentieth of of January and and pick up dry cleaning and and the the dog food um also Sarah's birthday is is the third don't forget",
+      "required": [
+        "dentist",
+        "wednesday",
+        "tuesday",
+        "9",
+        "passport",
+        "20",
+        "january",
+        "sarah",
+        "third"
+      ],
+      "forbidden": [
+        "nine a m tuesday",
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "email",
+      "tier": "diversity",
+      "swiftTest": "testDomainEmail",
+      "input": "hey Sarah um just following up on the the proposal I sent last Thursday can you send the the revised numbers by end of week thanks John p s the the attachment is is the version two deck not version one",
+      "required": [
+        "sarah",
+        "proposal",
+        "thursday",
+        "revised numbers",
+        "end of week",
+        "john",
+        "version 2"
+      ],
+      "forbidden": [
+        "the the"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "chat",
+      "tier": "diversity",
+      "swiftTest": "testDomainChat",
+      "input": "yo are you coming tonight um I I think so maybe around eight but but I'll let you know the the address is is twelve Baker Street no wait fourteen Baker Street sorry fourteen see you then",
+      "required": [
+        "eight",
+        "14 baker street",
+        "see you",
+        "tonight"
+      ],
+      "forbidden": [
+        "the the",
+        "um "
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "speaker-labels-asr-garbage",
+      "tier": "diversity",
+      "swiftTest": "testDomainSpeakerLabelsGarbledTerms",
+      "input": "personal 1 whats is the archiexture of this porduct personal 2 um I I think its a a micro servace architechture with a a API gatewy and and a a redis cash personal 1 no its a monalith with a a postgress data base okay",
+      "required": [
+        "architecture",
+        "product",
+        "micro",
+        "service",
+        "api",
+        "gateway",
+        "redis",
+        "cache",
+        "monolith",
+        "postgresql",
+        "database"
+      ],
+      "forbidden": [],
+      "minRetention": 0.45,
+      "sentence": true
+    },
+    {
+      "id": "asr-word-error-garbage",
+      "tier": "diversity",
+      "swiftTest": "testDomainASRWordErrorGarbage",
+      "input": "um the next year's APOINT is is experiencing intermittant illitency because the postgresql connection pool is reaching the maximum capacity we need to inspect the redish cash configuration analyze open trace and identifys is restarting the affected pod the p ninety five response should remain below two hundred milliseconds café résumé naïve okay",
+      "required": [
+        "next.js",
+        "api endpoint",
+        "intermittent latency",
+        "postgresql",
+        "redis cache",
+        "opentelemetry",
+        "p95",
+        "200",
+        "café",
+        "résumé",
+        "naïve"
+      ],
+      "forbidden": [
+        "APOINT",
+        "redish cash",
+        "open trace",
+        "identifys",
+        "next year's"
+      ],
+      "minRetention": 0.45,
+      "sentence": true
+    }
+  ]
+}

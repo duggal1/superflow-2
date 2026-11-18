@@ -65,6 +65,20 @@ public actor DictionaryLearningEngine {
         return candidate
     }
 
+    /// Accept a suggestion. Alias of `confirm(id:)` for callers that think in
+    /// accept/reject terms; both commit the same real lexicon rule.
+    @discardableResult
+    public func accept(id: String) async throws -> String {
+        try await confirm(id: id)
+    }
+
+    /// Learn a suggestion. Alias of `confirm(id:)` for callers that think in
+    /// accept/reject/learn terms.
+    @discardableResult
+    public func learn(id: String) async throws -> String {
+        try await confirm(id: id)
+    }
+
     /// Returns the committed rule's ID only after SQLite has accepted it.
     @discardableResult
     public func confirm(id: String) async throws -> String {
@@ -84,13 +98,19 @@ public actor DictionaryLearningEngine {
                 throw DictionaryLearningError.conflictingCorrection
             }
         }
+        // Re-confirming after another observation must not reset usage data or
+        // invent a new creation date for a rule we already committed.
+        let previous = entries.first {
+            $0.id == candidate.id && $0.learnedFrom == "edit-correction"
+        }
         let rule = LexiconEntry(
             id: candidate.id, kind: .correction, triggers: [candidate.heard],
             canonical: candidate.canonical, enabled: true, source: .user,
             appScope: candidate.appScope, heardForms: [candidate.heard],
             learnedFrom: "edit-correction", confidence: candidate.confidence,
-            confirmationCount: candidate.observations, hitCount: 0,
-            createdAt: candidate.createdAt, updatedAt: .now)
+            confirmationCount: candidate.observations,
+            hitCount: previous?.hitCount ?? 0,
+            createdAt: previous?.createdAt ?? candidate.createdAt, updatedAt: .now)
         try await lexicon.saveLexicon(rule)
         candidate.state = .confirmed
         candidate.updatedAt = .now

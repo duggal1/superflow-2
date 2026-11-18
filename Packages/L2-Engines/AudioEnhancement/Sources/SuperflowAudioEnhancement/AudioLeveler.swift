@@ -2,62 +2,97 @@ import Foundation
 
 /// Causal AGC leveler applied after denoising and before ASR.
 ///
-/// - Fast attack (up to target), slow release (down).
-/// - Gain frozen while no speech is detected, so it never pumps the noise floor.
-/// - True-peak limiter at -1 dBFS; the whole block is scaled, never scanned
-///   sample-by-sample, so word starts are not clipped by the ramp.
-/// - The right RMS target depends on the ASR model; it is tuned against
-///   measured WER (start -20 dBFS speech RMS), not assumed.
+/// Root cause fixed here: the old leveler classified any frame below an
+/// absolute RMS of 0.005 (-46 dBFS) as silence and froze its gain. Real
+/// headset/whisper speech sits around 0.002-0.004 RMS, so it was left quiet;
+/// even when detected, a 16x ceiling could never reach the -15 dBFS target.
+/// Gain now follows a VAD verdict, reaches 64x (36 dB) for whispers, and the
+/// noise floor is gated between utterances so the recognizer sees a fuller,
+/// cleaner signal. No lookahead, no allocation on the audio path.
 public struct AudioLeveler: Sendable {
     /// -15 dBFS: streamed dictation input was too quiet for reliable VAD and
     /// ASR on headphones; the limiter below still protects against clipping.
     public static let targetRMS: Float = 0.18
     public static let peakLimit: Float = 0.891 // -1 dBFS
+    /// Kept for callers that display the legacy threshold. Gating now uses the
+    /// VAD plus `freezeRMS`, not this value.
     public static let silenceRMS: Float = 0.005
-    public static let maxGain: Float = 16.0
+    /// A true digital-zero frame freezes the AGC. Whispers are far above it.
+    public static let freezeRMS: Float = 0.000_1
+    /// 36 dB of makeup gain: enough to lift -43 dBFS whispers to the target.
+    public static let maxGain: Float = 64.0
     public static let releaseStep: Float = 0.05
+    /// Non-speech energy is attenuated, never amplified.
+    public static let noiseGate: Float = 0.5
 
     /// Baseline 150% boost, always on as the default. The AGC then rides
     /// around it toward the RMS target.
     private var currentGain: Float = 2.0
+    private var detector = SpeechActivityDetector()
 
     public init() {}
 
-    /// Levels one block in place. Whole-block gain, so onset samples get full
-    /// level immediately (fast attack) with no per-sample ramp clipping.
+    /// Levels one block in place, in 20 ms frames. Whole-frame gain means word
+    /// onsets keep their full transient (no per-sample ramp clipping).
     /// O(n), preallocated state only; safe on the audio relay path.
+    @discardableResult
     public mutating func level(_ samples: inout [Float]) -> Float {
         guard !samples.isEmpty else { return currentGain }
-        var sumSq: Float = 0
-        var peak: Float = 0
-        for sample in samples {
-            sumSq += sample * sample
-            let magnitude = sample >= 0 ? sample : -sample
-            if magnitude > peak { peak = magnitude }
+        let frameLength = 320 // 20 ms at 16 kHz, matching the VAD frame
+        var start = 0
+        var applied = currentGain
+        while start < samples.count {
+            let end = min(start + frameLength, samples.count)
+            var sumSq: Float = 0
+            var peak: Float = 0
+            for index in start..<end {
+                let value = samples[index]
+                guard value.isFinite else { continue }
+                sumSq += value * value
+                let magnitude = abs(value)
+                if magnitude > peak { peak = magnitude }
+            }
+            let rms = (sumSq / Float(end - start)).squareRoot()
+            let frame = Array(samples[start..<end])
+            let speech = detector.isSpeech(frame) && rms > Self.freezeRMS
+
+            let gain: Float
+            if speech {
+                let desired = min(Self.targetRMS / max(rms, 1e-6), Self.maxGain)
+                if desired < currentGain {
+                    currentGain += (desired - currentGain) * Self.releaseStep
+                } else {
+                    currentGain = desired // Fast attack.
+                }
+                gain = currentGain
+            } else {
+                // Frozen on silence/noise. Gate non-speech relative to unity,
+                // never to the accumulated speech gain, so a loud utterance
+                // cannot pump the noise floor afterwards.
+                gain = rms > Self.freezeRMS
+                    ? min(currentGain, 1) * Self.noiseGate
+                    : currentGain
+            }
+            let limited = min(gain, Self.peakLimit / max(peak, 1e-6))
+            if limited != 1 {
+                for index in start..<end {
+                    guard samples[index].isFinite else { samples[index] = 0; continue }
+                    samples[index] *= limited
+                }
+            }
+            applied = limited
+            start = end
         }
-        let rms = (sumSq / Float(samples.count)).squareRoot()
-        if rms < Self.silenceRMS {
-            return currentGain // Frozen on silence.
-        }
-        let desired = min(Self.targetRMS / max(rms, 1e-6), Self.maxGain)
-        if desired < currentGain {
-            currentGain += (desired - currentGain) * Self.releaseStep
-        } else {
-            currentGain = desired // Fast attack.
-        }
-        // Limiter scales the whole block, preserving transients.
-        let limited = min(currentGain, Self.peakLimit / max(peak, 1e-6))
-        currentGain = limited
-        guard limited != 1 else { return limited }
-        for index in samples.indices {
-            samples[index] *= limited
-        }
-        return limited
+        return applied
     }
 
     public mutating func reset() {
         currentGain = 2.0
+        detector.reset()
     }
 
     public var gain: Float { currentGain }
+
+    /// Whether the most recent frame belonged to a confirmed speech run.
+    public var isInSpeech: Bool { detector.isConfirmedSpeech }
 }

@@ -174,15 +174,25 @@ public struct UnavailableLlamaRuntime: LlamaRuntime {
 public actor LlamaCleaner: DeadlineManagedTextCleaner {
     private let modelProvider: any ModelProvider
     private let runtime: any LlamaRuntime
+    /// Number of S1 contexts used in parallel for a long transcript. Bounded:
+    /// more lanes than the 8 GB M1 can schedule made llama_decode fail.
+    private let maxConcurrentChunks: Int
+    /// Below this a single call is already cheap (~10 s of dictation); splitting
+    /// would add prompt overhead without helping latency. 120 words also keeps
+    /// the pinned output-cap sizing contract intact.
+    private static let chunkWordThreshold = 120
+    private static let wordsPerChunk = 50
     private var ready = false
     /// Compute the model is currently loaded with, so a settings change reloads
     /// it instead of silently keeping the old placement.
     private var loadedCompute: ModelCompute?
     private var preparation: (id: UUID, task: Task<Void, any Error>)?
 
-    public init(modelProvider: any ModelProvider, runtime: any LlamaRuntime) {
+    public init(modelProvider: any ModelProvider, runtime: any LlamaRuntime,
+                maxConcurrentChunks: Int = 4) {
         self.modelProvider = modelProvider
         self.runtime = runtime
+        self.maxConcurrentChunks = max(1, min(6, maxConcurrentChunks))
     }
 
     public var isReady: Bool {
@@ -226,6 +236,56 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
     public func clean(_ text: String, options: CleanOptions) async throws -> CleanResult {
         if !ready { try await prepare() }
         let started = DispatchTime.now().uptimeNanoseconds
+        let wordCount = text.split(whereSeparator: \.isWhitespace).count
+        guard wordCount > Self.chunkWordThreshold else {
+            return try await cleanSingle(text, options: options, started: started)
+        }
+        let chunks = Self.split(text, wordsPerChunk: Self.wordsPerChunk)
+        guard chunks.count > 1 else {
+            return try await cleanSingle(text, options: options, started: started)
+        }
+        // HEX's long-audio lesson: cut at natural boundaries and run the pieces
+        // concurrently on the same loaded model. Each chunk gets a share of the
+        // caller's deadline; queue wait therefore counts against the budget and
+        // a late chunk fails the whole call instead of silently dropping text.
+        let overallDeadline = ContinuousClock.now.advanced(by: .milliseconds(max(1, options.deadlineMs)))
+        var indexed: [(Int, CleanResult)] = []
+        indexed.reserveCapacity(chunks.count)
+        for start in stride(from: 0, to: chunks.count, by: maxConcurrentChunks) {
+            let remaining = Self.milliseconds(from: .now, to: overallDeadline)
+            guard remaining > 0 else { throw SuperflowError.timeout("cleanup") }
+            let wavesLeft = (chunks.count - start + maxConcurrentChunks - 1) / maxConcurrentChunks
+            let waveDeadline = max(1, remaining / wavesLeft)
+            let waveOptions = CleanOptions(styling: options.styling, structure: options.structure,
+                                           context: options.context, deadlineMs: waveDeadline,
+                                           maxNewTokens: options.maxNewTokens)
+            let end = min(start + maxConcurrentChunks, chunks.count)
+            try await withThrowingTaskGroup(of: (Int, CleanResult).self) { group in
+                for index in start..<end {
+                    group.addTask {
+                        let result = try await self.cleanSingle(chunks[index], options: waveOptions, started: started)
+                        return (index, result)
+                    }
+                }
+                for try await pair in group { indexed.append(pair) }
+            }
+        }
+        indexed.sort { $0.0 < $1.0 }
+        guard indexed.count == chunks.count else {
+            throw SuperflowError.invalidState("S1 chunked cleanup lost a chunk")
+        }
+        let results = indexed.map(\.1)
+        return CleanResult(text: results.map(\.text).joined(separator: " "),
+                           tokensIn: results.reduce(0) { $0 + $1.tokensIn },
+                           tokensOut: results.reduce(0) { $0 + $1.tokensOut },
+                           hitTokenCap: results.contains { $0.hitTokenCap },
+                           latencyMs: Int((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000),
+                           prefillMs: results.compactMap(\.prefillMs).reduce(0, +),
+                           generationMs: results.compactMap(\.generationMs).reduce(0, +))
+    }
+
+    private func cleanSingle(_ text: String, options: CleanOptions,
+                             started: UInt64) async throws -> CleanResult {
         let prompt = LlamaPrompt.render(text: text, options: options)
         // The model card's sizing rule: output length tracks input length, so a
         // fixed ceiling wastes generation budget. `countTokens` is the model's
@@ -255,5 +315,31 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
         let ceiling = max(1, configured)
         let sized = Int((Double(max(0, inputTokens)) * 1.3).rounded(.up)) + 32
         return min(ceiling, sized)
+    }
+
+    /// Word-boundary cuts preserve every word; whitespace is normalized once.
+    static func split(_ text: String, wordsPerChunk: Int) -> [String] {
+        let limit = max(1, wordsPerChunk)
+        let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
+        guard words.count > limit else { return [text] }
+        var chunks: [String] = []
+        var current: [String] = []
+        current.reserveCapacity(limit)
+        for word in words {
+            current.append(word)
+            if current.count == limit {
+                chunks.append(current.joined(separator: " "))
+                current.removeAll(keepingCapacity: true)
+            }
+        }
+        if !current.isEmpty { chunks.append(current.joined(separator: " ")) }
+        return chunks
+    }
+
+    private static func milliseconds(from start: ContinuousClock.Instant,
+                                     to end: ContinuousClock.Instant) -> Int {
+        guard start < end else { return 0 }
+        let parts = start.duration(to: end).components
+        return Int(parts.seconds * 1_000) + Int(parts.attoseconds / 1_000_000_000_000_000)
     }
 }

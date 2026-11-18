@@ -72,13 +72,13 @@ struct IslandPixelBarcode: View {
                     let x = (CGFloat(sample) - phase) * 3
                     let half = islandHalf(value, max: 2)
                     guard half > 0 else {
-                        cell(&context, grid, x, mid, age > 15 ? Ramp.blue[1] : Ramp.blue[2])
+                        cell(&context, grid, x, mid, age > 15 ? IslandRamp.step(1) : IslandRamp.step(2))
                         continue
                     }
                     let tone: Color = sample == cols ? Tok.text
-                        : age < 3 ? Ramp.blue[4]
-                        : age < 14 ? Ramp.blue[3]
-                        : Ramp.blue[2]
+                        : age < 3 ? IslandRamp.step(4)
+                        : age < 14 ? IslandRamp.step(3)
+                        : IslandRamp.step(2)
                     for row in (mid - half)...(mid + half) {
                         cell(&context, grid, x, row, tone)
                     }

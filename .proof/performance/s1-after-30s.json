@@ -1,0 +1,43 @@
+{
+  "cases" : [
+    {
+      "deadlineMs" : 1500,
+      "generationMs" : 1063,
+      "hitTokenCap" : false,
+      "label" : "30s",
+      "latencyMs" : 1076,
+      "outputChars" : 405,
+      "pass" : 0,
+      "prefillMs" : 3,
+      "success" : true,
+      "tokensIn" : 75,
+      "tokensOut" : 82,
+      "words" : 75
+    },
+    {
+      "deadlineMs" : 30000,
+      "generationMs" : 1018,
+      "hitTokenCap" : false,
+      "label" : "30s",
+      "latencyMs" : 1033,
+      "outputChars" : 405,
+      "pass" : 0,
+      "prefillMs" : 3,
+      "success" : true,
+      "tokensIn" : 75,
+      "tokensOut" : 82,
+      "words" : 75
+    }
+  ],
+  "compute" : "gpu",
+  "cores" : 8,
+  "failureCount" : 0,
+  "machine" : "arm64 Apple Silicon",
+  "mode" : "quick-30s",
+  "model" : "s1-mini-q4_k_m.gguf",
+  "phase" : "after",
+  "physicalGB" : 8,
+  "prepareMs" : 2391,
+  "sessions" : 4,
+  "totalCount" : 2
+}
