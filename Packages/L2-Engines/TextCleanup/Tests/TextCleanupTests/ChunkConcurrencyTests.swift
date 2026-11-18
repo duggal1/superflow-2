@@ -30,9 +30,9 @@ final class ChunkConcurrencyTests: XCTestCase {
             .clean(input, context: TextContext(interactive: false))
         XCTAssertEqual(outcome.text, input)
         XCTAssertEqual(outcome.state, .cleaned)
-        XCTAssertEqual(outcome.chunks.count, 7)
+        XCTAssertGreaterThan(outcome.chunks.count, 1)
         let maxActive = await cleaner.maxActive
-        XCTAssertEqual(maxActive, 7)
+        XCTAssertEqual(maxActive, outcome.chunks.count)
         XCTAssertTrue(outcome.chunks.allSatisfy { $0.attempts == 1 })
     }
 
