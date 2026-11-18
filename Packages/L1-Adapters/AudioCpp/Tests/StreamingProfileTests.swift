@@ -5,11 +5,11 @@ import SuperflowKernel
 
 @Test func selectableSpeechModelsHaveNativeIncrementalOutputPaths() {
     let ids = ModelProfile.streamingProfiles.map(\.id)
+    // qwen3-1.7B and voxtral were retired (status .unavailable) in commit 61f5c7e;
+    // only models that support live dictation are selectable here.
     #expect(ids == [
         ModelProfile.nemotron35Streaming.id,
         ModelProfile.qwen3ASR06B.id,
-        ModelProfile.qwen3ASR17B.id,
-        ModelProfile.voxtralRealtime.id,
     ])
     for id in ids {
         #expect(AudioCppRecognizer.supports(id), "Missing native runtime for \(id)")

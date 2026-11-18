@@ -11,14 +11,29 @@ extension SQLiteStore {
     /// used. Hostile strings such as `"unbalanced`, `NEAR(`, `*` or `a OR` can
     /// therefore never become FTS operators or throw.
     static func knowledgeFTSQuery(_ raw: String) -> String? {
-        let tokens = raw.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .prefix(16)
-            .map { token -> String in
-                let escaped = String(token).replacingOccurrences(of: "\"", with: "\"\"")
-                return "\"\(escaped)\"*"
+        // Collect at most 16 tokens while scanning. `split(...)` would first
+        // materialise every token in a hostile multi-megabyte query, so the cap
+        // has to happen during iteration, not after it.
+        var tokens: [String] = []
+        tokens.reserveCapacity(16)
+        var current = ""
+        current.reserveCapacity(32)
+        for ch in raw {
+            if ch.isLetter || ch.isNumber {
+                current.append(ch)
+            } else if !current.isEmpty {
+                tokens.append(current)
+                if tokens.count == 16 { break }
+                current.removeAll(keepingCapacity: true)
             }
-        guard !tokens.isEmpty else { return nil }
-        return tokens.joined(separator: " ")
+        }
+        if tokens.count < 16 && !current.isEmpty { tokens.append(current) }
+        let quoted = tokens.map { token -> String in
+            let escaped = token.replacingOccurrences(of: "\"", with: "\"\"")
+            return "\"\(escaped)\"*"
+        }
+        guard !quoted.isEmpty else { return nil }
+        return quoted.joined(separator: " ")
     }
 
     private static let qualifiedLexiconColumns = """

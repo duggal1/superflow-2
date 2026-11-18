@@ -16,6 +16,9 @@ public actor RecoveryEngine {
     private let stateRoot: URL
     private let lockRoot: URL
     private let budgetNs: UInt64
+    /// A live recovery must never have its lock stolen on heartbeat age alone:
+    /// keep the stale threshold comfortably beyond the whole recovery budget.
+    private let lockStaleAfter: TimeInterval
     private let fault: RecoveryFaultInjector?
     private var faultCounts: [RecoveryStage: Int] = [:]
 
@@ -37,6 +40,7 @@ public actor RecoveryEngine {
         self.ledger = RecoveryLedger(root: state)
         self.budgetNs = UInt64(max(0, recoveryBudget.components.seconds)) * 1_000_000_000
             + UInt64(max(0, recoveryBudget.components.attoseconds) / 1_000_000_000)
+        self.lockStaleAfter = TimeInterval(max(120, recoveryBudget.components.seconds)) + 60
         self.fault = fault
     }
 
@@ -87,7 +91,7 @@ public actor RecoveryEngine {
 
     private func recover(_ session: SessionRecord, report: inout RecoveryReport) async {
         let sid = session.id
-        let lock = RecoveryLock(root: lockRoot, session: sid)
+        let lock = RecoveryLock(root: lockRoot, session: sid, staleAfter: lockStaleAfter)
         do { try lock.acquire() } catch {
             report.skippedBusy += 1
             report.needsUserAction.append(RecoverySupport.action(

@@ -13,8 +13,27 @@ final class RecoveryLockTests: XCTestCase {
         actor Outcomes {
             var winners = 0
             var busy = 0
-            func won() { winners += 1 }
-            func blocked() { busy += 1 }
+            var attempted = 0
+            var waiters: [CheckedContinuation<Void, Never>] = []
+            func recordWin() {
+                winners += 1
+                arrived()
+            }
+            func recordBusy() {
+                busy += 1
+                arrived()
+            }
+            func arrived() {
+                attempted += 1
+                guard attempted == 12 else { return }
+                let pending = waiters
+                waiters.removeAll()
+                for waiter in pending { waiter.resume() }
+            }
+            func waitUntilAllAttempted() async {
+                guard attempted < 12 else { return }
+                await withCheckedContinuation { waiters.append($0) }
+            }
         }
         let outcomes = Outcomes()
         let session = SessionID("contended")
@@ -25,11 +44,16 @@ final class RecoveryLockTests: XCTestCase {
                     let lock = RecoveryLock(root: lockRoot, session: session)
                     do {
                         try lock.acquire()
-                        await outcomes.won()
+                        await outcomes.recordWin()
+                        // Hold the lock until every contender has attempted once.
+                        // Without this gate an early release lets a late task win
+                        // too, and the test miscounts it as a second winner.
+                        await outcomes.waitUntilAllAttempted()
                         lock.release()
                     } catch RecoveryLockError.busy {
-                        await outcomes.blocked()
+                        await outcomes.recordBusy()
                     } catch {
+                        await outcomes.arrived()
                         XCTFail("unexpected lock error: \(error)")
                     }
                 }
