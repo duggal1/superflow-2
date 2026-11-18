@@ -32,6 +32,30 @@ final class S1NormalizationTests: XCTestCase {
             ("um use S1-mini and Nemotron with GPT-6 Astra and Hugging Face", ["s1-mini", "nemotron", "astra", "hugging face"]),
             ("do not delete the file keep all five backups before the release", ["not", "all", "before"]),
         ]
+
+        // Verbatim official S1-mini outputs recorded in
+        // agents/codex/s1-quality/results/prompt-comparison.json (empty think
+        // block, temperature 0, top_k 1). These are EXACT assertions: a
+        // plausible paraphrase or a superseded value is a FAIL. The empty
+        // string is a valid official result for filler-only input ("um").
+        let exactOutputs: [String: [String: String]] = [
+            "i think the answer is forty two no sorry forty three": [
+                "casual": "i think the answer is 43",
+                "semi-casual": "I think the answer is 43",
+                "semi-formal": "I think the answer is 43.",
+                "formal": "I think the answer is 43.",
+            ],
+            "um": [
+                "casual": "", "semi-casual": "", "semi-formal": "", "formal": "",
+            ],
+            "the invoice came to twenty three thousand four hundred and fifty dollars": [
+                "casual": "the invoice came to $23,450",
+                "semi-casual": "the invoice came to $23,450",
+                "semi-formal": "The invoice came to $23,450.",
+                "formal": "The invoice came to $23,450.",
+            ],
+        ]
+
         for styling in ["casual", "semi-casual", "semi-formal", "formal"] {
             for (input, required) in cases {
                 let result = try await cleaner.clean(input, options: CleanOptions(
@@ -41,6 +65,15 @@ final class S1NormalizationTests: XCTestCase {
                 else { XCTAssertFalse(result.text.isEmpty, styling) }
                 for term in required {
                     XCTAssertTrue(result.text.localizedCaseInsensitiveContains(term), "\(styling): missing \(term)")
+                }
+                if let expected = exactOutputs[input]?[styling] {
+                    XCTAssertEqual(result.text, expected,
+                                   "\(styling): exact official output mismatch for \"\(input)\"")
+                }
+                // The superseded self-correction value must never survive.
+                if input.contains("forty two no sorry") {
+                    XCTAssertFalse(result.text.localizedCaseInsensitiveContains("42"),
+                                   "\(styling): superseded answer 42 survived in \(result.text)")
                 }
                 XCTAssertFalse(result.text.contains("<think>"))
             }

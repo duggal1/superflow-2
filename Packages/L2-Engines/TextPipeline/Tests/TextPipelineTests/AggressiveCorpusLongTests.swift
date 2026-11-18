@@ -69,7 +69,7 @@ final class AggressiveCorpusLongTests: XCTestCase {
         case "140/90": return ["140/90", "140 over 90"]
         case "130/80": return ["130/80", "130 over 80", "130 over eighty"]
         case "sram": return ["sram", "S R A M", "s r a m", "SRAM"]
-        case "5.56": return ["5.56", "556"]
+        case "5.56": return ["5.56"]  // exact caliber; "556" is a corrupted integer, never an accepted form
         case "24-cv-8871": return [token, "24 c v 8871"]
         case "bay seven": return ["bay 7", "bay seven"]
         case "2.4 billion": return ["$2.4B", "2.4B", token]
@@ -282,7 +282,8 @@ final class AggressiveCorpusLongTests: XCTestCase {
             raw: raw,
             required: ["37.4", "112.8", "45 seconds", "level three helmet", "north ridge",
                        "200 meters", "two minutes", "smoke", "5.56", "grenade", "high ground", "southeast"],
-            forbidden: [],
+            // "556" is a fact corruption of the 5.56 caliber, never a valid form.
+            forbidden: ["556"],
             minRetention: 0.45))
     }
 }
