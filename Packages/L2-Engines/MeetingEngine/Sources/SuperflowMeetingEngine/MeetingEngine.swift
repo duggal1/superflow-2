@@ -48,6 +48,9 @@ public actor MeetingEngine {
     var nextIndex = 0
     var lastEndMs = 0
     var notices: [String] = []
+    /// Sources that stopped producing usable speech (input loss or recognition failure). Each
+    /// gets one explicit marker; the other lane keeps its own journal and raw transcript.
+    var lostStreams: Set<AudioSourceKind> = []
     var speakerNames: [String: String] = [:]
     var systemOffsetSamples: Int64 = 0
     var systemAvailable = false
@@ -267,6 +270,7 @@ public actor MeetingEngine {
         nextIndex = 0
         lastEndMs = 0
         notices.removeAll()
+        lostStreams.removeAll()
         speakerNames.removeAll()
         systemOffsetSamples = 0
         systemAvailable = false

@@ -1,5 +1,7 @@
 import SuperflowKernel
 
+/// Loose bag-of-words overlap used for reporting/comparison only. Echo deletion uses
+/// `MeetingEcho`, which also requires shared-clock alignment and in-order word similarity.
 enum MeetingTextSimilarity {
     static func ratio(_ first: String, _ second: String) -> Double {
         let firstWords = Set(Tokenizer.words(in: first.lowercased())

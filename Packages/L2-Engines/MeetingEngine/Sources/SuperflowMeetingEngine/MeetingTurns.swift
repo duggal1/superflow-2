@@ -58,21 +58,41 @@ extension MeetingEngine {
         } catch { persistenceFailed = true }
     }
 
-    func addGap(_ message: String, atMs: Int, session: SessionID) async {
+    /// Inserts one explicit marker per lost source. The bracketed raw text is the durable marker:
+    /// `MeetingDocumentProjection` recognizes it in both the live window and a repository rebuild.
+    /// A second failure on the same source adds another notice but not a duplicate marker.
+    func addGap(_ message: String, atMs: Int, session: SessionID,
+                source: AudioSourceKind = .system) async {
+        guard !lostStreams.contains(source) else { return }
+        lostStreams.insert(source)
         let index = nextIndex
         nextIndex += 1
         lastEndMs = max(lastEndMs, atMs)
-        let turn = MeetingTurn(index: index, speakerID: "system", speakerName: "System audio",
-                               startMs: atMs, endMs: atMs, text: message, rawText: message,
-                               source: .system, isGap: true)
+        let marker = MeetingStreamLoss.marker(message)
+        let speakerID = source == .system ? MeetingDocumentProjection.gapSpeakerID : "mic"
+        let speakerName = source == .system ? MeetingDocumentProjection.gapSpeakerName : AudioSourceKind.mic.label
+        let turn = MeetingTurn(index: index, speakerID: speakerID, speakerName: speakerName,
+                               startMs: atMs, endMs: atMs, text: message, rawText: marker,
+                               source: source, isGap: true)
         appendResident(turn)
         do {
             try await repository.appendSegment(Segment(sessionID: session, index: index,
                                                     startMs: atMs, endMs: atMs,
-                                                    speakerID: "system", source: .system,
-                                                    rawText: message, cleanedText: "",
+                                                    speakerID: speakerID, source: source,
+                                                    rawText: marker, cleanedText: "",
                                                     cleanupState: .skipped))
         } catch { persistenceFailed = true }
+    }
+
+    /// A recogniser dying is a one-channel failure: keep that channel's journaled audio and the
+    /// other channel's raw transcript, mark the loss, and still publish a complete document.
+    func recognitionFailed(_ source: AudioSourceKind, reason: String, session: SessionID) async {
+        let notice = "\(source.label) recognition problem: \(reason)"
+        addNotice(notice)
+        let message = source == .system
+            ? MeetingStreamLoss.systemTranscriptLost
+            : MeetingStreamLoss.micTranscriptLost
+        await addGap(message, atMs: lastEndMs, session: session, source: source)
     }
 
     func speakerID(atLocalMs ms: Int) async -> String {
@@ -95,19 +115,19 @@ extension MeetingEngine {
         Int(systemOffsetSamples * 1000 / Int64(sampleRate))
     }
 
+    /// Both arrival orders use the same gate. A microphone turn is removed only when a system
+    /// turn on the shared clock is time-aligned and its words match in order; simultaneous but
+    /// different speech is always kept.
     func isDuplicate(_ candidate: MeetingTurn) -> Bool {
-        residentTurns.contains { existing in
-            guard !existing.isGap, existing.source != candidate.source else { return false }
-            return overlapRatio(existing, candidate) > 0.5 &&
-                MeetingTextSimilarity.ratio(existing.rawText, candidate.rawText) > 0.8
+        guard candidate.source == .mic, !candidate.isGap else { return false }
+        return residentTurns.contains { existing in
+            MeetingEcho.isEcho(mic: candidate, system: existing)
         }
     }
 
     func dropOverlappingMicTurns(_ systemTurn: MeetingTurn, session: SessionID) async {
-        let matches = residentTurns.filter { turn in
-            turn.source == .mic && !turn.isGap &&
-                overlapRatio(turn, systemTurn) > 0.5 &&
-                MeetingTextSimilarity.ratio(turn.rawText, systemTurn.rawText) > 0.8
+        let matches = residentTurns.filter {
+            MeetingEcho.isEcho(mic: $0, system: systemTurn)
         }.map(\.index)
         for index in matches { await drop(index, session: session) }
     }
@@ -123,12 +143,6 @@ extension MeetingEngine {
             try await repository.updateCleaned(session: session, index: index, cleaned: "", state: .skipped)
         } catch { persistenceFailed = true }
         trimDroppedIndexes()
-    }
-
-    func overlapRatio(_ a: MeetingTurn, _ b: MeetingTurn) -> Double {
-        let overlap = max(0, min(a.endMs, b.endMs) - max(a.startMs, b.startMs))
-        let shortest = max(1, min(a.endMs - a.startMs, b.endMs - b.startMs))
-        return Double(overlap) / Double(shortest)
     }
 
     func appendResident(_ turn: MeetingTurn) {

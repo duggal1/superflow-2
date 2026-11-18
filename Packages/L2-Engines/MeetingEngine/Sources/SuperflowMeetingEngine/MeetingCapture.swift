@@ -78,18 +78,25 @@ extension MeetingEngine {
         }
     }
 
+    /// One source failing never stops the other. The lost lane gets one visible marker on the
+    /// shared clock; its own journal stays on disk and the surviving lane keeps transcribing.
     func sourceFailed(_ source: AudioSourceKind, message: String, session: SessionID) async {
         addNotice(message)
-        if source == .system, systemAvailable {
-            systemAvailable = false
-            await addGap("System audio lost", atMs: lastEndMs, session: session)
+        if source == .system {
+            if systemAvailable {
+                systemAvailable = false
+                await addGap(MeetingStreamLoss.systemLost, atMs: lastEndMs, session: session,
+                             source: .system)
+            }
+        } else {
+            await addGap(MeetingStreamLoss.micLost, atMs: lastEndMs, session: session, source: .mic)
         }
     }
 
     func systemUnavailable(_ reason: String, session: SessionID) async {
         let message = "System audio unavailable: \(reason) Continuing with the microphone."
         addNotice(message)
-        await addGap("System audio unavailable", atMs: 0, session: session)
+        await addGap(MeetingStreamLoss.systemUnavailable, atMs: 0, session: session, source: .system)
     }
 
     func consumeRecognition(_ stream: any RecognitionStream, source: AudioSourceKind,
@@ -103,8 +110,7 @@ extension MeetingEngine {
             case .endpoint:
                 break
             case .failure(let message):
-                persistenceFailed = true
-                emit(.notice("\(source.label) recognition problem: \(message)"))
+                await recognitionFailed(source, reason: message, session: session)
             }
         }
     }
@@ -118,9 +124,15 @@ extension MeetingEngine {
         for stream in recognitionStreams.values { await stream.finish() }
         for task in recognitionTasks.values { await task.value }
         recognitionTasks.removeAll()
-        for writer in writers.values {
+        for (source, writer) in writers {
             let summary = await writer.close()
-            if summary.degraded { persistenceFailed = true }
+            if summary.degraded, let session = record?.id {
+                let message = source == .system
+                    ? MeetingStreamLoss.systemJournalLost
+                    : MeetingStreamLoss.micJournalLost
+                await addGap(message, atMs: lastEndMs, session: session, source: source)
+                addNotice("\(source.label) recording was incomplete; other audio was retained.")
+            }
         }
         writers.removeAll()
         for task in eventTasks.values { task.cancel() }
