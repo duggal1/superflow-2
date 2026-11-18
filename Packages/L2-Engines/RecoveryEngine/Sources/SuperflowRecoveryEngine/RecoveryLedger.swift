@@ -2,6 +2,8 @@ import Foundation
 
 public enum RecoveryLedgerKind: String, Codable, Sendable, CaseIterable, Equatable {
     case started, watermark, segmentAppended, cleaned, finalized, journalDiscarded, journalRetained, needsUserAction
+    /// A lost sample interval on one lane, recorded so a gap is never silently treated as continuity.
+    case gapDetected
 }
 
 /// One durable, self-describing recovery event. `id` is the idempotency key: replay applies each
