@@ -9,6 +9,10 @@ final class HALInputStream: @unchecked Sendable {
     let device: AudioDeviceID
     let ring: AudioRingBuffer
     let sampleRate: Double
+    /// The route this stream was opened for. A late callback from a superseded
+    /// device is dropped instead of writing into the current stream's ring.
+    let generation: UInt64
+    private let gate: GenerationGate
     private var proc: AudioDeviceIOProcID?
     private let converter: AVAudioConverter?
     private let input: AVAudioPCMBuffer
@@ -18,8 +22,10 @@ final class HALInputStream: @unchecked Sendable {
     private static let ioScratchCapacity = 8192
     private var scratch = [Float](repeating: 0, count: 4096)
 
-    init(device: AudioDeviceID) throws {
+    init(device: AudioDeviceID, generation: UInt64, gate: GenerationGate) throws {
         self.device = device
+        self.generation = generation
+        self.gate = gate
         guard let format = InputDevice.format(device),
               format.mSampleRate >= 8_000,
               let decoder = PCMDecoder(format),
@@ -51,12 +57,18 @@ final class HALInputStream: @unchecked Sendable {
 
     func start() throws {
         guard proc == nil else { return }
+        guard gate.isCurrent(generation) else {
+            throw SuperflowError.invalidState("stale microphone route generation")
+        }
         let ring = ring
         let decoder = decoder
         let ioScratch = ioScratch
+        let gate = gate
+        let generation = generation
         let bytesPerFrame = decoder.bytesPerFrame
         var newProc: AudioDeviceIOProcID?
         let result = AudioDeviceCreateIOProcIDWithBlock(&newProc, device, nil) { _, data, _, _, _ in
+            guard gate.isCurrent(generation) else { return }
             let buffers = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: data))
             guard let buffer = buffers.first, let base = buffer.mData, bytesPerFrame > 0 else { return }
             let byteCount = Int(buffer.mDataByteSize)
@@ -96,6 +108,7 @@ final class HALInputStream: @unchecked Sendable {
     }
 
     func drain() throws -> [Float] {
+        guard gate.isCurrent(generation) else { return [] }
         var samples: [Float] = []
         // Bound each drain even if a device continues producing during conversion.
         for _ in 0..<64 {

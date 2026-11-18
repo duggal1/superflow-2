@@ -1,4 +1,5 @@
 import AudioToolbox
+import AVFoundation
 import CoreAudio
 import Foundation
 import SuperflowKernel
@@ -36,20 +37,53 @@ enum InputDevice {
                  initial: AudioStreamBasicDescription())
     }
 
-    static func resolve() throws -> AudioDeviceID {
+    /// The stable CoreAudio device UID. This is the only device identity that
+    /// is ever persisted; `AudioDeviceID` changes between sessions.
+    static func uid(of device: AudioDeviceID) -> String? {
+        let initial: CFString = "" as CFString
+        guard let value: CFString = property(device, kAudioDevicePropertyDeviceUID, initial: initial)
+        else { return nil }
+        return value as String
+    }
+
+    static func descriptors() -> [InputDeviceDescriptor] {
         let systemDefault = property(AudioObjectID(kAudioObjectSystemObject),
-                                     kAudioHardwarePropertyDefaultInputDevice, initial: AudioDeviceID(0))
-        let candidates = (systemDefault.map { [$0] } ?? []) + devices()
-        for id in candidates where id != kAudioObjectUnknown {
-            guard let format = format(id), format.mChannelsPerFrame > 0, format.mSampleRate > 0,
-                  property(id, kAudioDevicePropertyDeviceIsAlive, initial: UInt32(0)) == 1,
-                  property(id, kAudioDevicePropertyIsHidden, initial: UInt32(0)) != 1 else { continue }
-            // Process-tap aggregates are output capture machinery, never microphones.
-            var uid: CFString = "" as CFString
-            if let value = property(id, kAudioDevicePropertyDeviceUID, initial: uid) { uid = value }
-            guard !(uid as String).hasPrefix("CADefaultDeviceAggregate") else { continue }
-            return id
+                                     kAudioHardwarePropertyDefaultInputDevice,
+                                     initial: AudioDeviceID(kAudioObjectUnknown)) ?? kAudioObjectUnknown
+        let discovery = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.microphone, .external],
+            mediaType: .audio,
+            position: .unspecified
+        )
+        let names = Dictionary(uniqueKeysWithValues:
+            discovery.devices.map { ($0.uniqueID, $0.localizedName) })
+        return devices().compactMap { id in
+            guard let uid = uid(of: id) else { return nil }
+            let format = format(id)
+            return InputDeviceDescriptor(
+                id: id,
+                uid: uid,
+                name: names[uid] ?? uid,
+                isAlive: property(id, kAudioDevicePropertyDeviceIsAlive, initial: UInt32(0)) == 1,
+                isHidden: property(id, kAudioDevicePropertyIsHidden, initial: UInt32(0)) == 1,
+                isSystemDefault: id == systemDefault,
+                // An output-only device has no input-scope stream format.
+                hasInputFormat: format != nil,
+                inputChannels: format?.mChannelsPerFrame ?? 0,
+                sampleRate: format?.mSampleRate ?? 0,
+                transportType: property(id, kAudioDevicePropertyTransportType, initial: UInt32(0)) ?? 0
+            )
         }
-        throw SuperflowError.audioFailure("No microphone input device is available. Connect a microphone and try again.")
+    }
+
+    /// Resolves a saved UID to a connected, eligible device. An absent choice
+    /// follows the live system default; a missing choice falls back to it.
+    static func resolve(selection: MicrophoneSelection? = nil) throws -> AudioDeviceID {
+        let inputs = descriptors()
+        let route = RouteResolver.resolve(selection: selection, inputs: inputs)
+        guard let id = inputs.first(where: { $0.uid == route.uid })?.id else {
+            throw SuperflowError.audioFailure("No microphone input device is available. Connect a microphone and try again.")
+        }
+        return id
     }
 }
