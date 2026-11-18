@@ -109,7 +109,7 @@ public enum RouteResolver {
         inputs: [InputDeviceDescriptor]
     ) -> SelectedRoute {
         let eligible = inputs.filter(\.isEligibleMicrophone)
-        let defaultInput = eligible.first(\.isSystemDefault) ?? eligible.first
+        let defaultInput = eligible.first(where: { $0.isSystemDefault }) ?? eligible.first
 
         guard let selection, let wanted = selection.uid else {
             guard let fallback = defaultInput else {

@@ -24,7 +24,7 @@ public actor TextInsertionService {
     let apps: any FrontmostAppProviding
     let menuPaster: any MenuPasting
     private let restoreScheduler: any RestoreScheduling
-    private let secureInput: @Sendable () -> Bool
+    let secureInput: @Sendable () -> Bool
     private let axTrusted: @Sendable () -> Bool
     let sleep: @Sendable (Duration) async -> Void
     let preparedTargetTTL: Duration
