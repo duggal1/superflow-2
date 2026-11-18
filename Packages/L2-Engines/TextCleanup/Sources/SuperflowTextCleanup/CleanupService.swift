@@ -155,26 +155,29 @@ public actor CleanupService {
             // again with the real splicer alignment after cleanup.
             plans = await ChunkPlanner(config: config, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
         }
-        plans = await coalesceEnumerationSeams(plans)
+        plans = await coalesceChunks(plans, protected: protected)
         guard !plans.isEmpty else { return ("", []) }
         var results = [ChunkOutcome](repeating: ChunkOutcome(index: 0, text: "", state: .pending), count: plans.count)
-        // Long dictation is split into ~800-token chunks. Run one worker per
-        // chunk up to the global session budget; never open more workers than
-        // there are sessions, so queued calls cannot stall into a raw fallback.
+        // Size the lane pool from the same soft target the planner used. The
+        // old hard-coded 800 under-counted lanes whenever the target was 600,
+        // leaving model sessions idle. `config.workers` and the global session
+        // semaphore still bound the pool, so a transcript never opens more
+        // model calls than there are llama contexts — no oversubscription.
+        let chunkTarget = min(config.hardTokenCap, max(1, config.softTokenTarget))
         let totalTokens = plans.reduce(0) { $0 + $1.tokens }
-        let neededChunks = max(1, (totalTokens + 799) / 800)
+        let neededChunks = max(1, (totalTokens + chunkTarget - 1) / chunkTarget)
         let workerCount = min(config.workers, plans.count, Self.sessionBudget, max(2, neededChunks))
         await withTaskGroup(of: ChunkOutcome.self) { group in
             var next = 0
             for _ in 0..<workerCount {
                 let plan = plans[next]; next += 1
-                group.addTask { await self.cleanChunk(plan, styling: styling, structure: structure, protected: protected, context: context) }
+                group.addTask { await self.cleanPlan(plan, styling: styling, structure: structure, protected: protected, context: context) }
             }
             for await result in group {
                 results[result.index] = result
                 if next < plans.count {
                     let plan = plans[next]; next += 1
-                    group.addTask { await self.cleanChunk(plan, styling: styling, structure: structure, protected: protected, context: context) }
+                    group.addTask { await self.cleanPlan(plan, styling: styling, structure: structure, protected: protected, context: context) }
                 }
             }
         }
@@ -201,31 +204,67 @@ public actor CleanupService {
         return out
     }
 
-    /// A spoken list must reach the model in one request. When an ordered run
-    /// straddles a cut, merge the two chunks if the merged input still fits.
-    private func coalesceEnumerationSeams(_ plans: [ChunkPlan]) async -> [ChunkPlan] {
+    /// Merge adjacent small chunks so a long transcript spends fewer model
+    /// calls. A pair is merged when its combined model input fits the soft
+    /// target (the hard cap for a list run that must stay whole), no protected
+    /// literal or email address sits on the seam, and the merge cannot strand
+    /// a list straddle with the following chunk. Overlap is preserved so the
+    /// seam splicer still sees the next chunk's leading context.
+    func coalesceChunks(_ plans: [ChunkPlan], protected: Protected) async -> [ChunkPlan] {
         guard plans.count > 1 else { return plans }
+        let target = min(config.hardTokenCap, max(1, config.softTokenTarget))
         var merged: [ChunkPlan] = []
-        var index = 0
+        merged.reserveCapacity(plans.count)
+        var current = plans[0]
+        var index = 1
         while index < plans.count {
-            let current = plans[index]
-            if index + 1 < plans.count,
-               EnumerationDetector.straddles(current.text, plans[index + 1].text) {
-                let combined = current.ownedText + " " + plans[index + 1].ownedText
-                let tokens = await cleaner.countTokens(combined)
-                if tokens <= config.hardTokenCap {
-                    merged.append(ChunkPlan(index: 0, text: combined, tokens: tokens))
-                    index += 2
-                    continue
-                }
+            let next = plans[index]
+            let lookahead = index + 1 < plans.count ? plans[index + 1] : nil
+            if let combined = await merge(current, next, target: target, lookahead: lookahead, protected: protected) {
+                current = combined
+            } else {
+                merged.append(current)
+                current = next
             }
-            merged.append(current)
             index += 1
         }
+        merged.append(current)
         return merged.enumerated().map { offset, plan in
             ChunkPlan(index: offset, text: plan.text, tokens: plan.tokens,
                       overlap: plan.overlap, ownedText: plan.ownedText)
         }
+    }
+
+    private func merge(_ left: ChunkPlan, _ right: ChunkPlan, target: Int,
+                       lookahead: ChunkPlan?, protected: Protected) async -> ChunkPlan? {
+        let straddlesList = EnumerationDetector.straddles(left.ownedText, right.ownedText)
+        let budget = straddlesList ? config.hardTokenCap : target
+        guard !Self.hasProtectedSeam(left.ownedText, right.ownedText, protected: protected) else { return nil }
+        let owned = left.ownedText + " " + right.ownedText
+        let text = left.text + " " + right.ownedText
+        let tokens = await cleaner.countTokens(text)
+        guard tokens <= budget else { return nil }
+        // Look ahead: if the merge would create a list straddle with the next
+        // chunk that can no longer fit under the cap, leave this seam intact.
+        if let next = lookahead, EnumerationDetector.straddles(owned, next.ownedText) {
+            let withNext = await cleaner.countTokens(text + " " + next.ownedText)
+            guard withNext <= config.hardTokenCap else { return nil }
+        }
+        return ChunkPlan(index: left.index, text: text, tokens: tokens,
+                         overlap: left.overlap, ownedText: owned)
+    }
+
+    /// A protected literal or email address must never be the boundary that a
+    /// coalescing pass crosses. Both are whole tokens on the planner's word
+    /// grid, so checking the two words adjacent to the seam is sufficient.
+    private static func hasProtectedSeam(_ left: String, _ right: String,
+                                         protected: Protected) -> Bool {
+        guard let last = Tokenizer.words(in: left).last,
+              let first = Tokenizer.words(in: right).first else { return false }
+        func sensitive(_ word: String) -> Bool {
+            word.contains("@") || !protected.ranges(in: word, detect: false).isEmpty
+        }
+        return sensitive(last) || sensitive(first)
     }
 
 }

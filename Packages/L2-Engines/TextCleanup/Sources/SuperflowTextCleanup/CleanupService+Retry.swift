@@ -14,6 +14,37 @@ extension CleanupService {
         var failure: String?
     }
 
+    /// Per-top-level-chunk retry ledger. Bounds the *total* number of model
+    /// requests a chunk may spend across its whole split tree (the old code
+    /// only bounded depth, so one bad chunk could fan out to 3^depth calls),
+    /// and reuses a successful leaf's result if the same text is seen again.
+    actor RetryLedger {
+        private let limit: Int
+        private var used = 0
+        private var results: [String: ChunkOutcome] = [:]
+
+        init(limit: Int) { self.limit = max(1, limit) }
+
+        /// False means the budget is spent; the caller must preserve its raw
+        /// text and report a fallback rather than silently skipping the leaf.
+        func claim() -> Bool {
+            guard used < limit else { return false }
+            used += 1
+            return true
+        }
+
+        func result(for text: String) -> ChunkOutcome? { results[text] }
+        func store(_ outcome: ChunkOutcome, for text: String) { results[text] = outcome }
+    }
+
+    /// Entry point for one planned chunk: give it its own bounded retry budget.
+    func cleanPlan(_ plan: ChunkPlan, styling: String, structure: String,
+                   protected: Protected, context: TextContext) async -> ChunkOutcome {
+        let ledger = RetryLedger(limit: 1 + max(0, config.retryDepth) * 8)
+        return await cleanChunk(plan, depth: 0, styling: styling, structure: structure,
+                                protected: protected, context: context, ledger: ledger)
+    }
+
     /// One model request and its guard checks. Failures are returned as data so
     /// `cleanChunk` can split-and-retry without losing the timing/metric fields.
     private func attempt(_ plan: ChunkPlan, styling: String, structure: String,
@@ -37,14 +68,16 @@ extension CleanupService {
         let cap = min(config.maxNewTokens, Int(1.3 * Double(measuredTokens)) + 32)
         do {
             try Task.checkCancellation()
-            let baseStructure = CleanupStructureDetector.structure(for: plan.text, configured: structure)
-            let detectedStructure = structureMapping.structure(
-                for: EnumerationDetector.detect(plan.text), base: baseStructure)
-            let canQuote = config.format.spokenQuotes
-                && protected.ranges(in: plan.text, detect: false).isEmpty
+            // One protected-literal scan feeds both the quote gate and the
+            // guard basis; neither stage re-scans the source.
+            let literalRanges = protected.ranges(in: plan.text, detect: false)
+            let canQuote = config.format.spokenQuotes && literalRanges.isEmpty
             let modelInput = canQuote
                 ? SpokenQuotes.apply(plan.text, style: config.format.quoteStyle)
                 : plan.text
+            let baseStructure = CleanupStructureDetector.structure(for: plan.text, configured: structure)
+            let detectedStructure = structureMapping.structure(
+                for: EnumerationDetector.detect(plan.text), base: baseStructure)
             // Acquire from the single global budget before starting the deadline.
             // Queue wait therefore never consumes the model's generation time.
             try await Self.inferenceSemaphore.acquire(priority: CleanPriority.current)
@@ -67,7 +100,12 @@ extension CleanupService {
             let checked = CleanResult(text: repairedText, tokensIn: result.tokensIn,
                                       tokensOut: result.tokensOut, hitTokenCap: result.hitTokenCap,
                                       latencyMs: result.latencyMs, prefillMs: result.prefillMs, generationMs: result.generationMs)
-            if let failure = CleanGuard.verify(input: modelInput, protected: protected, result: checked, cap: cap) {
+            // Source-side facts (protected spans, list layout, digit/path
+            // multisets) are built once here and reused by every ring/fork of
+            // this chunk instead of being rebuilt stage by stage.
+            let basis = CleanGuard.basis(for: modelInput, protected: protected,
+                                         knownLiteralRanges: canQuote ? nil : literalRanges)
+            if let failure = CleanGuard.verify(basis: basis, result: checked) {
                 return Attempt(text: repairedText, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
                                latencyMs: Self.millis(from: start), prefillMs: result.prefillMs,
                                generationMs: result.generationMs, failure: String(describing: failure))
@@ -91,32 +129,59 @@ extension CleanupService {
         }
     }
 
-    /// Cleans a plan. On a guard failure, split the failing plan at sentence
-    /// boundaries, retry each leaf one level deeper (up to `config.retryDepth`),
-    /// keep the successful leaves and fall back ONLY the leaf that still fails.
-    func cleanChunk(_ plan: ChunkPlan, depth: Int = 0, styling: String, structure: String,
-                    protected: Protected, context: TextContext) async -> ChunkOutcome {
+    /// Cleans a plan. On a guard failure, split the failing leaf at sentence
+    /// boundaries and retry its children in parallel (bounded by the global
+    /// session semaphore), reuse successful sibling results, keep every
+    /// successful leaf and fall back ONLY the leaf that still fails.
+    func cleanChunk(_ plan: ChunkPlan, depth: Int, styling: String, structure: String,
+                    protected: Protected, context: TextContext,
+                    ledger: RetryLedger) async -> ChunkOutcome {
+        if let reused = await ledger.result(for: plan.text) {
+            var copy = reused
+            copy.index = plan.index
+            return copy
+        }
+        guard await ledger.claim() else {
+            return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
+                                attempts: 0, reason: "retry budget exhausted")
+        }
         let single = await attempt(plan, styling: styling, structure: structure,
                                    protected: protected, context: context)
         if single.failure == nil {
-            return ChunkOutcome(index: plan.index, text: single.text, state: .cleaned,
-                                tokensIn: single.tokensIn, tokensOut: single.tokensOut,
-                                latencyMs: single.latencyMs, attempts: 1,
-                                prefillMs: single.prefillMs, generationMs: single.generationMs)
+            let outcome = ChunkOutcome(index: plan.index, text: single.text, state: .cleaned,
+                                       tokensIn: single.tokensIn, tokensOut: single.tokensOut,
+                                       latencyMs: single.latencyMs, attempts: 1,
+                                       prefillMs: single.prefillMs, generationMs: single.generationMs)
+            await ledger.store(outcome, for: plan.text)
+            return outcome
         }
-        // Retry on a real split only. `ownedText` excludes the planner's seam
-        // overlap, so re-splitting never re-introduces duplicated seam context.
+        // `ownedText` excludes the planner's seam overlap, so re-splitting never
+        // re-introduces duplicated seam context. A chunk that is itself one
+        // complete sentence is a true boundary: never retry it, just fall back.
         let source = plan.ownedText.isEmpty ? plan.text : plan.ownedText
-        if depth < config.retryDepth, let leaves = Self.sentenceLeaves(source) {
+        if depth < config.retryDepth, !Self.isAtomicSentence(source),
+           let leaves = Self.sentenceLeaves(source), leaves.count >= 2 {
+            let children = await withTaskGroup(of: (Int, ChunkOutcome).self) { group in
+                for (offset, leaf) in leaves.enumerated() {
+                    group.addTask {
+                        let sub = ChunkPlan(index: offset, text: leaf, tokens: await self.cleaner.countTokens(leaf))
+                        let child = await self.cleanChunk(sub, depth: depth + 1, styling: styling,
+                                                         structure: structure, protected: protected,
+                                                         context: context, ledger: ledger)
+                        return (offset, child)
+                    }
+                }
+                var ordered = [ChunkOutcome?](repeating: nil, count: leaves.count)
+                for await (offset, child) in group { ordered[offset] = child }
+                return ordered.compactMap { $0 }
+            }
             var combined = ""
-            var tokensIn = 0, tokensOut = 0, latency = 0, attempts = 0
+            combined.reserveCapacity(source.count)
+            var tokensIn = 0, tokensOut = 0, latency = 0, attempts = 1
             var allCleaned = true
             var firstFailure: String?
             var prefill: Int?, generation: Int?
-            for (offset, leaf) in leaves.enumerated() {
-                let sub = ChunkPlan(index: offset, text: leaf, tokens: await cleaner.countTokens(leaf))
-                let child = await cleanChunk(sub, depth: depth + 1, styling: styling,
-                                             structure: structure, protected: protected, context: context)
+            for child in children {
                 if !combined.isEmpty && !child.text.isEmpty { combined += " " }
                 combined += child.text
                 tokensIn += child.tokensIn
@@ -135,11 +200,17 @@ extension CleanupService {
                                 attempts: attempts, reason: firstFailure,
                                 prefillMs: prefill, generationMs: generation)
         }
-        // Depth exhausted (or unsplittable): the original text is preserved.
+        // Depth exhausted, atomic sentence, or budget spent: the original text
+        // is preserved and the failure is reported (never a silent fallback).
         return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
                             tokensIn: single.tokensIn, tokensOut: single.tokensOut,
                             latencyMs: single.latencyMs, attempts: 1, reason: single.failure,
                             prefillMs: single.prefillMs, generationMs: single.generationMs)
+    }
+
+    /// A single complete sentence carries no safe interior split point.
+    private static func isAtomicSentence(_ text: String) -> Bool {
+        SentenceSplitter.endsSentence(text) && sentenceLeaves(text) == nil
     }
 
     private static func sentenceLeaves(_ text: String) -> [String]? {
