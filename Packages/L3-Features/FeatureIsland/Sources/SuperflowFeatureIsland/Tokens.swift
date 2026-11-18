@@ -40,10 +40,12 @@ public enum IslandTokens {
         public static let accentFill = Tok.accent
         public static let field = Tok.well
         public static let danger = Tok.statusBad
-        /// The pixel waveform reads on one blue ramp, never a gradient.
-        public static let wave = Ramp.blue[3]
-        public static let wavePeak = Ramp.blue[4]
-        public static let waveLow = Ramp.blue[2]
+        /// The pixel waveform reads on the Island's bright-shifted one-hue ramp,
+        /// never a gradient. Every step stays legible on the opaque black body
+        /// in dark mode.
+        public static let wave = IslandRamp.step(3)
+        public static let wavePeak = IslandRamp.step(4)
+        public static let waveLow = IslandRamp.step(2)
     }
 
     /// Roles resolve through the shared `AppType` in the `.island` scope, so the
@@ -87,5 +89,28 @@ public enum IslandTokens {
         case sales = "Sales"
         case journal = "Journal"
         case custom = "Custom"
+    }
+}
+
+/// The Island's blue ramp, raised toward vivid superflow blue.
+///
+/// The shared canvas ramp's two lowest dark steps are near-black navy
+/// (`0x171717`, `0x172554`). On the opaque black Island body they read as dead
+/// pixels, which is why the silent meter, the dotted rules and the flow rail
+/// looked switched off in dark mode. This ramp keeps the SAME single hue — blue
+/// 600 is the one accent — and only lifts the floor: the dimmest mark is now
+/// blue 900, the readout is the accent, and the hot cell is its bright shade.
+/// Five conceptual steps are kept so the existing dither logic is unchanged.
+public enum IslandRamp {
+    public static let steps: [Color] = [
+        Ramp.blue[2], // 0  dormant — blue 900, a visible dot (was near-black)
+        Ramp.blue[2], // 1  quiet   — blue 900
+        Ramp.blue[3], // 2  readout — accent blue 600
+        Ramp.blue[3], // 3  active  — accent blue 600
+        Ramp.blue[4], // 4  head    — bright blue 400, same hue
+    ]
+
+    public static func step(_ index: Int) -> Color {
+        steps[max(0, min(steps.count - 1, index))]
     }
 }

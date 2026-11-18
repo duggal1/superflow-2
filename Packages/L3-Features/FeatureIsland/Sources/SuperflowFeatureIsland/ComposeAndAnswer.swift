@@ -16,14 +16,14 @@ struct ComposeView: View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.sm) {
             HStack(spacing: IslandTokens.Space.sm) {
                 PixelBitmap(rows: PixelGlyphs.compose, cell: PixelInstrument.cell,
-                            gap: PixelInstrument.gap, tone: Ramp.blue[4])
+                            gap: PixelInstrument.gap, tone: IslandRamp.step(4))
                 Text("Ask Superflow").appType(IslandTokens.TypeRole.label)
                     .foregroundStyle(IslandTokens.Color.ink)
-                PixelRule(tone: Ramp.blue[2])
+                PixelRule(tone: IslandRamp.step(2))
                 SurfaceButton("Island settings", action: context.actions.openSettings)
                     .frame(width: IslandTokens.Size.row, height: IslandTokens.Size.row)
                     .overlay {
-                        PixelBitmap(rows: PixelGlyphs.settings, cell: 1, gap: 0, tone: Ramp.blue[3])
+                        PixelBitmap(rows: PixelGlyphs.settings, cell: 1, gap: 0, tone: IslandRamp.step(3))
                             .allowsHitTesting(false)
                     }
             }
@@ -68,7 +68,7 @@ struct ListeningView: View {
         VStack(spacing: 0) {
             HStack(spacing: IslandTokens.Space.md) {
                 PixelBitmap(rows: PixelGlyphs.listening, cell: PixelInstrument.cell,
-                            gap: PixelInstrument.gap, tone: Ramp.blue[4])
+                            gap: PixelInstrument.gap, tone: IslandRamp.step(4))
                     .frame(width: IslandTokens.Size.row, alignment: .leading)
                 VStack(alignment: .leading, spacing: IslandTokens.Space.xs) {
                     if let target, !target.isEmpty {
@@ -90,7 +90,7 @@ struct ListeningView: View {
             }
             .frame(height: IslandTokens.Size.band)
             Spacer(minLength: 0)
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
                 .padding(.horizontal, IslandTokens.Space.sm)
         }
         .padding(.horizontal, IslandTokens.Space.lg)
@@ -112,7 +112,7 @@ struct AnswerView: View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
             HStack(spacing: IslandTokens.Space.sm) {
                 PixelBitmap(rows: PixelGlyphs.answer, cell: PixelInstrument.cell,
-                            gap: PixelInstrument.gap, tone: streaming ? Ramp.blue[4] : Ramp.blue[3])
+                            gap: PixelInstrument.gap, tone: streaming ? IslandRamp.step(4) : IslandRamp.step(3))
                 Text(streaming ? "Streaming" : "Answer").appType(IslandTokens.TypeRole.label)
                     .foregroundStyle(IslandTokens.Color.ink)
                 if streaming {
@@ -140,11 +140,11 @@ struct AnswerView: View {
                 chips(context.intelligence.suggestions)
             }
             Spacer(minLength: 0)
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .pixelFramed(tone: Ramp.blue[2], hot: streaming ? Ramp.blue[4] : Ramp.blue[3])
+        .pixelFramed(tone: IslandRamp.step(2), hot: streaming ? IslandRamp.step(4) : IslandRamp.step(3))
     }
 
     private var answerContent: IslandIntelligenceContent {
@@ -177,10 +177,10 @@ struct PixelChip: View {
     var body: some View {
         SurfaceButton(title, action: action)
             .frame(height: IslandTokens.Size.control)
-            .pixelFramed(tone: Ramp.blue[2], hot: Ramp.blue[4])
+            .pixelFramed(tone: IslandRamp.step(2), hot: IslandRamp.step(4))
             .overlay {
                 HStack(spacing: IslandTokens.Space.xs) {
-                    PixelBitmap(rows: PixelGlyphs.answer, cell: 1, gap: 0, tone: Ramp.blue[4])
+                    PixelBitmap(rows: PixelGlyphs.answer, cell: 1, gap: 0, tone: IslandRamp.step(4))
                         .allowsHitTesting(false)
                     Text(title).appType(IslandTokens.TypeRole.caption)
                         .foregroundStyle(IslandTokens.Color.ink)

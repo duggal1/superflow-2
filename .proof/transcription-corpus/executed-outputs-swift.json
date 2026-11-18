@@ -1,0 +1,386 @@
+{
+  "count" : 20,
+  "path" : "Tier0-deterministic",
+  "records" : [
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : false,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : true,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "software\/code",
+      "executed" : true,
+      "id" : "A1-S-0001",
+      "output" : "I need you to open the file hero.tsx then fix the get user by id function and change the timeout from 3k to 5k ms as I mentioned earlier in the week which is important for the timeline and then we.",
+      "raw" : "I need you to open the the the file hero dot t s x then fix the get user by id function and change the timeout from three thousand to five thousand milliseconds as I mentioned earlier in the week which is important for the timeline um and then we",
+      "tier" : "short",
+      "wordCount" : 50
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : false,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "meeting",
+      "executed" : true,
+      "id" : "A1-S-0011",
+      "output" : "Thanks everyone the Q 3 you know revenue was 2.4M which is up from 1.8M last quarter and churn dropped to 2.1% and then we can decide so please keep me posted on that right so that.",
+      "raw" : "thanks everyone the Q three you know revenue was two point four million which is is is is is is is up from one point eight million last quarter and churn dropped to two point one percent um and then we can decide so please keep me posted on that right so that",
+      "tier" : "short",
+      "wordCount" : 53
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : false,
+        "grammar" : true,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "legal",
+      "executed" : true,
+      "id" : "A1-S-0021",
+      "output" : "The plaintiff filed the motion on Tuesday but the deadline was extended to Thursday actually no wait Friday so we do not need to respond until the end of next week as I mentioned earlier in the week which is important for the timeline and\n\nThen we",
+      "raw" : "the plaintiff filed the the the motion on Tuesday but the deadline was extended to Thursday actually no wait Friday so we do not need to respond until the end of next week as I mentioned earlier in the week which is important for the timeline um and then we",
+      "tier" : "short",
+      "wordCount" : 50
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : false,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "non-native English",
+      "executed" : true,
+      "id" : "A1-S-0031",
+      "output" : "Sorry my English is not you know so good but I am trying to say the server is down since yesterday and we are not able to deploy the new version and then we can decide so please keep me posted on that right so\n\nThat",
+      "raw" : "sorry my English is not you know so good but I am trying to say the the the the the the the server is down since yesterday and we are not able to deploy the new version um and then we can decide so please keep me posted on that right so that",
+      "tier" : "short",
+      "wordCount" : 53
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : false,
+        "grammar" : true,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "standup",
+      "executed" : true,
+      "id" : "A1-S-0041",
+      "output" : "Yesterday I worked on the auth flow and today I am reviewing the pull request for the billing service unless the API contract changes then I will pair with Priya so please keep me posted on that right so that is the plan let me\n\nKnow if that",
+      "raw" : "yesterday I worked on the auth flow and today I am reviewing the the the pull request for the billing service unless the API contract changes then I will pair with Priya so please keep me posted on that right so that is the plan let me know if that",
+      "tier" : "short",
+      "wordCount" : 50
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : false,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : false,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "science",
+      "executed" : true,
+      "id" : "A1-S-0051",
+      "output" : "The sample temperature was 30 you know 7°C and the p value was 0.03 so the result is statistically significant but not conclusive as I mentioned earlier in the week which is important for the timeline and then we can decide.",
+      "raw" : "the the the the the the the sample temperature was thirty you know seven degrees Celsius and the p value was zero point zero three so the result is statistically significant but not conclusive as I mentioned earlier in the week which is important for the timeline um and then we can decide",
+      "tier" : "short",
+      "wordCount" : 53
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "gaming",
+      "executed" : true,
+      "id" : "A1-S-0061",
+      "output" : "I died 3 times on the final boss because my latency was 200ms so I switched servers and won on the fourth try you know what I mean as I mentioned earlier in the week which is important for the timeline and then we.",
+      "raw" : "I died three times on the the final boss because my latency was two hundred milliseconds so I switched servers and won on the the the fourth try you know what I mean as I mentioned earlier in the week which is important for the timeline um and then we",
+      "tier" : "short",
+      "wordCount" : 50
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : false,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "academic",
+      "executed" : true,
+      "id" : "A1-S-0071",
+      "output" : "The hypothesis was not confirmed you know because the sample size of 30 was too small and the control group showed the same effect right so that is the plan let me know if that makes sense so please keep me posted on that right\n\nSo that",
+      "raw" : "the hypothesis was not confirmed you know because the sample size of thirty was too small and the the the the the control group showed the the the same effect right so that is the plan let me know if that makes sense so please keep me posted on that right so that",
+      "tier" : "short",
+      "wordCount" : 53
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : false,
+        "grammar" : true,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "medical",
+      "executed" : true,
+      "id" : "A1-S-0081",
+      "output" : "The CT scan showed no fracture but there is mild swelling so we will monitor for 24 hours and discharge if the pain does not increase right so that is the plan let me know if that makes sense so please keep me posted on\n\nThat right",
+      "raw" : "the CT scan showed no fracture but there is is is mild swelling so we will monitor for twenty four hours and discharge if the pain does not increase right so that is the plan let me know if that makes sense so please keep me posted on that right",
+      "tier" : "short",
+      "wordCount" : 50
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : false,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "finance",
+      "executed" : true,
+      "id" : "A1-S-0091",
+      "output" : "Our runway is 18 months you know at the current burn rate of 200k per month so we do not need another round until Q 3 but I want to be careful here and we should double check the numbers you know what I.",
+      "raw" : "our runway is is is is is eighteen months you know at the the the the current burn rate of two hundred thousand per month so we do not need another round until Q three but I want to be careful here and we should double check the numbers you know what I",
+      "tier" : "short",
+      "wordCount" : 53
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : true,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "software\/code",
+      "executed" : true,
+      "id" : "A1-L-0001",
+      "output" : "The main thing we need to fix today authentication service because keeps returning a 403 when token expires and retry logic not backing off properly.\n\nPriya suggested we move session state into Redis cache so survives a restart but Marcus pointed out that cacheTTL only 30 minutes which too short for our use case.\n\nWe should also update API endpoint to return a proper 429 when rate limiter trips and then enable OpenTelemetry logging so we can actually see where latency coming from.\n\nDeploy scheduled for Wednesday actually no wait Thursday actually no wait Wednesday so we need pull request reviewed by Tuesday morning. Do not change timeout constant though because that still under investigation and last time we touched whole staging cluster went red.\n\nIf all that works we can bump version from 2.1 to 2.2.",
+      "raw" : "the main thing we need to fix today authentication service because keeps returning a four zero three when token expires and retry logic not backing off properly. Priya suggested we move session state into redish cash so survives a restart but Marcus pointed out that cacheTTL only thirty minutes which too short for our use case. we should also update a p i endpoint to return a proper four two nine when rate limiter trips and then enable open trace logging so we can actually see where latency coming from. deploy scheduled for Wednesday actually no wait Thursday actually no wait Wednesday so we need pull request reviewed by Tuesday morning. do not change timeout constant though because that still under investigation and last time we touched whole staging cluster went red. if all that works we can bump version from two point one to two point two",
+      "tier" : "long",
+      "wordCount" : 148
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "legal",
+      "executed" : true,
+      "id" : "A1-L-0011",
+      "output" : "The motion to suppress was you know filed on Monday but hearing was continued to following Thursday because the prosecution needed more time to respond.\n\nOur position is that the evidence was obtained without a valid warrant and therefore should be ruled inadmissible under the fourth amendment. The defendant did not consent to the search and no exigent circumstances were present at the time.\n\nOpposing counsel argues that the good faith exception applies but we disagree because the affidavit was clearly deficient on its face. We need to file our reply brief by Friday at the latest and I want you to review the citations before then.\n\nPlease do not use the old case law from 2008 because it was overruled.\n\nIf the judge denies the motion we will appeal to the circuit court within 30.",
+      "raw" : "the motion to suppress was you know filed on Monday but hearing was continued to following Thursday because the prosecution needed more time to respond. our position is that the evidence was obtained without a valid warrant and therefore should be ruled inadmissible under the fourth amendment. the defendant did not consent to the the the search and no exigent circumstances were present at the the the time. opposing counsel argues that the good faith exception applies but we disagree because the the affidavit was clearly deficient on its face. we need to file our reply brief by Friday at the latest and I want you to review the citations before then. please do not use the old case law from two thousand eight because it was overruled. if the judge denies the the the motion we will appeal to the circuit court within thirty",
+      "tier" : "long",
+      "wordCount" : 145
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : true,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "non-native English",
+      "executed" : true,
+      "id" : "A1-L-0021",
+      "output" : "Sorry my English is not perfect but I will try to explain the problem clearly. Since yesterday morning the production server is down and we are not able to deploy the new version because the pipeline keeps failing with a 403 error.\n\nI think the issue is that the authentication token expired but the retry logic is not handling it correctly. My teammate said we should restart the service and clear the Redis cache but I am not sure if that is safe to do during peak hours.\n\nWe also noticed the latency increased from 200 to 800ms after the last release.\n\nAs I mentioned earlier in the week which is important for the timeline and then we can decide so please keep me posted on that right so that.",
+      "raw" : "sorry my English is not perfect but I will try to explain the the problem clearly. since yesterday morning the production server is down and we are not able to deploy the new version because the pipeline keeps failing with a a a four zero three error. I I think the the issue is that the authentication token expired but the retry logic is not handling it correctly. my teammate said we should restart the service and clear the redish cash but I am not sure if that is safe to do during peak hours. we also noticed the the latency increased from two hundred to eight hundred milliseconds after the last release. as I mentioned earlier in the week which is important for the timeline um and then we can decide so please keep me posted on that right so that",
+      "tier" : "long",
+      "wordCount" : 142
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "noisy ASR",
+      "executed" : true,
+      "id" : "A1-L-0031",
+      "output" : "So the deployment you know failed again last night and I think it was a 403 followed by a 429 and then a 503 from the gateway.\n\nThe logs are hard to read because there is a lot of noise but the main error seems to be a connection timeout after 30 seconds.\n\nWe are not sure if the database is the problem or if it is just the load balancer.\n\nCan someone check the metrics for the last 2 hours and tell me whether the error rate went above 5%. If it did we should roll back to version 1.9 immediately.\n\nPlease do not I think that is the right call let me know if that makes sense so please.",
+      "raw" : "uh so the the the the deployment you know failed again last night and I I think it was a four zero three followed by a four two nine and then uh a five oh three from the gateway. the the logs are hard to read because there is a lot of noise but the the the the main error seems to be a connection timeout after thirty seconds. we are not sure if the database is the problem or if it is just the the load balancer. can someone check the metrics for the last two hours and tell me whether the the the the error rate went above five percent. if it did we should roll back to version one point nine immediately. please do not I I think that is the right call let me know if that makes sense so please",
+      "tier" : "long",
+      "wordCount" : 145
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : false,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : false,
+        "format" : true,
+        "grammar" : true,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "sales call",
+      "executed" : true,
+      "id" : "A1-L-0041",
+      "output" : "Thanks for taking the time today. As I mentioned the standard license is $12k per year but if you can sign by Thursday actually no wait Friday we can offer a 15% discount which brings it to 10,200.\n\nI know the budget conversation was difficult last quarter and I do not want to push you into something that does not make sense. The main thing your team gets is the enterprise support and the guaranteed uptime of 99.9%.\n\nSarah from our legal team can send the revised contract today so your counsel can review it over the weekend.\n\nIf everything looks good we can do a kickoff call on Monday and then we can decide so please keep me posted on that right so that.",
+      "raw" : "thanks for taking the time today. as I mentioned the the standard license is twelve thousand dollars per year but if you can sign by Thursday actually no wait Friday we can offer a fifteen percent discount which brings it to ten thousand two hundred. I I know the budget conversation was difficult last quarter and I do not want to push you into something that does not make sense. the the main thing your team gets is the the the enterprise support and the guaranteed uptime of ninety nine point nine percent. Sarah from our legal team can send the the revised contract today so your counsel can review it over the weekend. if everything looks good we can do a kickoff call on Monday um and then we can decide so please keep me posted on that right so that",
+      "tier" : "long",
+      "wordCount" : 142
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "email",
+      "executed" : true,
+      "id" : "A1-L-0051",
+      "output" : "Hi team just a quick you know follow up on the contract review. I have attached the revised version with the changes that Sarah requested on Tuesday and I believe we have addressed all of the open comments.\n\nThe main change is the payment term which is now net 30 instead of net 60 and the liability cap is updated to the amount specified in section 9.\n\nPlease do not forward this to the client until the legal team has signed off because we want to make sure the language is consistent with the master agreement.\n\nIf you have any comments can you leave them in the document by Thursday evening so I can send the final copy on Friday so please keep me posted on that right so that is the.",
+      "raw" : "hi team just a quick you know follow up on the the contract review. I have attached the the the the revised version with the changes that Sarah requested on Tuesday and I believe we have addressed all of the the open comments. the the the the main change is the payment term which is now net thirty instead of net sixty and the the liability cap is updated to the amount specified in section nine. please do not forward this to the client until the legal team has signed off because we want to make sure the the the the language is consistent with the master agreement. if you have any comments can you leave them in the document by Thursday evening so I can send the the final copy on Friday so please keep me posted on that right so that is the",
+      "tier" : "long",
+      "wordCount" : 145
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "gaming",
+      "executed" : true,
+      "id" : "A1-L-0061",
+      "output" : "That was the hardest raid we have done in weeks. I died 3 times on the final boss because my latency was 200ms and the healer could not keep up with the damage.\n\nAfter we switched servers I noticed the connection was much better and we finally beat it on the fourth attempt. The loot drop was a legendary sword with a critical hit chance of 15% which is better than the one I had before.\n\nWe should record the next run because the strategy we used in phase 2 was really clever. If the latency goes above 100 again we will switch servers immediately.\n\nDo not and we should double check the numbers you know what I mean as I mentioned earlier in the week which is.",
+      "raw" : "that was the the hardest raid we have done in weeks. I died three times on the the final boss because my latency was two hundred milliseconds and the the healer could not keep up with the damage. after we switched servers I noticed the the connection was much better and we finally beat it on the fourth attempt. the the the the loot drop was a legendary sword with a critical hit chance of fifteen percent which is better than the one I had before. we should record the the next run because the the strategy we used in phase two was really clever. if the the latency goes above one hundred again we will switch servers immediately. do not and we should double check the numbers you know what I mean as I mentioned earlier in the week which is",
+      "tier" : "long",
+      "wordCount" : 142
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "academic",
+      "executed" : true,
+      "id" : "A1-L-0071",
+      "output" : "The hypothesis was that increased you know sleep would improve test performance but results did not fully confirm that. We had a sample of 30 students split into 2 groups and the control group slept normally while the treatment group got an extra 2 hours.\n\nThe average score in the treatment group was 84 compared to 79 in the control group which is a difference of 5 points.\n\nThe p value was 0.04 which is significant at the 5% level but the effect size is modest. one limitation is that we did not control for caffeine intake which could have affected the results.\n\nThe next study should use a larger sample and measure sleep quality more directly.\n\nThe full write up is due to the professor on Friday.",
+      "raw" : "the hypothesis was that increased you know sleep would improve test performance but results did not fully confirm that. we had a sample of thirty students split into two groups and the control group slept normally while the the treatment group got an extra two hours. the the average score in the treatment group was eighty four compared to seventy nine in the control group which is a difference of five points. the p value was zero point zero four which is significant at the five percent level but the effect size is modest. one limitation is that we did not control for caffeine intake which could have affected the the results. the the next study should use a larger sample and measure sleep quality more directly. the the the full write up is is is due to the the the the professor on Friday.",
+      "tier" : "long",
+      "wordCount" : 145
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : false,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : true,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "email",
+      "executed" : true,
+      "id" : "A1-L-0081",
+      "output" : "Hi team following up on weekly report. Numbers for Q 2 are finalized and the total is 3.1M which is slightly above the forecast of 2.9M.\n\nI have asked Priya to update the dashboard and Marcus to verify the figures against the source system before we send anything to the board.\n\nThe main risk is the churn in the small business segment which went up from 2.1 to 2.8%. We do not have a clear explanation yet but the team is investigating.\n\nPlease do not share the draft with anyone outside the leadership group until Thursday.\n\nIf you spot any errors leave a comment in the document by Thursday actually no wait Wednesday evening so I can fix them before the Friday.",
+      "raw" : "hi team following up on weekly report. numbers for Q two are finalized and the total is three point one million which is slightly above the forecast of two point nine million. I have asked Priya to update the dashboard and Marcus to verify the the figures against the the source system before we send anything to the board. the the main risk is the churn in the small business segment which went up from two point one to two point eight percent. we we we do not have a clear explanation yet but the the team is investigating. please do not share the the draft with anyone outside the the leadership group until Thursday. if you spot any errors leave a comment in the the document by Thursday actually no wait Wednesday evening so I can fix them before the Friday",
+      "tier" : "long",
+      "wordCount" : 142
+    },
+    {
+      "coreAnyOK" : true,
+      "coreFactsOK" : true,
+      "coreForbiddenOK" : true,
+      "dimensions" : {
+        "facts" : true,
+        "format" : true,
+        "grammar" : false,
+        "novel" : true,
+        "terms" : true
+      },
+      "domain" : "medical",
+      "executed" : true,
+      "id" : "A1-L-0091",
+      "output" : "The triage nurse recorded you know a temperature of 38.5 and a heart rate of 102 so the patient was moved to the examination room immediately.\n\nThe doctor noted that the patient had a persistent cough for 10 days and no shortness of breath at rest. A rapid test was performed and the result was positive so we started treatment right away.\n\nThe patient is not allergic to any medications according to the chart but we should still verify before giving the first dose. We will keep her for observation for 24 hours and repeat the blood work in the morning.\n\nPlease document everything carefully and do not forget to update the discharge summary before the attending physician signs off at 5 PM\n\nAs",
+      "raw" : "the the triage nurse recorded you know a temperature of thirty eight point five and a heart rate of one hundred and two so the patient was moved to the the the the examination room immediately. the the doctor noted that the patient had a persistent cough for ten days and no shortness of breath at rest. a rapid test was performed and the the result was positive so we started treatment right away. the patient is not allergic to any medications according to the chart but we should still verify before giving the the first dose. we we we will keep her for observation for twenty four hours and repeat the the blood work in the morning. please document everything carefully and do not forget to update the the the the discharge summary before the attending physician signs off at five p m. as",
+      "tier" : "long",
+      "wordCount" : 145
+    }
+  ]
+}

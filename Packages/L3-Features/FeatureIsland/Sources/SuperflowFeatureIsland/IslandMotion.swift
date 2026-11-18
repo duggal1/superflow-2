@@ -167,11 +167,13 @@ final class IslandKinematics {
             c.land()
             last = nil
         }
-        // Width even and height whole: the silhouette sits exactly on the device
-        // pixel grid.
+        // Width even, height whole and both fillet radii whole: the silhouette —
+        // Bézier corners included — sits on the device pixel grid. An unsnapped
+        // radius is a half-pixel edge even when the box itself is snapped.
         return Frame(width: Pixel.snapEven(CGFloat(w.x), scale),
                      height: Pixel.snap(CGFloat(h.x), scale),
-                     top: max(0, CGFloat(t.x)), bottom: max(0, CGFloat(b.x)),
+                     top: Pixel.snap(max(0, CGFloat(t.x)), scale),
+                     bottom: Pixel.snap(max(0, CGFloat(b.x)), scale),
                      fade: min(1, max(0, c.x)), settled: done)
     }
 }
@@ -233,14 +235,28 @@ final class IslandStageClock {
 
 #if DEBUG
 /// Logs average fps and the worst frame once a second while the Island moves.
+/// The shared sample is readable from a headless driver, so "60 FPS" is a
+/// measured number and not an eyeball claim. Nothing of this ships in release.
 @MainActor
 final class IslandFrameProbe {
+    struct Stats: Equatable, Sendable {
+        var fps: Double = 0
+        var worstMs: Double = 0
+        var frames = 0
+    }
+
+    static let shared = IslandFrameProbe()
+
     private let log = Logger(subsystem: "com.superflow.app", category: "island-motion")
     private var last: TimeInterval = 0
     private var mark: TimeInterval = 0
     private var worst: TimeInterval = 0
     private var n = 0
+    private(set) var stats = Stats()
 
+    /// Called once per display frame by the silhouette's timeline. O(1), and it
+    /// allocates nothing in the steady state (the `Stats` value is replaced once
+    /// a second, not per frame).
     func tick(_ now: TimeInterval) {
         defer { last = now }
         guard last != 0 else {
@@ -249,14 +265,27 @@ final class IslandFrameProbe {
         }
         n += 1
         worst = max(worst, now - last)
-        if now - mark >= 1 {
+        // 60 frames at exactly 1/60 s sum to slightly under 1.0 in binary;
+        // the tolerance keeps the once-a-second report from slipping a frame.
+        if now - mark >= 1 - 1e-9 {
             let fps = Double(n) / (now - mark)
             let worstMs = worst * 1000
+            stats = Stats(fps: fps, worstMs: worstMs, frames: n)
             log.debug("Island \(fps, format: .fixed(precision: 1)) fps, worst \(worstMs, format: .fixed(precision: 1)) ms")
             mark = now
             n = 0
             worst = 0
         }
+    }
+
+    /// Drop the sample before a new transition so a long idle gap cannot be
+    /// reported as a long frame.
+    func restart() {
+        last = 0
+        mark = 0
+        worst = 0
+        n = 0
+        stats = Stats()
     }
 }
 #endif

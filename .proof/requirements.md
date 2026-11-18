@@ -1,23 +1,35 @@
-# Requirements — Dynamic Island intelligence rebuild
+# Requirements — clean sweep (2026-11-18)
 
-1. Read rules.yaml, git.yaml, DESIGN-RULES.MD, DESIGN.md, DYNAMIC-ICELAND-DESIGN.MD, dynmaic-island-intelligence.md, and docs/architecture/intelligence-backend-validation.md before editing.
-2. Launch five sub-agents, each given the design documents to read, with disjoint file ownership.
-3. Delete the current Island UI layer and rebuild it clean; keep and reuse the existing backend (transcription, Reflection streaming, prompts, screen OCR, history, waveform renderer) behind a thin view model.
-4. Declare one token set (Tokens.swift: type, spacing, radii, colors, durations) before any view; no magic numbers elsewhere.
-5. Build a pure enum + reducer state machine first: collapsed → compose → listening → thinking → answer; collapsed → meetingLive → meetingEnded(suggestions) → answer; any → history/settings; defined entry, exit, error/permission variants.
-6. Attached top-center borderless non-activating NSPanel: notched Macs use safeAreaInsets/auxiliary areas, non-notch shows a pill; all Spaces, fullscreen, no focus steal except text field; frame never animates, silhouette morphs as one continuous shape.
-7. Right Option is the ONLY trigger: hold = listening with pixel waveform, release = send; quick tap (<250 ms) latches, next press sends; any other key cancels; Left Option and Right Control do nothing; Option+key typing still works elsewhere.
-8. Delete the trigger-key picker from settings; migrate/clear stored trigger preference.
-9. Left Control toggles continuous meeting start/end; transcription on by default; question detection with an exposed sensitivity constant; silence produces nothing; end shows 4–5 clickable suggestion rows that answer; meeting saved to History.
-10. Typed input: click collapsed Island, placeholder "Enter any data and press Enter", Enter sends, streamed answer, Copy, Esc collapses.
-11. Messy-transcript intent extraction in ONE reusable system prompt block shared by PTT and meeting mode; ignore fillers/speaker labels, infer intent, use screen context, answer directly.
-12. Screen reading on by default; capture per send (Island excluded); Vision OCR fallback; inline permission state with Settings link; answers continue without screen context.
-13. Prompt/theme selector enumerates every existing prompt/theme from source (including Coding Interview, Sales Call, Journal/Personal, General Meeting); nothing hardcoded or dropped; selection persists.
-14. Settings icon expands Island in place; port every old setting except key picker; grouped Capture/Model/Prompts/Permissions/About; permission states with fix buttons.
-15. History is an Island state: list, open full transcript+answers, search, delete, Copy.
-16. Output view: fully expanded, selectable/copyable text, Markdown with copyable code blocks, scrolls inside Island, capped height.
-17. Stealth: Island visible to user but excluded from Google Meet/Zoom/Teams share; NSWindow.sharingType = .none enforced on every app window; no private APIs; verifier with positive control; honest Verified/Failed/Unverified status; WindowServer sharing-state dump script; compatibility matrix docs/stealth-compatibility.md.
-18. All testing headless: native apps launched background/hidden, no user focus, no global keystrokes, screenshots only of app window, drivers in tools/, JSON out, documented in tools/README.md.
-19. Aggressive testing: every requirement happy path, edges, hostile input, repeated actions, all states, aftermath; two screenshot review passes with fixes; completion audit two consecutive clean passes.
-20. Existing functionality must not regress; build, lint, focused tests and make verify green except documented pre-existing stale test.
-21. Commit/push per git.yaml (6–12 word messages); open a PR and do NOT merge.
+Source: user message verbatim intent —
+"I want you to check using Git: 1. If there is uncommitted work, I want you to commit all the work and make the tree clean and push everything to me. 2. I want you to check AI agent's work for the latest that's happening right now (30 minutes ago or what?). See if all the tests are green and do everything. I want you to launch three sub-agents for this clean sweep work"
+
+1. Detect all uncommitted work (modified tracked files, untracked source/tests/evidence) in /Users/harshitduggal/workspace/superflow.
+2. Commit ALL of that work with 6-12 word messages, no secrets, no build/junk artifacts, leaving `git status` clean.
+3. Push everything to origin so it lands on main (multi-agent mode: agent branch + PR merged to main with a merge commit).
+4. Pull/merge main before pushing; never rebase a pushed branch; never restore/reset/force-push.
+5. Investigate the latest AI agent work (~30 minutes ago): what changed, when, which agent/evidence dir, and whether it is complete or in-progress.
+6. Verify ALL tests are green: `make verify` (deps-check, lint-forbidden, every SwiftPM test package, release build). Fix or explicitly flag any failure; no weakened/deleted tests.
+7. Launch exactly three sub-agents for the clean sweep: git-work analyst, test runner, uncommitted-diff reviewer.
+8. Completion audit: two consecutive full passes re-running checks, zero FAIL/UNVERIFIED; report DONE or BLOCKED with one line of evidence per requirement.
+
+## Constraints carried from rules.yaml / git.yaml
+- Headless testing only; never launch a GUI window, browser, or `make run`/`open`.
+- Never commit secrets, .env, credentials, or tokens.
+- Never use git restore, git reset, or force push without explicit permission.
+- Do not edit frozen tests or weaken tests to make them pass.
+- Sub-agents are read-only: no source edits, no git mutations.
+
+## Assumptions (logged, not asked)
+- Multi-agent git mode applies: multiple OpenCode sessions are active and the user explicitly asked for three sub-agents. Only this agent performs git writes, on branch `agent/clean-sweep`.
+- The untracked `.proof/*/` directories are agent evidence and are part of "all the work"; they are committed rather than discarded.
+- Only the two stale state files were archived (`.proof/archive/20261118T174334Z/`); evidence directories stay in place to avoid breaking their internal references.
+
+## Added by the user's follow-up message (same task, new requirements)
+9. Commit ALL uncommitted work produced by all agents and push it to `main` (multi-mode branch + PR merge so it lands on main).
+10. Spawn at least five specialized sub-agents, plus a sixth dedicated cleanup sub-agent.
+11. Sub-agent A — performance/footprint: answer whether the app is lightweight on memory and disk space, or heavy, with measured evidence.
+12. Sub-agent B — transcription speed: answer whether transcription is "extremely hyper-ultra-fast" or not, with measured evidence.
+13. Sub-agent C — transcription quality: focus on S1-mini and how important/correct transcription quality is.
+14. Sub-agent D — Intelligence page: test whether it actually works.
+15. Sub-agent E — extreme reliability, code quality, code review, brutal testing, and more; includes diagnosing the 1 pre-existing AudioCpp `StreamingProfileTests` failure.
+16. Sub-agent F — cleanup: delete dead code, unused assets, unused `.proof` data, and bloat; user explicitly authorized deletion. Must verify before deleting and work in an isolated worktree/branch.

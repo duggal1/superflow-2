@@ -334,7 +334,10 @@ func numberPass(_ input: String, commaFrom: Int) -> String {
         let h = Int(m.g(1)!) ?? 0
         let mi = m.g(2)
         if h < 1 || h > 12 || (mi != nil && (Int(mi!) ?? 0) > 59) { return m.full }
-        return "\(h)\(mi.map { ":" + $0 } ?? "") \(m.g(3)!.uppercased())M"
+        // TIME_RX absorbs a trailing ".", so re-emit it after the rendered
+        // time. Otherwise "...at 11:59pm." loses its final punctuation here.
+        let trailing = m.full.hasSuffix(".") ? "." : ""
+        return "\(h)\(mi.map { ":" + $0 } ?? "") \(m.g(3)!.uppercased())M\(trailing)"
     }
     s = sub(AT_TIME_RX, s) { m in
         let h = Int(m.g(2)!) ?? 0

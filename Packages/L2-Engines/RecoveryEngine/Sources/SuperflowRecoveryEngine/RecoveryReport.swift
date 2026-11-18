@@ -24,6 +24,33 @@ public struct RecoveredTranscript: Sendable, Equatable, Identifiable {
     }
 }
 
+/// A journal that was removed after its transcript was verified. Recorded so the report is truthful
+/// about data that recovery itself discarded instead of hiding the deletion.
+public struct RecoveryDiscarded: Sendable, Equatable, Identifiable {
+    public var sessionID: SessionID
+    public var reason: String
+    public var samples: Int64
+    public var id: SessionID { sessionID }
+    public init(sessionID: SessionID, reason: String, samples: Int64) {
+        self.sessionID = sessionID
+        self.reason = reason
+        self.samples = samples
+    }
+}
+
+/// Something recovery deliberately did not fix. The data is retained; a human must decide.
+public struct RecoveryActionRequired: Sendable, Equatable, Identifiable {
+    public var sessionID: SessionID
+    public var reason: String
+    public var detail: String
+    public var id: SessionID { sessionID }
+    public init(sessionID: SessionID, reason: String, detail: String) {
+        self.sessionID = sessionID
+        self.reason = reason
+        self.detail = detail
+    }
+}
+
 public struct RecoveryReport: Sendable, Equatable {
     public var scanned: Int
     public var recovered: Int
@@ -34,9 +61,19 @@ public struct RecoveryReport: Sendable, Equatable {
     public var notices: [String]
     public var recoveredTranscripts: [RecoveredTranscript]
 
+    /// New, additive fields. Existing callers keep compiling unchanged.
+    public var discarded: [RecoveryDiscarded]
+    public var needsUserAction: [RecoveryActionRequired]
+    public var skippedBusy: Int
+    public var integrity: RecoveryLedgerIntegrity
+    public var quarantinedFiles: [String]
+
     public init(scanned: Int = 0, recovered: Int = 0, failed: Int = 0, segmentsAdded: Int = 0,
                 segmentsCleaned: Int = 0, samplesReplayed: Int64 = 0, notices: [String] = [],
-                recoveredTranscripts: [RecoveredTranscript] = []) {
+                recoveredTranscripts: [RecoveredTranscript] = [], discarded: [RecoveryDiscarded] = [],
+                needsUserAction: [RecoveryActionRequired] = [], skippedBusy: Int = 0,
+                integrity: RecoveryLedgerIntegrity = RecoveryLedgerIntegrity(),
+                quarantinedFiles: [String] = []) {
         self.scanned = scanned
         self.recovered = recovered
         self.failed = failed
@@ -45,7 +82,16 @@ public struct RecoveryReport: Sendable, Equatable {
         self.samplesReplayed = samplesReplayed
         self.notices = notices
         self.recoveredTranscripts = recoveredTranscripts
+        self.discarded = discarded
+        self.needsUserAction = needsUserAction
+        self.skippedBusy = skippedBusy
+        self.integrity = integrity
+        self.quarantinedFiles = quarantinedFiles
     }
 
     public var hasRecoveredText: Bool { !recoveredTranscripts.isEmpty }
+    /// True only when nothing needs a human decision and no ledger record was damaged.
+    public var isClean: Bool {
+        failed == 0 && needsUserAction.isEmpty && skippedBusy == 0 && integrity.isClean
+    }
 }

@@ -13,7 +13,7 @@ struct IdleLampView: View {
             let head = reduceMotion ? 2 : IdleLampMotion.head(at: timeline.date)
             Canvas { context, _ in
                 for index in 0..<5 {
-                    let tone = Ramp.blue[max(1, 4 - abs(index - head))]
+                    let tone = IslandRamp.step(max(1, 4 - abs(index - head)))
                     context.fill(Path(grid.rect(CGRect(x: CGFloat(index) * 3, y: 0,
                                                       width: 2, height: 2))),
                                  with: .color(tone), style: FillStyle(antialiased: false))

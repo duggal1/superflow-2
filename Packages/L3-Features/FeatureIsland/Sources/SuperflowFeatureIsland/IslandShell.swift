@@ -55,6 +55,9 @@ struct IslandShell<Content: View>: View {
         let key = StageSnapshot(stageID: stageID, box: box)
         TimelineView(.animation(paused: !running)) { timeline in
             let now = timeline.date.timeIntervalSinceReferenceDate
+            #if DEBUG
+            let _ = IslandFrameProbe.shared.tick(now)
+            #endif
             let frame = kin.step(now, scale: scale)
             let _ = park(frame)
             let _ = publish(frame)
@@ -106,6 +109,9 @@ struct IslandShell<Content: View>: View {
             running = false
         }
         .onChange(of: key) { old, new in
+            #if DEBUG
+            IslandFrameProbe.shared.restart()
+            #endif
             let newStage = old.stageID != new.stageID
             outgoing = (!reduce && newStage) ? old : nil
             kin.retarget(new.box, band: IslandTokens.Size.band, instant: reduce, newStage: newStage)

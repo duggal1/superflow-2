@@ -16,7 +16,7 @@ struct AnswerTile: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .modifier(EdgeFade(length: IslandTokens.Size.cardPad))
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
         }
         .padding(IslandTokens.Space.md)
         .background(IslandTokens.Color.field,
@@ -55,7 +55,7 @@ struct HistoryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             PixelHeading(glyph: PixelGlyphs.history, title: "Recent",
-                         tone: Ramp.blue[4], caption: "\(count) saved")
+                         tone: IslandRamp.step(4), caption: "\(count) saved")
                 .frame(height: IslandTokens.Size.row)
             PixelFlowRail(active: 0)
 
@@ -63,7 +63,7 @@ struct HistoryView: View {
                 if context.history.isEmpty {
                     HStack(spacing: IslandTokens.Space.sm) {
                         PixelBitmap(rows: PixelGlyphs.history, cell: PixelInstrument.cell,
-                                    gap: PixelInstrument.gap, tone: Ramp.blue[2])
+                                    gap: PixelInstrument.gap, tone: IslandRamp.step(2))
                         Text("Nothing dictated yet.")
                             .appType(IslandTokens.TypeRole.body)
                             .foregroundStyle(IslandTokens.Color.ink2)
@@ -77,7 +77,7 @@ struct HistoryView: View {
                 }
             }
             Spacer(minLength: 0)
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -96,7 +96,7 @@ private struct HistoryRow: View {
         } content: {
             HStack(spacing: IslandTokens.Space.md) {
                 PixelBitmap(rows: PixelGlyphs.compose, cell: 1, gap: 0,
-                            tone: hover ? Ramp.blue[4] : Ramp.blue[3])
+                            tone: hover ? IslandRamp.step(4) : IslandRamp.step(3))
                 Text(item.text.replacingOccurrences(of: "\n", with: " "))
                     .appType(IslandTokens.TypeRole.body)
                     .foregroundStyle(IslandTokens.Color.ink)
@@ -105,7 +105,7 @@ private struct HistoryRow: View {
                 Text("\(item.words) words").appType(IslandTokens.TypeRole.caption)
                     .foregroundStyle(IslandTokens.Color.ink2).monospacedDigit()
                     .opacity(hover ? 0 : 1)
-                PixelBitmap(rows: PixelBitmap.check, cell: 1, gap: 0, tone: Ramp.blue[4])
+                PixelBitmap(rows: PixelBitmap.check, cell: 1, gap: 0, tone: IslandRamp.step(4))
                     .opacity(hover ? 1 : 0)
             }
             .onHover { hover = $0 }
@@ -123,7 +123,7 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.md) {
-            PixelHeading(glyph: PixelGlyphs.settings, title: "Prompt theme", tone: Ramp.blue[4])
+            PixelHeading(glyph: PixelGlyphs.settings, title: "Prompt theme", tone: IslandRamp.step(4))
             PixelFlowRail(active: 0)
             VStack(spacing: IslandTokens.Space.xs) {
                 ForEach(Array(IslandTokens.Theme.allCases.enumerated()), id: \.element) { i, option in
@@ -134,7 +134,7 @@ struct SettingsView: View {
                 }
             }
             Spacer(minLength: 0)
-            PixelRule(tone: Ramp.blue[1])
+            PixelRule(tone: IslandRamp.step(1))
         }
         .padding(IslandTokens.Size.cardPad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -152,7 +152,7 @@ private struct ThemeRow: View {
             HStack(spacing: IslandTokens.Space.sm) {
                 PixelBitmap(rows: selected ? PixelBitmap.disc : PixelGlyphs.listening,
                             cell: 1, gap: 0,
-                            tone: selected ? Ramp.blue[4] : Ramp.blue[2])
+                            tone: selected ? IslandRamp.step(4) : IslandRamp.step(2))
                 Text(title).appType(IslandTokens.TypeRole.body)
                     .foregroundStyle(IslandTokens.Color.ink)
                 Spacer(minLength: 0)

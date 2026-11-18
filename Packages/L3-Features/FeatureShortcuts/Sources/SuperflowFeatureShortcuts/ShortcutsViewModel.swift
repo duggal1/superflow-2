@@ -47,13 +47,33 @@ public final class ShortcutsViewModel: ObservableObject {
     }
 
     public var visibleEntries: [ShortcutEntry] {
-        entries
+        let matched = Set(search(query).map(\.id))
+        return entries
             .filter { filter.match == nil || $0.match == filter.match }
-            .filter { matches($0, query: query) }
+            .filter { matched.contains($0.id) }
             .sorted { lhs, rhs in
                 if lhs.enabled != rhs.enabled { return lhs.enabled }
-                return lhs.trigger.localizedCaseInsensitiveCompare(rhs.trigger) == .orderedAscending
+                let name = lhs.trigger.localizedCaseInsensitiveCompare(rhs.trigger)
+                if name != .orderedSame { return name == .orderedAscending }
+                return lhs.id < rhs.id
             }
+    }
+
+    /// Tokenised, multi-term (AND), case/diacritic-insensitive full-text search
+    /// over trigger and content, with stable ranking. Empty query matches all.
+    public func search(_ query: String) -> [ShortcutEntry] {
+        let scored: [(entry: ShortcutEntry, score: Int)] = entries.compactMap { entry in
+            guard let score = KnowledgeTextSearch.score(
+                query: query, fields: [entry.trigger, entry.content]) else { return nil }
+            return (entry, score)
+        }
+        return scored.sorted { lhs, rhs in
+            if lhs.score != rhs.score { return lhs.score > rhs.score }
+            if lhs.entry.enabled != rhs.entry.enabled { return lhs.entry.enabled }
+            let name = lhs.entry.trigger.localizedCaseInsensitiveCompare(rhs.entry.trigger)
+            if name != .orderedSame { return name == .orderedAscending }
+            return lhs.entry.id < rhs.entry.id
+        }.map(\.entry)
     }
 
     public var isEmpty: Bool { !isLoading && visibleEntries.isEmpty }
@@ -173,50 +193,69 @@ public final class ShortcutsViewModel: ObservableObject {
                 toast.show(ShortcutDocumentError.noEntries.localizedDescription, style: .warning)
                 return ShortcutImportResult()
             }
-            var result = ShortcutImportResult()
-            var known = Set(entries.map { ShortcutValidation.normalized($0.trigger) })
-            var knownIDs = Set(entries.map(\.id))
-            for raw in document.entries {
-                let draft = ShortcutDraft(entry: raw)
-                let key = ShortcutValidation.normalized(draft.trigger)
-                guard !draft.trigger.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                      !draft.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                      draft.contentBytes <= ShortcutsStage.maxContentBytes,
-                      !key.isEmpty, !known.contains(key) else {
-                    result.skipped += 1
-                    continue
-                }
-                var entry = draft.entry
-                if entry.id.isEmpty || knownIDs.contains(entry.id) {
-                    entry.id = UUID().uuidString
-                }
-                do {
-                    try await repository.saveShortcut(entry)
-                    entries.append(entry)
-                    known.insert(key)
-                    knownIDs.insert(entry.id)
-                    result.imported += 1
-                    if CommonWords.isRisky(trigger: draft.trigger) {
-                        result.warnings.append("“\(draft.trigger)” uses common words.")
-                    }
-                } catch {
-                    result.skipped += 1
-                }
-            }
-            await load()
-            onChange?()
-            toast.show(result.summary, style: result.imported > 0 ? .success : .warning)
-            return result
+            return await applyImport(document.entries)
         } catch {
             toast.show("Could not import this file. \(error.localizedDescription)", style: .error)
             return ShortcutImportResult()
         }
     }
 
-    private func matches(_ entry: ShortcutEntry, query: String) -> Bool {
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !needle.isEmpty else { return true }
-        return entry.trigger.localizedCaseInsensitiveContains(needle)
-            || entry.content.localizedCaseInsensitiveContains(needle)
+    /// Deterministic, newline-free plain-text export.
+    public func exportPlainText() -> String {
+        ShortcutPlainText.encode(entries)
+    }
+
+    public func importPlainText(_ text: String) async -> ShortcutImportResult {
+        let parsed = ShortcutPlainText.decode(text)
+        guard !parsed.records.isEmpty else {
+            toast.show(ShortcutDocumentError.noEntries.localizedDescription, style: .warning)
+            return ShortcutImportResult(skipped: parsed.malformed)
+        }
+        let imported = parsed.records.map {
+            ShortcutEntry(trigger: $0.trigger, content: $0.content, match: $0.match)
+        }
+        return await applyImport(imported, extraSkipped: parsed.malformed)
+    }
+
+    /// Shared per-row import pipeline for JSON and plain text. Per-row data
+    /// problems are skipped and counted; repository failures never mutate
+    /// local state for that row.
+    private func applyImport(_ incoming: [ShortcutEntry],
+                             extraSkipped: Int = 0) async -> ShortcutImportResult {
+        var result = ShortcutImportResult(skipped: extraSkipped)
+        var known = Set(entries.map { ShortcutValidation.normalized($0.trigger) })
+        var knownIDs = Set(entries.map(\.id))
+        for raw in incoming {
+            let draft = ShortcutDraft(entry: raw)
+            let key = ShortcutValidation.normalized(draft.trigger)
+            guard !draft.trigger.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  !draft.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  draft.contentBytes <= ShortcutsStage.maxContentBytes,
+                  draft.trigger.count <= ShortcutValidation.maxTriggerLength,
+                  !key.isEmpty, !known.contains(key) else {
+                result.skipped += 1
+                continue
+            }
+            var entry = draft.entry
+            if entry.id.isEmpty || knownIDs.contains(entry.id) {
+                entry.id = UUID().uuidString
+            }
+            do {
+                try await repository.saveShortcut(entry)
+                entries.append(entry)
+                known.insert(key)
+                knownIDs.insert(entry.id)
+                result.imported += 1
+                if CommonWords.isRisky(trigger: draft.trigger) {
+                    result.warnings.append("“\(draft.trigger)” uses common words.")
+                }
+            } catch {
+                result.skipped += 1
+            }
+        }
+        await load()
+        onChange?()
+        toast.show(result.summary, style: result.imported > 0 ? .success : .warning)
+        return result
     }
 }

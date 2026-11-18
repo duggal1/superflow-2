@@ -6,8 +6,9 @@ import SuperflowPorts
 import SuperflowUIComponents
 import SwiftUI
 
-/// A reading room, not a table: a grouped list in the 320pt pane and a transcript
-/// pane you can read, copy and compare against the raw text.
+/// A reading room, not a table: a grouped list in the 320pt pane and a
+/// transcript pane you can read, copy and compare against the raw text.
+/// Rows lead with the transcript; the date is meta, never a title.
 public struct HistoryView: View {
     @ObservedObject private var model: HistoryViewModel
     @State private var searchFocus = false
@@ -78,6 +79,7 @@ public struct HistoryView: View {
                             Text(HistoryGrouping.label(for: group.day))
                                 .appType(.caption)
                                 .foregroundStyle(Tok.text2)
+                                .lineLimit(1)
                                 .padding(.horizontal, Space.xs)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, Space.xxs)
@@ -97,29 +99,38 @@ public struct HistoryView: View {
         }
     }
 
+    /// The transcript is the title. One line, clamped predictably and dissolved
+    /// at the tail; the meta row below it keeps its own intact geometry.
     private func row(_ session: SessionRecord) -> some View {
-        RowButton(title(for: session), height: 56, selected: session.id == model.selectedID) {
+        let noSpeech = session.wordCount == 0
+        return RowButton(title(for: session), height: 56, selected: session.id == model.selectedID) {
             Task { await model.select(session.id) }
         } content: {
             HStack(spacing: 12) {
                 appIcon(session)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(session.wordCount == 0 ? "No speech" : title(for: session))
+                    Text(title(for: session))
                         .appType(.label)
-                        .foregroundStyle(session.wordCount == 0 ? Tok.text2 : Tok.text)
+                        .foregroundStyle(noSpeech ? Tok.text2 : Tok.text)
                         .lineLimit(1)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                        .modifier(TextFade(length: 24))
+                        .textSelection(.enabled)
                     HStack(spacing: 8) {
                         TimelineView(.everyMinute) { context in
                             Text(Humanize.when(session.startedAt, now: context.date))
+                                .lineLimit(1)
                         }
                         Spacer(minLength: 8)
-                        if session.wordCount > 0 {
-                            Text(Humanize.words(session.wordCount)).monospacedDigit()
+                        if !noSpeech {
+                            Text(Humanize.words(session.wordCount)).monospacedDigit().lineLimit(1)
                         }
                     }
                     .appType(.caption)
                     .foregroundStyle(Tok.text2)
+                    .frame(height: 16)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.horizontal, 12)
         }
@@ -161,6 +172,9 @@ public struct HistoryView: View {
                         AudioPreview(url: audio)
                             .id(session.id)
                     }
+                    // One in-place expansion: the Cleaned/Raw switch lives in
+                    // the transcript itself and is keyed to the session, so it
+                    // never inherits the previous session's mode.
                     DiffTranscript(raw: transcriptText(raw: true), cleaned: transcriptText(raw: false),
                                    showRaw: $model.showRaw, onCard: false)
                         .id(session.id)
@@ -172,13 +186,9 @@ public struct HistoryView: View {
             }
             .scrollEdgeSoft()
         } else {
-            VStack(spacing: Space.sm) {
-                PixelStop(cells: 11, cell: 3)
-                Text("Select a session.")
-                    .appType(.title)
-                    .foregroundStyle(Tok.text)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            EmptyState("Select a session.",
+                       message: "Pick a transcript on the left to read it.",
+                       density: .pane)
         }
     }
 
@@ -200,8 +210,8 @@ public struct HistoryView: View {
 }
 
 /// Actions live next to the thing they act on: Copy and Delete sit on the
-/// session's own header row, and the glyph (not its hit target) lands on the
-/// content edge.
+/// session's own header row, right-aligned and 4 apart. The glyph, not its hit
+/// target, lands on the content edge (§0.4).
 struct HistoryDetailHeader: View {
     let session: SessionRecord
     let appName: String
@@ -224,48 +234,35 @@ struct HistoryDetailHeader: View {
                 Text(appName)
                     .appType(.title)
                     .foregroundStyle(Tok.text)
-                Spacer(minLength: 16)
-                HStack(spacing: 0) {
+                    .lineLimit(1)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .modifier(TextFade(length: 24))
+                HStack(spacing: 4) {
                     RowCopyButton(action: onCopy)
                     RowIconButton(glyph: .delete, label: "Delete session", action: onDelete)
                 }
-                // A 32pt hit target around a 16pt glyph: pull it out by 8 so the
-                // glyph sits on the content edge (law 4).
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(1)
+                // A 28pt face around a 12pt glyph: pull out 8 so the glyph sits
+                // on the content edge, which is pane right minus 32.
                 .padding(.trailing, -8)
             }
             .frame(height: 28)
 
             HStack(spacing: 12) {
                 TimelineView(.everyMinute) { context in
-                    Text(Humanize.when(session.startedAt, now: context.date))
+                    Text(Humanize.when(session.startedAt, now: context.date)).lineLimit(1)
                 }
-                Text(Humanize.duration(TimeInterval(session.durationMs) / 1000))
-                Text(Humanize.words(session.wordCount)).monospacedDigit()
+                Text(Humanize.duration(TimeInterval(session.durationMs) / 1000)).lineLimit(1)
+                Text(Humanize.words(session.wordCount)).monospacedDigit().lineLimit(1)
             }
             .appType(.caption)
             .foregroundStyle(Tok.text2)
+            .frame(height: 16)
             .padding(.leading, 28)
         }
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isHeader)
         .pixelAudit("HistoryDetailHeader")
-    }
-}
-
-/// Copy confirms in place: the glyph morphs to a checkmark for 1.2 s.
-struct CopyButton: View {
-    let action: () -> Void
-    @State private var done = false
-
-    var body: some View {
-        BarIconButton(glyph: done ? .checkmark : .copy, label: "Copy transcript") {
-            action()
-            done = true
-            Task {
-                try? await Task.sleep(for: .seconds(1.2))
-                done = false
-            }
-        }
-        .animation(.snappy(duration: 0.2), value: done)
     }
 }
