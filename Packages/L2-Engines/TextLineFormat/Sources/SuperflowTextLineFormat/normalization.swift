@@ -4,7 +4,7 @@
 //  emoji commands, and developer punctuation.
 //
 //  Pipeline position:
-//    Nemotron -> S1 mini -> formatting -> Normalizer.normalize() -> tech dictionary (still last)
+//    Nemotron -> S1-mini -> formatting -> Normalizer.normalize() -> tech dictionary (still last)
 //
 //  Pure Foundation. No I/O, no model calls. Idempotent. Conservative on ambiguous English.
 //  Port of normalize.ts (83 passing cases). Regexes are ICU (NSRegularExpression).
