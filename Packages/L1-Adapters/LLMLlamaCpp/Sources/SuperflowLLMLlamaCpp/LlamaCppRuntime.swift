@@ -24,6 +24,11 @@ private final class LlamaModel: @unchecked Sendable {
 private final class LlamaSession: @unchecked Sendable {
     let model: LlamaModel
     let context: OpaquePointer
+    /// Scratch token buffer reused across decodes on this session. WorkerPool
+    /// leases a session to exactly one decode at a time, so this is never shared
+    /// concurrently, and keeping its capacity avoids reallocating the full
+    /// prompt token array on every warm cleanup.
+    var promptBuffer: [llama_token] = []
 
     init(model: LlamaModel, context: OpaquePointer) {
         self.model = model
@@ -31,6 +36,52 @@ private final class LlamaSession: @unchecked Sendable {
     }
 
     deinit { llama_free(context) }
+}
+
+/// Tokenizes the constant system prefix once and reuses it. `decode` runs in
+/// detached tasks, so this is a small locked reference type rather than actor
+/// state — routing it through the actor would serialize every concurrent decode.
+/// Keys are the literal prefix text, so a future prompt edit adds a fresh entry
+/// instead of silently reusing stale tokens.
+private final class PrefixTokenCache: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [String: [llama_token]] = [:]
+    private var enabled = true
+
+    var isEnabled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return enabled
+    }
+
+    func tokens(for prefix: String, vocabulary: OpaquePointer) throws -> [llama_token] {
+        lock.lock()
+        defer { lock.unlock() }
+        if let cached = storage[prefix] { return cached }
+        // The prefix is the start of the whole prompt, so it alone receives BOS.
+        let fresh = try LlamaCppRuntime.tokenize(prefix, vocabulary: vocabulary, addSpecial: true)
+        storage[prefix] = fresh
+        return fresh
+    }
+
+    /// Proves once, at load time, that splitting on the special-token boundary
+    /// reproduces whole-prompt tokens byte for byte. If a model's tokenizer ever
+    /// violates that, the cache disables itself and every decode falls back to
+    /// whole-prompt tokenization — no silent quality loss is possible.
+    func verify(full: String, prefix: String, variable: String, vocabulary: OpaquePointer) {
+        let whole = try? LlamaCppRuntime.tokenize(full, vocabulary: vocabulary, addSpecial: true)
+        let head = try? LlamaCppRuntime.tokenize(prefix, vocabulary: vocabulary, addSpecial: true)
+        let tail = try? LlamaCppRuntime.tokenize(variable, vocabulary: vocabulary, addSpecial: false)
+        lock.lock()
+        defer { lock.unlock() }
+        if let whole, let head, let tail, head + tail == whole {
+            storage[prefix] = head
+            enabled = true
+        } else {
+            enabled = false
+            storage.removeAll()
+        }
+    }
 }
 
 public enum LlamaLogging {
@@ -45,6 +96,7 @@ public actor LlamaCppRuntime: LlamaRuntime {
     private var loadedCompute: ModelCompute?
     private var loadedURL: URL?
     private let sessionCount: Int
+    private let prefixCache = PrefixTokenCache()
 
     /// A pool this large is only useful on a machine with enough memory *and*
     /// cores. HEX's reconnaissance found that more native threads than usable
@@ -74,6 +126,10 @@ public actor LlamaCppRuntime: LlamaRuntime {
         sessionCount = min(LlamaCppRuntime.maximumSessions, max(1, sessions))
     }
 
+    /// Idempotent, serialized load. Actor isolation plus the identity guard make
+    /// concurrent launch/settings/first-call requests join one load: the model
+    /// and its warmed contexts stay resident for the helper's lifetime and are
+    /// only re-placed when the URL or compute actually changes.
     public func load(modelURL: URL, compute: ModelCompute) async throws {
         if model != nil, loadedCompute == compute, loadedURL == modelURL { return }
         _ = LlamaBackend.initialized
@@ -112,12 +168,17 @@ public actor LlamaCppRuntime: LlamaRuntime {
         // exhausted the 8 GB M1 and made llama_decode fail before any session
         // became useful. A small greedy pass still installs the Metal pipeline.
         let warmupPrompt = LlamaPrompt.render(text: "hello", options: CleanOptions())
+        // Validate prefix reuse against this model's tokenizer; on any mismatch
+        // the cache switches itself off and decode uses whole-prompt tokens.
+        if let (prefix, variable) = LlamaPrompt.prefixSplit(warmupPrompt) {
+            prefixCache.verify(full: warmupPrompt, prefix: prefix, variable: variable, vocabulary: vocabulary)
+        }
         var warmed: [LlamaSession] = []
         warmed.reserveCapacity(sessions.count)
         for session in sessions {
             do {
                 _ = try Self.decode(prompt: warmupPrompt, maxTokens: 8, session: session,
-                                    deadline: .now.advanced(by: .seconds(15)))
+                                    deadline: .now.advanced(by: .seconds(15)), prefixCache: prefixCache)
                 warmed.append(session)
             } catch {
                 Self.runtimeLog.warning("Dropping S1 context after warm-up failure: \(error.localizedDescription, privacy: .public)")
@@ -150,10 +211,14 @@ public actor LlamaCppRuntime: LlamaRuntime {
         // Queue time counts against the original request deadline. Previously,
         // each waiting caller received a fresh budget only after a worker was free.
         let deadline = ContinuousClock.now.advanced(by: .milliseconds(max(1, deadlineMs)))
+        // Capture the immutable cache reference before the @Sendable closure so
+        // decodes never hop back through actor isolation to read it.
+        let cache = prefixCache
         do {
             return try await pool.use(CleanPriority.current, deadline: deadline) { session in
                 let task = Task.detached {
-                    try Self.decode(prompt: prompt, maxTokens: maxTokens, session: session, deadline: deadline)
+                    try Self.decode(prompt: prompt, maxTokens: maxTokens, session: session,
+                                    deadline: deadline, prefixCache: cache)
                 }
                 return try await withTaskCancellationHandler {
                     try await task.value
@@ -167,7 +232,8 @@ public actor LlamaCppRuntime: LlamaRuntime {
     }
 
     private static func decode(prompt: String, maxTokens: Int, session: LlamaSession,
-                               deadline: ContinuousClock.Instant) throws -> LlamaCompletion {
+                               deadline: ContinuousClock.Instant,
+                               prefixCache: PrefixTokenCache) throws -> LlamaCompletion {
         func check() throws {
             try Task.checkCancellation()
             if ContinuousClock.now >= deadline { throw SuperflowError.timeout("cleanup") }
@@ -175,7 +241,21 @@ public actor LlamaCppRuntime: LlamaRuntime {
         try check()
         let context = session.context
         let vocabulary = session.model.vocabulary
-        let tokens = try tokenize(prompt, vocabulary: vocabulary)
+        // The system turn is byte-identical on every cleanup. Tokenize it once
+        // and reuse it; tokenize only the user turn/transcript per call. The cut
+        // is at a special-token boundary, so the concatenated tokens are exactly
+        // what whole-prompt tokenization would have produced — no quality drift.
+        let tokens: [llama_token]
+        if prefixCache.isEnabled, let (prefix, variable) = LlamaPrompt.prefixSplit(prompt) {
+            let prefixTokens = try prefixCache.tokens(for: prefix, vocabulary: vocabulary)
+            let variableTokens = try tokenize(variable, vocabulary: vocabulary, addSpecial: false)
+            session.promptBuffer.removeAll(keepingCapacity: true)
+            session.promptBuffer.append(contentsOf: prefixTokens)
+            session.promptBuffer.append(contentsOf: variableTokens)
+            tokens = session.promptBuffer
+        } else {
+            tokens = try tokenize(prompt, vocabulary: vocabulary)
+        }
         guard !tokens.isEmpty else { return LlamaCompletion(text: "", generatedTokens: 0) }
         guard tokens.count < Int(llama_n_ctx(context)) else {
             throw SuperflowError.invalidState("The S1-mini prompt exceeds the loaded context window")
@@ -234,14 +314,19 @@ public actor LlamaCppRuntime: LlamaRuntime {
                                generationMs: Int((DispatchTime.now().uptimeNanoseconds - generationStarted) / 1_000_000))
     }
 
-    private static func tokenize(_ text: String, vocabulary: OpaquePointer) throws -> [llama_token] {
+    /// `addSpecial` prepends BOS; it is true only for the leading prefix so a
+    /// cached prefix plus a freshly tokenized remainder matches whole-prompt
+    /// tokenization exactly (never two BOS tokens). `parseSpecial` stays true so
+    /// `<|im_start|>`/`<|im_end|>` remain atomic at the split boundary.
+    fileprivate static func tokenize(_ text: String, vocabulary: OpaquePointer,
+                                     addSpecial: Bool = true) throws -> [llama_token] {
         let bytes = Array(text.utf8)
         guard bytes.count < Int(Int32.max) else {
             throw SuperflowError.invalidState("The S1-mini prompt is too large to tokenize")
         }
         var tokens = [llama_token](repeating: 0, count: max(1, bytes.count + 1))
         let count = text.withCString { textPointer in
-            llama_tokenize(vocabulary, textPointer, Int32(bytes.count), &tokens, Int32(tokens.count), true, true)
+            llama_tokenize(vocabulary, textPointer, Int32(bytes.count), &tokens, Int32(tokens.count), addSpecial, true)
         }
         guard count >= 0, Int(count) <= tokens.count else {
             throw SuperflowError.modelUnavailable("llama.cpp tokenization failed")
