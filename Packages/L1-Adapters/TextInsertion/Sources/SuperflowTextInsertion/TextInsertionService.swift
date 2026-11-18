@@ -226,6 +226,14 @@ public actor TextInsertionService {
                     ? await clipboard.snapshot(maxBytes: 64 * 1024 * 1024) : nil
                 guard let written = await clipboard.writeTransient(text) else {
                     report.append(InsertionStep.pbWriteFailed)
+                    // writeTransient clears the board before writing; a failed
+                    // write would otherwise leave the user's clipboard lost.
+                    // Restore the snapshot while it is still the latest write,
+                    // exactly as hex does on a failed clipboard commit.
+                    if let snapshot {
+                        let current = await clipboard.changeCount()
+                        await clipboard.restore(snapshot, ifChangeCount: current)
+                    }
                     return finish(.notInserted(.eventPostFailed, textOnClipboard: false))
                 }
                 ourChangeCount = written
