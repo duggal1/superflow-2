@@ -5,13 +5,17 @@ import SuperflowPorts
 enum PostDedupe {
     private static let intentionalDoubles = Set("very really so that had is are bye ha extremely".split(separator: " ").map(String.init))
     private static let protectedWords = Set("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion not no never none nothing nobody neither nor cannot without".split(separator: " ").map(String.init))
+    /// Pure filled pauses only. Discourse markers ("you know", "I mean",
+    /// "like", "so") stay: they are content-bearing in some contexts and are
+    /// the cleanup model's call, not a deterministic deletion.
+    private static let fillers = Set("um uhm uh erm er hmm mmm".split(separator: " ").map(String.init))
 
     static func apply(_ text: String, protected: Protected = Protected()) -> String {
         text.components(separatedBy: "\n").map { cleanLine($0, protected: protected) }.joined(separator: "\n")
     }
 
     private static func cleanLine(_ input: String, protected: Protected) -> String {
-        var line = input
+        var line = removeFillers(input, protected: protected)
         var i = 0
         var tokens = Tokenizer.tokens(in: line)
         while true {
@@ -48,6 +52,25 @@ enum PostDedupe {
                 tokens = Tokenizer.tokens(in: line)
             } else { i += 1 }
         }
+    }
+
+    /// Removes standalone filled pauses while keeping every protected span and
+    /// every other word byte-for-byte. A line made only of fillers is left
+    /// intact: only the cleanup stage (or the model) may return empty text.
+    private static func removeFillers(_ input: String, protected: Protected) -> String {
+        let tokens = Tokenizer.tokens(in: input)
+        guard tokens.count > 1 else { return input }
+        var keep = [Bool](repeating: true, count: tokens.count)
+        for index in tokens.indices {
+            let core = tokens[index].core.lowercased()
+            if fillers.contains(core), safe(tokens[index], in: input, protected: protected) {
+                keep[index] = false
+            }
+        }
+        guard keep.contains(false) else { return input }
+        let pieces = tokens.indices.filter { keep[$0] }.map { tokens[$0].full }
+        guard !pieces.isEmpty else { return input }
+        return pieces.joined(separator: " ")
     }
 
     private static func safe(_ token: Token, in line: String, protected: Protected) -> Bool {
