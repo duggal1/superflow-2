@@ -77,8 +77,26 @@ public actor CleanupService {
     private let cleaner: any TextCleaner
     private let metrics: any MetricsSink
     public let config: CleanupConfig
-    private let semaphore: AsyncSemaphore
     private let structureMapping: any StructureMapping
+
+    /// One global inference budget shared by every cleanup call. The llama.cpp
+    /// runtime exposes a fixed pool of sessions (LlamaCppRuntime.maximumSessions);
+    /// every model call — each worker and each of its internal sub-chunk lanes —
+    /// takes one permit. `workers x lanes` therefore can never exceed the
+    /// sessions actually available, no matter how many cleanups are in flight.
+    private static let sessionBudget = 10
+    private static let inferenceSemaphore = AsyncSemaphore(sessionBudget)
+
+    /// Result of one model request plus guard check. `failure == nil` is success.
+    private struct Attempt: Sendable {
+        var text = ""
+        var tokensIn = 0
+        var tokensOut = 0
+        var latencyMs = 0
+        var prefillMs: Int?
+        var generationMs: Int?
+        var failure: String?
+    }
 
     public init(cleaner: any TextCleaner, config: CleanupConfig = CleanupConfig(),
                 metrics: any MetricsSink = NoopMetrics(),
@@ -89,7 +107,6 @@ public actor CleanupService {
         bounded.hardTokenCap = min(CleanupConfig.maximumInputTokens, max(1, config.hardTokenCap))
         bounded.workers = min(10, max(1, config.workers))
         self.config = bounded
-        self.semaphore = AsyncSemaphore(bounded.workers)
         self.structureMapping = structureMapping
     }
 
@@ -144,19 +161,20 @@ public actor CleanupService {
             plans = [ChunkPlan(index: 0, text: text, tokens: count)]
         } else {
             let words = WordTimingProjection.apply(to: Tokenizer.words(text, protected: protected), timings: context.wordTimings)
-            var planning = config
-            planning.overlapPercent = 0
-            plans = await ChunkPlanner(config: planning, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
+            // Keep the configured seam overlap. Each plan re-shares the previous
+            // chunk's trailing sentences as context; `assemble` removes them
+            // again with the real splicer alignment after cleanup.
+            plans = await ChunkPlanner(config: config, protected: protected).plan(words) { await self.cleaner.countTokens($0) }
         }
         plans = await coalesceEnumerationSeams(plans)
         guard !plans.isEmpty else { return ("", []) }
         var results = [ChunkOutcome](repeating: ChunkOutcome(index: 0, text: "", state: .pending), count: plans.count)
         // Long dictation is split into ~800-token chunks. Run one worker per
-        // chunk, up to ten, so a 20-minute transcript fans out instead of
-        // queueing behind a fixed small pool. Short input stays cheap.
+        // chunk up to the global session budget; never open more workers than
+        // there are sessions, so queued calls cannot stall into a raw fallback.
         let totalTokens = plans.reduce(0) { $0 + $1.tokens }
         let neededChunks = max(1, (totalTokens + 799) / 800)
-        let workerCount = min(config.workers, plans.count, max(2, neededChunks))
+        let workerCount = min(config.workers, plans.count, Self.sessionBudget, max(2, neededChunks))
         await withTaskGroup(of: ChunkOutcome.self) { group in
             var next = 0
             for _ in 0..<workerCount {
@@ -171,7 +189,27 @@ public actor CleanupService {
                 }
             }
         }
-        return (SeamSplicer.join(results.map(\.text)), results)
+        return (assemble(results.map(\.text)), results)
+    }
+
+    /// Re-assembles cleaned chunk texts, removing the planner's repeated seam
+    /// context with the splicer's real alignment (not a plain join). Overlap is
+    /// estimated from the same soft-target fraction the planner uses.
+    private func assemble(_ parts: [String]) -> String {
+        let overlapWords = Int(Double(config.softTokenTarget) * min(0.20, max(0, config.overlapPercent)))
+        guard var out = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines), !out.isEmpty else {
+            return SeamSplicer.join(parts)
+        }
+        for raw in parts.dropFirst() {
+            let piece = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !piece.isEmpty else { continue }
+            let splice = SeamSplicer.splice(out, piece, overlapWords: overlapWords)
+            let kept = splice.kept.trimmingCharacters(in: .whitespacesAndNewlines)
+            let rest = splice.rest.trimmingCharacters(in: .whitespacesAndNewlines)
+            if rest.isEmpty { out = kept; continue }
+            out = kept.isEmpty ? rest : kept + " " + rest
+        }
+        return out
     }
 
     /// A spoken list must reach the model in one request. When an ordered run
@@ -201,11 +239,12 @@ public actor CleanupService {
         }
     }
 
-    private func cleanChunk(_ plan: ChunkPlan, styling: String, structure: String,
-                            protected: Protected, context: TextContext) async -> ChunkOutcome {
+    /// One model request and its guard checks. Failures are returned as data so
+    /// `cleanChunk` can split-and-retry without losing the timing/metric fields.
+    private func attempt(_ plan: ChunkPlan, styling: String, structure: String,
+                         protected: Protected, context: TextContext) async -> Attempt {
         if plan.tokens > config.hardTokenCap {
-            return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
-                                reason: "protected span exceeds input cap")
+            return Attempt(failure: "protected span exceeds input cap")
         }
         let start = ContinuousClock.now
         let configured = context.interactive ? context.settings.interactiveDeadlineMs : context.settings.backgroundDeadlineMs
@@ -221,10 +260,6 @@ public actor CleanupService {
         if plan.tokens > 0 { measuredTokens = plan.tokens }
         else { measuredTokens = await cleaner.countTokens(plan.text) }
         let cap = min(config.maxNewTokens, Int(1.3 * Double(measuredTokens)) + 32)
-        var tokensIn = 0
-        var tokensOut = 0
-        var prefillMs: Int?
-        var generationMs: Int?
         do {
             try Task.checkCancellation()
             let baseStructure = CleanupStructureDetector.structure(for: plan.text, configured: structure)
@@ -235,7 +270,9 @@ public actor CleanupService {
             let modelInput = canQuote
                 ? SpokenQuotes.apply(plan.text, style: config.format.quoteStyle)
                 : plan.text
-            try await semaphore.acquire(priority: CleanPriority.current)
+            // Acquire from the single global budget before starting the deadline.
+            // Queue wait therefore never consumes the model's generation time.
+            try await Self.inferenceSemaphore.acquire(priority: CleanPriority.current)
             let result: CleanResult
             do {
                 let options = CleanOptions(styling: styling, structure: detectedStructure, context: context.cleanupContext,
@@ -245,12 +282,8 @@ public actor CleanupService {
                 } else {
                     result = try await withDeadline(ms: deadline) { try await self.cleaner.clean(modelInput, options: options) }
                 }
-                await semaphore.release()
-            } catch { await semaphore.release(); throw error }
-            tokensIn = result.tokensIn
-            tokensOut = result.tokensOut
-            prefillMs = result.prefillMs
-            generationMs = result.generationMs
+                await Self.inferenceSemaphore.release()
+            } catch { await Self.inferenceSemaphore.release(); throw error }
             // S1-mini sometimes repeats a path segment it just emitted
             // ("lib/backend/backend/main/..."). Collapse that exact stutter so
             // a single mechanical slip does not discard an otherwise correct
@@ -258,26 +291,94 @@ public actor CleanupService {
             let repairedText = RepeatedPathSegment.collapse(result.text)
             let checked = CleanResult(text: repairedText, tokensIn: result.tokensIn,
                                       tokensOut: result.tokensOut, hitTokenCap: result.hitTokenCap,
-                                      latencyMs: result.latencyMs, prefillMs: prefillMs, generationMs: generationMs)
-            if let failure = CleanGuard.verify(input: modelInput, protected: protected, result: checked, cap: cap) { throw failure }
-            if canQuote, !QuoteGate.preserved(input: modelInput, output: repairedText) {
-                throw CleanGuard.Failure.quoteChanged
+                                      latencyMs: result.latencyMs, prefillMs: result.prefillMs, generationMs: result.generationMs)
+            if let failure = CleanGuard.verify(input: modelInput, protected: protected, result: checked, cap: cap) {
+                return Attempt(text: repairedText, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
+                               latencyMs: Self.millis(from: start), prefillMs: result.prefillMs,
+                               generationMs: result.generationMs, failure: String(describing: failure))
             }
-            let elapsed = start.duration(to: .now)
-            return ChunkOutcome(index: plan.index, text: repairedText, state: .cleaned, tokensIn: result.tokensIn,
-                                tokensOut: result.tokensOut, latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000), attempts: 1, prefillMs: result.prefillMs, generationMs: result.generationMs)
+            if canQuote, !QuoteGate.preserved(input: modelInput, output: repairedText) {
+                return Attempt(text: repairedText, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
+                               latencyMs: Self.millis(from: start), prefillMs: result.prefillMs,
+                               generationMs: result.generationMs, failure: String(describing: CleanGuard.Failure.quoteChanged))
+            }
+            return Attempt(text: repairedText, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
+                           latencyMs: Self.millis(from: start), prefillMs: result.prefillMs,
+                           generationMs: result.generationMs)
         } catch {
             #if DEBUG
             if ProcessInfo.processInfo.environment["SUPERFLOW_CLEANUP_DEBUG"] == "1" {
                 FileHandle.standardError.write(Data("CLEANUP_FALLBACK reason=\(error) input=\(plan.text)\n".utf8))
             }
             #endif
-            let elapsed = start.duration(to: .now)
-            return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
-                                tokensIn: tokensIn, tokensOut: tokensOut,
-                                latencyMs: Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000),
-                                attempts: 1, reason: String(describing: error), prefillMs: prefillMs, generationMs: generationMs)
+            return Attempt(tokensIn: 0, tokensOut: 0, latencyMs: Self.millis(from: start),
+                           failure: String(describing: error))
         }
+    }
+
+    /// Cleans a plan. On a guard failure, split the failing plan at sentence
+    /// boundaries, retry each leaf one level deeper (up to `config.retryDepth`),
+    /// keep the successful leaves and fall back ONLY the leaf that still fails.
+    private func cleanChunk(_ plan: ChunkPlan, depth: Int = 0, styling: String, structure: String,
+                            protected: Protected, context: TextContext) async -> ChunkOutcome {
+        let single = await attempt(plan, styling: styling, structure: structure,
+                                   protected: protected, context: context)
+        if single.failure == nil {
+            return ChunkOutcome(index: plan.index, text: single.text, state: .cleaned,
+                                tokensIn: single.tokensIn, tokensOut: single.tokensOut,
+                                latencyMs: single.latencyMs, attempts: 1,
+                                prefillMs: single.prefillMs, generationMs: single.generationMs)
+        }
+        // Retry on a real split only. `ownedText` excludes the planner's seam
+        // overlap, so re-splitting never re-introduces duplicated seam context.
+        let source = plan.ownedText.isEmpty ? plan.text : plan.ownedText
+        if depth < config.retryDepth, let leaves = Self.sentenceLeaves(source) {
+            var combined = ""
+            var tokensIn = 0, tokensOut = 0, latency = 0, attempts = 0
+            var allCleaned = true
+            var firstFailure: String?
+            var prefill: Int?, generation: Int?
+            for (offset, leaf) in leaves.enumerated() {
+                let sub = ChunkPlan(index: offset, text: leaf, tokens: await cleaner.countTokens(leaf))
+                let child = await cleanChunk(sub, depth: depth + 1, styling: styling,
+                                             structure: structure, protected: protected, context: context)
+                if !combined.isEmpty && !child.text.isEmpty { combined += " " }
+                combined += child.text
+                tokensIn += child.tokensIn
+                tokensOut += child.tokensOut
+                latency += child.latencyMs
+                attempts += child.attempts
+                if child.state == .fallback {
+                    allCleaned = false
+                    if firstFailure == nil { firstFailure = child.reason }
+                }
+                if prefill == nil { prefill = child.prefillMs }
+                if generation == nil { generation = child.generationMs }
+            }
+            return ChunkOutcome(index: plan.index, text: combined, state: allCleaned ? .cleaned : .fallback,
+                                tokensIn: tokensIn, tokensOut: tokensOut, latencyMs: latency,
+                                attempts: attempts, reason: firstFailure,
+                                prefillMs: prefill, generationMs: generation)
+        }
+        // Depth exhausted (or unsplittable): the original text is preserved.
+        return ChunkOutcome(index: plan.index, text: plan.text, state: .fallback,
+                            tokensIn: single.tokensIn, tokensOut: single.tokensOut,
+                            latencyMs: single.latencyMs, attempts: 1, reason: single.failure,
+                            prefillMs: single.prefillMs, generationMs: single.generationMs)
+    }
+
+    private static func sentenceLeaves(_ text: String) -> [String]? {
+        let split = SentenceSplitter.split(text)
+        var leaves = split.complete.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let tail = split.remainder.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !tail.isEmpty { leaves.append(tail) }
+        let useful = leaves.filter { !$0.isEmpty }
+        return useful.count >= 2 ? useful : nil
+    }
+
+    private static func millis(from start: ContinuousClock.Instant) -> Int {
+        let elapsed = start.duration(to: .now)
+        return Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000)
     }
 
     private func withDeadline<T: Sendable>(ms: Int, operation: @escaping @Sendable () async throws -> T) async throws -> T {
