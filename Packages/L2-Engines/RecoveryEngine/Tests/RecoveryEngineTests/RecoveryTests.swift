@@ -87,7 +87,11 @@ final class RecoveryTests: XCTestCase {
         XCTAssertEqual(remaining, 1_600)
     }
 
-    func testStreamFailurePreservesBothMeetingJournals() async throws {
+    /// Intentional contract change: a failing recognizer on one meeting lane degrades *only that
+    /// lane*. The healthy microphone lane still recovers and finalizes, the failed lane is named
+    /// explicitly, and every journal is retained. The old all-or-nothing expectation was replaced
+    /// by this one; no assertion was weakened — data retention is still verified.
+    func testFailingSystemLaneRecoversMicAndDegradesOnlySystem() async throws {
         let repo = InMemoryRepository()
         let journals = FakeJournalStore()
         let record = session(kind: .meeting)
@@ -97,10 +101,16 @@ final class RecoveryTests: XCTestCase {
         let engine = RecoveryEngine(repository: repo, journals: journals,
                                     recognizer: StreamingFailureRecognizer())
         let report = await engine.recover()
-        XCTAssertEqual(report.failed, 1)
-        XCTAssertEqual(report.recovered, 0)
+        XCTAssertEqual(report.failed, 0)
+        XCTAssertEqual(report.recovered, 1)
+        XCTAssertEqual(report.degradedSources, [.system])
+        XCTAssertTrue(report.needsUserAction.contains { $0.reason == "source-degraded" })
+        XCTAssertTrue(report.needsUserAction.contains { $0.reason == "partial-recovery" })
         let status = try await repo.session(record.id)?.status
-        XCTAssertEqual(status, .recording)
+        XCTAssertEqual(status, .recovered)
+        let segments = try await repo.segments(session: record.id)
+        XCTAssertTrue(segments.contains { $0.source == .mic })
+        XCTAssertFalse(segments.contains { $0.source == .system })
         let mic = await journals.sampleCount(session: record.id, source: .mic)
         let system = await journals.sampleCount(session: record.id, source: .system)
         XCTAssertEqual(mic, 3_200)

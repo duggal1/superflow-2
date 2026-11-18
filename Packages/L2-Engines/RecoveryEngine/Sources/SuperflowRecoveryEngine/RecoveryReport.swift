@@ -51,6 +51,28 @@ public struct RecoveryActionRequired: Sendable, Equatable, Identifiable {
     }
 }
 
+/// An explicit lost interval on one journal lane. Recovery never silently bridges missing audio
+/// with fabricated continuity: the interval is reported and recorded so a human can decide.
+public struct RecoveryGap: Sendable, Equatable, Identifiable {
+    public var sessionID: SessionID
+    public var source: AudioSourceKind
+    public var startSample: Int64
+    public var endSample: Int64
+    public var reason: String
+
+    public var id: String { "\(sessionID.value):\(source.rawValue):\(startSample)" }
+    public var samples: Int64 { max(0, endSample - startSample) }
+
+    public init(sessionID: SessionID, source: AudioSourceKind, startSample: Int64,
+                endSample: Int64, reason: String) {
+        self.sessionID = sessionID
+        self.source = source
+        self.startSample = startSample
+        self.endSample = endSample
+        self.reason = reason
+    }
+}
+
 public struct RecoveryReport: Sendable, Equatable {
     public var scanned: Int
     public var recovered: Int
@@ -68,12 +90,19 @@ public struct RecoveryReport: Sendable, Equatable {
     public var integrity: RecoveryLedgerIntegrity
     public var quarantinedFiles: [String]
 
+    /// Lanes that could not be recovered. The healthy lanes still recover and finalize; these are
+    /// named explicitly rather than silently dropped. Empty means no lane degraded.
+    public var degradedSources: [AudioSourceKind]
+    /// Journal discontinuities that were observed instead of being papered over with fake audio.
+    public var gaps: [RecoveryGap]
+
     public init(scanned: Int = 0, recovered: Int = 0, failed: Int = 0, segmentsAdded: Int = 0,
                 segmentsCleaned: Int = 0, samplesReplayed: Int64 = 0, notices: [String] = [],
                 recoveredTranscripts: [RecoveredTranscript] = [], discarded: [RecoveryDiscarded] = [],
                 needsUserAction: [RecoveryActionRequired] = [], skippedBusy: Int = 0,
                 integrity: RecoveryLedgerIntegrity = RecoveryLedgerIntegrity(),
-                quarantinedFiles: [String] = []) {
+                quarantinedFiles: [String] = [], degradedSources: [AudioSourceKind] = [],
+                gaps: [RecoveryGap] = []) {
         self.scanned = scanned
         self.recovered = recovered
         self.failed = failed
@@ -87,6 +116,8 @@ public struct RecoveryReport: Sendable, Equatable {
         self.skippedBusy = skippedBusy
         self.integrity = integrity
         self.quarantinedFiles = quarantinedFiles
+        self.degradedSources = degradedSources
+        self.gaps = gaps
     }
 
     public var hasRecoveredText: Bool { !recoveredTranscripts.isEmpty }

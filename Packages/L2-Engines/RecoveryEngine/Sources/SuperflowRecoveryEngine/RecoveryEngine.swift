@@ -21,6 +21,10 @@ public actor RecoveryEngine {
     private let lockStaleAfter: TimeInterval
     private let fault: RecoveryFaultInjector?
     private var faultCounts: [RecoveryStage: Int] = [:]
+    /// Generation fence shared with late recognizer callbacks. Advancing it closes a run; a
+    /// callback stamped with an older epoch can no longer mutate fresh state.
+    public let epochFence = RecoveryEpochFence()
+    public let sessionGate: RecoverySessionGate
 
     public init(repository: any TranscriptRepository, journals: any JournalStore,
                 recognizer: any SpeechRecognizer, clock: any TimeSource = SystemTimeSource(),
@@ -42,16 +46,31 @@ public actor RecoveryEngine {
             + UInt64(max(0, recoveryBudget.components.attoseconds) / 1_000_000_000)
         self.lockStaleAfter = TimeInterval(max(120, recoveryBudget.components.seconds)) + 60
         self.fault = fault
+        self.sessionGate = RecoverySessionGate(fence: epochFence)
     }
+
+    /// Closes the active run. Later callbacks stamped with its epoch are ignored; no journal is
+    /// deleted and no session is finalized by the cancel itself.
+    public func cancel() async { await sessionGate.cancel() }
+
+    /// Rearms bookkeeping only. It creates no session, appends no segment and deletes no journal;
+    /// a delayed callback from the cancelled run is fenced by the epoch this returns.
+    @discardableResult
+    public func rearm() async -> RecoveryEpoch { await sessionGate.rearm() }
 
     public func recover() async -> RecoveryReport {
         var report = RecoveryReport()
+        guard let epoch = await sessionGate.begin() else {
+            report.skippedBusy += 1
+            report.notices.append("Recovery is already running; skipped the overlapping run.")
+            return report
+        }
         do {
             try await fire(.listSessions)
             let unfinished = try await repository.unfinishedSessions()
             report.scanned = unfinished.count
             for session in unfinished {
-                await recover(session, report: &report)
+                await recover(session, epoch: epoch, report: &report)
             }
             await sweepOrphans(known: Set(unfinished.map(\.id)), report: &report)
         } catch {
@@ -60,6 +79,7 @@ public actor RecoveryEngine {
                 SessionID("__recovery__"), "scan-failed", error.localizedDescription))
         }
         await collectLedgerEvidence(report: &report)
+        await sessionGate.finish()
         return report
     }
 
@@ -89,8 +109,21 @@ public actor RecoveryEngine {
         }
     }
 
-    private func recover(_ session: SessionRecord, report: inout RecoveryReport) async {
+    /// Marks a lost sample interval explicitly in both the report and the durable ledger. Recovery
+    /// never invents audio or transcript text to make a discontinuity look like continuity.
+    private func recordGap(_ gap: RecoveryGap, report: inout RecoveryReport) async {
+        report.gaps.append(gap)
+        report.notices.append("\(gap.source.label) journal lost \(gap.samples) samples at \(gap.startSample) for \(gap.sessionID.short).")
+        await record(RecoveryLedgerRecord(
+            id: RecoverySupport.eventID(.gapDetected, session: gap.sessionID, source: gap.source,
+                                        qualifier: "\(gap.startSample)"),
+            kind: .gapDetected, session: gap.sessionID.value, source: gap.source.rawValue,
+            samplePosition: gap.startSample, detail: gap.reason), report: &report)
+    }
+
+    private func recover(_ session: SessionRecord, epoch: RecoveryEpoch, report: inout RecoveryReport) async {
         let sid = session.id
+        let cancelledNotice = "Recovery of \(sid.short) was cancelled; late callbacks were ignored and the journal was kept."
         let lock = RecoveryLock(root: lockRoot, session: sid, staleAfter: lockStaleAfter)
         do { try lock.acquire() } catch {
             report.skippedBusy += 1
@@ -110,6 +143,10 @@ public actor RecoveryEngine {
         do {
             try await fire(.acquireLock)
             try checkDeadline()
+            guard await sessionGate.isActive(epoch) else {
+                report.notices.append(cancelledNotice)
+                return
+            }
             await record(RecoveryLedgerRecord(id: RecoverySupport.eventID(.started, session: sid),
                                               kind: .started, session: sid.value,
                                               detail: session.status.rawValue), report: &report)
@@ -130,17 +167,28 @@ public actor RecoveryEngine {
             var added = 0
             var replayed: Int64 = 0
             var journalSamples: Int64 = 0
-            var sourceFailed = false
+            /// Degradation is tracked per lane. A lane that fails is named and retained; it never
+            /// cancels the healthy lane's recovery.
+            var degradedSources: Set<AudioSourceKind> = []
+            var recoveredSources: Set<AudioSourceKind> = []
             let sources: [AudioSourceKind] = session.kind == .meeting ? [.mic, .system] : [.mic]
 
             for source in sources {
                 try checkDeadline()
+                guard await sessionGate.isActive(epoch) else {
+                    report.notices.append(cancelledNotice)
+                    return
+                }
                 try await fire(.inspectJournal)
                 let total = await journals.sampleCount(session: sid, source: source)
                 journalSamples = max(journalSamples, total)
                 let derived = RecoverySupport.committedSamples(for: existing, source: source)
                 let fromSample = min(total, max(derived, watermarks[source] ?? 0))
-                guard total > fromSample else { continue }
+                guard total > fromSample else {
+                    // Nothing new on this lane. It is healthy, just already committed.
+                    recoveredSources.insert(source)
+                    continue
+                }
 
                 do {
                     try await fire(.createStream)
@@ -155,40 +203,80 @@ public actor RecoveryEngine {
                         }
                         return (segments, failed)
                     }
+                    defer { collector.cancel() }
                     try await fire(.replayStart)
                     var replayedSamples: Int64 = 0
+                    var expectedNext = fromSample
                     for await chunk in await journals.replay(session: sid, source: source,
                                                              fromSample: fromSample) {
                         try checkDeadline()
+                        guard await sessionGate.isActive(epoch) else {
+                            report.notices.append(cancelledNotice)
+                            return
+                        }
+                        // A forward jump in the shared sample clock is lost audio. Mark it before
+                        // feeding anything past it; never stitch the two sides together silently.
+                        if chunk.startSample > expectedNext {
+                            await recordGap(RecoveryGap(sessionID: sid, source: source,
+                                                        startSample: expectedNext,
+                                                        endSample: chunk.startSample,
+                                                        reason: "journal discontinuity"),
+                                            report: &report)
+                        }
+                        expectedNext = max(expectedNext, chunk.endSample)
                         try await fire(.replayChunk)
                         await stream.feed(chunk)
                         replayedSamples += Int64(chunk.samples.count)
                     }
+                    if expectedNext < total {
+                        await recordGap(RecoveryGap(sessionID: sid, source: source,
+                                                    startSample: expectedNext, endSample: total,
+                                                    reason: "journal ended before its reported sample count"),
+                                        report: &report)
+                    }
                     try checkDeadline()
+                    guard await sessionGate.isActive(epoch) else {
+                        report.notices.append(cancelledNotice)
+                        return
+                    }
                     try await fire(.streamFinish)
                     await stream.finish()
                     let recovered = await collector.value
+                    guard await sessionGate.isActive(epoch) else {
+                        report.notices.append(cancelledNotice)
+                        return
+                    }
                     guard !recovered.failed else {
-                        sourceFailed = true
+                        degradedSources.insert(source)
                         report.notices.append("Recovery could not finish \(source.label) audio for \(sid.short). The journal is retained.")
+                        report.needsUserAction.append(RecoverySupport.action(
+                            sid, "source-degraded", "\(source.label) recognition failed; only that lane was degraded."))
                         continue
                     }
                     guard replayedSamples > 0 else {
-                        sourceFailed = true
+                        degradedSources.insert(source)
                         report.needsUserAction.append(RecoverySupport.action(
                             sid, "unreadable-journal", "\(source.label) journal reports \(total) samples but replay returned none."))
                         continue
                     }
                     replayed += total - fromSample
                     for raw in recovered.segments {
+                        // Every segment is fenced against cancel/rearm and claimed exactly once.
+                        // A late recognizer callback from an abandoned run cannot append a row.
+                        guard await sessionGate.isActive(epoch) else {
+                            report.notices.append(cancelledNotice)
+                            return
+                        }
                         let segment = RecoverySupport.absolute(raw, baseSample: fromSample)
                         let row = Segment(sessionID: sid, index: nextIndex, startMs: segment.startMs,
                                           endMs: segment.endMs, speakerID: segment.speakerHint,
                                           source: source, rawText: segment.text, cleanupState: .pending)
                         guard !RecoverySupport.isDuplicate(row, in: existing) else { continue }
+                        let key = "\(sid.value)|\(source.rawValue)|\(segment.startSample)|\(segment.endSample)"
+                        guard await sessionGate.claimSegment(key) else { continue }
                         try await fire(.appendSegment)
                         do { try await repository.appendSegment(row) } catch {
-                            sourceFailed = true
+                            degradedSources.insert(source)
                             report.notices.append("Could not commit recovered \(source.label) audio for \(sid.short): \(error.localizedDescription)")
                             break
                         }
@@ -201,15 +289,23 @@ public actor RecoveryEngine {
                             kind: .segmentAppended, session: sid.value, source: source.rawValue,
                             samplePosition: segment.startSample, segmentIndex: row.index), report: &report)
                     }
-                    // Never advance the watermark past audio that was not actually committed.
-                    // Doing so would make every retry skip the lost samples permanently.
-                    guard !sourceFailed else { continue }
+                    // Never advance the watermark past audio that was not actually committed, and
+                    // never let one lane's failure mark a healthy lane as unrecovered.
+                    guard !degradedSources.contains(source) else { continue }
+                    guard await sessionGate.isActive(epoch) else {
+                        report.notices.append(cancelledNotice)
+                        return
+                    }
                     await record(RecoveryLedgerRecord(
                         id: RecoverySupport.eventID(.watermark, session: sid, source: source),
                         kind: .watermark, session: sid.value, source: source.rawValue,
                         samplePosition: total), report: &report)
+                    recoveredSources.insert(source)
                 } catch {
-                    sourceFailed = true
+                    // A thrown fault or deadline is an interruption, not a failing dependency: on-disk
+                    // state must stay exactly as a crash would leave it. Abort the whole run and keep
+                    // both the journal and the unfinished session for a clean restart.
+                    report.failed += 1
                     report.notices.append("Recovery could not replay \(source.label) audio for \(sid.short): \(error.localizedDescription)")
                     if error is RecoveryFault {
                         report.needsUserAction.append(RecoverySupport.action(
@@ -219,15 +315,28 @@ public actor RecoveryEngine {
                         report.needsUserAction.append(RecoverySupport.action(
                             sid, "recovery-timeout", "\(source.label) exceeded the recovery time budget."))
                     }
+                    return
                 }
             }
+            guard await sessionGate.isActive(epoch) else {
+                report.notices.append(cancelledNotice)
+                return
+            }
             lock.touch()
-            guard !sourceFailed else { report.failed += 1; return }
+
+            // With no healthy lane there is no usable transcript: keep everything, report a
+            // failure, and leave the session unfinished for a later attempt.
+            guard !recoveredSources.isEmpty else { report.failed += 1; return }
+            let fullyRecovered = degradedSources.isEmpty
 
             var cleanedCount = 0
             if let cleaner {
                 for index in existing.indices where !existing[index].rawText.isEmpty && existing[index].cleanupState != .cleaned {
                     try checkDeadline()
+                    guard await sessionGate.isActive(epoch) else {
+                        report.notices.append(cancelledNotice)
+                        return
+                    }
                     try await fire(.cleanSegment)
                     let segment = existing[index]
                     let cleaned = await cleaner(segment.rawText)
@@ -255,6 +364,10 @@ public actor RecoveryEngine {
             let duration = existing.map(\.endMs).max() ?? session.durationMs
             let words = existing.reduce(0) { $0 + wordCount($1.bestText) }
             try checkDeadline()
+            guard await sessionGate.isActive(epoch) else {
+                report.notices.append(cancelledNotice)
+                return
+            }
             try await fire(.finalize)
             do {
                 try await repository.finalizeSession(sid, endedAt: clock.now(), status: .recovered,
@@ -275,10 +388,16 @@ public actor RecoveryEngine {
                 session: sid.value, detail: "segments=\(added)"), report: &report)
             try await fire(.recordFinalized)
 
-            if keepJournals {
+            if keepJournals || !fullyRecovered {
+                // A degraded lane keeps every journal on disk. The ledger's journalRetained marker
+                // also stops the orphan sweep from deleting it while the session is terminal.
                 await record(RecoveryLedgerRecord(
                     id: RecoverySupport.eventID(.journalRetained, session: sid),
-                    kind: .journalRetained, session: sid.value), report: &report)
+                    kind: .journalRetained, session: sid.value,
+                    detail: fullyRecovered ? "retention setting" : "degraded lanes retained for inspection"), report: &report)
+                if !fullyRecovered {
+                    report.degradedSources = degradedSources.sorted { $0.rawValue < $1.rawValue }
+                }
             } else {
                 try await fire(.deleteJournal)
                 await journals.delete(session: sid)
@@ -303,6 +422,11 @@ public actor RecoveryEngine {
             }
             if added > 0 {
                 report.notices.append("Recovered \(added) segment\(added == 1 ? "" : "s") from \(sid.short).")
+            }
+            if !fullyRecovered {
+                report.needsUserAction.append(RecoverySupport.action(
+                    sid, "partial-recovery",
+                    "Recovered healthy lanes only. Degraded: \(report.degradedSources.map(\.label).joined(separator: ", ")). Journal retained."))
             }
         } catch {
             report.failed += 1
@@ -335,7 +459,10 @@ public actor RecoveryEngine {
         for sid in candidates where !known.contains(sid) {
             let row = try? await repository.session(sid)
             let finalized = records.contains { $0.session == sid.value && $0.kind == .finalized }
-            guard finalized, let row, row.status == .recovered || row.status == .complete else {
+            // A partial recovery deliberately keeps its journal for inspection. An explicit
+            // retained marker outranks finalization here, so the sweep cannot destroy that data.
+            let retained = records.contains { $0.session == sid.value && $0.kind == .journalRetained }
+            guard finalized, !retained, let row, row.status == .recovered || row.status == .complete else {
                 report.needsUserAction.append(RecoverySupport.action(
                     sid, "orphan-journal", "A journal exists without a verified finalized recovery. It was kept."))
                 continue
