@@ -9,16 +9,18 @@ public struct CleanupConfig: Sendable, Equatable {
     public var backgroundDeadlineMs: Int
     public var workers: Int
     public var ratioFloor: Double
-    /// Legacy configuration only. CleanupService never retries a model call.
+    /// Maximum number of sentence-split retries after a guard failure.
+    /// The retry loop lives in CleanupService; this value is its per-chunk cap.
     public var retryDepth: Int
     public var hallucinationFloor: Int
     public var maxNewTokens: Int
     /// Seam overlap as a fraction of the soft token target (clamped to
     /// 0...0.20; 0 disables the overlap). Every chunk after the first
     /// re-shares the previous chunk's trailing sentence so the model never
-    /// starts blind at a seam. Overlap is on by default (plan.md §13); a
-    /// consumer that joins chunk texts must dedupe the repeated opening or
-    /// seam words will be duplicated in the finished assembly.
+    /// starts blind at a seam. Overlap is on by default (plan.md §13).
+    /// `ChunkPlan.overlap` carries the re-shared span; CleanupService removes it
+    /// with `SeamSplicer.splice`, whose alignment window is sized from this
+    /// same `softTokenTarget * overlapPercent` fraction.
     public var overlapPercent: Double
     /// Structure-only formatting policy. Defaults keep every optional rewrite
     /// off except list and paragraph shaping after cleanup.
@@ -26,7 +28,7 @@ public struct CleanupConfig: Sendable, Equatable {
 
     public init(softTokenTarget: Int = 600, hardTokenCap: Int = 850, interactiveDeadlineMs: Int = 1_500,
                 backgroundDeadlineMs: Int = 30_000, workers: Int = 6, ratioFloor: Double = 0.6,
-                retryDepth: Int = 0, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_137,
+                retryDepth: Int = 3, hallucinationFloor: Int = 1_024, maxNewTokens: Int = 1_137,
                 overlapPercent: Double = 0.12, format: FormatConfig = FormatConfig()) {
         self.softTokenTarget = min(Self.maximumInputTokens, max(1, softTokenTarget))
         self.hardTokenCap = min(Self.maximumInputTokens, max(1, hardTokenCap))
@@ -140,7 +142,8 @@ public struct ChunkPlanner: Sendable {
         }
         var plans: [ChunkPlan] = []
         plans.reserveCapacity(bodies.count)
-        let overlapBudget = Int(Double(target) * min(0.20, max(0, config.overlapPercent)))
+        // Same fraction CleanupService uses to size SeamSplicer.splice's window.
+        let overlapBudget = Int(Double(config.softTokenTarget) * min(0.20, max(0, config.overlapPercent)))
         for (index, body) in bodies.enumerated() {
             let owned = Tokenizer.join(words[body.start..<body.end])
             var overlapStart = body.start
