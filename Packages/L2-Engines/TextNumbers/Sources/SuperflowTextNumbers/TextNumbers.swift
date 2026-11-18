@@ -33,7 +33,15 @@ public enum TextNumbers {
             let previousKey = i > 0 ? words[i - 1].key : ""
             let inTimeContext = ["at", "by", "around", "until", "before", "after", "from", "since"].contains(previousKey)
             if let (clock, used) = NumberPieces.clock(words, i, timeContext: inTimeContext) { emit(clock, used); continue }
-            if NumberPieces.yearContext(output), let (year, used) = NumberPieces.year(words, i) {
+            // A spoken year ("twenty twenty two") must become one four-digit
+            // token. Requiring a prior "in"/month cue left a bare year to the
+            // cardinal parser, which emitted "20 20 2" and corrupted the fact.
+            // Only a following quantity continuation (hundred, scale, point,
+            // percent) vetoes the year reading — a currency noun does not, so
+            // "twenty twenty two dollars" still becomes 2022 dollars, never a
+            // split "20 20 2".
+            if let (year, used) = NumberPieces.year(words, i),
+               !isQuantityAfterYear(words, at: i + used) {
                 emit(String(year), used)
                 continue
             }
@@ -104,6 +112,17 @@ public enum TextNumbers {
             emit(core, used)
         }
         return output
+    }
+
+    /// True when the token right after a spoken year continues a larger number
+    /// ("twenty twenty two thousand", "... point five", "... percent"). In that
+    /// case the year reading must yield to the cardinal parser so the value is
+    /// not truncated at the year tail.
+    private static func isQuantityAfterYear(_ words: [Word], at index: Int) -> Bool {
+        guard index < words.count, !words[index].hardBreak else { return false }
+        let key = words[index].key
+        return key == "hundred" || key == "point" || key == "percent"
+            || key == "per" || NumberLex.scales[key] != nil
     }
 
     private static func isListMarker(_ words: [Word], at index: Int) -> Bool {
