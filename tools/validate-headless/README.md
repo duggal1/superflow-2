@@ -32,7 +32,7 @@ tools/validate-headless/
 ├── IslandUIDriver.swift       AX / window / capture / own-pid key probe (Swift)
 ├── IslandUIDriver             compiled binary
 ├── window-share-dump.swift    public-CGWindowList inventory for R17 stealth
-├── window-share-dump          compiled binary
+│                              (compiled on demand; no binary checked in)
 └── README.md                  this file
 ```
 
@@ -131,6 +131,8 @@ records the window inventory the SCK positive-control verifier operates on.
 The in-app DEBUG invariant and the verifier are the actual stealth proof.
 
 ```bash
+swiftc -O tools/validate-headless/window-share-dump.swift \
+       -o tools/validate-headless/window-share-dump
 tools/validate-headless/window-share-dump --bundle com.superflow.app \
   --out "$PWD/.proof/validation/windows.json"
 ```
