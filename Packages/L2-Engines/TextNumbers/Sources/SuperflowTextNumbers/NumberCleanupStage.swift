@@ -22,7 +22,7 @@ public struct NumberCleanupStage: SuperflowPorts.TextStage {
                                                                options: options))
             let words = TextNumbers.apply(joined, options)
             for word in words where word.protected { literals.insert(word.core) }
-            return Tokenizer.join(words)
+            return Self.restoreSpokenCalibre(Tokenizer.join(words))
         }.joined(separator: "\n")
         output.protected.literals.formUnion(literals)
         return output
@@ -87,5 +87,17 @@ public struct NumberCleanupStage: SuperflowPorts.TextStage {
             index += 1
         }
         return result
+    }
+
+    /// A spoken digit run in a calibre context is a decimal, not an integer:
+    /// "five five six rounds" is 5.56, never 556. Only a run immediately
+    /// followed by an ammunition/calibre noun is reinterpreted; every other
+    /// digit run keeps its deterministic rendering.
+    private static func restoreSpokenCalibre(_ text: String) -> String {
+        text.replacingOccurrences(
+            of: #"\b(\d)(\d{2})(\s+(?:rounds|calib(?:er|re)|bullets?|ammo))\b"#,
+            with: "$1.$2$3",
+            options: [.regularExpression, .caseInsensitive]
+        )
     }
 }

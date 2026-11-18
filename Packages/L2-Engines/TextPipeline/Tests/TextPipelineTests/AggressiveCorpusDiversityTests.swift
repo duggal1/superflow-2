@@ -57,10 +57,10 @@ final class AggressiveCorpusDiversityTests: XCTestCase {
         case "5-4": return ["5-4", "five four", "5 4"]
         case "b12": return ["B 12", "b12", "gate b 12"]
         case "htl-8840": return ["H T L 8840", "htl 8840", token]
-        case "5.56": return ["5.56", "556"]
+        case "5.56": return ["5.56"]  // exact caliber; "556" is a corrupted integer, never an accepted form
         case "p95": return ["p95", "p 95"]
         case "intermittent latency": return [token, "intermittant illitency"]
-        case "2022": return ["2022", "20 22", "twenty twenty two"]
+        case "2022": return ["2022"]  // exact year; "20 22"/"twenty twenty two" are corrupted final forms
         case "sram": return ["sram", "S R A M", "s r a m"]
         case "hbm": return ["hbm", "H B M"]
         case "2-4x": return ["2-4x", "2 to 4x", "two to four x"]
@@ -214,7 +214,9 @@ final class AggressiveCorpusDiversityTests: XCTestCase {
             domain: "academic",
             raw: "um the the paper by Dao et al twenty twenty two introduced flash attention which which tiles the the softmax computation so it fits in in S R A M and avoids writing the the intermediate matrix to H B M giving a a two to four x speedup the the key equation is is softmax of Q K transpose over root d k times V",
             required: ["dao", "2022", "flash attention", "sram", "hbm", "2-4x", "softmax"],
-            forbidden: ["the the"],
+            // Corrupted year renderings are explicit negatives, not merely
+            // missing from the accepted-forms list.
+            forbidden: ["the the", "20 22", "twenty twenty two"],
             minRetention: 0.45, sentence: true))
     }
 
@@ -234,7 +236,8 @@ final class AggressiveCorpusDiversityTests: XCTestCase {
             domain: "gaming",
             raw: "okay we're dropping at three seven point four north one one two point eight east enemy at two hundred meters I I count three maybe four throw the the smoke in in forty five seconds zone closes in in two minutes I've got five five six ammo and and two med kits",
             required: ["37.4", "112.8", "200 meters", "smoke", "45 seconds", "two minutes", "5.56", "med kits"],
-            forbidden: ["three seven point four", "the the"],
+            // "556" is a fact corruption of the 5.56 caliber, never a valid form.
+            forbidden: ["three seven point four", "the the", "556"],
             minRetention: 0.45, sentence: true))
     }
 

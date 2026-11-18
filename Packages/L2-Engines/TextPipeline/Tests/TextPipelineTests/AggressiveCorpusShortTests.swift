@@ -833,13 +833,14 @@ final class AggressiveCorpusShortTests: XCTestCase {
             wordCount: 50,
             requiredAll: ["15%", "Friday", "12000"],
             requiredAny: [],
-            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday"],
+            // Exact list price: "$12k"/"12,000" are corruptions of 12000, not accepted forms.
+            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday", "$12k", "12,000", "$12,000"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000", "12,000", "$12k"]], forbidden: ["20%", "Monday"]),
+                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000"]], forbidden: ["20%", "Monday", "$12k", "12,000", "$12,000"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
-                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "Monday"])
+                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "Monday", "$12k", "12,000", "$12,000"])
             )
         ),
         A1Sample(
@@ -848,13 +849,14 @@ final class AggressiveCorpusShortTests: XCTestCase {
             wordCount: 51,
             requiredAll: ["15%", "Friday", "12000"],
             requiredAny: [],
-            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday"],
+            // Exact list price: "$12k"/"12,000" are corruptions of 12000, not accepted forms.
+            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday", "$12k", "12,000", "$12,000"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000", "12,000", "$12k"]], forbidden: ["20%", "Monday"]),
+                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000"]], forbidden: ["20%", "Monday", "$12k", "12,000", "$12,000"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
-                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "Monday"])
+                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "Monday", "$12k", "12,000", "$12,000"])
             )
         ),
         A1Sample(
@@ -863,13 +865,14 @@ final class AggressiveCorpusShortTests: XCTestCase {
             wordCount: 53,
             requiredAll: ["15%", "Friday", "12000"],
             requiredAny: [],
-            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday"],
+            // Exact list price: "$12k"/"12,000" are corruptions of 12000, not accepted forms.
+            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday", "$12k", "12,000", "$12,000"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000", "12,000", "$12k"]], forbidden: ["20%", "Monday"]),
+                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000"]], forbidden: ["20%", "Monday", "$12k", "12,000", "$12,000"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
-                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "Monday"])
+                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "Monday", "$12k", "12,000", "$12,000"])
             )
         ),
         A1Sample(
@@ -878,13 +881,14 @@ final class AggressiveCorpusShortTests: XCTestCase {
             wordCount: 54,
             requiredAll: ["15%", "Friday", "12000"],
             requiredAny: [],
-            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday"],
+            // Exact list price: "$12k"/"12,000" are corruptions of 12000, not accepted forms.
+            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday", "$12k", "12,000", "$12,000"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000", "12,000", "$12k"]], forbidden: ["20%", "Monday"]),
+                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000"]], forbidden: ["20%", "Monday", "$12k", "12,000", "$12,000"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
-                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "Monday"])
+                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "Monday", "$12k", "12,000", "$12,000"])
             )
         ),
         A1Sample(
@@ -2153,13 +2157,17 @@ final class AggressiveCorpusShortTests: XCTestCase {
             wordCount: 142,
             requiredAll: ["12000", "Friday", "15%", "10200", "99.9", "Monday"],
             requiredAny: [],
-            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000"],
+            // Exact facts: "$12k"/"12,000"/"10,200" are corruptions of
+            // 12000/10200, never substitutes for the required digits.
+            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000",
+                        "$12k", "12,000", "$12,000", "10,200", "$10,200"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["12000", "12,000", "$12k", "12000 dollars"], ["Friday"], ["15%"], ["10200", "10,200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
+                facts: A1DimAssert(requiredAny: [["12000"], ["Friday"], ["15%"], ["10200"], ["99.9"], ["Monday"]],
+                                   forbidden: ["20%", "20000", "$12k", "12,000", "$12,000", "10,200", "$10,200"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
-                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "20000"])
+                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "20000", "$12k", "12,000", "$12,000", "10,200", "$10,200"])
             )
         ),
         A1Sample(
@@ -2168,13 +2176,17 @@ final class AggressiveCorpusShortTests: XCTestCase {
             wordCount: 143,
             requiredAll: ["12000", "Friday", "15%", "10200", "99.9", "Monday"],
             requiredAny: [],
-            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000"],
+            // Exact facts: "$12k"/"12,000"/"10,200" are corruptions of
+            // 12000/10200, never substitutes for the required digits.
+            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000",
+                        "$12k", "12,000", "$12,000", "10,200", "$10,200"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["12000", "12,000", "$12k", "12000 dollars"], ["Friday"], ["15%"], ["10200", "10,200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
+                facts: A1DimAssert(requiredAny: [["12000"], ["Friday"], ["15%"], ["10200"], ["99.9"], ["Monday"]],
+                                   forbidden: ["20%", "20000", "$12k", "12,000", "$12,000", "10,200", "$10,200"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
-                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "20000"])
+                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "20000", "$12k", "12,000", "$12,000", "10,200", "$10,200"])
             )
         ),
         A1Sample(
@@ -2183,13 +2195,17 @@ final class AggressiveCorpusShortTests: XCTestCase {
             wordCount: 145,
             requiredAll: ["12000", "Friday", "15%", "10200", "99.9", "Monday"],
             requiredAny: [],
-            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000"],
+            // Exact facts: "$12k"/"12,000"/"10,200" are corruptions of
+            // 12000/10200, never substitutes for the required digits.
+            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000",
+                        "$12k", "12,000", "$12,000", "10,200", "$10,200"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["12000", "12,000", "$12k", "12000 dollars"], ["Friday"], ["15%"], ["10200", "10,200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
+                facts: A1DimAssert(requiredAny: [["12000"], ["Friday"], ["15%"], ["10200"], ["99.9"], ["Monday"]],
+                                   forbidden: ["20%", "20000", "$12k", "12,000", "$12,000", "10,200", "$10,200"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
-                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "20000"])
+                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "20000", "$12k", "12,000", "$12,000", "10,200", "$10,200"])
             )
         ),
         A1Sample(
@@ -2198,13 +2214,17 @@ final class AggressiveCorpusShortTests: XCTestCase {
             wordCount: 146,
             requiredAll: ["12000", "Friday", "15%", "10200", "99.9", "Monday"],
             requiredAny: [],
-            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000"],
+            // Exact facts: "$12k"/"12,000"/"10,200" are corruptions of
+            // 12000/10200, never substitutes for the required digits.
+            forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000",
+                        "$12k", "12,000", "$12,000", "10,200", "$10,200"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["12000", "12,000", "$12k", "12000 dollars"], ["Friday"], ["15%"], ["10200", "10,200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
+                facts: A1DimAssert(requiredAny: [["12000"], ["Friday"], ["15%"], ["10200"], ["99.9"], ["Monday"]],
+                                   forbidden: ["20%", "20000", "$12k", "12,000", "$12,000", "10,200", "$10,200"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
-                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "20000"])
+                novel: A1DimAssert(requiredAny: [], forbidden: ["20%", "20000", "$12k", "12,000", "$12,000", "10,200", "$10,200"])
             )
         ),
         A1Sample(
