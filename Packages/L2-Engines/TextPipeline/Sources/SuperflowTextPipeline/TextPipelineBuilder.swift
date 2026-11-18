@@ -64,6 +64,10 @@ public enum TextPipelineBuilder {
         if settings.disfluency.enabled {
             stages.append(DisfluencyStage(settings: settings.disfluency))
         }
+        // plan.md §12 stage 5: numbers are canonicalized before S1 so the
+        // cleanup model sees canonical numerals and no second normalization
+        // pass is needed after generation.
+        stages.append(NumbersAdapter())
         if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
             stages.append(CleanupStage(service: cleaner))
         }
@@ -79,7 +83,6 @@ public enum TextPipelineBuilder {
         }
         stages.append(SpokenCodeStage())
         stages.append(CodingLanguageStage())
-        stages.append(NumbersAdapter())
         if settings.codeSpeakEnabled {
             stages.append(CodeSpeakStage())
         }
@@ -87,6 +90,13 @@ public enum TextPipelineBuilder {
         if settings.codeAware.enabled {
             stages.append(CodeAwareStage(settings: settings.codeAware,
                                          project: dependencies.project))
+        }
+        // plan.md §12 stage 10: the tier-2 grammar gate runs after S1 and the
+        // deterministic post-cleanup stages, but before final line formatting.
+        // Harper is opt-in: a checker must be injected and harper enabled.
+        if settings.harperEnabled, dependencies.grammarPolicy.enabled,
+           let checker = dependencies.grammarChecker {
+            stages.append(GrammarGateStage(checker: checker, policy: dependencies.grammarPolicy))
         }
         // S1-mini owns casing and final punctuation per its Styling axis.
         // Casual and semi-casual keep lowercase sentence starts with no final
