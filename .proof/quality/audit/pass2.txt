@@ -1,0 +1,22 @@
+===== PASS 2 =====
+Forbidden-pattern lint passed.
+lint rc=0
+Dependency layers are valid.
+deps rc=0
+Packages/L2-Engines/TextLineFormat rc=0 	 Executed 19 tests, with 0 failures (0 unexpected) in 0.168 (0.171) seconds
+Packages/L2-Engines/TextNumbers rc=0 	 Executed 42 tests, with 0 failures (0 unexpected) in 0.133 (0.137) seconds
+Packages/L2-Engines/TextPipeline rc=0 	 Executed 134 tests, with 1 test skipped and 0 failures (0 unexpected) in 198.089 (198.105) seconds
+Packages/L2-Engines/TextCleanup rc=0 	 Executed 112 tests, with 0 failures (0 unexpected) in 3.663 (3.673) seconds
+Packages/L3-Features/FeatureIsland rc=0 	 Executed 111 tests, with 0 failures (0 unexpected) in 152.752 (152.766) seconds
+Packages/L3-Features/FeatureIntelligence rc=0 	 Executed 14 tests, with 0 failures (0 unexpected) in 0.024 (0.029) seconds
+Packages/L3-Features/FeatureDictionary rc=0 	 Executed 18 tests, with 0 failures (0 unexpected) in 0.022 (0.027) seconds
+Packages/L3-Features/FeatureShortcuts rc=0 	 Executed 16 tests, with 0 failures (0 unexpected) in 0.041 (0.044) seconds
+Packages/L3-Features/FeatureHistory rc=0 	 Executed 8 tests, with 0 failures (0 unexpected) in 0.025 (0.027) seconds
+Packages/L1-Adapters/StorageSQLite rc=0 	 Executed 51 tests, with 0 failures (0 unexpected) in 7.904 (7.913) seconds
+Packages/L2-Engines/AudioEnhancement rc=0 	 Executed 20 tests, with 0 failures (0 unexpected) in 0.267 (0.271) seconds
+Packages/L1-Adapters/AudioCapture rc=0 	 Executed 12 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.080 (0.083) seconds
+Packages/L1-Adapters/SystemAudioCapture rc=0 	 Executed 12 tests, with 0 failures (0 unexpected) in 0.018 (0.021) seconds
+Packages/L1-Adapters/AudioCpp rc=0 	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+Packages/L1-Adapters/LLMLlamaCpp rc=0 	 Executed 52 tests, with 7 tests skipped and 0 failures (0 unexpected) in 0.405 (0.415) seconds
+Packages/L2-Engines/RecoveryEngine rc=0 	 Executed 37 tests, with 0 failures (0 unexpected) in 4.941 (4.946) seconds
+App/SuperflowApp rc=0 	 Executed 98 tests, with 0 failures (0 unexpected) in 12.231 (12.242) seconds

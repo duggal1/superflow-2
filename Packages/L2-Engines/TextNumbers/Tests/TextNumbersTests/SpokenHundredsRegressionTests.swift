@@ -13,7 +13,7 @@ final class SpokenHundredsRegressionTests: XCTestCase {
         settings.cleanupEnabled = false
         settings.spellOutSmallNumbers = false
         let draft = TranscriptDraft(text: raw)
-        return await NumbersStage().apply(draft, context: TextContext(settings: settings)).text
+        return await NumberCleanupStage().apply(draft, context: TextContext(settings: settings)).text
     }
 
     func testSpokenImpliedHundredsRenderAsOneNumber() async {
@@ -32,11 +32,23 @@ final class SpokenHundredsRegressionTests: XCTestCase {
         }
     }
 
+    func testFillerBetweenNumberHalvesDoesNotSplitTheFact() async {
+        let out = await clean("the sample temperature was thirty you know seven degrees Celsius")
+        XCTAssertTrue(out.contains("37"), "split number corrupted: \(out)")
+        XCTAssertFalse(out.contains("you know 7"), "filler left inside number: \(out)")
+    }
+
+    func testOrdinaryProseKeepsItsWords() async {
+        let out = await clean("I know you mean well but the thirty seven degrees was measured")
+        XCTAssertTrue(out.lowercased().contains("know"), "ordinary word dropped: \(out)")
+        XCTAssertTrue(out.contains("37"), "number not rendered: \(out)")
+    }
+
     func testDigitRunsAreStillSeparateNumbers() async {
         // "five five six" is a digit run, not implied hundreds — a decade word
         // is required for the hundreds rule. Keep the original behaviour.
         let out = await clean("do you have any five five six rounds")
         XCTAssertFalse(out.contains("500"), out)
-        XCTAssertFalse(out.contains("56"), out)
+        XCTAssertTrue(out.contains("556"), "digit run should stay a digit run: \(out)")
     }
 }

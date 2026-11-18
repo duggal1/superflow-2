@@ -835,7 +835,7 @@ final class AggressiveCorpusShortTests: XCTestCase {
             requiredAny: [],
             forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000"]], forbidden: ["20%", "Monday"]),
+                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000", "12,000", "$12k"]], forbidden: ["20%", "Monday"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
@@ -850,7 +850,7 @@ final class AggressiveCorpusShortTests: XCTestCase {
             requiredAny: [],
             forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000"]], forbidden: ["20%", "Monday"]),
+                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000", "12,000", "$12k"]], forbidden: ["20%", "Monday"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
@@ -865,7 +865,7 @@ final class AggressiveCorpusShortTests: XCTestCase {
             requiredAny: [],
             forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000"]], forbidden: ["20%", "Monday"]),
+                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000", "12,000", "$12k"]], forbidden: ["20%", "Monday"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
@@ -880,7 +880,7 @@ final class AggressiveCorpusShortTests: XCTestCase {
             requiredAny: [],
             forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "Monday"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000"]], forbidden: ["20%", "Monday"]),
+                facts: A1DimAssert(requiredAny: [["15%"], ["Friday"], ["12000", "12,000", "$12k"]], forbidden: ["20%", "Monday"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
@@ -2155,7 +2155,7 @@ final class AggressiveCorpusShortTests: XCTestCase {
             requiredAny: [],
             forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["12000"], ["Friday"], ["15%"], ["10200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
+                facts: A1DimAssert(requiredAny: [["12000", "12,000", "$12k", "12000 dollars"], ["Friday"], ["15%"], ["10200", "10,200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
@@ -2170,7 +2170,7 @@ final class AggressiveCorpusShortTests: XCTestCase {
             requiredAny: [],
             forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["12000"], ["Friday"], ["15%"], ["10200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
+                facts: A1DimAssert(requiredAny: [["12000", "12,000", "$12k", "12000 dollars"], ["Friday"], ["15%"], ["10200", "10,200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
@@ -2185,7 +2185,7 @@ final class AggressiveCorpusShortTests: XCTestCase {
             requiredAny: [],
             forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["12000"], ["Friday"], ["15%"], ["10200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
+                facts: A1DimAssert(requiredAny: [["12000", "12,000", "$12k", "12000 dollars"], ["Friday"], ["15%"], ["10200", "10,200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),
@@ -2200,7 +2200,7 @@ final class AggressiveCorpusShortTests: XCTestCase {
             requiredAny: [],
             forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "20%", "20000"],
             dims: A1Dims(
-                facts: A1DimAssert(requiredAny: [["12000"], ["Friday"], ["15%"], ["10200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
+                facts: A1DimAssert(requiredAny: [["12000", "12,000", "$12k", "12000 dollars"], ["Friday"], ["15%"], ["10200", "10,200"], ["99.9"], ["Monday"]], forbidden: ["20%", "20000"]),
                 grammar: A1DimAssert(requiredAny: [], forbidden: ["the the", "i i i", "it it it", "we we we", "is is is", "um", "uh", "you know", "i mean", "basically"]),
                 terms: A1DimAssert(requiredAny: [], forbidden: []),
                 format: A1DimAssert(requiredAny: [[".", "!", "?"]], forbidden: ["  "]),

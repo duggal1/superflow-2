@@ -18,12 +18,38 @@ public struct NumberCleanupStage: SuperflowPorts.TextStage {
         var literals = Set<String>()
         output.text = draft.text.components(separatedBy: "\n").map { line in
             let source = Tokenizer.words(line, protected: draft.protected)
-            let words = TextNumbers.apply(compactNumericScales(source, line: line, protected: draft.protected,
-                                                               options: options), options)
+            let joined = joinSplitNumbers(compactNumericScales(source, line: line, protected: draft.protected,
+                                                               options: options))
+            let words = TextNumbers.apply(joined, options)
             for word in words where word.protected { literals.insert(word.core) }
             return Tokenizer.join(words)
         }.joined(separator: "\n")
         output.protected.literals.formUnion(literals)
+        return output
+    }
+
+    /// ASR often drops a filler between the two halves of a spoken number:
+    /// "thirty you know seven degrees" must stay 37, not split into 30 + 7.
+    /// A filler is removed only when a number word precedes it and the next
+    /// non-filler word is also numeric, so ordinary prose keeps its words.
+    private func joinSplitNumbers(_ words: [Word]) -> [Word] {
+        let fillers: Set<String> = ["you", "know", "i", "mean", "um", "uh", "umm", "uhh", "erm",
+                                     "like", "basically", "well", "actually", "sort", "of"]
+        var output: [Word] = []
+        output.reserveCapacity(words.count)
+        var index = 0
+        while index < words.count {
+            let key = words[index].key.lowercased()
+            if fillers.contains(key),
+               let previous = output.last, NumberLex.isNumberToken(previous.key.lowercased()),
+               let next = (index + 1..<words.count).first(where: { !fillers.contains(words[$0].key.lowercased()) }),
+               NumberLex.isNumberToken(words[next].key.lowercased()) {
+                index += 1
+                continue
+            }
+            output.append(words[index])
+            index += 1
+        }
         return output
     }
 

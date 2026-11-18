@@ -1,0 +1,7 @@
+===== PASS 1 =====
+Forbidden-pattern lint passed.
+lint rc=0
+Dependency layers are valid.
+deps rc=0
+Packages/L2-Engines/TextLineFormat rc=0 	 Executed 19 tests, with 0 failures (0 unexpected) in 0.165 (0.167) seconds
+Packages/L2-Engines/TextNumbers rc=0 	 Executed 44 tests, with 0 failures (0 unexpected) in 0.127 (0.131) seconds
