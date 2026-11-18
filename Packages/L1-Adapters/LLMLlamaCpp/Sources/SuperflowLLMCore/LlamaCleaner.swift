@@ -81,6 +81,26 @@ public struct LlamaPrompt: Sendable {
         }
     }
 
+    /// Splits a rendered chatML prompt into the constant system turn and the
+    /// per-call remainder. The cut sits immediately before the `<|im_start|>`
+    /// that opens the user turn: llama.cpp parses added/special tokens
+    /// atomically and runs BPE only in the spans *between* them, so tokenizing
+    /// the two halves and concatenating is byte-identical to tokenizing the
+    /// whole prompt. That lets the native runtime tokenize the constant prefix
+    /// once and reuse it without changing a single token the model sees.
+    ///
+    /// Returns nil for the plain template (no special-token boundary) so callers
+    /// fall back to whole-prompt tokenization rather than guessing a cut.
+    public static func prefixSplit(_ prompt: String,
+                                   template: ChatTemplate = .chatML) -> (prefix: String, variable: String)? {
+        guard case .chatML = template else { return nil }
+        let marker = "<|im_start|>user\n"
+        // First occurrence is the real user turn; a marker appearing inside the
+        // transcript text comes later and cannot move the cut.
+        guard let range = prompt.range(of: marker) else { return nil }
+        return (String(prompt[..<range.lowerBound]), String(prompt[range.lowerBound...]))
+    }
+
     public static func sanitize(_ output: String) -> String {
         var text = output
         for token in ["<|im_start|>assistant", "<|im_start|>system", "<|im_end|>", "<|endoftext|>", "<|fim_suffix|>"] {
@@ -229,8 +249,13 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
         return text.utf8.count
     }
 
+    /// Eager launch/model-ready warm-up. Routes through the single serialized
+    /// `prepare()` path so concurrent launch, settings refresh and first-hotkey
+    /// calls join one task and the model is never loaded twice. Unlike the old
+    /// fake `clean("hello there")`, this spends no generation pass and touches
+    /// no user text; the runtime's own load already warms a context.
     public func prewarm() async {
-        _ = try? await clean("hello there", options: CleanOptions())
+        try? await prepare()
     }
 
     public func clean(_ text: String, options: CleanOptions) async throws -> CleanResult {
