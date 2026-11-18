@@ -171,13 +171,13 @@ final class MeetingPortTests: XCTestCase {
                     cleanupState: .skipped),
             Segment(sessionID: record.id, index: 2, startMs: 120, endMs: 220,
                     speakerID: "remote-1", source: .system, rawText: "remote words",
-                    cleanupState: .cleaned, cleanedText: "remote words"),
+                    cleanedText: "remote words", cleanupState: .cleaned),
         ]
         let doc = MeetingDocumentProjection.make(record: record, segments: segments,
                                                  speakers: [SpeakerRecord(sessionID: record.id,
                                                                           id: "remote-1",
                                                                           label: "Priya", isSelf: false)])
-        XCTAssertEqual(doc.turns.map(\.index), [1, 2])
+        XCTAssertEqual(doc.turns.map { $0.index }, [1, 2])
         XCTAssertEqual(doc.turns[0].text, MeetingStreamLoss.micTranscriptLost)
         XCTAssertTrue(doc.turns[0].isGap)
         XCTAssertEqual(doc.turns[1].speakerName, "Priya")
