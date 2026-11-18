@@ -63,6 +63,22 @@ final class SQLiteConnection {
         try configureForRuntime()
     }
 
+    /// Opens an existing database without creating or writing anything. No WAL
+    /// pragma is issued: a read-only handle cannot change journal mode.
+    init(readOnly path: String) throws {
+        var pointer: OpaquePointer?
+        let result = sqlite3_open_v2(path, &pointer, SQLITE_OPEN_READONLY, nil)
+        guard result == SQLITE_OK, let pointer else {
+            let message = pointer.map { String(cString: sqlite3_errmsg($0)) } ?? "could not open database read-only"
+            let extendedCode = pointer.map { sqlite3_extended_errcode($0) } ?? result
+            let systemCode = pointer.map { sqlite3_system_errno($0) } ?? 0
+            if let pointer { sqlite3_close_v2(pointer) }
+            throw SQLiteError(code: result, message: message,
+                              extendedCode: extendedCode, systemCode: systemCode)
+        }
+        handle = pointer
+    }
+
     deinit { sqlite3_close_v2(handle) }
 
     func execute(_ sql: String) throws {

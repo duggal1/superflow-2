@@ -26,6 +26,23 @@ public enum SQLiteStoreFactory {
         try open(url: defaultURL())
     }
 
+    /// Launch entry point: verifies integrity first and, on corruption, moves
+    /// the database aside instead of silently using or overwriting it. The
+    /// plain `open(url:)` keeps its preserve-in-place behaviour for callers
+    /// that must never quarantine (e.g. a busy migration retry).
+    public static func openWithIntegrityCheck(
+        url: URL,
+        fileManager: FileManager = .default,
+        minimumFreeBytes: Int64 = SQLiteStoreFactory.minimumFreeBytes
+    ) throws -> SQLiteStore {
+        let report = try DatabaseIntegrity.verifyAndQuarantineIfCorrupted(databaseAt: url,
+                                                                          fileManager: fileManager)
+        if let quarantine = report.quarantineURL {
+            throw DatabaseIntegrity.IntegrityError.corruptedDatabaseQuarantined(quarantine.path)
+        }
+        return try open(url: url, fileManager: fileManager, minimumFreeBytes: minimumFreeBytes)
+    }
+
     public static func open(url: URL, fileManager: FileManager = .default,
                             minimumFreeBytes: Int64 = SQLiteStoreFactory.minimumFreeBytes) throws -> SQLiteStore {
         let directory = url.deletingLastPathComponent()
