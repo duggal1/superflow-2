@@ -55,10 +55,12 @@ public actor LlamaCppRuntime: LlamaRuntime {
     public static var recommendedSessionCount: Int {
         let gigabytes = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
         let cores = ProcessInfo.processInfo.activeProcessorCount
-        // One decode lane needs ~2 compute threads; never oversubscribe.
+        // One decode lane needs ~2 compute threads; never oversubscribe. A
+        // floor of 3 forced 3 sessions (6+ threads) on a 2-core machine, the
+        // exact oversubscription this calculation is meant to prevent.
         let byMemory = Int(gigabytes / 2)
         let byCores = cores / 2
-        return min(maximumSessions, max(3, min(byMemory, byCores)))
+        return min(maximumSessions, max(1, min(byMemory, byCores)))
     }
 
     private static let runtimeLog = Logger(subsystem: "com.superflow.llm", category: "runtime")
@@ -89,7 +91,7 @@ public actor LlamaCppRuntime: LlamaRuntime {
         // Split the CPU budget across contexts instead of giving every context
         // all cores. 2 sessions x 4 threads is 8 threads on this M1; the old
         // 6 sessions x 8 threads was 48 threads fighting for 8 cores.
-        let generationThreads = Int32(max(2, min(4, cores / max(1, sessionCount))))
+        let generationThreads = Int32(max(1, min(4, cores / max(1, sessionCount))))
         let batchThreads = Int32(min(cores, Int(generationThreads) + 2))
         var sessions: [LlamaSession] = []
         for _ in 0..<sessionCount {

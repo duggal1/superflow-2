@@ -29,6 +29,8 @@ public struct AudioLeveler: Sendable {
     /// around it toward the RMS target.
     private var currentGain: Float = 2.0
     private var detector = SpeechActivityDetector()
+    /// Reused per-frame scratch so the audio path allocates only once.
+    private var frameBuffer = [Float](repeating: 0, count: 320)
 
     public init() {}
 
@@ -43,18 +45,23 @@ public struct AudioLeveler: Sendable {
         var applied = currentGain
         while start < samples.count {
             let end = min(start + frameLength, samples.count)
+            // Sanitise non-finite samples on every frame, not just when the
+            // computed gain differs from unity, so NaNs never reach ASR.
+            for index in start..<end where !samples[index].isFinite { samples[index] = 0 }
+            if frameBuffer.count != end - start {
+                frameBuffer = [Float](repeating: 0, count: end - start)
+            }
             var sumSq: Float = 0
             var peak: Float = 0
             for index in start..<end {
                 let value = samples[index]
-                guard value.isFinite else { continue }
                 sumSq += value * value
                 let magnitude = abs(value)
                 if magnitude > peak { peak = magnitude }
+                frameBuffer[index - start] = value
             }
             let rms = (sumSq / Float(end - start)).squareRoot()
-            let frame = Array(samples[start..<end])
-            let speech = detector.isSpeech(frame) && rms > Self.freezeRMS
+            let speech = detector.isSpeech(frameBuffer) && rms > Self.freezeRMS
 
             let gain: Float
             if speech {
@@ -74,12 +81,7 @@ public struct AudioLeveler: Sendable {
                     : currentGain
             }
             let limited = min(gain, Self.peakLimit / max(peak, 1e-6))
-            if limited != 1 {
-                for index in start..<end {
-                    guard samples[index].isFinite else { samples[index] = 0; continue }
-                    samples[index] *= limited
-                }
-            }
+            for index in start..<end { samples[index] *= limited }
             applied = limited
             start = end
         }
