@@ -30,6 +30,30 @@ final class MicrophoneTests: XCTestCase, @unchecked Sendable {
         }
     }
 
+    func testPrepareLeavesTheMicrophoneClosed() async {
+        let microphone = MicrophoneCapture()
+        await microphone.prepare()
+        let prepared = await microphone.isPrepared
+        let live = await microphone.isLive
+        let health = await microphone.health
+        XCTAssertTrue(prepared)
+        XCTAssertFalse(live, "launch-time preparation must not open the device")
+        XCTAssertEqual(health, CaptureHealth())
+        await microphone.stop()
+    }
+
+    func testHealthStreamEmitsIndependentWatchdogState() async {
+        let microphone = MicrophoneCapture()
+        let updates = await microphone.healthUpdates()
+        var iterator = updates.makeAsyncIterator()
+        let initial = await iterator.next()
+        XCTAssertEqual(initial, CaptureHealth())
+        XCTAssertFalse(initial?.stalled ?? true)
+        XCTAssertFalse(initial?.alwaysZero ?? true)
+        XCTAssertFalse(initial?.overflowed ?? true)
+        XCTAssertFalse(initial?.rebuildingRoute ?? true)
+    }
+
     func testInterleavedInputSelectsFirstChannel() {
         let ring = AudioRingBuffer(capacity: 4)
         let stereo: [Float] = [1, -1, 2, -2, 3, -3]
