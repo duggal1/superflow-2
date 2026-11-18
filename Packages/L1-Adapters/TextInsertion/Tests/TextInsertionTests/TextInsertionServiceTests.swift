@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import XCTest
 @testable import SuperflowTextInsertion
@@ -65,6 +66,19 @@ private func makeHarness(focus: InsertionFocus = .editable(role: "AXTextArea"),
     return Harness(service: service, focus: focusInspector, target: target, clipboard: clipboard,
                    poster: poster, apps: apps, scheduler: scheduler, menu: menu, count: countBox,
                    sleeps: sleeps)
+}
+
+/// Turns Secure Input on between the service's first check and the moment the
+/// chord would be posted, modelling a user focusing a password field while the
+/// insertion awaits the layout and AX baseline.
+@MainActor
+private struct FlippingSecureInputKeyResolver: PasteKeyResolving {
+    let code: CGKeyCode
+    let secure: Box<Bool>
+    func pasteKeyCode() -> CGKeyCode {
+        secure.value = true
+        return code
+    }
 }
 
 @MainActor
@@ -313,6 +327,36 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(posts, 0)
     }
 
+    /// Secure Input may switch on while the insertion awaits layout and AX
+    /// reads. The last-moment recheck must suppress the chord and fall through
+    /// to the supported Accessibility path instead of posting a forbidden key.
+    func testSecureInputTurningOnBeforeTheChordStillSkipsIt() async {
+        let secure = Box(false)
+        let countBox = Box<Int?>(0)
+        let target = FakeTarget(count: countBox)
+        let focus = FakeFocusInspector(focus: .unknown(reason: "role-AXGroup"), target: target)
+        let clipboard = FakeClipboard()
+        let poster = FakePoster(result: true, increments: true, box: countBox)
+        let service = TextInsertionService(
+            focus: focus,
+            clipboard: clipboard,
+            poster: poster,
+            keyResolver: FlippingSecureInputKeyResolver(code: 9, secure: secure),
+            apps: FakeApps(frontmost: 77),
+            menuPaster: FakeMenuPaster(),
+            restoreScheduler: InlineRestoreScheduler(),
+            secureInput: { secure.value },
+            axTrusted: { true },
+            sleep: { _ in })
+
+        let report = await service.insert("hello", options: TextInsertionOptions())
+        XCTAssertEqual(report.result, .inserted(method: .accessibility, verified: true))
+        XCTAssertTrue(report.steps.contains(InsertionStep.secureInput))
+        let posts = await poster.posts
+        XCTAssertEqual(posts, 0, "no synthetic key may be posted once Secure Input is on")
+        XCTAssertEqual(target.insertedTexts, ["hello"], "the supported AX fallback must run")
+    }
+
     func testAccessibilityOnlyOptionsNeverPost() async {
         let harness = makeHarness()
         var options = TextInsertionOptions()
@@ -350,6 +394,23 @@ final class TextInsertionServiceTests: XCTestCase {
         let report = await harness.service.insert("hello", options: TextInsertionOptions())
         XCTAssertEqual(report.result, .notInserted(.eventPostFailed, textOnClipboard: false))
         XCTAssertEqual(report.steps.last, InsertionStep.pbWriteFailed)
+    }
+
+    /// A failed transient write clears the board before writing. The original
+    /// snapshot must be put back so a failed insertion never destroys the
+    /// user's clipboard (hex's failed-commit recovery).
+    func testClipboardWriteFailureRestoresTheOriginalSnapshot() async {
+        let harness = makeHarness(focus: .unknown(reason: "role-AXGroup"))
+        let snapshot = PasteboardSnapshot(
+            items: [[.init(type: "public.utf8-plain-text", data: Data("original".utf8))]],
+            isComplete: true, changeCount: 1)
+        await harness.clipboard.setSnapshot(snapshot)
+        await harness.clipboard.setFailWrites(true)
+
+        let report = await harness.service.insert("hello", options: TextInsertionOptions())
+        XCTAssertEqual(report.result, .notInserted(.eventPostFailed, textOnClipboard: false))
+        let restores = await harness.clipboard.restores
+        XCTAssertEqual(restores, 1, "the original clipboard must be recovered after a failed write")
     }
 
     func testStepsNeverContainTranscriptText() async {

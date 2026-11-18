@@ -30,6 +30,15 @@ extension TextInsertionService {
                       options: TextInsertionOptions) async -> (attempt: InsertionAttempt, keyCode: UInt16) {
         let keyCode = await keyResolver.pasteKeyCode()
         let baseline = await captureBaseline(target)
+        // Secure Input can turn on while the caller waits for modifiers and
+        // reads the layout/AX baseline. Recheck at the last safe point so no
+        // synthetic key is ever posted into a Secure Input session; the
+        // decision tree's supported Accessibility/menu fallback still applies.
+        guard !secureInput() else {
+            return (InsertionAttempt(inserted: false, verified: false, posted: false,
+                                     steps: [InsertionStep.secureInput], canVerify: true),
+                    UInt16(keyCode))
+        }
         let primary = options.postTap
         let posted = await poster.postPaste(keyCode: keyCode, tap: primary)
         var steps = [posted ? InsertionStep.cmdvPosted : InsertionStep.cmdvFailed]
