@@ -299,6 +299,12 @@ private func emojiPass(_ input: String) -> String {
 
 private let TLD = "com|org|net|io|dev|ai|app|co|in|edu|gov|me|xyz|sh|so|tech|cloud|uk|us|ca|de|fr"
 private let PROVIDERS_RX = rx(#"^(gmail|yahoo|outlook|hotmail|icloud|proton|protonmail|live|hey|fastmail)$"#)
+/// Words that introduce an email address in dictation. A dotted local part
+/// ("john dot smith") is accepted without one because it is unambiguous.
+private let EMAIL_INTRO: Set<String> = [
+    "to", "at", "email", "emailed", "mail", "send", "sent", "cc", "bcc",
+    "contact", "reach", "address", "from", "write",
+]
 private let PROTOCOL_RX = rx(#"\b(https?)\s+colon\s+slash\s+slash\s*"#)
 private let EMAIL_RX = rx(#"\b([a-z0-9][\w-]*(?:\s+(?:dot|underscore|dash)\s+[a-z0-9][\w-]*)*)\s+at\s+((?:[a-z0-9-]+\s+dot\s+)+(?:\#(TLD)))\b"#)
 private let LOCAL_SEP_RX = rx(#"\s+(?:dot|underscore)\s+"#)
@@ -317,10 +323,20 @@ private func techPass(_ input: String) -> String {
     var s = subT(PROTOCOL_RX, input, "$1://")
 
     // "john dot smith at gmail dot com" -> john.smith@gmail.com
+    // "support at superwhisper dot com" -> support@superwhisper.com
     s = sub(EMAIL_RX, s) { m in
         let local = m.g(1)!, domain = m.g(2)!
+        // EMAIL_RX already requires a real TLD on the domain. The old gate
+        // accepted only known providers or a dotted local part, so ordinary
+        // corporate addresses ("support at superwhisper dot com") were silently
+        // left spoken. Accept any TLD domain when the local part is introduced
+        // by a mail cue ("send it to ...") or is itself dotted; prose such as
+        // "look at example dot com" has neither and stays untouched.
+        let preceding = m.before.lowercased()
+            .split(whereSeparator: \.isWhitespace).last.map(String.init) ?? ""
         let firstLabel = domain.split(whereSeparator: { $0.isWhitespace }).first.map(String.init) ?? domain
-        if !test(PROVIDERS_RX, firstLabel) && !test(LOCAL_SEP_RX, local) { return m.full }
+        if !EMAIL_INTRO.contains(preceding), !test(LOCAL_SEP_RX, local),
+           !test(PROVIDERS_RX, firstLabel) { return m.full }
         var l = subT(DOT_RX, local, ".")
         l = subT(UNDERSCORE_RX, l, "_")
         l = subT(DASH_RX, l, "-")

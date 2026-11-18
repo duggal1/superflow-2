@@ -22,7 +22,7 @@ public struct NumberCleanupStage: SuperflowPorts.TextStage {
                                                                options: options))
             let words = TextNumbers.apply(joined, options)
             for word in words where word.protected { literals.insert(word.core) }
-            return Self.restoreSpokenCalibre(Tokenizer.join(words))
+            return Self.restoreBloodPressure(Self.restoreSpokenCalibre(Tokenizer.join(words)))
         }.joined(separator: "\n")
         output.protected.literals.formUnion(literals)
         return output
@@ -99,5 +99,16 @@ public struct NumberCleanupStage: SuperflowPorts.TextStage {
             with: "$1.$2$3",
             options: [.regularExpression, .caseInsensitive]
         )
+    }
+
+    /// Spoken blood pressure keeps its clinical slash: the cardinal parser turns
+    /// "one forty over ninety" into "140 over 90" (no split), and this narrow
+    /// pass renders the vital sign as "140/90". It fires only after the word
+    /// "pressure", so a fraction such as "three over four" is untouched.
+    private static let bloodPressurePattern = #"(?i)\b(pressure(?:\s+is)?)\s+(\d{2,3})\s+over\s+(\d{2,3})\b"#
+
+    private static func restoreBloodPressure(_ text: String) -> String {
+        text.replacingOccurrences(of: bloodPressurePattern, with: "$1 $2/$3",
+                                  options: [.regularExpression, .caseInsensitive])
     }
 }

@@ -22,17 +22,17 @@ final class SpokenHundredsRegressionTests: XCTestCase {
     }
 
     func testSpokenImpliedHundredsRenderAsOneNumber() async {
-        // (input, required exact digit form, explicit split/corrupted negative)
+        // (input, required exact output, split/corrupted negative)
         let cases: [(String, String, String)] = [
-            ("blood pressure one forty over ninety", "140", "one 40"),
-            ("one thirty over eighty", "130", "one 30"),
-            ("two fifty dollars", "250", "two 50"),
-            ("weight is one ninety five pounds", "195", "one 95"),
+            ("blood pressure one forty over ninety", "blood pressure 140/90", "one 40"),
+            ("one thirty over eighty", "130 over 80", "one 30"),
+            ("two fifty dollars", "$250", "two 50"),
+            ("weight is one ninety five kilograms", "weight is 195 kilograms", "one 95"),
         ]
         for (input, expected, corrupted) in cases {
             let out = await clean(input)
-            XCTAssertTrue(out.contains(expected),
-                          "spoken implied hundreds corrupted: \"\(input)\" -> \"\(out)\" (wanted \(expected))")
+            XCTAssertEqual(out, expected,
+                           "spoken implied hundreds corrupted: \"\(input)\" -> \"\(out)\" (wanted \(expected))")
             XCTAssertFalse(out.contains(corrupted),
                            "number left split/corrupted in \"\(out)\" (forbidden \(corrupted))")
         }
@@ -40,22 +40,22 @@ final class SpokenHundredsRegressionTests: XCTestCase {
 
     func testFillerBetweenNumberHalvesDoesNotSplitTheFact() async {
         let out = await clean("the sample temperature was thirty you know seven degrees Celsius")
-        XCTAssertTrue(out.contains("37"), "split number corrupted: \(out)")
+        XCTAssertEqual(out, "the sample temperature was 37 degrees Celsius")
         XCTAssertFalse(out.contains("you know 7"), "filler left inside number: \(out)")
     }
 
     func testOrdinaryProseKeepsItsWords() async {
         let out = await clean("I know you mean well but the thirty seven degrees was measured")
+        XCTAssertEqual(out, "I know you mean well but the 37 degrees was measured")
         XCTAssertTrue(out.lowercased().contains("know"), "ordinary word dropped: \(out)")
-        XCTAssertTrue(out.contains("37"), "number not rendered: \(out)")
     }
 
     func testSpokenCaliberIsNotCollapsedToCorruptedInteger() async {
         // D3: a spoken digit run in a calibre context ("... five five six rounds")
         // is a decimal calibre (5.56), never the integer 556.
         let out = await clean("do you have any five five six rounds")
+        XCTAssertEqual(out, "do you have any 5.56 rounds")
         XCTAssertFalse(out.contains("500"), out)
         XCTAssertFalse(out.contains("556"), out)
-        XCTAssertTrue(out.contains("5.56"), out)
     }
 }
