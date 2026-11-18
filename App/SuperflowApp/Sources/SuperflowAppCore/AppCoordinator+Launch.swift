@@ -8,14 +8,19 @@ import SuperflowKernel
 @MainActor
 extension AppCoordinator {
     func startModelPreparation(environment: AppEnvironment, log: Logger) {
-        // S1-mini loads lazily on first use (LlamaCleaner.clean calls prepare()
-        // when cold); an eager launch load parks a second GPU model on the
-        // machine and starves streaming ASR. Only ASR prewarms here.
+        // ASR is prewarmed first so a second model cannot starve streaming.
+        // S1-mini is then prepared eagerly through the same serialized path,
+        // so the first dictation never pays a cold load. `prepare()` joins an
+        // in-flight warm-up, so concurrent launch/settings/first-key calls
+        // cannot double-load the model.
         Task(priority: .utility) {
             let started = DispatchTime.now().uptimeNanoseconds
             let asr = await environment.sessionEngine.prewarm()
+            let cleanup = settings.cleanupEnabled
+                ? await environment.prepareInstalledCleanupModel()
+                : false
             let elapsed = (DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
-            log.info("Model preparation: \(elapsed) ms; ASR ready: \(asr); cleanup deferred (lazy)")
+            log.info("Model preparation: \(elapsed) ms; ASR ready: \(asr); cleanup ready: \(cleanup)")
         }
     }
 
