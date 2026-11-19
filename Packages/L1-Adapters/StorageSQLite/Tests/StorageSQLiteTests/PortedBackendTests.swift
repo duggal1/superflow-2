@@ -81,7 +81,7 @@ final class PortedBackendTests: XCTestCase {
         }
 
         var seen: [Int] = []
-        for try await page in store.segmentPages(session: id, pageSize: 3) {
+        for try await page in await store.segmentPages(session: id, pageSize: 3) {
             seen.append(contentsOf: page.segments.map(\.index))
         }
         XCTAssertEqual(seen, Array(0..<7))

@@ -57,7 +57,7 @@ enum InputDevice {
         )
         let names = Dictionary(uniqueKeysWithValues:
             discovery.devices.map { ($0.uniqueID, $0.localizedName) })
-        return devices().compactMap { id in
+        return devices().compactMap { id -> InputDeviceDescriptor? in
             guard let uid = uid(of: id) else { return nil }
             let format = format(id)
             return InputDeviceDescriptor(
@@ -69,7 +69,7 @@ enum InputDevice {
                 isSystemDefault: id == systemDefault,
                 // An output-only device has no input-scope stream format.
                 hasInputFormat: format != nil,
-                inputChannels: format?.mChannelsPerFrame ?? 0,
+                inputChannels: Int32(format?.mChannelsPerFrame ?? 0),
                 sampleRate: format?.mSampleRate ?? 0,
                 transportType: property(id, kAudioDevicePropertyTransportType, initial: UInt32(0)) ?? 0
             )
