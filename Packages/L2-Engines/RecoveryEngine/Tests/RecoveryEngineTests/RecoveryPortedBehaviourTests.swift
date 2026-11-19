@@ -125,8 +125,16 @@ final class RecoveryPortedBehaviourTests: XCTestCase {
         XCTAssertEqual(idlePhase, .idle)
         XCTAssertGreaterThan(second, first!)
         XCTAssertFalse(stillStale, "rearm must not revive an old generation")
+        // Epoch fencing: rearm returns the gate to idle, so no run is active and no segment may be
+        // claimed until a fresh begin() opens a new generation. This is stricter than the old
+        // expectation that a claim could succeed straight after rearm: a late callback from the
+        // cancelled run can never append a row, and no claim is accepted outside an active run.
+        let idleClaim = await gate.claimSegment(key)
+        XCTAssertFalse(idleClaim, "no segment may be claimed while the gate is idle after rearm")
+        let reopened = await gate.begin()
+        XCTAssertNotNil(reopened, "a fresh run may start after rearm")
         let freshClaim = await gate.claimSegment(key)
-        XCTAssertTrue(freshClaim, "rearm clears per-run bookkeeping, not durable rows")
+        XCTAssertTrue(freshClaim, "a new generation clears per-run bookkeeping, not durable rows")
     }
 
     // MARK: - R2: degrade only the failing dependency

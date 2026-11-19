@@ -75,7 +75,10 @@ final class MeetingPortTests: XCTestCase {
                 let doc = try XCTUnwrap(stopped)
                 let real = doc.turns.filter { !$0.isGap }
                 XCTAssertEqual(real.count, isEcho ? 1 : 2)
-                XCTAssertTrue(real.allSatisfy { $0.source == .system })
+                // Echo evidence removes only the microphone duplicate: the remote/system turn is
+                // always kept. With no echo evidence both lanes must survive (different speech),
+                // so the all-system assertion applies only to the echo case.
+                XCTAssertEqual(Set(real.map(\.source)), isEcho ? [.system] : [.mic, .system])
             }
         }
     }
@@ -84,9 +87,15 @@ final class MeetingPortTests: XCTestCase {
 
     private func makeEngine(mic: any AudioSource, system: (any AudioSource)?,
                         recognizer: any SpeechRecognizer, repo: InMemoryRepository,
-                        journals: FakeJournalStore) -> MeetingEngine {
-        MeetingEngine(mic: mic, system: system, recognizer: recognizer,
-                      pipeline: TextPipeline(stages: []), repository: repo, journals: journals)
+                        journals: FakeJournalStore, keepJournals: Bool = false) -> MeetingEngine {
+        // `settings` sits after `journals` in the MeetingEngine initializer. Retention must be
+        // requested explicitly: a normal stop() deletes journals unless keepJournals is set, so
+        // asserting a degraded lane's audio remains inspectable requires passing it here.
+        var settings = AppSettings.default
+        settings.keepJournals = keepJournals
+        return MeetingEngine(mic: mic, system: system, recognizer: recognizer,
+                             pipeline: TextPipeline(stages: []), repository: repo, journals: journals,
+                             settings: settings)
     }
 
     private func waitForNotice(_ substring: String, in engine: MeetingEngine) async throws {
@@ -103,7 +112,7 @@ final class MeetingPortTests: XCTestCase {
         let engine = makeEngine(mic: ScriptedAudioSource(samples: Array(repeating: 0.2, count: 160_000), kind: .mic),
                             system: ScriptedAudioSource(samples: Array(repeating: 0.2, count: 160_000), kind: .system),
                             recognizer: SelectiveRecognizer(failing: .system),
-                            repo: repo, journals: journals)
+                            repo: repo, journals: journals, keepJournals: true)
         let id = try await engine.start()
         let stopped = await engine.stop()
         let doc = try XCTUnwrap(stopped)
@@ -126,7 +135,7 @@ final class MeetingPortTests: XCTestCase {
         let engine = makeEngine(mic: ScriptedAudioSource(samples: Array(repeating: 0.2, count: 160_000), kind: .mic),
                             system: ScriptedAudioSource(samples: Array(repeating: 0.2, count: 160_000), kind: .system),
                             recognizer: SelectiveRecognizer(failing: .mic),
-                            repo: repo, journals: journals)
+                            repo: repo, journals: journals, keepJournals: true)
         let id = try await engine.start()
         let stopped = await engine.stop()
         let doc = try XCTUnwrap(stopped)
