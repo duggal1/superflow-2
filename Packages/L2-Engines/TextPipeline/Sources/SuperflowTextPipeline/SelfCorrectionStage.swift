@@ -45,6 +45,11 @@ enum SelfCorrection: Sendable {
         + gap + datedDay + "\\b"
     private static let numberPattern = "(?i)\\b(" + numberPhrase + ")" + beforeCue + cue + bridge
         + gap + "(" + numberPhrase + ")\\b"
+    /// A repeated code/path literal with an explicit revision cue resolves to
+    /// the second value ("hero.tsx no wait hero.tsx" -> "hero.tsx").
+    private static let codeLiterals = "[A-Za-z0-9_/\\\\.:-]+\\.[A-Za-z]{1,8}"
+    private static let codeRepeatPattern = "(?i)\\b(" + codeLiterals + ")" + beforeCue + cue + bridge
+        + gap + "\\1\\b"
     private static let timePattern = "(?i)\\b(at|on|by|around)" + gap + "(" + clock + ")"
         + gap + "on" + gap + "(" + day + ")" + beforeCue + cue + bridge
         + gap + "(" + day + ")" + gap + "at" + gap + "(" + clock + ")\\b"
@@ -61,7 +66,10 @@ enum SelfCorrection: Sendable {
                       let finalDay = source.group(4, in: match) else { return nil }
                 return preposition + " " + finalClock + " on " + finalDay
             }
-            let days = replace(dayPattern, in: times, protected: protected) { match, source in
+            let code = replace(codeRepeatPattern, in: times, protected: protected) { match, source in
+                source.group(1, in: match).map { String($0) }
+            }
+            let days = replace(dayPattern, in: code, protected: protected) { match, source in
                 source.group(2, in: match).map { String($0) }
             }
             let next = replace(numberPattern, in: days, protected: protected) { match, source in
@@ -88,7 +96,7 @@ enum SelfCorrection: Sendable {
         for match in matches {
             guard let range = Range(match.range, in: input),
                   !input[range].contains("\n"),
-                  !protected.contains(where: { $0.overlaps(range) }),
+                  !protected.overlaps(range, in: input),
                   match.range.location >= cursor,
                   let value = replacement(match, input) else { continue }
             output += ns.substring(with: NSRange(location: cursor, length: match.range.location - cursor))

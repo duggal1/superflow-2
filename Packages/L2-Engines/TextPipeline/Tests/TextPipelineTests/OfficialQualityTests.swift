@@ -1,6 +1,7 @@
 import XCTest
 import SuperflowKernel
 import SuperflowPorts
+import SuperflowTextCleanup
 @testable import SuperflowTextPipeline
 
 /// Focused gates for the verbatim official S1-mini v1 strings and for the
@@ -147,7 +148,8 @@ final class OfficialQualityTests: XCTestCase {
 
     func testInvoiceCurrencyCommaIsPreserved() async {
         let official = "The invoice came to $23,450, and it's due on March 3, 2026."
-        XCTAssertEqual(await polished(official), official)
+        let output = await polished(official)
+        XCTAssertEqual(output, official)
     }
 
     func testEmailBlankLineLayoutIsPreserved() async {

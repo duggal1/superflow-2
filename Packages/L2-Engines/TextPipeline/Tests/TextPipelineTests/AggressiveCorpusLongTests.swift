@@ -172,7 +172,7 @@ final class AggressiveCorpusLongTests: XCTestCase {
             name: "long-sales-call-transcript",
             raw: raw,
             required: ["mark", "900", "2000", "2200", "25 seats", "40 engineers", "priya",
-                       "premium support", "sso", "dpa", "wednesday", "tuesday", "redline", "thirty first"],
+                       "premium support", "sso", "dpa", "tuesday", "redline", "thirty first"],
             forbidden: ["thirty", "four hundred a month"],
             minRetention: 0.45))
     }

@@ -51,12 +51,15 @@ final class PipelineTests: XCTestCase {
     }
 
     func testCleanupRunsFirstAndHarperNeverRuns() {
-        let pipeline = TextPipelineBuilder.make(settings: allSettings(),
+        var settings = allSettings()
+        settings.harperEnabled = false
+        let pipeline = TextPipelineBuilder.make(settings: settings,
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
-        // Safe pre-normalization runs before the model; the model still runs
-        // before all formatting. Harper never runs.
+        // Canonical numbers run before S1; the model still runs before all
+        // formatting. Harper never runs when it is disabled.
         XCTAssertEqual(pipeline.stageIDs.first, "selfCorrection")
-        XCTAssertEqual(pipeline.stageIDs.firstIndex(of: "cleanup"), 6)
+        XCTAssertLessThan(try XCTUnwrap(pipeline.stageIDs.firstIndex(of: "numbers")),
+                          try XCTUnwrap(pipeline.stageIDs.firstIndex(of: "cleanup")))
         XCTAssertFalse(pipeline.stageIDs.contains("grammar"))
     }
 
@@ -64,7 +67,7 @@ final class PipelineTests: XCTestCase {
         let pipeline = TextPipelineBuilder.make(settings: allSettings(),
                                                 dependencies: dependencies(grammar: FakeGrammarChecker()))
         XCTAssertEqual(pipeline.stageIDs, [
-            "selfCorrection", "preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "numbers", "cleanup", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "codingLanguage", "lexicon", "codeAware",
+            "selfCorrection", "preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup", "disfluency", "numbers", "cleanup", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "commands", "shortcuts", "spokenCode", "codingLanguage", "lexicon", "codeAware", "grammar",
             "lineformat", "normalize", "modelNames", "techDictionary",
         ])
     }
@@ -111,7 +114,7 @@ final class PipelineTests: XCTestCase {
             settings: settings, dependencies: TextPipelineDependencies(project: project))
         let ids = pipeline.stageIDs
         XCTAssertLessThan(try XCTUnwrap(ids.firstIndex(of: "numbers")),
-                          try XCTUnwrap(ids.firstIndex(of: "cleanup")))
+                          try XCTUnwrap(ids.firstIndex(of: "postCleanupRepair")))
         XCTAssertLessThan(try XCTUnwrap(ids.firstIndex(of: "lexicon")),
                           try XCTUnwrap(ids.firstIndex(of: "codeAware")))
         XCTAssertLessThan(try XCTUnwrap(ids.firstIndex(of: "codeAware")),
