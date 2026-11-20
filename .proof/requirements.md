@@ -18,3 +18,18 @@
 14. Deliver a FAIL-first consolidated report with exact file:line evidence and an honest VERDICT per area.
 
 Assumption: this is a continuation of the same overall quality sweep; state files are appended rather than archived because other agents are actively writing them in the shared working tree.
+
+
+## Added: brutal S1-mini testing (2026-11-21, this agent, no sub-agents)
+11. No sub-agents are launched; all work is done in one agent.
+12. S1-mini quality is exercised aggressively on ultra-broken ASR transcripts.
+13. Evidence shows S1-mini output is used (cleaned), not raw-text fallback.
+14. Broken grammar resolves to clean written text (caps, punctuation, fillers gone).
+15. Technical terms never overwrite ordinary day-to-day words.
+16. Technical terms that are recognized are formatted correctly.
+17. Gapped/enumerated data becomes points (bullets), not inline prose.
+18. Bullets use Markdown dashes; glued hyphens and separator commas are repaired.
+19. Partial-Markdown style input renders as real Markdown.
+20. Quality is measured, not asserted; failures are iterated to green.
+21. Performance is measured (latency + streaming time-to-first-token).
+22. Work is disk-safe, headless, bounded, and leaves background agents alone.

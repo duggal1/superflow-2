@@ -1,0 +1,99 @@
+BRUTAL S1-mini quality: 11/21 pass
+latency p50=472.69904099812265ms p95=596.2842079970869ms stream TTFT p50=40.52083400165429ms
+
+== ultra_broken_tech :: FAIL no_final_punct (lat 495.3ms)
+IN : um okay so like the the the the JWT token it's it's like expired you know and the api is is is returning a a four zero three no wait no four two nine because uh the rate limiter it's kicking in you know
+OUT: Okay, so the JWT token is expired, and the API is returning a 429 because the rate limiter is kicking in
+TTFT: 23.7ms
+
+== ultra_broken_negation :: PASS (lat 331.0ms)
+IN : so um I I I don't not want to uh to to deploy the the config on Friday actually no wait Thursday because the the staging cluster is is still red
+OUT: So I don't want to deploy the config on Thursday, because the staging cluster is still red.
+
+== garbled_path :: FAIL missing:lib/backend/main/engine/router/prospect-main-engine.ts,bad:backend/backend (lat 565.5ms)
+IN : open lib slash backend slash main slash engine slash router slash prospect dash main dash engine dot t s then fix the get user by id function no wait getUserById and change the timeout from three thousand to five thousand milliseconds
+OUT: Open lib/backend/backend/main/engine/router/prospect-main-engine.ts. Fix the getUserById function, change the timeout from 3,000 to 5,000 milliseconds.
+
+== status_code_chaos :: PASS (lat 596.3ms)
+IN : the the response was a four oh four then a five oh three then a four two nine and uh finally a two hundred but but not a five hundred
+OUT: The response was a 404, then a 503, then a 429, and finally a 200, but not a 500.
+
+== numbers_currency_date :: FAIL missing:March 3, 2026 (lat 430.7ms)
+IN : the invoice came to twenty three thousand four hundred and fifty dollars and it's due on march third twenty twenty six
+OUT: The invoice came to $23,450 and it's due on March 3rd, 2026.
+
+== filler_only :: PASS (lat 113.8ms)
+IN : um uh um you know like I mean um uh basically um
+OUT: Okay, basically
+
+== time_revision :: PASS (lat 239.9ms)
+IN : the meeting is at four p m on thursday actually no friday at five thirty
+OUT: The meeting is at 5:30 on Friday.
+
+== self_correction_number :: PASS (lat 201.0ms)
+IN : i think the answer is forty two no sorry forty three
+OUT: I think the answer is 43.
+
+== spoken_email :: PASS (lat 229.3ms)
+IN : send it to support at superwhisper dot com
+OUT: Send it to support@superwhisper.com.
+
+== technical_vs_everyday :: PASS (lat 441.1ms)
+IN : we should react to the news and see you next year I need some cash tomorrow open the website please
+OUT: We should react to the news and see you next year. I need some cash tomorrow. Open the website, please.
+
+== technical_mixed :: FAIL missing:S1-mini (lat 425.8ms)
+IN : um use s one mini and nemotron with the new deployment next week and check the next js app still builds
+OUT: Use S1 Mini and Nemotron with the new deployment next week and check the next.js app still builds.
+
+== unicode_preserved :: PASS (lat 510.5ms)
+IN : um the the api returned a four zero three and sarah said café résumé naïve okay
+OUT: The API returned a 403, and Sarah said, "Café résumé naïve." Okay.
+
+== list_gaps_sunscreen :: FAIL bad:sunscreen and then,dash_bullets_0_expected_3 (lat 529.9ms)
+IN : so for the trip we need to pack um sunscreen and then also a first aid kit and um chargers for everything
+OUT: So for the trip we need to pack sunscreen and then also a first aid kit and chargers for everything.
+TTFT: 41.0ms
+
+== list_ordinals :: PASS (lat 477.3ms)
+IN : first um we need to fix the paywall second add the pricing page third update the docs
+OUT: 1. Fix the paywall.
+2. Add the pricing page.
+3. Update the docs.
+
+== list_dash_spoken :: FAIL dash_bullets_0_expected_3 (lat 472.7ms)
+IN : the plan is dash ship the api dash update the docs dash tell the team
+OUT: The plan is -ship, the API, -update the docs, -tell the team.
+
+== list_gaps_points :: FAIL bullets_0_expected_3 (lat 660.4ms)
+IN : the results are um point one latency is high point two memory is fine point three cpu is low
+OUT: The results are: 0.1 latency is high, 0.2 memory is fine, 0.03 CPU is low.
+
+== partial_markdown :: PASS (lat 487.0ms)
+IN : okay so the steps are um star clone the repo star install dependencies star run the tests
+OUT: Okay, so the steps are:
+- Clone the repo.
+- Install dependencies.
+- Run the tests.
+TTFT: 40.5ms
+
+== email_layout :: PASS (lat 580.1ms)
+IN : hey sarah just wanted to follow up on the proposal can you send the numbers by end of week thanks john
+OUT: Hey Sarah,
+
+Just wanted to follow up on the proposal. Can you send the numbers by end of week?
+
+Thanks,
+John
+
+== list_card_exact :: FAIL bad:sunscreen and then,dash_bullets_0_expected_3 (lat 531.6ms)
+IN : so for the trip we need to pack sunscreen and then also a first aid kit and um chargers for everything
+OUT: So for the trip we need to pack sunscreen and then also a first aid kit and chargers for everything.
+
+== list_hyphen_spoken :: FAIL dash_bullets_0_expected_3 (lat 368.0ms)
+IN : the checklist is hyphen restart the server hyphen clear the cache hyphen verify the logs
+OUT: The checklist is -restart the server -clear the cache -verify the logs.
+
+== list_bullet_spoken :: FAIL dash_bullets_0_expected_3 (lat 379.2ms)
+IN : the agenda is bullet introductions bullet demo bullet questions
+OUT: The agenda is: Bullet, introductions, Bullet, demo, Bullet, questions.

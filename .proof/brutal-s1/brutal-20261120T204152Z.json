@@ -1,0 +1,262 @@
+{
+  "cases": [
+    {
+      "completion_tokens": 28,
+      "finish_reason": "stop",
+      "latency_ms": 472.9,
+      "misses": [
+        "no_final_punct"
+      ],
+      "name": "ultra_broken_tech",
+      "output": "Okay, so the JWT token is expired, and the API is returning a 429 because the rate limiter is kicking in",
+      "pass": false,
+      "raw": "um okay so like the the the the JWT token it's it's like expired you know and the api is is is returning a a four zero three no wait no four two nine because uh the rate limiter it's kicking in you know",
+      "stream_ttft_ms": 25.4
+    },
+    {
+      "completion_tokens": 21,
+      "finish_reason": "stop",
+      "latency_ms": 296.5,
+      "misses": [],
+      "name": "ultra_broken_negation",
+      "output": "So I don't want to deploy the config on Thursday, because the staging cluster is still red.",
+      "pass": true,
+      "raw": "so um I I I don't not want to uh to to deploy the the config on Friday actually no wait Thursday because the the staging cluster is is still red"
+    },
+    {
+      "completion_tokens": 39,
+      "finish_reason": "stop",
+      "latency_ms": 498.7,
+      "misses": [
+        "missing:lib/backend/main/engine/router/prospect-main-engine.ts",
+        "bad:backend/backend"
+      ],
+      "name": "garbled_path",
+      "output": "Open lib/backend/backend/main/engine/router/prospect-main-engine.ts. Fix the getUserById function, change the timeout from 3,000 to 5,000 milliseconds.",
+      "pass": false,
+      "raw": "open lib slash backend slash main slash engine slash router slash prospect dash main dash engine dot t s then fix the get user by id function no wait getUserById and change the timeout from three thousand to five thousand milliseconds"
+    },
+    {
+      "completion_tokens": 40,
+      "finish_reason": "stop",
+      "latency_ms": 511.1,
+      "misses": [],
+      "name": "status_code_chaos",
+      "output": "The response was a 404, then a 503, then a 429, and finally a 200, but not a 500.",
+      "pass": true,
+      "raw": "the the response was a four oh four then a five oh three then a four two nine and uh finally a two hundred but but not a five hundred"
+    },
+    {
+      "completion_tokens": 28,
+      "finish_reason": "stop",
+      "latency_ms": 368.4,
+      "misses": [
+        "missing:March 3, 2026"
+      ],
+      "name": "numbers_currency_date",
+      "output": "The invoice came to $23,450 and it's due on March 3rd, 2026.",
+      "pass": false,
+      "raw": "the invoice came to twenty three thousand four hundred and fifty dollars and it's due on march third twenty twenty six"
+    },
+    {
+      "completion_tokens": 4,
+      "finish_reason": "stop",
+      "latency_ms": 100.4,
+      "misses": [],
+      "name": "filler_only",
+      "output": "Okay, basically",
+      "pass": true,
+      "raw": "um uh um you know like I mean um uh basically um"
+    },
+    {
+      "completion_tokens": 13,
+      "finish_reason": "stop",
+      "latency_ms": 198.8,
+      "misses": [],
+      "name": "time_revision",
+      "output": "The meeting is at 5:30 on Friday.",
+      "pass": true,
+      "raw": "the meeting is at four p m on thursday actually no friday at five thirty"
+    },
+    {
+      "completion_tokens": 10,
+      "finish_reason": "stop",
+      "latency_ms": 175.0,
+      "misses": [],
+      "name": "self_correction_number",
+      "output": "I think the answer is 43.",
+      "pass": true,
+      "raw": "i think the answer is forty two no sorry forty three"
+    },
+    {
+      "completion_tokens": 11,
+      "finish_reason": "stop",
+      "latency_ms": 183.6,
+      "misses": [],
+      "name": "spoken_email",
+      "output": "Send it to support@superwhisper.com.",
+      "pass": true,
+      "raw": "send it to support at superwhisper dot com"
+    },
+    {
+      "completion_tokens": 25,
+      "finish_reason": "stop",
+      "latency_ms": 325.8,
+      "misses": [],
+      "name": "technical_vs_everyday",
+      "output": "We should react to the news and see you next year. I need some cash tomorrow. Open the website, please.",
+      "pass": true,
+      "raw": "we should react to the news and see you next year I need some cash tomorrow open the website please"
+    },
+    {
+      "completion_tokens": 23,
+      "finish_reason": "stop",
+      "latency_ms": 303.5,
+      "misses": [
+        "missing:S1-mini"
+      ],
+      "name": "technical_mixed",
+      "output": "Use S1 Mini and Nemotron with the new deployment next week and check the next.js app still builds.",
+      "pass": false,
+      "raw": "um use s one mini and nemotron with the new deployment next week and check the next js app still builds"
+    },
+    {
+      "completion_tokens": 26,
+      "finish_reason": "stop",
+      "latency_ms": 333.4,
+      "misses": [],
+      "name": "unicode_preserved",
+      "output": "The API returned a 403, and Sarah said, \"Caf\u00e9 r\u00e9sum\u00e9 na\u00efve.\" Okay.",
+      "pass": true,
+      "raw": "um the the api returned a four zero three and sarah said caf\u00e9 r\u00e9sum\u00e9 na\u00efve okay"
+    },
+    {
+      "completion_tokens": 23,
+      "finish_reason": "stop",
+      "latency_ms": 308.6,
+      "misses": [
+        "bad:sunscreen and then",
+        "dash_bullets_0_expected_3"
+      ],
+      "name": "list_gaps_sunscreen",
+      "output": "So for the trip we need to pack sunscreen and then also a first aid kit and chargers for everything.",
+      "pass": false,
+      "raw": "so for the trip we need to pack um sunscreen and then also a first aid kit and um chargers for everything",
+      "stream_ttft_ms": 23.2
+    },
+    {
+      "completion_tokens": 21,
+      "finish_reason": "stop",
+      "latency_ms": 261.6,
+      "misses": [],
+      "name": "list_ordinals",
+      "output": "1. Fix the paywall.\n2. Add the pricing page.\n3. Update the docs.",
+      "pass": true,
+      "raw": "first um we need to fix the paywall second add the pricing page third update the docs"
+    },
+    {
+      "completion_tokens": 20,
+      "finish_reason": "stop",
+      "latency_ms": 256.4,
+      "misses": [
+        "dash_bullets_0_expected_3"
+      ],
+      "name": "list_dash_spoken",
+      "output": "The plan is -ship, the API, -update the docs, -tell the team.",
+      "pass": false,
+      "raw": "the plan is dash ship the api dash update the docs dash tell the team"
+    },
+    {
+      "completion_tokens": 30,
+      "finish_reason": "stop",
+      "latency_ms": 356.1,
+      "misses": [
+        "bullets_0_expected_3"
+      ],
+      "name": "list_gaps_points",
+      "output": "The results are: 0.1 latency is high, 0.2 memory is fine, 0.03 CPU is low.",
+      "pass": false,
+      "raw": "the results are um point one latency is high point two memory is fine point three cpu is low"
+    },
+    {
+      "completion_tokens": 22,
+      "finish_reason": "stop",
+      "latency_ms": 263.1,
+      "misses": [],
+      "name": "partial_markdown",
+      "output": "Okay, so the steps are:\n- Clone the repo.\n- Install dependencies.\n- Run the tests.",
+      "pass": true,
+      "raw": "okay so the steps are um star clone the repo star install dependencies star run the tests",
+      "stream_ttft_ms": 20.3
+    },
+    {
+      "completion_tokens": 26,
+      "finish_reason": "stop",
+      "latency_ms": 329.8,
+      "misses": [],
+      "name": "email_layout",
+      "output": "Hey Sarah,\n\nJust wanted to follow up on the proposal. Can you send the numbers by end of week?\n\nThanks,\nJohn",
+      "pass": true,
+      "raw": "hey sarah just wanted to follow up on the proposal can you send the numbers by end of week thanks john"
+    },
+    {
+      "completion_tokens": 23,
+      "finish_reason": "stop",
+      "latency_ms": 297.6,
+      "misses": [
+        "bad:sunscreen and then",
+        "dash_bullets_0_expected_3"
+      ],
+      "name": "list_card_exact",
+      "output": "So for the trip we need to pack sunscreen and then also a first aid kit and chargers for everything.",
+      "pass": false,
+      "raw": "so for the trip we need to pack sunscreen and then also a first aid kit and um chargers for everything"
+    },
+    {
+      "completion_tokens": 17,
+      "finish_reason": "stop",
+      "latency_ms": 237.2,
+      "misses": [
+        "dash_bullets_0_expected_3"
+      ],
+      "name": "list_hyphen_spoken",
+      "output": "The checklist is -restart the server -clear the cache -verify the logs.",
+      "pass": false,
+      "raw": "the checklist is hyphen restart the server hyphen clear the cache hyphen verify the logs"
+    },
+    {
+      "completion_tokens": 18,
+      "finish_reason": "stop",
+      "latency_ms": 242.3,
+      "misses": [
+        "dash_bullets_0_expected_3"
+      ],
+      "name": "list_bullet_spoken",
+      "output": "The agenda is: Bullet, introductions, Bullet, demo, Bullet, questions.",
+      "pass": false,
+      "raw": "the agenda is bullet introductions bullet demo bullet questions"
+    }
+  ],
+  "claim_scope": "Isolated S1-mini normalizer quality + latency on synthetic broken ASR strings. NOT end-to-end dictation WER.",
+  "elapsed_s": 11.12,
+  "generated_at_utc": "2026-11-20T20:41:52Z",
+  "model": "/Users/harshitduggal/Library/Application Support/Superflow/Models/s1-mini-q4-k-m/s1-mini-q4_k_m.gguf",
+  "prompt": {
+    "control": "[Styling: semi-formal] [Structure: <case>] [Context: <case>]",
+    "system": "You are a text normalizer for speech-to-text transcripts. The input begins with a control line specifying the styling, structure, and context settings; clean the transcript to match those settings and output only the cleaned text."
+  },
+  "schema": "superflow.brutal-s1.v1",
+  "summary": {
+    "errors": [],
+    "latency_ms": {
+      "p50": 297.5912080000853,
+      "p95": 498.6609590050648
+    },
+    "passed": 11,
+    "stream_ttft_ms": {
+      "max": 25.37841600133106,
+      "p50": 23.155834001954645
+    },
+    "total": 21
+  }
+}
