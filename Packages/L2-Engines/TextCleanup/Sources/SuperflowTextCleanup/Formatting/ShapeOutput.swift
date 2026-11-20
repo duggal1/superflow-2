@@ -75,6 +75,15 @@ public func shapeOutput(_ cleaned: String, config: FormatConfig,
             text = spoken
             counters.listsFormatted += 1
         }
+        // S1-mini occasionally renders spoken markers ("dash", "hyphen",
+        // "bullet", "point one") as inline hyphens, commas or pseudo-decimals.
+        // Repair those into real Markdown bullets without changing a content
+        // word (the shaper enforces this with a per-line check).
+        let marked = SpokenMarkerListShaper.apply(text)
+        if marked != text {
+            text = marked
+            counters.listsFormatted += 1
+        }
         let shaped = ListShaper.apply(text, options: config.listOptions)
         if FormatGuard.preserves(text, shaped) {
             if shaped != text { counters.listsFormatted += 1 }

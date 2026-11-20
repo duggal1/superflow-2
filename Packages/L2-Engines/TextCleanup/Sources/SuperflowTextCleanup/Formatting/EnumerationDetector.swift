@@ -40,7 +40,18 @@ public enum EnumerationDetector {
                 }
             }
         }
-        let best = max(run(ordinalHits), run(cardinalHits))
+        // Spoken separator words are enumerations too. S1-mini was trained to
+        // emit Markdown bullets under Structure: lists when it sees three or
+        // more in a row; without this hint the same utterance stays prose.
+        let separators: Set<String> = ["dash", "hyphen", "bullet", "star"]
+        var separatorRuns: [String: Int] = [:]
+        for token in tokens {
+            let word = normalized(token)
+            guard separators.contains(word) else { continue }
+            separatorRuns[word, default: 0] += 1
+        }
+        let separatorBest = separatorRuns.values.max() ?? 0
+        let best = max(run(ordinalHits), run(cardinalHits), separatorBest)
         return best >= 3 ? .list(items: best) : .none
     }
 
