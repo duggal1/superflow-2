@@ -9,7 +9,14 @@ extension SessionEngine {
             switch event {
             case .partial(let text):
                 emit(.partial(text))
-                await speculate(text, session: session)
+                if streamingCleanupEnabled, settings.cleanupEnabled, !settings.reflectionCleanupEnabled,
+                   case .recording = state, let record, record.id == session {
+                    let context = TextContext(interactive: false, settings: settings, project: project,
+                                              activeAppBundleID: record.frontmostBundleID)
+                    await liveCleanup.offer(text, revision: pipelineRevision, pipeline: pipeline, context: context)
+                } else {
+                    await speculate(text, session: session)
+                }
             case .committed(let segment):
                 await persist(segment, session: session)
             case .endpoint:
@@ -43,15 +50,30 @@ extension SessionEngine {
         cumulativeTokenCount += estimatedTokens
         let interactive = raw.endMs <= 30_000 && cumulativeTokenCount <= 600
         let revision = pipelineRevision
-        var precomputed = speculativeCleanupEnabled && index == 0 && interactive && raw.words.isEmpty
-            ? await speculative.take(.init(session: session, revision: revision, text: raw.text)) : nil
-        if revision != pipelineRevision { precomputed = nil }
+        let prepared = streamingCleanupEnabled && raw.words.isEmpty
+            ? await liveCleanup.take(raw.text, revision: revision) : nil
+        if streamingCleanupEnabled && !raw.words.isEmpty { await liveCleanup.reset() }
+        var precomputed: PipelineResult?
+        if prepared == nil, speculativeCleanupEnabled && index == 0 && interactive && raw.words.isEmpty {
+            precomputed = await speculative.take(.init(session: session, revision: revision, text: raw.text))
+        }
+        if revision != pipelineRevision {
+            precomputed = nil
+            prepared?.pending?.cancel()
+        }
+        let validPrepared = revision == pipelineRevision ? prepared : nil
+        if let validPrepared {
+            metrics.event("session.cleanup.prefix_reused", [
+                "remainingWords": String(validPrepared.tail.split(whereSeparator: \.isWhitespace).count)
+            ])
+        }
         let scheduled = await cleanupCoordinator?.submit(index: index, interactive: interactive,
                                                          pipeline: pipeline, settings: settings,
                                                          project: project, wordTimings: raw.words,
                                                          activeAppBundleID: record?.frontmostBundleID,
-                                                         precomputed: precomputed) ?? false
+                                                         precomputed: precomputed, prepared: validPrepared) ?? false
         if !scheduled {
+            validPrepared?.pending?.cancel()
             // Raw speech is already durable. Mark this segment as a fallback
             // instead of leaving an indefinitely pending cleanup state.
             do {

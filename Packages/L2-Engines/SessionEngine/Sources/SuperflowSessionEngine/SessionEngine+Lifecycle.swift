@@ -55,6 +55,7 @@ extension SessionEngine {
         captureStopRequested = false
         defer { isStarting = false }
         await speculative.cancel()
+        await liveCleanup.reset()
 
         // A new dictation supersedes any text still waiting on a permission
         // grant; it is already in History, so keeping two would paste stale
@@ -239,6 +240,7 @@ extension SessionEngine {
         metrics.record("session.stop.cleanup_wait.ms",
                        valueMs: Double((DispatchTime.now().uptimeNanoseconds - cleanupStarted) / 1_000_000))
         cleanupCoordinator = nil
+        await liveCleanup.reset()
         // Cleanup is optional. A failed S1-mini pass must not prevent the
         // recognized words from reaching the user. The coordinator preserves
         // original ASR text on a failed chunk. Do not retry the model.
@@ -323,6 +325,7 @@ extension SessionEngine {
         let id = record?.id
         transition(.cancelled(id))
         await speculative.cancel()
+        await liveCleanup.reset()
         sampleTask?.cancel()
         recognitionTask?.cancel()
         recognitionFeed?.finish()

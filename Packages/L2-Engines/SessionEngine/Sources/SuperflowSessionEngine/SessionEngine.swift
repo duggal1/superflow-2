@@ -54,6 +54,8 @@ public actor SessionEngine {
     var levelCounter = 0
     var latency = SessionLatency()
     let speculative = SpeculativePipeline()
+    let liveCleanup = LiveDictationCleanup()
+    let streamingCleanupEnabled: Bool
     let speculativeCleanupEnabled: Bool
     var pipelineRevision = UUID()
     var recognitionOverflow = false
@@ -75,7 +77,8 @@ public actor SessionEngine {
                 inserter: any TextInserter, archive: (any AudioArchiveStore)? = nil,
                 settings: AppSettings = .default, enhancer: (any SpeechEnhancer)? = nil, project: ProjectContext? = nil,
                 metrics: MetricsSink = NoopMetrics(), clock: TimeSource = SystemTimeSource(),
-                insertionDeadline: Duration = .seconds(8), speculativeCleanupEnabled: Bool = false) {
+                insertionDeadline: Duration = .seconds(8), speculativeCleanupEnabled: Bool = false,
+                streamingCleanupEnabled: Bool = false) {
         self.audio = audio
         self.recognizer = recognizer
         self.enhancer = enhancer
@@ -90,6 +93,7 @@ public actor SessionEngine {
         self.clock = clock
         self.insertionDeadline = insertionDeadline
         self.speculativeCleanupEnabled = speculativeCleanupEnabled
+        self.streamingCleanupEnabled = streamingCleanupEnabled
         (events, continuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(256))
     }
 

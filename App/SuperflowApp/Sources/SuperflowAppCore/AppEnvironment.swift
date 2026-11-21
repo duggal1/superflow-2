@@ -153,7 +153,8 @@ public final class AppEnvironment {
             archive: audioArchive,
             enhancer: enhancer,
             metrics: metrics,
-            speculativeCleanupEnabled: ProcessInfo.processInfo.environment["SUPERFLOW_SPECULATIVE_CLEANUP"] == "1"
+            speculativeCleanupEnabled: ProcessInfo.processInfo.environment["SUPERFLOW_SPECULATIVE_CLEANUP"] == "1",
+            streamingCleanupEnabled: true
         )
         meetingEngine = MeetingEngine(
             mic: microphone,
@@ -186,6 +187,7 @@ public final class AppEnvironment {
         let cleanup = CleanupService(
             cleaner: selectedCleaner,
             config: CleanupConfig(
+                hardTokenCap: forDictation ? 800 : CleanupConfig.maximumInputTokens,
                 interactiveDeadlineMs: settings.interactiveDeadlineMs,
                 backgroundDeadlineMs: settings.backgroundDeadlineMs,
                 workers: settings.cleanupWorkers

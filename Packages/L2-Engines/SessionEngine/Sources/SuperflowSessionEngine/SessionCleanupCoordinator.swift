@@ -14,6 +14,7 @@ private struct CleanupRequest: Sendable {
     /// one. Nil keeps filename-only cleanup with no path resolution.
     let project: ProjectContext?
     let precomputed: PipelineResult?
+    let prepared: LiveDictationCleanup.Prepared?
 }
 
 /// Drains persisted transcript rows through a fixed worker pool and bounded queue.
@@ -45,8 +46,7 @@ public actor SessionCleanupCoordinator {
 
     public func start(workerCount: Int) {
         guard workerTasks.isEmpty else { return }
-        // Match the helper's six inference contexts for parallel chunked cleanup.
-        let count = min(6, max(1, workerCount))
+        let count = min(10, max(1, workerCount))
         workerTasks = (0..<count).map { _ in Task { await self.runWorker() } }
     }
 
@@ -61,8 +61,17 @@ public actor SessionCleanupCoordinator {
                        settings: AppSettings, project: ProjectContext? = nil,
                        wordTimings: [WordTiming] = [], activeAppBundleID: String? = nil,
                        precomputed: PipelineResult? = nil) async -> Bool {
+        await submit(index: index, interactive: interactive, pipeline: pipeline, settings: settings,
+                     project: project, wordTimings: wordTimings, activeAppBundleID: activeAppBundleID,
+                     precomputed: precomputed, prepared: nil)
+    }
+
+    func submit(index: Int, interactive: Bool, pipeline: TextPipeline, settings: AppSettings,
+                project: ProjectContext?, wordTimings: [WordTiming], activeAppBundleID: String?,
+                precomputed: PipelineResult?, prepared: LiveDictationCleanup.Prepared?) async -> Bool {
         submittedCount = max(submittedCount, index + 1)
         guard !isFinished, requests.count < Self.maximumPendingSegments else {
+            prepared?.pending?.cancel()
             complete(.fallback)
             metrics.event("session.cleanup.queue_full", ["pending": String(requests.count)])
             return false
@@ -70,7 +79,7 @@ public actor SessionCleanupCoordinator {
         let request = CleanupRequest(index: index, interactive: interactive,
                                      pipeline: pipeline, settings: settings, wordTimings: wordTimings,
                                      activeAppBundleID: activeAppBundleID, project: project,
-                                     precomputed: precomputed)
+                                     precomputed: precomputed, prepared: prepared)
         if let waiter = workerWaiters.popLast() {
             waiter.resume(returning: request)
         } else {
@@ -96,6 +105,7 @@ public actor SessionCleanupCoordinator {
             abandoned = true
             fallbackCount += unfinished
             metrics.event("session.cleanup.finish_deadline", ["unfinished": String(unfinished)])
+            for request in requests { request.prepared?.pending?.cancel() }
             requests.removeAll()
             for waiter in workerWaiters { waiter.resume(returning: nil) }
             workerWaiters.removeAll()
@@ -144,6 +154,7 @@ public actor SessionCleanupCoordinator {
     }
 
     private func resolve(_ request: CleanupRequest) async {
+        defer { request.prepared?.pending?.cancel() }
         let resultState: CleanupState
         do {
             guard let segment = try await repository.segmentForProcessing(session: sessionID,
@@ -157,8 +168,13 @@ public actor SessionCleanupCoordinator {
                                      wordTimings: request.wordTimings,
                                      activeAppBundleID: request.activeAppBundleID)
             let result: PipelineResult
-            if let precomputed = request.precomputed { result = precomputed }
-            else { result = await request.pipeline.run(segment.rawText, context: context) }
+            if let prepared = request.prepared {
+                result = await prepared.resolve(pipeline: request.pipeline, context: context)
+            } else if let precomputed = request.precomputed {
+                result = precomputed
+            } else {
+                result = await request.pipeline.run(segment.rawText, context: context)
+            }
             for timing in result.timings {
                 metrics.record("session.text." + timing.id + ".ms", valueMs: Double(timing.ms))
             }
