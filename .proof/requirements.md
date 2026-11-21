@@ -1,5 +1,6 @@
-1. Reduce end-of-dictation latency for short, medium, and long speech by cleaning completed segments during capture.
-2. Reuse S1-mini workers on one loaded model, comparing one and multiple real inference contexts within the Mac's resource limits.
-3. Preserve raw speech order, technical text, sentence context, and safe fallback at boundaries. Keep model requests within the 800-token planning budget and hard limit.
-4. Benchmark stop-to-insertion in milliseconds with real streaming ASR and S1-mini, including longer recorded speech, reporting fallback and memory.
-5. Run solo, headless, and keep existing background work running.
+1. Reduce stop-to-insertion latency for long dictations, including a long replay that represents a 30-minute session.
+2. Keep cleanup transcript-safe: preserve words, order, technical terms and final ASR corrections, with raw fallback whenever cleanup is incomplete.
+3. Use parallel S1-mini work only where measured throughput and machine memory show it helps; avoid exhausting the 8 GB Mac and scarce SSD.
+4. Prove performance with real app pipeline replay, completed output checks, repeated measurements, fallback/error counts, and resource measurements in milliseconds.
+5. Keep existing unrelated background workloads running and do not spawn subagents.
+6. Commit and push the completed change to main.

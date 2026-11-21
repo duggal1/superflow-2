@@ -4,6 +4,8 @@ import SuperflowPorts
 import SuperflowTextPipeline
 
 actor LiveDictationCleanup {
+    private static let maximumBufferedPieces = 48
+
     struct Prepared: Sendable {
         let prefix: PipelineResult?
         let pending: Task<PipelineResult, Never>?
@@ -40,6 +42,10 @@ actor LiveDictationCleanup {
 
     private var revision: UUID?
     private var offeredPrefix = ""
+    private var completedPrefix: PipelineResult?
+    private var completedRawPrefix = ""
+    private var completedEnd = 0
+    private var reuseDisabled = false
     private var pieces: [Piece] = []
 
     func offer(_ raw: String, revision: UUID, pipeline: TextPipeline, context: TextContext) {
@@ -48,11 +54,13 @@ actor LiveDictationCleanup {
             reset()
             self.revision = revision
         }
+        guard !reuseDisabled else { return }
 
         var available = min(4, max(1, context.settings.cleanupWorkers))
             - pieces.filter { $0.result == nil }.count
-        while available > 0, pieces.count < 48 {
+        while available > 0, pieces.count < Self.maximumBufferedPieces {
             let remaining = text.dropFirst(offeredPrefix.count).drop(while: \.isWhitespace)
+            guard !Self.opensWithCorrection(remaining) else { return }
             guard let rawPiece = Self.checkpoint(in: String(remaining)),
                   let range = text.range(of: rawPiece, range: remaining.startIndex..<text.endIndex),
                   range.lowerBound == remaining.startIndex else { return }
@@ -71,12 +79,13 @@ actor LiveDictationCleanup {
     func take(_ raw: String, revision: UUID) -> Prepared? {
         var retained: UUID?
         defer { reset(keeping: retained) }
-        guard revision == self.revision else { return nil }
+        guard revision == self.revision, !reuseDisabled else { return nil }
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        var prefix: PipelineResult?
+        guard Self.matches(completedRawPrefix, in: text) else { return nil }
+        var prefix = completedPrefix
         var pending: Task<PipelineResult, Never>?
-        var end = 0
-        var pendingEnd = 0
+        var end = completedEnd
+        var pendingEnd = completedEnd
         for piece in pieces {
             guard Self.matches(piece.raw, in: text) else { break }
             let remainder = text.dropFirst(piece.end).drop(while: \.isWhitespace)
@@ -103,6 +112,10 @@ actor LiveDictationCleanup {
         for piece in pieces where piece.id != id { piece.task.cancel() }
         pieces.removeAll(keepingCapacity: true)
         offeredPrefix = ""
+        completedPrefix = nil
+        completedRawPrefix = ""
+        completedEnd = 0
+        reuseDisabled = false
         revision = nil
     }
 
@@ -158,6 +171,27 @@ actor LiveDictationCleanup {
     private func complete(_ id: UUID, result: PipelineResult) {
         guard let index = pieces.firstIndex(where: { $0.id == id }) else { return }
         pieces[index].result = result
+        compactCompletedPrefix()
+    }
+
+    private func compactCompletedPrefix() {
+        while pieces.count > 1, let result = pieces.first?.result {
+            guard Self.reusable(result) else {
+                for piece in pieces { piece.task.cancel() }
+                pieces.removeAll(keepingCapacity: true)
+                offeredPrefix = ""
+                completedPrefix = nil
+                completedRawPrefix = ""
+                completedEnd = 0
+                reuseDisabled = true
+                return
+            }
+            guard let piece = pieces.first else { return }
+            completedPrefix = Self.merge(completedPrefix, result, rawTail: "")
+            completedRawPrefix = piece.raw
+            completedEnd = piece.end
+            pieces.removeFirst()
+        }
     }
 
     func waitForTesting() async {

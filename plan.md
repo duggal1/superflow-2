@@ -408,6 +408,7 @@ All stages take a draft with ordered words, protected spans, timestamps and cont
 
 - On 8 GB Macs, the default is one reusable S1-mini context. The local M1 replay saw deadline failures with two contexts and memory pressure with four. Higher-memory systems retain the hardware-based context cap. The decoder refills free lanes within the caller's deadline.
 - Dictation queues provisional sentence cleanup while Nemotron streams. Reuse only the completed prefix that matches the authoritative committed transcript. Continue recognition across provisional text boundaries. Dictation cleanup has an 800-token hard cap.
+- Compact confirmed checkpoints into one reusable prefix so offering continues past the buffered-piece limit on long sessions. Corrections at the live tail and any non-cleaned result keep their text for stop-time cleanup or raw fallback.
 - For dictation with list formatting enabled, render model-generated list markers as Markdown dashes. Keep explicit paragraph boundaries when their text can be aligned to the validated model output.
 
 - Count tokens with the model tokenizer. Set target to 55–60% of the measured safe length (provisional 600-token target / 850-token cap until Spike B).
