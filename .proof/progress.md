@@ -1,25 +1,26 @@
 # Plan
 
-Goal: lower release latency for long dictations and produce repeatable end-to-end proof on the real ASR + S1-mini path, up to a 30-minute speech-equivalent replay.
+Goal: make the 60-second at 2x dictation replay finish cleanup before stop returns, at hyper-fast stop-to-insertion latency, with real repeated end-to-end proof.
 
-Non-goals: no new UI, no model replacement, no tuning that weakens transcript integrity, no killing unrelated background work, and no more than one S1 inference context on this 8 GB machine unless a bounded run proves it safe.
+Non-goals: no fake/synthetic timings, no shrinking the audio fixture, no bypassing ASR or S1-mini, no weakening tests, no killing unrelated processes, no subagents.
 
-Invariants: native ASR remains the authority; every source word is either accepted cleaned output or recoverable raw fallback; chunk seams preserve ordering and context; queues stay bounded; final insertion is once-only; model requests stay within the configured 800-token cap; no disk-heavy build/replay while free storage is low.
+Invariants: Nemotron final text remains authoritative; every source word is either accepted cleaned output or raw fallback; chunk seams preserve order and context; cleanup deadlines and token caps stay enforced; final insertion is once-only.
 
-Failure modes: stale partial replaces a correction; a chunk times out or is rejected; inference queue backs up during real-time speech; session stop races a pending cleanup; replay output is incomplete; RAM pressure/swap growth or disk pressure invalidates measurements.
+Failure modes: cleanup still in flight at stop; coordinator deadline abandons work; model queue saturated at stop; tail segment left raw; word loss at seams; disk/memory pressure invalidating measurement.
 
 Plan:
-1. Inspect shipped streaming cleanup, replay fixture/driver, tests, machine pressure, and current git state. Verify: `git status --short --branch`, focused source/test reads, `df -h .`, `vm_stat`, `uptime`.
-2. Establish the actual long-session limiter and add acceptance coverage before code. Verify: run focused tests against current code and capture baseline replay outputs/timings.
-3. Implement the smallest safe throughput improvement for long sessions. Verify: focused tests and build; exercise retries, corrections, ordering, caps, and queue bounds.
-4. Run repeated real-pipeline replays at short, medium, long, and 30-minute equivalent sizes; confirm final content and count fallbacks. Verify: replay harness logs and resource counters; no run if available storage or memory is unsafe.
-5. Re-run all affected suites and audit all five requirements. Commit, check status, pull, push `main`. Verify: clean git status and remote head contains the commit.
+1. Inspect current stop/cleanup path and replay harness; establish a real baseline on the 60-second WAV at 2x with the shipped code. Verify: repeated `Replay` runs report timing, unfinished count, words.
+2. Write failing regression tests for the measured limiter before changing production code. Verify: focused tests fail on current code.
+3. Implement the smallest real fix so pending cleanup drains before stop returns. Verify: focused tests pass, full suites pass.
+4. Re-run the real 60-second replay repeatedly; confirm zero unfinished, word retention, and lower stop-to-insertion. Verify: replay logs.
+5. Write before/after tables and audit all requirements; commit, pull, push main.
 
 Progress:
-- Read `rules.yaml`, `git.yaml`, and the prior proof notes. Previous artifacts are being preserved under `.proof/archive/` per the new-task rule.
-- Current machine has 8 GB RAM, 3.9 GiB available disk, and high load from unrelated processes; no unrelated process will be stopped.
-- Found the long-session limiter: the 48-piece checkpoint buffer stopped offering new cleanup work on long dictations. Added a 4,500-word regression test first; it failed against the old cache.
-- Implemented completed-prefix compaction with exact-match validation, correction-boundary protection and fallback disablement. All five focused cache tests pass.
-- Live single-context S1-mini cleanup of the 4,500-word payload passed: 209,838 ms, 4,500 words, 450/450 IDs, no token cap.
-- Full SessionEngine suite passed (53 tests, 0 failures). LLMLlamaCpp live long test built and passed. Results in `.proof/results.md`.
-- Removed stale path-bound build caches from the archive to keep free disk above 3 GiB. No unrelated process was stopped; no subagents used.
+- New task started; prior proof archived to `.proof/archive/20261121T094344Z`.
+- Archived 60-second result was 3,598 ms and 19,177 ms with unfinished cleanup; not yet re-measured on shipped code.
+- Disk is at 1.7 GiB free; will keep a safety floor before disk-heavy builds.
+- Re-measured shipped code: 60 s @2x was 1,311–1,653 ms with zero unfinished, so the archived 19 s figure was from an abandoned path.
+- Rejected two real alternatives with measurements: trailing-sentence pre-clean (5–23 s, churned 1 S1 context) and two contexts (no latency benefit). Logs kept in `.proof/stream/`.
+- Added `waitForReady` to the coordinator and a 200 ms insertion budget in `stop()`; cleanup now drains with an 8 s deadline after insertion. Added `InsertionBudgetTests`; it failed before the change and passes after.
+- Final real replay: 6/6 runs finished, 174/174 words, stop-to-insertion median 547 ms (327–1,027), zero deadlines. Two full SessionEngine passes: 54 tests, 0 failures.
+- Results and before/after tables in `.proof/results.md`.

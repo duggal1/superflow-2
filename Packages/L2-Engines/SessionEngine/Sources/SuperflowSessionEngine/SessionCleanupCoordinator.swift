@@ -90,6 +90,19 @@ public actor SessionCleanupCoordinator {
         return true
     }
 
+    /// Wait briefly for already-submitted work without abandoning it. Insertion
+    /// uses this bound so the transcript can be pasted while cleanup is still in
+    /// flight; `finish()` then drains the remaining work before the session ends.
+    /// Unfinished segments keep their durable raw ASR text in the meantime.
+    public func waitForReady(maximumWaitMs: Int) async -> Bool {
+        let deadline = ContinuousClock.now.advanced(by: .milliseconds(max(0, maximumWaitMs)))
+        while completedCount < submittedCount && ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(5))
+            if Task.isCancelled { break }
+        }
+        return completedCount >= submittedCount
+    }
+
     /// Final insertion gets a bounded cleanup tail, not an unbounded backlog.
     /// Any unfinished segments retain their durable raw ASR text.
     public func finish(maximumWaitMs: Int = 2_500) async -> CleanupState {

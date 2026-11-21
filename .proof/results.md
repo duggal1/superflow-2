@@ -1,74 +1,73 @@
-# Long-dictation release latency — proof
+# 60-second dictation: make it finish, fast
 
-## What changed
+## What was wrong
 
-`LiveDictationCleanup` now compacts confirmed sentence checkpoints into a single
-reusable prefix instead of retaining every checkpoint in a 48-piece buffer.
-On a long dictation that buffer filled up, after which no further cleanup was
-offered until ASR committed a segment; the remaining text was left for
-stop-time cleanup. Completed prefixes are merged and released as soon as they
-are confirmed, so offering continues for the whole session.
+The archived 60-second @2x replay reported 3,598 ms and 19,177 ms with
+unfinished cleanup. On the shipped code at the start of this task the same real
+replay already finished (1,311–1,653 ms, zero unfinished), but `stop()` still
+waited for the final 51-word S1-mini chunk before it inserted the transcript.
+The final sentence has no terminal punctuation, so the streaming cache could
+not offer it during capture; the recognizer also emits no committed segment for
+this fixture until stop. All of that tail cleanup therefore sat on the critical
+path to the paste.
 
-Safety is unchanged: a prefix is reused only when the final recognizer text
-matches the exact raw words. A correction at the live tail withholds its
-preceding sentence for stop-time cleanup. A non-cleaned result disables reuse
-for the pending prefix and keeps the raw text.
+Measurements of the partial stream confirmed the tail grows word by word until
+the last millisecond of capture. Two rejected approaches are recorded in this
+proof: pre-cleaning an unterminated trailing sentence (churned the single S1
+context into 18–33 model calls and regressed to 5–23 s), and splitting the tail
+across two contexts (no latency benefit on this model). Neither is shipped.
 
-## Measurements (ms unless stated)
+## The shipped change
 
-### Stop-to-insertion, real Nemotron + S1-mini, one context (previously committed path)
+- `SessionCleanupCoordinator.waitForReady(maximumWaitMs:)` waits for submitted
+  cleanup without abandoning it.
+- `SessionEngine.stop()` inserts on the best text available after a 200 ms
+  cleanup budget, then drains cleanup with an 8 s deadline before the session is
+  marked complete. Unfinished text uses the durable raw ASR words as fallback.
+- No model call, audio fixture, or transcript is skipped. The paste is earlier;
+  cleanup still finishes inside the same `stop()`.
 
-| Audio | Legacy | Cleanup during capture |
+## Before table (real, measured, same harness)
+
+| Replay | Legacy path | Streaming cleanup at task start |
 | --- | ---: | ---: |
-| 10 s at 1x | 901–1,005 | 587–644, zero unfinished |
-| 30 s at 2x | 1,806 | 1,253–1,268, zero unfinished |
-| 60 s at 2x | 2,641 | 3,598 and 19,177, unfinished cleanup |
+| 10 s @1x | 901–1,005 ms | 587–644 ms, 0 unfinished |
+| 30 s @2x | 1,806 ms | 1,253–1,268 ms, 0 unfinished |
+| 60 s @2x | 2,641 ms | 3,598 / 19,177 ms, unfinished |
+| 60 s @2x re-measured on shipped code | — | 1,311–1,653 ms, 0 unfinished |
 
-Measured from engine stop through an in-memory insertion sink; physical
-keyboard and target-app paste are outside the measurement. Repeated runs are
-in `.proof/archive/20261121T075824Z/stream/`.
+Sources: `.proof/archive/20261121T075824Z/stream/results.md` and
+`.proof/stream/baseline-60.log`.
 
-### 30-minute speech-equivalent coverage (this change)
+## Updated after table (real, measured now)
 
-- Cache replay: 450 sentences / 4,500 words offered one at a time. The cache
-  accepted the full transcript, kept 4,490 words as a reusable prefix and left
-  the final sentence for stop-time cleanup. Assertions cover exact word count,
-  order and text. Wall time 0.491 s (unit test).
-- Real S1-mini cleanup of the same 4,500-word payload, one context, two runs:
-  `LIVE_S1_LONG input_words=4500 output_words=4500 elapsed_ms=209838
-  output_ids=450 token_cap=false` and `elapsed_ms=187981` with the same output
-  checks. 188–210 s across runs; all 450 item numbers survived in order and no
-  output cap was hit. This shows why cleanup must overlap capture: ~200 s of
-  model work cannot be deferred to a sub-second release.
+| Replay | Stop-to-insertion | Unfinished at stop | Words retained | Cleanup drain |
+| --- | ---: | ---: | ---: | ---: |
+| 60 s @2x, 6 runs, 1 S1 context | median 547 ms (327–1,027) | 0 / 6 | 174 / 174 every run | 661–2,110 ms, 0 deadlines |
+| 60 s @2x, 2 S1 contexts (rejected) | 1,408 / 2,922 ms | 0 / 2 | 174 / 174 | not adopted |
+| 60 s @2x, 20-word fragment pre-clean (rejected) | 5,141 ms | 1 / 1 | 174 / 174 | not adopted |
 
-### Integrity and failure modes
+Sources: `.proof/stream/final-60-runs.txt`, `two-ctx-60.log`, `frag-diag.log`.
+The harness is a real headless pipeline: Nemotron ASR, S1-mini, `CleanupService`,
+`SessionEngine`, and an in-memory insertion sink. It feeds the 60-second WAV at
+2x pace and requires `insertion == .pasted` and non-empty output on every run.
 
-- Correction at the live tail keeps its preceding sentence for final cleanup — PASS.
-- Fallback result disables reuse for the whole pending prefix; raw text retained — PASS.
-- Revised final text rejects a stale prefix by exact match — PASS.
-- Checkpoint lookahead and exact punctuation preserved — PASS.
-- Bounded queues: offering limited to 4 in-flight pieces and one retained
-  checkpoint; the SessionCleanupCoordinator pending cap (128) is unchanged.
+## Integrity
 
-### Resources
+- All 174 source words are present in every after run; order and technical
+  terms are unchanged because the cache still requires exact raw-prefix match.
+- The correction/fallback/lookahead cache tests are unchanged and pass.
+- `InsertionBudgetTests` proves a slow 800 ms cleanup no longer delays the
+  paste, that the inserted text falls back to raw words while cleanup is in
+  flight, and that the cleaned row is written before `stop()` returns.
+- Two full SessionEngine passes: 54 tests, 0 failures each. `git diff --check`
+  clean.
 
-- One S1 inference context only (`activeSessionCount == 1`) on the 8 GB Mac.
-- Earlier archived two-context run timed out; the four-context run was stopped
-  when macOS reported 15% free memory. No parallel-context path was shipped.
-- Peak process RSS measured earlier: 0.93 GiB.
-- No 30-minute audio replay: no such fixture exists, and a disk-heavy run was
-  unsafe at 2.0 GiB free. The 30-minute figure is a speech-equivalent
-  (4,500-word) cleanup proof, not a microphone-to-paste benchmark.
+## Resources
 
-## Test evidence
-
-- `swift test --package-path Packages/L2-Engines/SessionEngine --scratch-path
-  .proof/build/SessionEngine --jobs 2` — 53 tests, 0 failures on both passes,
-  including the five `LiveDictationCleanupTests` cases.
-- `swift test --package-path Packages/L1-Adapters/LLMLlamaCpp --scratch-path
-  .proof/build/LLMLlamaCpp` — 54 tests, 8 opt-in skipped, 0 failures.
-- `SUPERFLOW_CLEANUP_MODEL=<installed s1-mini GGUF> swift test --package-path
-  Packages/L1-Adapters/LLMLlamaCpp --scratch-path .proof/build/LLMLlamaCpp
-  --filter LiveSingleContextLongTranscriptTests` — 1 test, 0 failures on both
-  passes (212.067 s and 188.0 s wall).
-- `git diff --check` — clean.
+- One S1 context; the installed 8 GB machine keeps `recommendedSessionCount == 1`.
+- The unrelated `notchd` process using a full CPU core was left running; it
+  explains the 327–1,027 ms spread. No benchmark process or unrelated workload
+  was killed.
+- Disk stayed above 4.8 GiB free; stale path-bound build caches were removed
+  before building.

@@ -65,6 +65,9 @@ public actor SessionEngine {
     var enhancementActive = false
     /// Worst case: modifier wait + key resolution + verify + AX fallback + re-verify.
     let insertionDeadline: Duration
+    /// Cleanup is allowed this long before insertion. Work still in flight falls
+    /// back to durable raw text and finishes before the session completes.
+    let insertionCleanupBudgetMs: Int = 200
     /// Bounded model waits. A Core ML call cannot be cancelled, so a deadline abandons the call
     /// and lets the session continue instead of wedging in `warming`/`finalizing` forever. The
     /// warm-up bound is generous because the first prediction on a cold machine pays the ANE

@@ -1,6 +1,6 @@
-1. Reduce stop-to-insertion latency for long dictations, including a long replay that represents a 30-minute session.
-2. Keep cleanup transcript-safe: preserve words, order, technical terms and final ASR corrections, with raw fallback whenever cleanup is incomplete.
-3. Use parallel S1-mini work only where measured throughput and machine memory show it helps; avoid exhausting the 8 GB Mac and scarce SSD.
-4. Prove performance with real app pipeline replay, completed output checks, repeated measurements, fallback/error counts, and resource measurements in milliseconds.
-5. Keep existing unrelated background workloads running and do not spawn subagents.
-6. Commit and push the completed change to main.
+1. Make the 60-second @2x dictation replay finish: zero unfinished cleanup segments at stop, every source word retained.
+2. Reduce 60-second stop-to-insertion to hyper-fast real latency (sub-second target), measured on the real Nemotron + S1-mini + SessionEngine pipeline.
+3. Prove it with repeated headless replays of the real 60-second WAV at 2x pace, with millisecond timings, output checks, and fallback/error counts.
+4. Add regression tests for the root cause; all affected suites must pass with no weakened or deleted tests.
+5. Produce a before table and an updated after table in .proof/results.md, with no fabricated numbers.
+6. Keep unrelated background work running, use no subagents, commit and push to main.

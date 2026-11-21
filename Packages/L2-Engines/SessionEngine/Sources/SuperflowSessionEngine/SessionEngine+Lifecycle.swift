@@ -235,18 +235,14 @@ extension SessionEngine {
             await cancel()
             return nil
         }
-        let cleanupStarted = DispatchTime.now().uptimeNanoseconds
-        let cleanupState = await cleanupCoordinator?.finish() ?? .skipped
-        metrics.record("session.stop.cleanup_wait.ms",
-                       valueMs: Double((DispatchTime.now().uptimeNanoseconds - cleanupStarted) / 1_000_000))
-        cleanupCoordinator = nil
+        // Insert on the best text available now. A short budget keeps S1-mini
+        // from holding the paste; unfinished segments keep their raw words and
+        // are drained below before the session is marked complete.
+        let budgetStarted = DispatchTime.now().uptimeNanoseconds
+        _ = await cleanupCoordinator?.waitForReady(maximumWaitMs: insertionCleanupBudgetMs)
+        metrics.record("session.stop.cleanup_budget_wait.ms",
+                       valueMs: Double((DispatchTime.now().uptimeNanoseconds - budgetStarted) / 1_000_000))
         await liveCleanup.reset()
-        // Cleanup is optional. A failed S1-mini pass must not prevent the
-        // recognized words from reaching the user. The coordinator preserves
-        // original ASR text on a failed chunk. Do not retry the model.
-        if settings.cleanupEnabled && cleanupState == .fallback {
-            emit(.notice("Text cleanup was unavailable. Using the original transcript without retrying."))
-        }
         let assembledText = recognitionOverflow ? nil : await finalText(session: record.id)
         let text = assembledText ?? ""
         let words = wordCount(text)
@@ -278,6 +274,20 @@ extension SessionEngine {
         }
         if let insertion, case .permissionRequired = insertion {
             pendingInsertion = text
+        }
+
+        // Drain cleanup after insertion so it still finishes within this stop.
+        // A caller that already pasted raw fallback text is never rewritten:
+        // the coordinator abandons work that misses its finish deadline.
+        let cleanupStarted = DispatchTime.now().uptimeNanoseconds
+        // The paste has already happened, so this drain can be generous: a slow
+        // model must not leave a segment unfinished when the session completes.
+        let cleanupState = await cleanupCoordinator?.finish(maximumWaitMs: 8_000) ?? .skipped
+        metrics.record("session.stop.cleanup_wait.ms",
+                       valueMs: Double((DispatchTime.now().uptimeNanoseconds - cleanupStarted) / 1_000_000))
+        cleanupCoordinator = nil
+        if settings.cleanupEnabled && cleanupState == .fallback {
+            emit(.notice("Text cleanup was unavailable. Using the original transcript without retrying."))
         }
 
         // No speech means no clip worth keeping: discard it rather than spend rows
