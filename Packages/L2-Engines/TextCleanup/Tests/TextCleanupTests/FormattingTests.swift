@@ -373,6 +373,14 @@ final class FormattingPipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(outcome.chunks.first?.reason, "quoteChanged")
     }
 
+    func testDictatedQuoteRestoresExactWordsAndKeepsModelPunctuation() {
+        XCTAssertEqual(
+            QuoteGate.restoreDictatedContents(input: #"she said "we was here" but they left"#,
+                                              output: #"She said, "We were here," but they left."#),
+            #"She said, "we was here," but they left."#
+        )
+    }
+
     func testProtectedLiteralDisablesSpokenQuotes() async {
         var config = CleanupConfig()
         config.format.spokenQuotes = true

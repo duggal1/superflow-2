@@ -244,33 +244,32 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
         guard chunks.count > 1 else {
             return try await cleanSingle(text, options: options, started: started)
         }
-        // HEX's long-audio lesson: cut at natural boundaries and run the pieces
-        // concurrently on the same loaded model. Each chunk gets a share of the
-        // caller's deadline; queue wait therefore counts against the budget and
-        // a late chunk fails the whole call instead of silently dropping text.
         let overallDeadline = ContinuousClock.now.advanced(by: .milliseconds(max(1, options.deadlineMs)))
-        var indexed: [(Int, CleanResult)] = []
-        indexed.reserveCapacity(chunks.count)
-        for start in stride(from: 0, to: chunks.count, by: maxConcurrentChunks) {
-            let remaining = Self.milliseconds(from: .now, to: overallDeadline)
-            guard remaining > 0 else { throw SuperflowError.timeout("cleanup") }
-            let wavesLeft = (chunks.count - start + maxConcurrentChunks - 1) / maxConcurrentChunks
-            let waveDeadline = max(1, remaining / wavesLeft)
-            let waveOptions = CleanOptions(styling: options.styling, structure: options.structure,
-                                           context: options.context, deadlineMs: waveDeadline,
-                                           maxNewTokens: options.maxNewTokens)
-            let end = min(start + maxConcurrentChunks, chunks.count)
-            try await withThrowingTaskGroup(of: (Int, CleanResult).self) { group in
-                for index in start..<end {
-                    group.addTask {
-                        let result = try await self.cleanSingle(chunks[index], options: waveOptions, started: started)
-                        return (index, result)
-                    }
+        let indexed = try await withThrowingTaskGroup(of: (Int, CleanResult).self) { group in
+            func submit(_ index: Int) {
+                group.addTask {
+                    let remaining = Self.milliseconds(from: .now, to: overallDeadline)
+                    guard remaining > 0 else { throw SuperflowError.timeout("cleanup") }
+                    let chunkOptions = CleanOptions(styling: options.styling, structure: options.structure,
+                                                    context: options.context, deadlineMs: remaining,
+                                                    maxNewTokens: options.maxNewTokens)
+                    let result = try await self.cleanSingle(chunks[index], options: chunkOptions, started: started)
+                    return (index, result)
                 }
-                for try await pair in group { indexed.append(pair) }
             }
+            var next = min(chunks.count, maxConcurrentChunks)
+            for index in 0..<next { submit(index) }
+            var completed: [(Int, CleanResult)] = []
+            completed.reserveCapacity(chunks.count)
+            while let pair = try await group.next() {
+                completed.append(pair)
+                if next < chunks.count {
+                    submit(next)
+                    next += 1
+                }
+            }
+            return completed.sorted { $0.0 < $1.0 }
         }
-        indexed.sort { $0.0 < $1.0 }
         guard indexed.count == chunks.count else {
             throw SuperflowError.invalidState("S1 chunked cleanup lost a chunk")
         }
@@ -317,22 +316,28 @@ public actor LlamaCleaner: DeadlineManagedTextCleaner {
         return min(ceiling, sized)
     }
 
-    /// Word-boundary cuts preserve every word; whitespace is normalized once.
+    /// Prefer a sentence boundary near the chunk limit so the model can
+    /// resolve grammar and corrections with the surrounding clause intact.
     static func split(_ text: String, wordsPerChunk: Int) -> [String] {
         let limit = max(1, wordsPerChunk)
-        let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
+        let words = text.split(whereSeparator: \.isWhitespace)
         guard words.count > limit else { return [text] }
         var chunks: [String] = []
-        var current: [String] = []
-        current.reserveCapacity(limit)
-        for word in words {
-            current.append(word)
-            if current.count == limit {
-                chunks.append(current.joined(separator: " "))
-                current.removeAll(keepingCapacity: true)
+        var start = 0
+        while start < words.count {
+            let cap = min(start + limit, words.count)
+            var end = cap
+            if cap < words.count {
+                let lower = start + limit / 2
+                if let boundary = (lower..<cap).last(where: { index in
+                    SentenceSplitter.endsSentence(String(words[index]))
+                }) {
+                    end = boundary + 1
+                }
             }
+            chunks.append(String(text[words[start].startIndex..<words[end - 1].endIndex]))
+            start = end
         }
-        if !current.isEmpty { chunks.append(current.joined(separator: " ")) }
         return chunks
     }
 

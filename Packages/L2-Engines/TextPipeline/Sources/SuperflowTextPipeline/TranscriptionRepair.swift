@@ -163,6 +163,15 @@ struct TranscriptionRepairStage: SuperflowPorts.TextStage {
         guard !draft.shortCircuit else { return draft }
         var output = draft
         output.text = TranscriptionRepair.apply(draft.text, protected: draft.protected)
+        if context.settings.cleanupEnabled {
+            output.text = AgreementRepair.apply(output.text, protected: draft.protected,
+                                               checkNouns: draft.cleanupState == .cleaned)
+        }
+        if id == "postCleanupRepair", draft.cleanupState == .cleaned {
+            output.text = output.text.components(separatedBy: "\n").map {
+                TechDictionaryGate.restoreOrdinaryCasing($0, protected: draft.protected)
+            }.joined(separator: "\n")
+        }
         return output
     }
 }

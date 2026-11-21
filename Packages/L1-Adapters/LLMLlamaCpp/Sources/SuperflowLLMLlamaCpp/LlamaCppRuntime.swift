@@ -55,6 +55,7 @@ public actor LlamaCppRuntime: LlamaRuntime {
     public static var recommendedSessionCount: Int {
         let gigabytes = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
         let cores = ProcessInfo.processInfo.activeProcessorCount
+        if gigabytes <= 8 { return 1 }
         // One decode lane needs ~2 compute threads; never oversubscribe. A
         // floor of 3 forced 3 sessions (6+ threads) on a 2-core machine, the
         // exact oversubscription this calculation is meant to prevent.

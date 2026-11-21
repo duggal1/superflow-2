@@ -68,6 +68,29 @@ public enum SpokenQuotes {
 
 /// S1-mini must keep every quote mark the rewritten input had.
 public enum QuoteGate {
+    private static let quoted = try? NSRegularExpression(pattern: #""([^"\n]+)"|“([^”\n]+)”"#)
+
+    static func restoreDictatedContents(input: String, output: String) -> String {
+        func contents(_ text: String) -> [Range<String.Index>] {
+            guard let quoted else { return [] }
+            return quoted.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap {
+                let group = $0.range(at: 1).location == NSNotFound ? 2 : 1
+                return Range($0.range(at: group), in: text)
+            }
+        }
+        let source = contents(input)
+        let target = contents(output)
+        guard !source.isEmpty, source.count == target.count else { return output }
+        var result = output
+        for (before, after) in zip(source, target).reversed() {
+            let actual = input[before]
+            let punctuation = output[after].last.flatMap { ",.!?".contains($0) ? String($0) : nil }
+            let suffix = actual.last.map { ",.!?".contains($0) } == true ? "" : punctuation ?? ""
+            result.replaceSubrange(after, with: actual + suffix)
+        }
+        return result
+    }
+
     public static func count(_ s: String) -> Int {
         s.filter { "\"“”".contains($0) }.count
     }

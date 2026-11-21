@@ -120,6 +120,7 @@ public struct FormattingStage: SuperflowPorts.TextStage {
         let structure = context.settings.cleanupStructure
             .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if structure == "prose" { config.lists = false }
+        config.listOptions.orderedAsBullets = structure == "lists" && draft.cleanupState == .cleaned
         output.text = shapeOutput(draft.text, config: config,
                                   counters: &counters)
         if counters.listReverts > 0 {

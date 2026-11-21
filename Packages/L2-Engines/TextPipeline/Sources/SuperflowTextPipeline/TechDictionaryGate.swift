@@ -60,6 +60,9 @@ struct TechDictionaryGate: Sendable {
         guard rule.tier == .b else { return true }
 
         if pinned.contains(Self.normalized(canonical)) { return true }
+        if Self.normalized(trigger) == "go" {
+            return Self.contains(Set(rule.requires), in: tokens, near: trigger, radius: 2)
+        }
         if let bundle = context.activeAppBundleID, Self.devApps.contains(bundle) {
             if rule.neg.isEmpty || !Self.contains(Set(rule.neg), in: tokens, near: trigger, radius: 3) {
                 return true
@@ -75,6 +78,24 @@ struct TechDictionaryGate: Sendable {
         var words = Self.devWords
         words.formUnion(rule.requires.map { Self.normalized($0) })
         return Self.contains(words, in: tokens, near: trigger, radius: 3)
+    }
+
+    static func restoreOrdinaryCasing(_ line: String, protected: Protected) -> String {
+        guard line.contains("Python") || line.contains("Windows") else { return line }
+        let lineTokens = Tokenizer.tokens(in: line)
+        let reserved = protected.ranges(in: line)
+        var result = line
+        for (index, token) in lineTokens.enumerated().reversed() {
+            guard token.core == "Python" || token.core == "Windows",
+                  let rule = TechDictionary.rule(trigger: token.core.lowercased(), canonical: token.core),
+                  lineTokens[max(0, index - 3)..<min(lineTokens.count, index + 4)]
+                      .contains(where: { rule.neg.contains($0.core.lowercased()) }),
+                  !reserved.contains(where: { $0.overlaps(token.range) }) else { continue }
+            let prefix = line[..<token.range.lowerBound].trimmingCharacters(in: .whitespaces)
+            guard let last = prefix.last, !".?!".contains(last) else { continue }
+            result.replaceSubrange(token.range, with: token.lead + token.core.lowercased() + token.trail)
+        }
+        return result
     }
 
     private func projectAllows(_ canonical: String) -> Bool {

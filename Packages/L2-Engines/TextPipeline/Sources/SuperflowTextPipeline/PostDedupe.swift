@@ -14,6 +14,7 @@ enum PostDedupe {
         var line = input
         var i = 0
         var tokens = Tokenizer.tokens(in: line)
+        var ranges = protected.ranges(in: line)
         while true {
             guard i < tokens.count else { return line }
             let maxLength = min(32, (tokens.count - i) / 2)
@@ -24,9 +25,9 @@ enum PostDedupe {
                     let second = tokens[(i + n)..<(i + 2 * n)]
                     guard !first.allSatisfy({ $0.core.first?.isUppercase == true }),
                           zip(first, second).allSatisfy({ left, right in
-                              safe(left, in: line, protected: protected) && safe(right, in: line, protected: protected)
-                                  && left.core.lowercased() == right.core.lowercased()
+                              left.core.lowercased() == right.core.lowercased()
                                   && left.lead.isEmpty && right.lead.isEmpty
+                                  && safe(left, excluding: ranges) && safe(right, excluding: ranges)
                           }), first.dropLast().allSatisfy({ $0.trail.isEmpty || $0.trail == "," }),
                           let last = first.last, last.trail.isEmpty || last.trail == "," else { continue }
                     matched = n
@@ -39,22 +40,23 @@ enum PostDedupe {
                    (a.core.first?.isUppercase != true || a.core == "I"),
                    a.core.lowercased() == b.core.lowercased(),
                    a.lead.isEmpty, b.lead.isEmpty, (a.trail.isEmpty || a.trail == ","),
-                   safe(a, in: line, protected: protected), safe(b, in: line, protected: protected) {
+                   safe(a, excluding: ranges), safe(b, excluding: ranges) {
                     matched = 1
                 }
             }
             if matched > 0 {
                 line.removeSubrange(tokens[i].range.lowerBound..<tokens[i + matched].range.lowerBound)
                 tokens = Tokenizer.tokens(in: line)
+                ranges = protected.ranges(in: line)
             } else { i += 1 }
         }
     }
 
-    private static func safe(_ token: Token, in line: String, protected: Protected) -> Bool {
+    private static func safe(_ token: Token, excluding protectedRanges: [Range<String.Index>]) -> Bool {
         let key = token.core.lowercased().replacingOccurrences(of: "’", with: "'")
         return !key.isEmpty && !protectedWords.contains(key) && !key.hasSuffix("n't")
             && !token.core.contains(where: { $0.isNumber || "/_@\\`#.".contains($0) })
-            && !protected.overlaps(token.range, in: line)
+            && !protectedRanges.contains { $0.overlaps(token.range) }
     }
 }
 

@@ -17,13 +17,13 @@ public struct Protected: Sendable, Equatable {
         self.literals = literals
     }
 
-    private static let patternStrings: [String] = [
+    private static let patterns = [
         #"https?://[^\s]+"#,
         #"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"#,
         #"[^\s]*[_/\\`][^\s]*"#,
         #"\b[a-z]+[A-Z][A-Za-z]*\b"#,
         #"\b[A-Za-z]*\d[A-Za-z0-9]*\b"#,
-    ]
+    ].compactMap { try? NSRegularExpression(pattern: $0) }
 
     public func ranges(in text: String, detect: Bool = true) -> [Range<String.Index>] {
         var out: [Range<String.Index>] = []
@@ -36,8 +36,7 @@ public struct Protected: Sendable, Equatable {
         }
         guard detect else { return out }
         let ns = text as NSString
-        for pattern in Self.patternStrings {
-            guard let rx = try? NSRegularExpression(pattern: pattern) else { continue }
+        for rx in Self.patterns {
             for m in rx.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
                 if let r = Range(m.range, in: text) { out.append(r) }
             }

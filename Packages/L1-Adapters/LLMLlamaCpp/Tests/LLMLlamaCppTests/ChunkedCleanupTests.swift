@@ -14,7 +14,7 @@ private actor RecordingProvider: ModelProvider {
 }
 
 /// Records every completion and the peak number of simultaneous calls so we can
-/// prove long transcripts fan out across the worker pool in deadline-bounded waves.
+/// prove long transcripts fan out across the worker pool in deadline-bounded requests.
 private actor ParallelRuntime: LlamaRuntime {
     private(set) var prompts: [String] = []
     private(set) var deadlines: [Int] = []
@@ -50,6 +50,13 @@ final class ChunkedCleanupTests: XCTestCase {
         XCTAssertEqual(chunks.count, 3)
         XCTAssertEqual(chunks.map { $0.split(separator: " ").count }, [50, 50, 31])
         XCTAssertEqual(chunks.joined(separator: " ").split(separator: " ").count, 131)
+    }
+
+    func testSplitPrefersSentenceBoundaryWithoutFlatteningMarkdown() {
+        let input = "First, keep these four words.\n\nNext preserve this sentence in order."
+        let chunks = LlamaCleaner.split(input, wordsPerChunk: 8)
+        XCTAssertEqual(chunks, ["First, keep these four words.", "Next preserve this sentence in order."])
+        XCTAssertEqual(LlamaCleaner.split(input, wordsPerChunk: 20), [input])
     }
 
     func testShortInputStaysSingleCall() async throws {

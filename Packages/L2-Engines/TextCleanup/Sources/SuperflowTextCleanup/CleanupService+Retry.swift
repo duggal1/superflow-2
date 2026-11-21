@@ -40,7 +40,8 @@ extension CleanupService {
             let baseStructure = CleanupStructureDetector.structure(for: plan.text, configured: structure)
             let detectedStructure = structureMapping.structure(
                 for: EnumerationDetector.detect(plan.text), base: baseStructure)
-            let canQuote = config.format.spokenQuotes
+            let canQuote = (config.format.spokenQuotes || context.settings.commandsEnabled)
+                && plan.text.localizedCaseInsensitiveContains("quote")
                 && protected.ranges(in: plan.text, detect: false).isEmpty
             let modelInput = canQuote
                 ? SpokenQuotes.apply(plan.text, style: config.format.quoteStyle)
@@ -63,7 +64,9 @@ extension CleanupService {
             // ("lib/backend/backend/main/..."). Collapse that exact stutter so
             // a single mechanical slip does not discard an otherwise correct
             // cleanup and force the much weaker Tier-0 fallback.
-            let repairedText = RepeatedPathSegment.collapse(result.text)
+            let collapsed = RepeatedPathSegment.collapse(result.text)
+            let repairedText = modelInput == plan.text ? collapsed
+                : QuoteGate.restoreDictatedContents(input: modelInput, output: collapsed)
             let checked = CleanResult(text: repairedText, tokensIn: result.tokensIn,
                                       tokensOut: result.tokensOut, hitTokenCap: result.hitTokenCap,
                                       latencyMs: result.latencyMs, prefillMs: result.prefillMs, generationMs: result.generationMs)
@@ -72,12 +75,13 @@ extension CleanupService {
                                latencyMs: Self.millis(from: start), prefillMs: result.prefillMs,
                                generationMs: result.generationMs, failure: String(describing: failure))
             }
-            if canQuote, !QuoteGate.preserved(input: modelInput, output: repairedText) {
+            if canQuote, config.format.spokenQuotes || modelInput != plan.text, !QuoteGate.preserved(input: modelInput, output: repairedText) {
                 return Attempt(text: repairedText, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
                                latencyMs: Self.millis(from: start), prefillMs: result.prefillMs,
                                generationMs: result.generationMs, failure: String(describing: CleanGuard.Failure.quoteChanged))
             }
-            return Attempt(text: repairedText, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
+            let laidOut = ParagraphBoundaries.restore(from: modelInput, in: repairedText)
+            return Attempt(text: laidOut, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
                            latencyMs: Self.millis(from: start), prefillMs: result.prefillMs,
                            generationMs: result.generationMs)
         } catch {

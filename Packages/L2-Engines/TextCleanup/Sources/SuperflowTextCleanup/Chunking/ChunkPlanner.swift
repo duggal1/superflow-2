@@ -154,16 +154,20 @@ public struct ChunkPlanner: Sendable {
                       prefix[body.start] - prefix[cursor - 1] <= overlapBudget {
                     cursor -= 1
                 }
-                // Prefer the last complete sentence when it fits the hard budget.
-                if let sentence = (previous.start..<body.start).reversed().first(where: {
-                    $0 == previous.start || words[$0 - 1].sentenceEnd || words[$0 - 1].pause
-                }) {
-                    cursor = min(cursor, sentence)
+                // Keep complete context at the seam. An unpunctuated chunk
+                // must not pull its entire predecessor into the next request.
+                let trailing = words[body.start - 1]
+                if trailing.sentenceEnd || trailing.pause {
+                    let isBoundary: (Int) -> Bool = { index in
+                        index == 0 || words[index - 1].sentenceEnd || words[index - 1].pause
+                    }
+                    if let sentence = (cursor..<body.start).first(where: isBoundary)
+                        ?? (previous.start..<cursor).last(where: isBoundary) {
+                        var legal = Self.legalizedOverlapStart(sentence, bodyStart: body.start, layouts: layouts)
+                        while legal > previous.start && words[legal - 1].glue { legal -= 1 }
+                        overlapStart = legal
+                    }
                 }
-                // Never open the re-shared tail in the middle of a list item.
-                cursor = Self.legalizedOverlapStart(cursor, bodyStart: body.start, layouts: layouts)
-                while cursor > previous.start, words[cursor - 1].glue { cursor -= 1 }
-                overlapStart = cursor
             }
             var composed = Tokenizer.join(words[overlapStart..<body.end])
             var measured = overlapStart == body.start ? body.tokens : await count(composed)

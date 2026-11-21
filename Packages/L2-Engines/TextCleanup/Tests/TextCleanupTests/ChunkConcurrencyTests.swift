@@ -26,7 +26,7 @@ final class ChunkConcurrencyTests: XCTestCase {
         let cleaner = CountingChunkCleaner()
         let input = Array(repeating: "word", count: 5_600).joined(separator: " ")
         let outcome = await CleanupService(cleaner: cleaner,
-                                           config: CleanupConfig(workers: 8))
+                                           config: CleanupConfig(softTokenTarget: 800, workers: 8))
             .clean(input, context: TextContext(interactive: false))
         XCTAssertEqual(outcome.text, input)
         XCTAssertEqual(outcome.state, .cleaned)

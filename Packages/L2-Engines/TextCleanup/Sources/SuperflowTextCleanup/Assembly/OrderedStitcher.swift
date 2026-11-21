@@ -7,7 +7,7 @@ import SuperflowKernel
 /// 1. Overlap rule — the planner repeated the previous chunk's trailing
 ///    sentences in the next chunk's input (`ChunkPlan.overlap`), so the next
 ///    output's opening words should equal the previous output's closing words.
-///    The longest contiguous common suffix/prefix within the overlap window,
+///    A matching suffix/prefix of the recorded overlap length,
 ///    compared on normalized words (lowercased, apostrophes stripped), is
 ///    removed from the start of the next piece. Requires at least two matched
 ///    words so an accidental article repetition can not trigger it.
@@ -22,13 +22,6 @@ import SuperflowKernel
 /// it only trims and chooses a space or a newline, and list lines on either
 /// side of a seam join with a newline so two bullet items never merge.
 public enum OrderedStitcher {
-    /// Bounded window for the overlap match, in normalized words. The planner's
-    /// overlap budget is 10-15% of the soft target (~60-90 tokens), well under
-    /// this bound; the cap keeps seam matching linear.
-    private static let overlapWindow = 64
-    /// Minimum matched run for the overlap rule.
-    private static let minOverlapMatch = 2
-
     /// Backwards-compatible entry point without planner overlap metadata.
     public static func stitch(_ pieces: [String]) -> String {
         stitch(pieces, overlaps: [])
@@ -39,22 +32,26 @@ public enum OrderedStitcher {
     /// a failed chunk's Tier 0 fallback text arrives exactly like a cleaned one.
     public static func stitch(_ pieces: [String], overlaps: [String?]) -> String {
         var out = ""
+        var previousPiece = ""
         for (index, raw) in pieces.enumerated() {
             let piece = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !piece.isEmpty else { continue }
             guard !out.isEmpty else {
                 out = piece
+                previousPiece = piece
                 continue
             }
             var remainder = piece
             if index < overlaps.count, let overlap = overlaps[index], !overlap.isEmpty {
-                remainder = cutOverlap(piece: piece, overlapWords: overlap, previousTail: out)
-            } else {
+                remainder = cutOverlap(piece: piece, overlapWords: overlap, previousTail: previousPiece)
+            } else if overlaps.isEmpty {
                 remainder = legacySeam(piece: piece, previousTail: out)
             }
             if remainder.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { continue }
             out = join(previous: out, next: remainder)
+            previousPiece = piece
         }
+        guard overlaps.isEmpty else { return out }
         return out
             .replacingOccurrences(of: "  +", with: " ", options: .regularExpression)
             .replacingOccurrences(of: " +\n", with: "\n", options: .regularExpression)
@@ -66,28 +63,14 @@ public enum OrderedStitcher {
     private static func cutOverlap(piece: String, overlapWords: String, previousTail: String) -> String {
         let head = Tokenizer.tokens(in: piece)
         guard !head.isEmpty else { return piece }
-        let overlapCount = min(normalizedWordCount(overlapWords), overlapWindow)
+        let overlapCount = normalizedWordCount(overlapWords)
         let tail = Tokenizer.tokens(in: previousTail)
-        guard !tail.isEmpty else { return piece }
-
-        var match = 0
-        var k = min(overlapCount, head.count, tail.count)
-        while k >= minOverlapMatch {
-            let start = tail.count - k
-            if (0..<k).allSatisfy({
-                normalized(tail[start + $0].core) == normalized(head[$0].core)
-            }) {
-                match = k
-                break
-            }
-            k -= 1
-        }
-        // The overlap holding a single word, or the fuzzy match coming up
-        // short, still leaves the legacy single-word rule one chance.
-        if match == 0 { match = legacyMatch(tail: tail, head: head) }
-        if match == 0 { return piece }
-        let rest = head.dropFirst(match).map(\.full).joined(separator: " ")
-        return rest
+        guard overlapCount >= 2, overlapCount <= head.count, overlapCount <= tail.count else { return piece }
+        let left = tail.suffix(overlapCount).map { normalized($0.core) }
+        let right = head.prefix(overlapCount).map { normalized($0.core) }
+        guard left == right else { return piece }
+        guard overlapCount < head.count else { return "" }
+        return String(piece[head[overlapCount].range.lowerBound...])
     }
 
     /// Seams without overlap metadata: collapse an exactly repeated boundary
@@ -139,21 +122,17 @@ public enum OrderedStitcher {
     /// numbered line against a non-list neighbour would otherwise merge two
     /// items into one line. Everything else joins with a space.
     private static func join(previous: String, next: String) -> String {
-        let previousIsListLine = lineStartsList(lines(previous).last)
-        let nextIsListLine = lineStartsList(lines(next).first)
+        let previousLine = previous.lastIndex(of: "\n").map { previous[previous.index(after: $0)...] } ?? previous[...]
+        let nextLine = next.firstIndex(of: "\n").map { next[..<$0] } ?? next[...]
+        let previousIsListLine = lineStartsList(previousLine)
+        let nextIsListLine = lineStartsList(nextLine)
         if previousIsListLine || nextIsListLine {
             return previous + "\n" + next
         }
         return previous + " " + next
     }
 
-    private static func lines(_ text: String) -> [String] {
-        text.components(separatedBy: "\n")
-            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-    }
-
-    private static func lineStartsList(_ line: String?) -> Bool {
-        guard let raw = line else { return false }
+    private static func lineStartsList(_ raw: Substring) -> Bool {
         let trimmed = raw.trimmingCharacters(in: .whitespaces)
         if let first = trimmed.first, "-*•".contains(first) { return true }
         var digits = 0

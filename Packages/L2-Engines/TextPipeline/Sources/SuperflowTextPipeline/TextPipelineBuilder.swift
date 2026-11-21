@@ -54,10 +54,6 @@ public enum TextPipelineBuilder {
                                    id: "techDictionaryPreCleanup",
                                    includeCanonical: false,
                                    filter: { trigger, canonical, line, context in
-                                       guard let rule = TechDictionary.rule(trigger: trigger, canonical: canonical) else {
-                                           return true
-                                       }
-                                       if rule.tier == .a { return true }
                                        return preGate.accepts(trigger: trigger, canonical: canonical,
                                                                 line: line, context: context)
                                    }))
@@ -67,6 +63,9 @@ public enum TextPipelineBuilder {
         // plan.md §12 stage 5: numbers are canonicalized before S1 so the
         // cleanup model sees canonical numerals and no second normalization
         // pass is needed after generation.
+        if settings.commandsEnabled {
+            stages.append(DictatedLayoutStage())
+        }
         stages.append(NumbersAdapter())
         if settings.cleanupEnabled, let cleaner = dependencies.cleaner {
             stages.append(CleanupStage(service: cleaner))

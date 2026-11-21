@@ -8435,7 +8435,22 @@
       "aliases": [
         {
           "t": "python",
-          "tier": "A"
+          "tier": "B",
+          "requires": [
+            "script",
+            "pip",
+            "django",
+            "programming",
+            "venv"
+          ],
+          "neg": [
+            "snake",
+            "garden",
+            "escapes",
+            "feed",
+            "zoo",
+            "reptile"
+          ]
         },
         {
           "t": "pie thon",
@@ -9566,11 +9581,7 @@
           "tier": "B"
         },
         {
-          "t": "redis cache",
-          "tier": "A"
-        },
-        {
-          "t": "redis database",
+          "t": "redis",
           "tier": "A"
         }
       ],
@@ -13444,7 +13455,16 @@
         {
           "t": "windows",
           "tier": "B",
-          "requires": []
+          "requires": [],
+          "neg": [
+            "open",
+            "close",
+            "curtains",
+            "glass",
+            "sunlight",
+            "wash",
+            "cleaning"
+          ]
         },
         {
           "t": "windows os",

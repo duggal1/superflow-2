@@ -178,27 +178,10 @@ public actor CleanupService {
                 }
             }
         }
-        return (assemble(results.map(\.text)), results)
-    }
-
-    /// Re-assembles cleaned chunk texts, removing the planner's repeated seam
-    /// context with the splicer's real alignment (not a plain join). Overlap is
-    /// estimated from the same soft-target fraction the planner uses.
-    private func assemble(_ parts: [String]) -> String {
-        let overlapWords = Int(Double(config.softTokenTarget) * min(0.20, max(0, config.overlapPercent)))
-        guard var out = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines), !out.isEmpty else {
-            return SeamSplicer.join(parts)
+        let overlaps = zip(plans, results).map { plan, result in
+            result.attempts == 1 ? plan.overlap : nil
         }
-        for raw in parts.dropFirst() {
-            let piece = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !piece.isEmpty else { continue }
-            let splice = SeamSplicer.splice(out, piece, overlapWords: overlapWords)
-            let kept = splice.kept.trimmingCharacters(in: .whitespacesAndNewlines)
-            let rest = splice.rest.trimmingCharacters(in: .whitespacesAndNewlines)
-            if rest.isEmpty { out = kept; continue }
-            out = kept.isEmpty ? rest : kept + " " + rest
-        }
-        return out
+        return (OrderedStitcher.stitch(results.map(\.text), overlaps: overlaps), results)
     }
 
     /// A spoken list must reach the model in one request. When an ordered run

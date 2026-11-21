@@ -18,6 +18,9 @@ public enum CleanGuard {
             if !protected.ranges(in: input, detect: false).isEmpty { return .protectedLost }
             return FillerOnlyText.isFillerOnly(input) ? nil : .empty
         }
+        if input == result.text, !result.hitTokenCap, !FillerOnlyText.isFillerOnly(input) {
+            return nil
+        }
         let spans = protected.ranges(in: input, detect: false).sorted { $0.lowerBound < $1.lowerBound }
         var end = input.startIndex
         var cursor = result.text.startIndex
@@ -35,7 +38,7 @@ public enum CleanGuard {
             case .prose(let text): text
             case .list(let lead, let items): ([lead] + items).joined(separator: " ")
             }
-        }.joined(separator: " ")
+        }.joined(separator: "\n")
         let isList = segments.contains { segment in
             if case .list = segment { return true }
             return false

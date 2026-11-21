@@ -6,10 +6,12 @@ public enum ListShaper {
 
     public struct Options: Sendable, Equatable {
         public var bullet: String
+        public var orderedAsBullets: Bool
         public var numberStyle: NumberStyle
-        public init(bullet: String = "-", numberStyle: NumberStyle = .dot) {
+        public init(bullet: String = "-", numberStyle: NumberStyle = .dot, orderedAsBullets: Bool = false) {
             self.bullet = bullet
             self.numberStyle = numberStyle
+            self.orderedAsBullets = orderedAsBullets
         }
     }
 
@@ -90,8 +92,12 @@ public enum ListShaper {
             for (number, item) in items.enumerated() {
                 switch first.kind {
                 case .numbered:
-                    output.append(options.numberStyle == .dot
-                        ? "\(number + 1). \(item)" : "\(number + 1)) \(item)")
+                    if options.orderedAsBullets {
+                        output.append("\(options.bullet) \(item)")
+                    } else {
+                        output.append(options.numberStyle == .dot
+                            ? "\(number + 1). \(item)" : "\(number + 1)) \(item)")
+                    }
                 case .bullet:
                     output.append("\(options.bullet) \(item)")
                 case .prose:

@@ -28,8 +28,23 @@ enum SelfCorrection: Sendable {
         + calendar + ")\\s+" + revisionCue + "\\s+(" + calendar + ")\\s+at\\s+(" + clock + ")\\b"
     private static let timeRegex = try? NSRegularExpression(pattern: timePattern)
 
-    static func apply(_ input: String) -> String {
-        resolveDays(in: resolveTimes(in: input))
+    private static let numberAtom = #"(?:\d+(?:,\d{3})*(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million)"#
+    private static let numericRevision = try? NSRegularExpression(pattern:
+        #"(?i)(?<![\w.,:/€$£¥₹-])[$€£¥₹]?"# + numberAtom + "(?:[ \\t]+" + numberAtom + "){0,5}"
+        + "[ \\t]+(?:no[ \\t]+wait|no[ \\t]+sorry)[, \\t]+(?=\\$?" + numberAtom + "\\b)")
+
+    static func apply(_ input: String, protected: Protected = Protected()) -> String {
+        let calendar = resolveDays(in: resolveTimes(in: input))
+        guard let numericRevision else { return calendar }
+        let ranges = protected.ranges(in: calendar, detect: false)
+        let matches = numericRevision.matches(in: calendar, range: NSRange(calendar.startIndex..., in: calendar))
+        var output = calendar
+        for match in matches.reversed() {
+            guard let range = Range(match.range, in: calendar),
+                  !ranges.contains(where: { $0.overlaps(range) }) else { continue }
+            output.removeSubrange(range)
+        }
+        return output
     }
 
     /// Rewrites "<prep> <old time> on <old day> <cue> <new day> at <new time>"
@@ -85,7 +100,7 @@ struct SelfCorrectionStage: SuperflowPorts.TextStage {
     func apply(_ draft: TranscriptDraft, context: TextContext) async -> TranscriptDraft {
         guard !draft.shortCircuit else { return draft }
         var output = draft
-        output.text = SelfCorrection.apply(draft.text)
+        output.text = SelfCorrection.apply(draft.text, protected: draft.protected)
         return output
     }
 }

@@ -271,6 +271,20 @@ final class CleanupTests: XCTestCase {
         XCTAssertEqual(stitched, "I sent the report said forty two words. today")
     }
 
+    func testStitcherKeepsRepeatedContentOutsideRecordedOverlap() {
+        XCTAssertEqual(
+            OrderedStitcher.stitch(
+                ["Batch 101. Check the logs. Batch 102. Check the logs.",
+                 "Batch 102. Check the logs. Batch 103. Check the logs."],
+                overlaps: [nil, "Batch 102. Check the logs."]),
+            "Batch 101. Check the logs. Batch 102. Check the logs. Batch 103. Check the logs."
+        )
+        XCTAssertEqual(
+            OrderedStitcher.stitch(["One decision. Go.", "Go. Another decision."], overlaps: [nil, nil]),
+            "One decision. Go. Go. Another decision."
+        )
+    }
+
     func testStitcherKeepsUnmatchedSeams() {
         let stitched = OrderedStitcher.stitch(
             ["Alpha beta gamma.", "Delta epsilon zeta"],

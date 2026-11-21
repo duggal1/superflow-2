@@ -406,6 +406,9 @@ All stages take a draft with ordered words, protected spans, timestamps and cont
 
 ### Chunking and workers
 
+- On 8 GB Macs, the default is one reusable S1-mini context. The local M1 replay saw deadline failures with two contexts and memory pressure with four. Higher-memory systems retain the hardware-based context cap. The decoder refills free lanes within the caller's deadline.
+- For dictation with list formatting enabled, render model-generated list markers as Markdown dashes. Keep explicit paragraph boundaries when their text can be aligned to the validated model output.
+
 - Count tokens with the model tokenizer. Set target to 55–60% of the measured safe length (provisional 600-token target / 850-token cap until Spike B).
 - Split by committed ASR segment, VAD pauses, sentence, then clause. Never split mid-word, protected expression or speaker turn.
 - A bounded worker pool prioritizes interactive chunks over long-session background chunks. Benchmark N = 1, 2, 3, 4, 6, 8; choose best p95 latency and throughput without memory thrash.
@@ -418,7 +421,7 @@ All stages take a draft with ordered words, protected spans, timestamps and cont
 - Reject output if it loses a protected literal; omits the final content words; generates unsupported information; ends because of a token cap; or suffers unexplained length collapse.
 - Empty output is permitted only for genuinely content-free filler utterances under an explicit policy.
 - Retry failed chunks by splitting at a safe boundary up to depth 3. Otherwise persist and use the complete Tier 0 text, marked `fallback`.
-- Assemble only in order using bounded overlap alignment; no duplicated/missing seam words and no quadratic whole-transcript rescans.
+- Assemble in order using the recorded overlap and an exact normalized suffix/prefix match. Preserve both sides if that match cannot be found. Reuse protected ranges while checking for repeated text.
 - Keep the model context prompt constant over chunks, using overlap words rather than an untrained extra prompt section.
 - No second LLM cleanup pass or whole-document consistency pass in v1.
 - Long-session finalization waits only for bounded remaining work; a background chunk that exceeds the stop deadline may remain marked pending and resolve later without blocking access to raw text.
