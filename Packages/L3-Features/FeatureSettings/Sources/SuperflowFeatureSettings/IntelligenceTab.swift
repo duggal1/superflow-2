@@ -105,10 +105,17 @@ struct IntelligenceTab: View {
 }
 
 public struct IntelligenceView: View {
-    public init() {}
+    private let onBack: (() -> Void)?
+    public init(onBack: (() -> Void)? = nil) { self.onBack = onBack }
 
     public var body: some View {
-        Page(title: "Intelligence", subtitle: "Meeting intelligence", width: Layout.narrow) {
+        Page(title: "Intelligence settings", width: Layout.narrow) {
+            if let onBack {
+                AppButton("Back to Intelligence", glyph: .chevronLeft, kind: .quiet, action: onBack)
+            }
+        } trailing: {
+            EmptyView()
+        } content: {
             IntelligenceTab(query: "")
         }
     }

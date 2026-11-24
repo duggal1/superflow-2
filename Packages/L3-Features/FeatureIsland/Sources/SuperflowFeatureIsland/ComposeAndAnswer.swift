@@ -13,6 +13,14 @@ struct ComposeView: View {
     let context: FlowContext
 
     var body: some View {
+        if let hosted = context.hostedView {
+            hosted.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            fallback
+        }
+    }
+
+    private var fallback: some View {
         VStack(alignment: .leading, spacing: IslandTokens.Space.sm) {
             HStack(spacing: IslandTokens.Space.sm) {
                 PixelBitmap(rows: PixelGlyphs.compose, cell: PixelInstrument.cell,
@@ -30,12 +38,8 @@ struct ComposeView: View {
             .frame(height: IslandTokens.Size.glyph)
             PixelFlowRail(active: 1)
 
-            if let hosted = context.hostedView {
-                hosted
-            } else {
-                context.seam.composeView(content: context.intelligence) { text in
-                    context.actions.send(text)
-                }
+            context.seam.composeView(content: context.intelligence) { text in
+                context.actions.send(text)
             }
 
             // The draft's own cell trace: an instrument readout of what you are

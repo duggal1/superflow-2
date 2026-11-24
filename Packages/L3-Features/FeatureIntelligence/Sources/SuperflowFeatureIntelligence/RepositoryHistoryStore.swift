@@ -8,14 +8,16 @@ import SuperflowPorts
 public struct RepositoryHistoryStore: IntelligenceHistoryServing {
     private let repository: any TranscriptRepository
     private let limit: Int
+    private let kind: SessionKind?
 
-    public init(repository: any TranscriptRepository, limit: Int = 200) {
+    public init(repository: any TranscriptRepository, limit: Int = 200, kind: SessionKind? = nil) {
         self.repository = repository
         self.limit = max(1, limit)
+        self.kind = kind
     }
 
     public func list(query: String?, limit: Int) async throws -> [IntelligenceHistoryItem] {
-        let records = try await repository.sessions(kind: nil, query: normalized(query),
+        let records = try await repository.sessions(kind: kind, query: normalized(query),
                                                    limit: min(max(1, limit), self.limit), offset: 0)
         return records.map { record in
             IntelligenceHistoryItem(

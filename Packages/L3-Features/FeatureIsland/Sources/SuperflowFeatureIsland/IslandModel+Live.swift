@@ -28,6 +28,7 @@ public extension IslandModel {
         case .meetingPanel:
             go(.meeting)
         case .idle, .hover:
+            if let openIntelligence { openIntelligence(); return }
             today = feed.wordsToday()
             history = feed.history(limit: 5)
             historySelection = 0

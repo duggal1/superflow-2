@@ -45,7 +45,7 @@ public final class IntelligenceIslandSeam {
         self.answerService = answerService
         model = IntelligenceIslandModel(
             answerService: answerService,
-            historyStore: RepositoryHistoryStore(repository: repository),
+            historyStore: RepositoryHistoryStore(repository: repository, kind: .meeting),
             copy: clipboard
         )
     }

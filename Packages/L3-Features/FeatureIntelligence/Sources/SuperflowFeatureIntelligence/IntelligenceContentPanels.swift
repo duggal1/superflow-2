@@ -83,74 +83,116 @@ struct IntelligenceSettingsPanel: View {
     }
 }
 
-/// Island history: list, search, open full transcript + stored answers,
-/// delete and copy. All reads/writes go through the injected history seam.
+/// Both surfaces read the same meeting repository. The compact parent owns
+/// the scroll container; the app page owns its own scrolling.
 struct IntelligenceHistoryPanel: View {
     @Bindable var model: IntelligenceIslandModel
+    var compact = true
+    @State private var confirmingDelete = false
+    @State private var deleteError: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            AppField("Search history", prompt: "Search transcripts",
-                     text: $model.historyQuery, onCard: true) {
-                Task { await model.loadHistory(query: model.historyQuery) }
+        VStack(alignment: .leading, spacing: Space.xs) {
+            HStack {
+                SectionHeader("Meeting history")
+                Spacer()
+                if model.isLoadingHistory {
+                    Text("Loading…").appType(.caption).foregroundStyle(Tok.text2)
+                }
+                AppButton("Refresh", glyph: .refresh, kind: .quiet, height: ControlHeight.small) {
+                    Task { await model.loadHistory(query: model.historyQuery) }
+                }
             }
-            if let detail = model.selectedHistory {
-                detailView(detail)
-            } else {
-                list
+            if compact {
+                AppField("Search meetings", prompt: "Search meeting transcripts",
+                         text: $model.historyQuery, onCard: true,
+                         onSubmit: { Task { await model.loadHistory(query: model.historyQuery) } })
             }
-        }
-    }
-
-    private var list: some View {
-        ScrollView {
-            if model.history.isEmpty {
-                Text("Nothing saved yet.").appType(.caption).foregroundStyle(Tok.text2)
-                    .frame(maxWidth: .infinity)
+            if let error = model.historyError {
+                Text(error).appType(.caption).foregroundStyle(Tok.text2)
+            }
+            if let item = model.selectedHistory {
+                HStack {
+                    AppButton("Back", glyph: .chevronLeft, kind: .quiet, height: ControlHeight.small) {
+                        confirmingDelete = false
+                        deleteError = nil
+                        model.closeHistory()
+                    }
+                    Spacer()
+                    AppButton("Copy transcript", glyph: .copy, kind: .secondary, height: ControlHeight.small) {
+                        Task { await model.copyHistoryItem(item.id) }
+                    }
+                }
+                if confirmingDelete {
+                    HStack {
+                        Text("Delete this meeting transcript?").appType(.caption)
+                        Spacer()
+                        AppButton("Cancel", kind: .quiet, height: ControlHeight.small) {
+                            confirmingDelete = false
+                        }
+                        AppButton("Delete", glyph: .delete, kind: .secondary, height: ControlHeight.small) {
+                            confirmingDelete = false
+                            Task {
+                                do { try await model.deleteHistoryItem(item.id) }
+                                catch { deleteError = error.localizedDescription }
+                            }
+                        }
+                    }
+                } else {
+                    AppButton("Delete transcript", glyph: .delete, kind: .quiet, height: ControlHeight.small) {
+                        confirmingDelete = true
+                    }
+                }
+                if let deleteError {
+                    Text(deleteError).appType(.caption).foregroundStyle(Tok.text2)
+                }
+                Text(item.title).appType(.title)
+                Text(item.fullText.isEmpty ? "No transcript was saved." : item.fullText)
+                    .appType(.reading).foregroundStyle(Tok.text).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                ForEach(Array(item.answers.enumerated()), id: \.offset) { _, answer in
+                    MarkdownAnswer(text: answer)
+                }
+            } else if model.history.isEmpty {
+                Text(model.isLoadingHistory ? "Loading meetings…" :
+                     model.historyQuery.isEmpty ? "No meetings saved yet." : "No matching meetings.")
+                    .appType(.body).foregroundStyle(Tok.text2)
+                    .padding(.vertical, Space.sm)
             } else {
-                ForEach(model.history) { item in
-                    HStack(spacing: Space.xs) {
-                        AppButton(item.title, glyph: .chevronRight, kind: .quiet, height: 28) {
+                LazyVStack(spacing: 0) {
+                    ForEach(model.history) { item in
+                        IntelligenceMeetingRow(item: item) {
                             Task { await model.openHistoryItem(item.id) }
-                        }
-                        Spacer(minLength: 0)
-                        AppButton("Copy", glyph: .copy, kind: .quiet, height: 24) {
-                            Task { await model.copyHistoryItem(item.id) }
-                        }
-                        AppButton("Delete", glyph: .delete, kind: .quiet, height: 24) {
-                            Task { try? await model.deleteHistoryItem(item.id) }
                         }
                     }
                 }
             }
         }
-        .frame(maxHeight: 180)
-        .task { await model.loadHistory(query: nil) }
     }
+}
 
-    private func detailView(_ item: IntelligenceHistoryItem) -> some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
-            HStack(spacing: Space.xs) {
-                Text(item.title).appType(.label).foregroundStyle(Tok.text)
+struct IntelligenceMeetingRow: View {
+    let item: IntelligenceHistoryItem
+    let open: () -> Void
+
+    var body: some View {
+        RowButton(item.title, height: 56, action: open) {
+            HStack(spacing: Space.sm) {
+                IconView(.meetings, size: 14, tint: Tok.text2)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: Space.xxs) {
+                    Text(item.title).appType(.label).foregroundStyle(Tok.text).lineLimit(1)
+                    HStack(spacing: Space.xs) {
+                        TimelineView(.everyMinute) { clock in
+                            Text(Humanize.when(item.date, now: clock.date))
+                        }
+                        Text(Humanize.words(item.wordCount)).monospacedDigit()
+                    }
+                    .appType(.caption).foregroundStyle(Tok.text2)
+                }
                 Spacer(minLength: 0)
-                AppButton("Back", glyph: .chevronLeft, kind: .quiet, height: 24) { model.closeHistory() }
-                AppButton("Copy", glyph: .copy, kind: .primary, height: 24) {
-                    Task { await model.copyHistoryItem(item.id) }
-                }
+                IconView(.chevronRight, size: 12, tint: Tok.text2)
             }
-            ScrollView {
-                Text(item.fullText).appType(.reading).foregroundStyle(Tok.text)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                ForEach(item.answers, id: \.self) { answer in
-                    Text(answer).appType(.caption).foregroundStyle(Tok.text2)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                }
-            }
-            .frame(maxHeight: 140)
-            .padding(Space.sm)
-            .background(Tok.well, in: .rect(cornerRadius: Radius.nested, style: .continuous))
         }
     }
 }

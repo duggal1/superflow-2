@@ -21,31 +21,36 @@ public struct IslandRoot: View {
 
     public var body: some View {
         let state = store.state
-        let box = IslandFlowMetrics.box(state,
+        let flowBox = IslandFlowMetrics.box(state,
                                         notchWidth: model.geometry.notch.width,
                                         band: model.geometry.band,
                                         hasNotch: model.geometry.hasNotch,
                                         alwaysOn: model.prefs.alwaysOn,
                                         liveText: model.prefs.liveText && !model.live.text.isEmpty)
         let context = context(for: state)
-
-        IslandShell(box: box, stageID: state.stageID,
+        let expandedMeeting = model.phase == .meetingPanel && context.hostedView != nil
+        let box = expandedMeeting
+            ? IslandFlowMetrics.box(.compose(draft: ""), notchWidth: model.geometry.notch.width,
+                                    band: model.geometry.band, hasNotch: model.geometry.hasNotch)
+            : flowBox
+        IslandShell(box: box, stageID: expandedMeeting ? "meeting-assistant" : state.stageID,
                     clickable: clickable(state), clickLabel: "Open Superflow",
                     onHover: { model.hoverChanged($0) },
                     onClick: { model.send(.notchClicked) },
                     hitRect: { model.hitRect = $0 }) { _ in
-            FlowContent(state: state, context: context)
+            if let hosted = context.hostedView {
+                hosted.padding(.top, model.geometry.band)
+            } else {
+                FlowContent(state: state, context: context)
+            }
         }
         .environment(\.appTypeScope, .island)
         .fontSmoothing()
         .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
         .onChange(of: Self.externalState(for: model)) { _, new in
-            // A new capture or card from the backend always takes over. A quiet
-            // backend (idle) must not wipe an answer or panel the user is reading.
-            if new != .collapsed || Self.isRestLike(store.state) {
-                store.replace(new)
-            }
+            // Closing the backing panel must close the rendered surface as well.
+            store.replace(new)
         }
     }
 
@@ -131,7 +136,7 @@ public struct IslandRoot: View {
         actions.openPermissionSettings = { model.assistantOpenSettings() }
         actions.retry = { model.assistantRetry() }
         actions.theme = { store.apply(.themeChanged($0)) }
-        actions.endMeeting = { store.apply(.meetingEnded([])) }
+        actions.endMeeting = { model.endMeeting() }
         ctx.actions = actions
         return ctx
     }
@@ -156,7 +161,7 @@ public struct IslandRoot: View {
     private func clickable(_ state: IslandFlowState) -> Bool {
         switch state {
         case .collapsed: model.geometry.hasNotch || model.prefs.alwaysOn
-        case .meetingLive: true
+        case .meetingLive: model.phase == .meeting || (model.phase == .meetingPanel && model.intelligenceContent == nil)
         case .listening, .compose, .thinking, .answer, .meetingEnded, .history,
              .undo, .settings, .error, .permission: false
         }

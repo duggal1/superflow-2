@@ -65,7 +65,9 @@ public final class ReflectionAnswerService: IntelligenceAnswerServing {
                 }
                 try Task.checkCancellation()
                 guard current == generation else { return }
-                let snapshot = await transcript.snapshot()
+                let snapshot = request.transcript.isEmpty
+                    ? await transcript.snapshot()
+                    : String(request.transcript.suffix(7_000))
                 let system = IntelligencePrompts.system(mode: request.mode, custom: "")
                 let user = IntelligencePrompts.user(background: request.background,
                                                     transcript: snapshot,

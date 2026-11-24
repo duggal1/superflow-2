@@ -99,6 +99,30 @@ final class IntelligenceModelTests: XCTestCase {
 
     // MARK: history CRUD / search
 
+    func testHistoryRefreshPreservesFullTranscriptAndBackClearsSelection() async throws {
+        let id = SessionID("meeting")
+        let date = Date()
+        let full = IntelligenceHistoryItem(id: id, title: "Meeting", preview: "Short", date: date,
+                                           wordCount: 5, fullText: "Short preview but complete transcript")
+        let store = FakeHistoryStore(items: [full])
+        let model = makeModel(store: store)
+        await model.openHistoryItem(id)
+        store.items = [IntelligenceHistoryItem(id: id, title: "Meeting", preview: "Short", date: date,
+                                               wordCount: 5, fullText: "Short")]
+        await model.loadHistory()
+        XCTAssertEqual(model.selectedHistory?.fullText, full.fullText)
+        model.closeHistory()
+        XCTAssertNil(model.selectedHistory)
+    }
+
+    func testLiveMeetingContextReachesAnswerService() async throws {
+        let service = FakeAnswerService()
+        let model = makeModel(service: service)
+        model.liveTranscriptProvider = { "ME: We chose Swift." }
+        await model.submit("What did we choose?")
+        XCTAssertEqual(service.requests.last?.transcript, "ME: We chose Swift.")
+    }
+
     func testHistoryListSearchOpenDeleteAndCopy() async throws {
         let now = Date()
         let items = [
