@@ -1,5 +1,19 @@
 # SuperFlow
 
+## Active remediation — 2026-11-24
+
+This execution plan supersedes conflicting quality priorities below, not existing product contracts. Do not mark an item done without evidence.
+
+1. P0 text fidelity: inspect live and fallback cleanup paths; retain raw ASR and protect numbers, identifiers, negation, and corrections. Use S1-mini by Superwhisper's documented control line, greedy decoding and empty thinking block; list mode is conservative for fewer than three items. Deterministically recognize explicit sequential spoken enumeration (including two items), not ordinary quantities. Preserve intended numbering and item text through guards and fallback. Join accidental short prose line fragments without flattening explicit breaks, lists, code or email. Regression fixtures for two/three items, decimal/version numbers, conjunctions, short sentences, long text, and failed model outputs. Report raw WER separately from formatting accuracy and meaning preservation.
+2. P0 capture/VAD: inspect live capture routing and signal conditioning. Preserve low-level speech in user-initiated sessions; VAD is evidence, not permission to discard raw samples. Use noise-relative thresholds, onset padding, hysteresis, bounded gain and clipping protection. Do not assume whispering is low frequency. Test amplitude-scaled speech, silence, noise, sample-rate changes, Bluetooth input and built-in microphone. Compare actual recordings before claiming whisper/headset accuracy.
+3. P1 durability: journal before destructive processing, persist partial and final text, replay interrupted sessions idempotently; inject disk, inference, and process failures; prevent duplicate paste.
+4. P1 meetings: trace right Command modifier down/up and configured mapping through meeting start/stop; test single tap, repeated flags, left/right modifiers, chord suppression and permissions. Exercise real system and mic capture.
+5. P2 Knowledge: locate canonical design rules (DESIGN.md is referenced but absent from the tracked main tree at inspection; use existing design tokens and architecture until found). Replace the view without destroying user data; use real repository CRUD, search, validation, persistence, error/empty states and accessibility. Verify create/edit/delete and restart persistence.
+6. Verification: run focused package tests and make verify on macOS; separate synthetic tests from real model/device results, do not call untested hardware fixed. Maintain small reviewable changes and report remaining gaps.
+
+References: https://huggingface.co/superwhisper/s1-mini/blob/main/README.md ; https://github.com/snakers4/silero-vad/blob/master/src/silero_vad/utils_vad.py
+
+
 ## Native macOS Dictation & Meeting Transcription — Master Build Plan
 
 - Platform: macOS 15+, Apple Silicon (M1 and newer)
