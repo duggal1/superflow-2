@@ -1,28 +1,39 @@
 # Plan
 
-Goal: revert the Notch/Island front end and Intelligence page to the last good pre-rewrite state (`c5110df`), keep the backend, fix the dictation output path, raise transcription quality, restore the normal (non-pixelated) icon, then delete + rebuild + install + open the app.
+Goal: delete the installed Superflow binary, ensure the local signing identity is present, rebuild a
+signed release app, verify it, install to /Applications, and open it.
 
-Baseline: `c5110df` (2026-11-10) is the last commit before `011e114` / `61ec24a` (2026-11-17) rewrote the Island and Intelligence surfaces. `FeatureIntelligence` did not exist before `c5110df`; `FeatureIsland` had a complete older implementation.
-
-Non-goals: no change to ClearlyInput/ClearlyStealth adapters or MeetingIntelligence engine; no redesign of the Knowledge page; no removal of backend quality work (cleanup, audio, storage, recovery).
+Non-goals: no source-code feature changes, no reverting prior work, no notarization/Developer ID
+release, no touching model files or user data.
 
 Invariants:
-- The transcription pipeline and its quality tests stay green.
-- No secrets, no force-push, no reset/restore of unrelated work.
-- Uncommitted compile fixes from the previous task are preserved.
+- User explicitly authorized deleting the current binary; no other files are deleted.
+- Signing uses the stable `Superflow Development` identity so TCC grants survive rebuilds.
+- Verification is headless; the app is only opened at the end, as explicitly requested.
+- Git: pull before start (done, already up to date); no secrets in commits.
 
 Steps:
-1. Revert `FeatureIsland` sources+tests to `c5110df`; remove files added after it.
-2. Remove `FeatureIntelligence` package; revert its consumers (AppEnvironment, App Package.swift, IntelligenceTab, SettingsValidation, FeatureSettings tests).
-3. Revert island host wiring: `main.swift`, `AppCoordinator+Input`, `AppCoordinator+IntelligenceIsland` (delete), `IntelligenceIslandSeam` (delete), `IslandBridge`, `IslandPanelController`, `AppCoordinator+Launch`, `AppEnvironment`.
-4. Revert island/intelligence tests added by the rewrite; restore `WarmupGestureTests`.
-5. Restore `brand-mark.svg`, AppIcon PNGs, remove pixelated favicons.
-6. Build; fix every compile error at the root cause.
-7. Run package + app tests, quality tests, headless Island snapshot driver.
-8. Investigate the "history has data but no output" backend failure; fix the paste/output path.
-9. Raise transcription quality where the quality harness shows failures.
-10. Delete stale app bundle, rebuild release, sign, install to /Applications, open.
-11. Completion audit (two passes) + independent review.
+1. Ensure signing identity (`tools/dev-signing`) — verify command: `security find-identity -v -p codesigning`.
+2. Delete current binary (`/Applications/Superflow.app`, stale `dist/Superflow.app`) — verify: `ls` shows none.
+3. Rebuild release with `SUPERFLOW_SIGN_IDENTITY="Superflow Development" make app` — verify: build exits 0, dist/Superflow.app exists.
+4. Verify signature + structure headlessly — verify: `codesign --verify --deep --strict` + entitlement check.
+5. Install to `/Applications/Superflow.app` — verify: `codesign -dvv` on installed copy shows the identity.
+6. Open installed app — verify: process is running.
+7. Completion audit (two passes) and report.
 
 Progress:
-- Task started; previous proof archived to `.proof/archive/20261124T175500Z/`.
+- Previous proof archived to `.proof/archive/20261124T170052Z/`.
+- Preflight: git clean/up to date; `/Applications/Superflow.app` present and signed with `Superflow Development`;
+  no `dist/Superflow.app`; no running Superflow; identity already exists; macOS 27.2 / Xcode 27.2.
+- Step 1 DONE: `./tools/dev-signing` confirmed identity "Superflow Development" (9CCF4387...), 1 valid identity.
+- Step 2 DONE: deleted `/Applications/Superflow.app` and stale `dist/Superflow.app`; both absent afterwards.
+- Step 3 DONE: `SUPERFLOW_SIGN_IDENTITY="Superflow Development" make app` exit 0, 264s app + 27s helper release
+  builds; packager output "identity: Superflow Development" (evidence: .proof/build.log).
+- Step 4 DONE: headless verification PASS — plutil OK, arm64 Mach-O, helper + dylibs nested,
+  `codesign --verify --deep --strict` PASS, audio-input entitlement PASS, helper verify PASS
+  (evidence: .proof/verify.log).
+- Step 5 DONE: `mv dist/Superflow.app /Applications/Superflow.app`; installed copy signed by
+  "Superflow Development", deep-strict verify PASS, entitlement PASS; no bundle left in dist/.
+- Step 6 DONE: `open /Applications/Superflow.app`; process 3098 running from installed path; Accessibility
+  reports 1 window.
+- Next: independent review + second completion-audit pass.
