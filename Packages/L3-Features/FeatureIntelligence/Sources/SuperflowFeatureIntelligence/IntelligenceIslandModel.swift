@@ -29,6 +29,9 @@ public final class IntelligenceIslandModel {
     public var historyQuery = ""
     public private(set) var selectedHistory: IntelligenceHistoryItem?
     public private(set) var isLoadingHistory = false
+    public private(set) var historyError: String?
+    private var historyGeneration = 0
+    @ObservationIgnored public var liveTranscriptProvider: (() async -> String)?
 
     public private(set) var suggestions: [String] = []
     public private(set) var pendingDetectedQuestion: String?
@@ -110,10 +113,11 @@ public final class IntelligenceIslandModel {
         pendingDetectedQuestion = nil
         answer = ""
         lastError = nil
+        let liveTranscript = await liveTranscriptProvider?() ?? meetingTranscript
         let request = IntelligenceAskRequest(
             question: question,
             task: IntelligencePrompts.askTask(question),
-            transcript: meetingTranscript,
+            transcript: liveTranscript,
             background: customInstructions,
             mode: mode(from: selectedThemeID),
             effort: effort,
@@ -215,6 +219,15 @@ public final class IntelligenceIslandModel {
         defaults.set(value, forKey: "intelligence.customInstructions")
     }
 
+    /// Reload after the app's credential/configuration page changes the shared defaults.
+    public func reloadPreferences() {
+        if let id = defaults.string(forKey: "intelligence.mode"),
+           themes.contains(where: { $0.id == id }) { selectedThemeID = id }
+        screenAware = defaults.bool(forKey: "intelligence.screenAware")
+        effort = ReasoningEffort(rawValue: defaults.string(forKey: "intelligence.effort") ?? "low") ?? .low
+        customInstructions = defaults.string(forKey: "intelligence.customInstructions") ?? ""
+    }
+
     // MARK: permissions
 
     public func status(for permission: IntelligencePermission) -> IntelligencePermissionStatus {
@@ -243,8 +256,11 @@ public final class IntelligenceIslandModel {
         let raw = query ?? historyQuery
         let q = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         historyQuery = q
+        historyGeneration += 1
+        let generation = historyGeneration
         isLoadingHistory = true
-        defer { isLoadingHistory = false }
+        historyError = nil
+        defer { if generation == historyGeneration { isLoadingHistory = false } }
         do {
             var items = try await historyStore.list(query: q.isEmpty ? nil : q, limit: 200)
             for index in items.indices {
@@ -252,13 +268,12 @@ public final class IntelligenceIslandModel {
                     items[index].answers = saved
                 }
             }
+            guard generation == historyGeneration, !Task.isCancelled else { return }
             history = items
-            if let selected = selectedHistory,
-               let refreshed = items.first(where: { $0.id == selected.id }) {
-                selectedHistory = refreshed
-            }
+            // A list row holds only a preview; never replace an open full transcript with it.
         } catch {
-            lastError = "Could not load history. \(error.localizedDescription)"
+            guard generation == historyGeneration, !Task.isCancelled else { return }
+            historyError = "Could not load history. \(error.localizedDescription)"
         }
     }
 
@@ -270,7 +285,7 @@ public final class IntelligenceIslandModel {
             priorSlot = slot
             slot = .history
         } catch {
-            lastError = "Could not open this session. \(error.localizedDescription)"
+            historyError = "Could not open this session. \(error.localizedDescription)"
         }
     }
 
@@ -280,7 +295,7 @@ public final class IntelligenceIslandModel {
             guard let text = item?.fullText, !text.isEmpty else { return }
             copy(text)
         } catch {
-            lastError = "Could not copy this session. \(error.localizedDescription)"
+            historyError = "Could not copy this session. \(error.localizedDescription)"
         }
     }
 

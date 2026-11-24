@@ -16,6 +16,7 @@ extension AppCoordinator {
     public func openIntelligenceCompose() {
         guard let environment else { return }
         let seam = environment.intelligenceIsland
+        seam.model.reloadPreferences()
         seam.model.show(.compose)
         // The existing assistant event still opens the shared Island card; the
         // view hosted inside it is `seam.content(for:)`.
@@ -29,7 +30,12 @@ extension AppCoordinator {
             guard let self else { return }
             if self.menuBarController.meetingState.isActive {
                 await self.applyGestureActions([.submit(.meeting)])
+                await self.intelligenceModel?.loadHistory()
             } else {
+                guard self.menuBarController.canStartMeeting else {
+                    self.menuBarController.publishError("Stop the active session or wait for Superflow to finish loading.")
+                    return
+                }
                 await self.menuBarController.startMeeting()
                 if self.menuBarController.meetingState.isActive {
                     self.islandBridge?.meetingBegan()

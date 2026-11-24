@@ -9,20 +9,23 @@ public struct IntelligenceContent: View {
     @Bindable public var model: IntelligenceIslandModel
     private let compact: Bool
     private let recording: Bool
+    private let liveText: String
     private let onRecord: (() -> Void)?
     private let onDismiss: (() -> Void)?
     private let onConfiguration: (() -> Void)?
     @State private var panel: Panel = .ask
+    @State private var modesExpanded = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Panel { case ask, history, settings }
 
     public init(model: IntelligenceIslandModel, compact: Bool = true,
-                recording: Bool = false, onRecord: (() -> Void)? = nil,
+                recording: Bool = false, liveText: String = "", onRecord: (() -> Void)? = nil,
                 onDismiss: (() -> Void)? = nil, onConfiguration: (() -> Void)? = nil) {
         _model = Bindable(model)
         self.compact = compact
         self.recording = recording
+        self.liveText = liveText
         self.onRecord = onRecord
         self.onDismiss = onDismiss
         self.onConfiguration = onConfiguration
@@ -101,9 +104,8 @@ public struct IntelligenceContent: View {
                     }
                 }
                 HStack(spacing: Space.xs) {
-                    AppField("Question", prompt: "Ask me about anything", text: $model.input, onCard: true) {
-                        submit()
-                    }
+                    AppField("Question", prompt: "Ask me about anything", text: $model.input,
+                             onCard: true, onSubmit: submit)
                     AppButton("Ask", glyph: .arrowUp, kind: .primary, height: ControlHeight.regular,
                               enabled: !model.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
                         submit()
@@ -134,6 +136,16 @@ public struct IntelligenceContent: View {
             }
             .padding(compact ? Space.xs : Space.cardPadding)
             .background(Tok.surface, in: .rect(cornerRadius: Radius.nested))
+            if recording {
+                HStack(spacing: Space.xs) {
+                    IntelPixelBand(active: !reduceMotion, cells: 16)
+                    Text("Live meeting context").appType(.caption).foregroundStyle(Tok.text2)
+                }
+                if !liveText.isEmpty {
+                    Text(liveText).appType(.body).foregroundStyle(Tok.text)
+                        .lineLimit(3).textSelection(.enabled)
+                }
+            }
             if let question = model.pendingDetectedQuestion {
                 AppButton("Answer detected question", glyph: .arrow, kind: .secondary) {
                     Task { await model.askDetectedQuestion() }
@@ -179,19 +191,42 @@ public struct IntelligenceContent: View {
     }
 
     private var modeRail: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: Space.xxs) {
-                ForEach(model.themes) { theme in
-                    AppButton(theme.label, glyph: modeIcon(theme.id),
-                              kind: theme.id == model.selectedThemeID ? .secondary : .quiet,
-                              height: ControlHeight.small) {
-                        model.selectTheme(theme)
-                    }
-                    .accessibilityAddTraits(theme.id == model.selectedThemeID ? .isSelected : [])
+        VStack(alignment: .leading, spacing: Space.xxs) {
+            HStack(spacing: Space.xs) {
+                Text("Prompt").appType(.caption).foregroundStyle(Tok.text2)
+                Spacer(minLength: 0)
+                AppButton(model.selectedTheme.label, glyph: modeIcon(model.selectedThemeID),
+                          kind: .secondary, height: ControlHeight.small) {
+                    withAnimation(reduceMotion ? nil : Motion.fade) { modesExpanded.toggle() }
+                }
+                IconButton(modesExpanded ? .chevronDown : .chevronRight,
+                           label: modesExpanded ? "Hide prompts" : "Choose prompt", size: 12) {
+                    withAnimation(reduceMotion ? nil : Motion.fade) { modesExpanded.toggle() }
                 }
             }
+            if modesExpanded {
+                VStack(spacing: Space.xxs) {
+                    ForEach(model.themes) { theme in
+                        RowButton(theme.label, height: ControlHeight.large,
+                                  selected: theme.id == model.selectedThemeID) {
+                            model.selectTheme(theme)
+                            withAnimation(reduceMotion ? nil : Motion.fade) { modesExpanded = false }
+                        } content: {
+                            HStack(spacing: Space.xs) {
+                                IconView(modeIcon(theme.id), size: 14, tint: Tok.text2)
+                                Text(theme.label).appType(.label)
+                                Spacer(minLength: 0)
+                                if theme.id == model.selectedThemeID {
+                                    IconView(.checkmark, size: 12, tint: Tok.accentText)
+                                }
+                            }
+                            .padding(.horizontal, Space.xs)
+                        }
+                    }
+                }
+                .background(Tok.well, in: .rect(cornerRadius: Radius.field))
+            }
         }
-        .scrollIndicators(.hidden)
         .accessibilityLabel("Prompt mode")
     }
 

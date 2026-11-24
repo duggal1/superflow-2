@@ -101,9 +101,13 @@ struct IntelligenceHistoryPanel: View {
                     Task { await model.loadHistory(query: model.historyQuery) }
                 }
             }
-            AppField("Search meetings", prompt: "Search meeting transcripts",
-                     text: $model.historyQuery, onCard: compact) {
-                Task { await model.loadHistory(query: model.historyQuery) }
+            if compact {
+                AppField("Search meetings", prompt: "Search meeting transcripts",
+                         text: $model.historyQuery, onCard: true,
+                         onSubmit: { Task { await model.loadHistory(query: model.historyQuery) } })
+            }
+            if let error = model.historyError {
+                Text(error).appType(.caption).foregroundStyle(Tok.text2)
             }
             if let item = model.selectedHistory {
                 HStack {

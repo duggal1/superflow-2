@@ -97,10 +97,13 @@ extension AppCoordinator {
             pttSend: { [weak self] in
                 guard let self else { return }
                 await MainActor.run {
-                    guard let environment = self.environment else { return }
+                    guard self.environment != nil else { return }
                     // Finalize listening, then let the existing bridge transcribe,
                     // stream through Reflection and save to History.
                     self.islandBridge?.holdEnded()
+                    if !self.menuBarController.meetingState.isActive {
+                        self.islandBridge?.model?.send(.cancelled)
+                    }
                     // Right Option PTT sends the finalized transcript into the
                     // rebuilt Intelligence surface. Clicking the Island still
                     // opens typed compose; no second trigger key exists.
@@ -111,7 +114,7 @@ extension AppCoordinator {
                             await self?.submitIntelligence(transcript)
                         }
                     } else {
-                        self.islandBridge?.openAssistant(environment: environment)
+                        self.openIntelligenceCompose()
                     }
                 }
             },
