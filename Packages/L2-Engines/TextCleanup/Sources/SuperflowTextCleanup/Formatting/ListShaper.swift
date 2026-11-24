@@ -31,13 +31,14 @@ public enum ListShaper {
         guard let regex = try? NSRegularExpression(pattern: inlineMarker) else { return [line] }
         let ns = line as NSString
         let matches = regex.matches(in: line, range: NSRange(location: 0, length: ns.length))
-        guard matches.count >= 3 else { return [line] }
+        guard matches.count >= 2 else { return [line] }
         let numbers = matches.compactMap { Int(ns.substring(with: $0.range(at: 1))) }
         guard numbers == Array(1...matches.count) else { return [line] }
 
         var output: [String] = []
         let intro = ns.substring(to: matches[0].range.location)
             .trimmingCharacters(in: .whitespaces)
+        if matches.count == 2, !intro.isEmpty, !intro.hasSuffix(":") { return [line] }
         if !intro.isEmpty { output.append(intro) }
         for (index, match) in matches.enumerated() {
             let start = match.range.location + match.range.length

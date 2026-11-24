@@ -120,8 +120,11 @@ public struct FormattingStage: SuperflowPorts.TextStage {
         let structure = context.settings.cleanupStructure
             .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if structure == "prose" { config.lists = false }
-        config.listOptions.orderedAsBullets = structure == "lists" && draft.cleanupState == .cleaned
-        output.text = shapeOutput(draft.text, config: config,
+        // Explicit numbering is a dictated layout command, not inferred bullets.
+        // Apply it even in prose mode; ordinary enumerations still honor the setting.
+        let explicit = SpokenEnumerationShaper.explicitCardinals(draft.text)
+        config.listOptions.orderedAsBullets = false
+        output.text = shapeOutput(explicit, config: config,
                                   counters: &counters)
         if counters.listReverts > 0 {
             output.diagnostics.append(Diagnostic(stage: id,

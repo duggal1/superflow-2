@@ -17,6 +17,49 @@ public enum SpokenEnumerationShaper {
         return text.components(separatedBy: "\n").map(shapeLine).joined(separator: "\n")
     }
 
+    /// Cardinal markers require punctuation, an explicit label, or an
+    /// imperative item after an unpunctuated number. Never interpret quantities
+    /// like "one apple, two oranges" as commands.
+    private static let cardinalPattern = try! NSRegularExpression(
+        pattern: #"(?i)(?<![\w.])(?:(number|step|item|point)\s+)?(one|two|three|four|five|six|seven|eight|nine|ten|10|[1-9])(?:([.):,])\s*|\s+)(?=\p{L})"#)
+    private static let cardinals = ["one", "two", "three", "four", "five", "six",
+                                    "seven", "eight", "nine", "ten"]
+    private static let actionWords: Set<String> = [
+        "fix", "add", "remove", "delete", "update", "create", "build", "test",
+        "run", "check", "review", "implement", "change", "make", "ensure",
+        "open", "close", "send", "write", "read", "install", "ship", "deploy",
+        "improve", "optimize", "keep", "use", "replace", "verify", "enable",
+        "disable", "set", "move", "save", "merge", "push", "pull", "edit"
+    ]
+
+    public static func explicitCardinals(_ text: String) -> String {
+        guard !text.contains(String(repeating: "\u{60}", count: 3)), !text.contains("~~~") else { return text }
+        return text.components(separatedBy: "\n").map { line in
+            let ns = line as NSString
+            let matches = cardinalPattern.matches(in: line, range: NSRange(location: 0, length: ns.length))
+            guard matches.count >= 2, matches.count <= 10 else { return line }
+            let intro = ns.substring(to: matches[0].range.location).trimmingCharacters(in: .whitespaces)
+            guard intro.isEmpty || intro.hasSuffix(":") else { return line }
+            var items: [String] = []
+            for (index, marker) in matches.enumerated() {
+                let token = ns.substring(with: marker.range(at: 2)).lowercased()
+                let number = Int(token) ?? cardinals.firstIndex(of: token).map { $0 + 1 }
+                guard number == index + 1 else { return line }
+                let start = NSMaxRange(marker.range)
+                let end = index + 1 < matches.count ? matches[index + 1].range.location : ns.length
+                let item = ns.substring(with: NSRange(location: start, length: end - start))
+                    .trimmingCharacters(in: .whitespaces)
+                guard let first = item.split(whereSeparator: \.isWhitespace).first else { return line }
+                let labeled = marker.range(at: 1).location != NSNotFound
+                let punctuated = marker.range(at: 3).location != NSNotFound
+                guard labeled || punctuated || actionWords.contains(first.lowercased()) else { return line }
+                items.append(item)
+            }
+            return (intro.isEmpty ? "" : intro + "\n") + items.enumerated()
+                .map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
+        }.joined(separator: "\n")
+    }
+
     private static func shapeLine(_ line: String) -> String {
         guard !line.contains("1. ") && !line.contains("1) ") else { return line }
         let ns = line as NSString
