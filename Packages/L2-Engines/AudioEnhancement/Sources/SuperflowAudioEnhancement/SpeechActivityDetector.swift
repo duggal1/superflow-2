@@ -25,7 +25,7 @@ public struct SpeechActivityDetector: Sendable {
         /// Speech must exceed the learned noise floor by this ratio.
         public var noiseMultiplier: Float = 2.0
         /// Broadband hiss has a high zero-crossing rate; speech at 16 kHz does not.
-        public var maxZeroCrossingRate: Float = 0.46
+        public var maxZeroCrossingRate: Float = 0.42
         public var noiseAdaptation: Float = 0.02
 
         public init() {}
