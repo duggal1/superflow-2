@@ -88,6 +88,8 @@ struct IntelligenceSettingsPanel: View {
 struct IntelligenceHistoryPanel: View {
     @Bindable var model: IntelligenceIslandModel
     var compact = true
+    @State private var confirmingDelete = false
+    @State private var deleteError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
@@ -112,12 +114,37 @@ struct IntelligenceHistoryPanel: View {
             if let item = model.selectedHistory {
                 HStack {
                     AppButton("Back", glyph: .chevronLeft, kind: .quiet, height: ControlHeight.small) {
+                        confirmingDelete = false
+                        deleteError = nil
                         model.closeHistory()
                     }
                     Spacer()
                     AppButton("Copy transcript", glyph: .copy, kind: .secondary, height: ControlHeight.small) {
                         Task { await model.copyHistoryItem(item.id) }
                     }
+                }
+                if confirmingDelete {
+                    HStack {
+                        Text("Delete this meeting transcript?").appType(.caption)
+                        Spacer()
+                        AppButton("Cancel", kind: .quiet, height: ControlHeight.small) {
+                            confirmingDelete = false
+                        }
+                        AppButton("Delete", glyph: .delete, kind: .secondary, height: ControlHeight.small) {
+                            confirmingDelete = false
+                            Task {
+                                do { try await model.deleteHistoryItem(item.id) }
+                                catch { deleteError = error.localizedDescription }
+                            }
+                        }
+                    }
+                } else {
+                    AppButton("Delete transcript", glyph: .delete, kind: .quiet, height: ControlHeight.small) {
+                        confirmingDelete = true
+                    }
+                }
+                if let deleteError {
+                    Text(deleteError).appType(.caption).foregroundStyle(Tok.text2)
                 }
                 Text(item.title).appType(.title)
                 Text(item.fullText.isEmpty ? "No transcript was saved." : item.fullText)

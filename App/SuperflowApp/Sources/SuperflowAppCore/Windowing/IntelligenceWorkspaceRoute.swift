@@ -26,6 +26,9 @@ struct IntelligenceWorkspaceRoute: View {
             } trailing: {
                 AppButton("Configure", glyph: .settings, kind: .quiet) { configuration = true }
             } content: {
+                if let error = menu.error, !error.isEmpty {
+                    Text(error).appType(.caption).foregroundStyle(Tok.text2)
+                }
                 if let model = coordinator.intelligenceModel {
                     IntelligenceContent(model: model, compact: false,
                                         recording: menu.meetingState.isActive,

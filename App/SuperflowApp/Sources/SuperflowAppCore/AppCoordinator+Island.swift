@@ -26,6 +26,7 @@ extension AppCoordinator {
         }
         environment.intelligenceIsland.model.liveTranscriptProvider = { [weak self] in
             guard let self, self.menuBarController.meetingState.isActive,
+                  let environment = self.environment,
                   let document = await environment.meetingEngine.currentDocument else { return "" }
             return String(document.turns.filter { !$0.isGap }.map {
                 "[\($0.timestampLabel)] \($0.speakerName): \($0.text)"
