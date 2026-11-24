@@ -47,10 +47,11 @@ public final class ShortcutsViewModel: ObservableObject {
     }
 
     public var visibleEntries: [ShortcutEntry] {
-        let matched = Set(search(query).map(\.id))
+        if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return search(query).filter { filter.match == nil || $0.match == filter.match }
+        }
         return entries
             .filter { filter.match == nil || $0.match == filter.match }
-            .filter { matched.contains($0.id) }
             .sorted { lhs, rhs in
                 if lhs.enabled != rhs.enabled { return lhs.enabled }
                 let name = lhs.trigger.localizedCaseInsensitiveCompare(rhs.trigger)
@@ -133,8 +134,8 @@ public final class ShortcutsViewModel: ObservableObject {
 
     public func delete(_ entry: ShortcutEntry) async {
         do {
-            deleted = entry
             try await repository.deleteShortcut(id: entry.id)
+            deleted = entry
             entries.removeAll { $0.id == entry.id }
             onChange?()
             toast.show("Deleted “\(entry.trigger)”.", actionTitle: "Undo") { [weak self] in

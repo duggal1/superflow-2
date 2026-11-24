@@ -50,7 +50,7 @@ struct KnowledgeView: View {
     @State private var importingShortcuts = false
     @State private var learned: [LearningCandidate] = []
 
-    private let previewLimit = 4
+    private let previewLimit = 8
 
     init(dictionary: DictionaryViewModel, shortcuts: ShortcutsViewModel,
          learning: DictionaryLearningEngine, learningEnabled: Binding<Bool>,
@@ -107,6 +107,21 @@ struct KnowledgeView: View {
                             .init("Export shortcuts…") { exportShortcuts() },
                          ], onAdd: add)
             ledger
+            if let error = dictionary.error ?? shortcuts.error {
+                Card {
+                    VStack(alignment: .leading, spacing: Space.sm) {
+                        Text(error).appType(.body).foregroundStyle(Tok.text)
+                        AppButton("Retry", kind: .secondary, height: ControlHeight.regular) {
+                            Task { await reloadKnowledge() }
+                        }
+                    }
+                }
+            } else if dictionary.isLoading || shortcuts.isLoading {
+                HStack(spacing: Space.sm) {
+                    ProgressView().controlSize(.small)
+                    Text("Loading knowledge").appType(.caption).foregroundStyle(Tok.text2)
+                }
+            }
             if showDictionary {
                 groupCard("Terms", note: "Said one way, typed another.",
                           specs: lexiconSpecs(terms), destination: .dictionary)
@@ -118,17 +133,17 @@ struct KnowledgeView: View {
                           specs: shortcutSpecs(phrases), destination: .shortcuts)
             }
             if showLearned { learningGroup }
-            if !hasVisibleContent && !dictionary.isLoading && !shortcuts.isLoading {
-                EmptyState("Nothing here yet.",
-                           message: "Add a term or a shortcut, or press ⌘N to get started.")
+            if !hasVisibleContent && !dictionary.isLoading && !shortcuts.isLoading && dictionary.error == nil && shortcuts.error == nil {
+                EmptyState(query.isEmpty ? "Nothing here yet." : "No matches.",
+                           message: query.isEmpty ? "Add a term or a shortcut, or press ⌘N to get started." : "Try another search.")
                     .frame(minHeight: 320)
             }
-            DictionaryPlayground(entries: dictionary.entries)
+            if section == .dictionary && query.isEmpty {
+                DictionaryPlayground(entries: dictionary.entries)
+            }
         }
         .task {
-            await dictionary.load()
-            await shortcuts.load()
-            await loadLearned()
+            await reloadKnowledge()
         }
         .onChange(of: query) { _, newValue in
             dictionary.query = newValue
@@ -141,9 +156,15 @@ struct KnowledgeView: View {
             case .success(let url):
                 let useShortcuts = importingShortcuts
                 Task { @MainActor in
-                    guard url.startAccessingSecurityScopedResource() else { return }
+                    guard url.startAccessingSecurityScopedResource() else {
+                        dictionary.toast.show("Could not access this file.", style: .error)
+                        return
+                    }
                     defer { url.stopAccessingSecurityScopedResource() }
-                    guard let data = try? Data(contentsOf: url) else { return }
+                    guard let data = try? Data(contentsOf: url) else {
+                        dictionary.toast.show("Could not read this file.", style: .error)
+                        return
+                    }
                     if useShortcuts { _ = await shortcuts.importData(data) }
                     else { _ = await dictionary.importData(data) }
                 }
@@ -152,6 +173,12 @@ struct KnowledgeView: View {
                                       style: .error)
             }
         }
+    }
+
+    private func reloadKnowledge() async {
+        await dictionary.load()
+        await shortcuts.load()
+        await loadLearned()
     }
 
     // MARK: sections
@@ -163,8 +190,8 @@ struct KnowledgeView: View {
             VStack(alignment: .leading, spacing: Space.sm) {
                 SectionHeader("Knowledge base", note: "Stored locally. Applied as you dictate.")
                 HStack(alignment: .top, spacing: Space.lg) {
-                    Metric("Terms", value: "\(terms.count)", glyph: .dictionary)
-                    Metric("Shortcuts", value: "\(phrases.count)", glyph: .shortcuts)
+                    Metric("Terms", value: "\(dictionary.entries.filter { $0.source == .user && $0.kind == .term }.count)", glyph: .dictionary)
+                    Metric("Shortcuts", value: "\(shortcuts.entries.count)", glyph: .shortcuts)
                     Metric("Suggestions", value: "\(pendingCount)", glyph: .intelligence)
                 }
             }

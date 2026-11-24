@@ -173,3 +173,16 @@ extension KeyEventMapperTests {
                                      dictationKey: .fn).map(\.kind), [.rightCmdUp])
     }
 }
+
+
+extension KeyEventMapperTests {
+    func testDuplicateAggregateOnlyRightCommandDoesNotReleaseMeetingKey() {
+        var mapper = ModifierEventMapper()
+        XCTAssertEqual(mapper.events(keyCode: KeyCode.rightCommand, flags: .maskCommand,
+                                     timestampNs: 1, dictationKey: .fn).map(\.kind), [.rightCmdDown])
+        XCTAssertTrue(mapper.events(keyCode: KeyCode.rightCommand, flags: .maskCommand,
+                                    timestampNs: 2, dictationKey: .fn).isEmpty)
+        XCTAssertEqual(mapper.events(keyCode: KeyCode.rightCommand, flags: [],
+                                     timestampNs: 3, dictationKey: .fn).map(\.kind), [.rightCmdUp])
+    }
+}

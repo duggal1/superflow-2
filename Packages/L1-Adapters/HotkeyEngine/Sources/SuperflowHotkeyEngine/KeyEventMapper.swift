@@ -142,6 +142,7 @@ public struct ModifierEventMapper: Sendable {
     private var tracker = ModifierPressTracker()
     private var fnDown = false
     private var commandDown = false
+    private var leftCommandDown = false
 
     public init() {}
 
@@ -155,6 +156,11 @@ public struct ModifierEventMapper: Sendable {
                                 dictationKey: DictationKey,
                                 intelligenceTriggerKey: IntelligenceTriggerKey? = nil) -> [KeyEvent] {
         let tracked = tracker.isDown(keyCode: keyCode)
+        if keyCode == KeyCode.leftCommand {
+            leftCommandDown = flags.contains(.maskCommand) && tracked
+        } else if !flags.contains(.maskCommand) {
+            leftCommandDown = false
+        }
         var result: [KeyEvent] = []
         if let intelligenceTriggerKey,
            keyCode == Int64(intelligenceTriggerKey.keyCode),
@@ -172,7 +178,14 @@ public struct ModifierEventMapper: Sendable {
         let physicalCommands = UInt64(NX_DEVICERCMDKEYMASK | NX_DEVICELCMDKEYMASK)
         let nextCommand: Bool?
         if keyCode == KeyCode.rightCommand {
-            nextCommand = mapped?.kind == .rightCmdDown
+            // With no side flags and no left Command held, the aggregate
+            // bit is authoritative. Repeated flagsChanged events must not
+            // toggle a right-Command press into a spurious release.
+            if flags.rawValue & physicalCommands == 0, !leftCommandDown {
+                nextCommand = flags.contains(.maskCommand)
+            } else {
+                nextCommand = KeyEventMapper.modifierIsDown(keyCode, flags: flags, tracked: tracked)
+            }
         } else if flags.rawValue & physicalCommands != 0 || !flags.contains(.maskCommand) {
             nextCommand = flags.rawValue & UInt64(NX_DEVICERCMDKEYMASK) != 0
         } else {
