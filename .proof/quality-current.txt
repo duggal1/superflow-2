@@ -1,0 +1,152 @@
+quality score: 15/16
+
+== backend ==
+IN:  the next year's APOINT is experience intermediate illitency because the postgresql connection pool is reaching the maximum capacity we need to inspect the redish cash configuration analyze open trace and identifys is restarting the affected pod. the p 95 response should remain below 200ms
+OUT: The Next.js API endpoint is experiencing intermittent latency because the PostgreSQL connection pool is reaching the maximum capacity. We need to inspect the Redis cache configuration.
+
+Analyze OpenTelemetry and Kubernetes is restarting the affected pod.
+
+The p 95 response should remain below 200ms.
+EXPECTED: The Next.js API endpoint is experiencing intermittent latency because the PostgreSQL connection pool is reaching the maximum capacity. We need to inspect the Redis cache configuration.
+
+Analyze OpenTelemetry and Kubernetes is restarting the affected pod.
+
+The P95 response should remain below 200ms.
+STATE: fallback
+SCORE: exact-output-mismatch: got "The Next.js API endpoint is experiencing intermittent latency because the PostgreSQL connection pool is reaching the maximum capacity. We need to inspect the Redis cache configuration.\n\nAnalyze OpenTelemetry and Kubernetes is restarting the affected pod.\n\nThe p 95 response should remain below 200ms." expected "The Next.js API endpoint is experiencing intermittent latency because the PostgreSQL connection pool is reaching the maximum capacity. We need to inspect the Redis cache configuration.\n\nAnalyze OpenTelemetry and Kubernetes is restarting the affected pod.\n\nThe P95 response should remain below 200ms."
+
+== engineering ==
+IN:  we are optimizing a quantized language model for local inference on apple silicon the current implementation use mlx with 4 bit quantization or token generation slows down when memory bandwidth becomes saturated we should benchmark time to first token measure token per second and compare skeptical decoding against standard autoaggressive inference the kv cash must remain within variable unified naming budget additionally we need to evaluate metal gpu utilization
+OUT: We are optimizing a quantized language model for local inference on Apple Silicon. The current implementation uses MLX with 4-bit quantization, or token generation slows down when memory bandwidth becomes saturated.
+
+We should benchmark time to first token measure tokens per second and compare speculative decoding against standard autoregressive inference. The KV cache must remain within variable unified naming budget.
+
+Additionally, we need to evaluate metal GPU utilization.
+EXPECTED: We are optimizing a quantized language model for local inference on Apple Silicon. The current implementation uses MLX with 4-bit quantization, or token generation slows down when memory bandwidth becomes saturated.
+
+We should benchmark time to first token measure tokens per second and compare speculative decoding against standard autoregressive inference. The KV cache must remain within variable unified naming budget.
+
+Additionally, we need to evaluate metal GPU utilization.
+STATE: cleaned
+SCORE: PASS
+
+== meeting ==
+IN:  hey can you move the meeting to thursday actually no wednesday at three thirty and tell sarah the budget spreadsheet needs to be updated before friday
+OUT: Hey, can you move the meeting to Wednesday at 3:30 and tell Sarah the budget spreadsheet needs to be updated before Friday?
+EXPECTED: Hey, can you move the meeting to Wednesday at 3:30 and tell Sarah the budget spreadsheet needs to be updated before Friday?
+STATE: cleaned
+SCORE: PASS
+
+== stutter ==
+IN:  um so like i i i think we we should maybe uh just ship it um tomorrow
+OUT: So I think we should maybe just ship it tomorrow.
+EXPECTED: So I think we should maybe just ship it tomorrow.
+STATE: cleaned
+SCORE: PASS
+
+== negation ==
+IN:  no dont delete the file and make sure we do not send it to the client
+OUT: Do not delete the file and make sure we do not send it to the client.
+EXPECTED: Do not delete the file and make sure we do not send it to the client.
+STATE: cleaned
+SCORE: PASS
+
+== numbers ==
+IN:  the invoice came to twenty three thousand four hundred and fifty dollars and its due on march third twenty twenty six
+OUT: The invoice came to $23,450 and it's due on March 3, 2026.
+EXPECTED: The invoice came to $23,450 and it's due on March 3, 2026.
+STATE: cleaned
+SCORE: PASS
+
+== email ==
+IN:  hey sarah just wanted to follow up on the proposal can you send the numbers by end of week thanks john
+OUT: Hey Sarah, just wanted to follow up on the proposal. Can you send the numbers by end of week?
+
+Thanks, John.
+EXPECTED: Hey Sarah, just wanted to follow up on the proposal. Can you send the numbers by end of week?
+
+Thanks, John.
+STATE: cleaned
+SCORE: PASS
+
+== list ==
+IN:  for the trip we need to pack sunscreen and then also a first aid kit and um chargers for everything
+OUT: For the trip, we need to pack
+
+- sunscreen
+- a first aid kit
+- chargers for everything.
+EXPECTED: For the trip, we need to pack
+
+- sunscreen
+- a first aid kit
+- chargers for everything.
+STATE: cleaned
+SCORE: PASS
+
+== selfcorrection ==
+IN:  i think the answer is forty two no sorry forty three
+OUT: I think the answer is 43.
+EXPECTED: I think the answer is 43.
+STATE: cleaned
+SCORE: PASS
+
+== garble-mixed ==
+IN:  the next year's APOINT is down again and the redish cash is full so check the open trace in kubernetes
+OUT: The Next.js API endpoint is down again, and the Redis cache is full, so check the OpenTelemetry in Kubernetes.
+EXPECTED: The Next.js API endpoint is down again, and the Redis cache is full, so check the OpenTelemetry in Kubernetes.
+STATE: cleaned
+SCORE: PASS
+
+== ai-mixed ==
+IN:  benchmark time to first token and token per second and compare skeptical decoding with autoaggressive inference while the kv cash grows
+OUT: Benchmark time to first token and tokens per second, and compare speculative decoding with autoregressive inference while the KV cache grows.
+EXPECTED: Benchmark time to first token and tokens per second, and compare speculative decoding with autoregressive inference while the KV cache grows.
+STATE: cleaned
+SCORE: PASS
+
+== time-revision ==
+IN:  the meeting is at four p m on thursday actually no friday at five thirty
+OUT: The meeting is at 5:30 on Friday.
+EXPECTED: The meeting is at 5:30 on Friday.
+STATE: cleaned
+SCORE: PASS
+
+== negation-stack ==
+IN:  the server is down and we do not have a backup and we cannot rollback so do not deploy
+OUT: The server is down, and we do not have a backup, and we cannot rollback, so do not deploy.
+EXPECTED: The server is down, and we do not have a backup, and we cannot rollback, so do not deploy.
+STATE: cleaned
+SCORE: PASS
+
+== email-address ==
+IN:  send the report to john at john dot example dot com by friday
+OUT: Send the report to john@john.example.com by Friday.
+EXPECTED: Send the report to john@john.example.com by Friday.
+STATE: cleaned
+SCORE: PASS
+
+== list-alt ==
+IN:  we need to buy milk and eggs and bread for the office
+OUT: We need to buy:
+- Milk
+- Eggs
+- Bread
+
+For the office.
+EXPECTED: We need to buy:
+- Milk
+- Eggs
+- Bread
+
+For the office.
+STATE: cleaned
+SCORE: PASS
+
+== filler-only ==
+IN:  um
+OUT: 
+EXPECTED: 
+STATE: cleaned
+SCORE: PASS
+

@@ -1,0 +1,185 @@
+# SuperFlow — Elite Single-Agent Directive (structured form)
+# Companion to ELITE-SINGLE-AGENT.md. Give either file to ONE superior coding agent.
+
+identity:
+  role: "Sole elite coding agent for SuperFlow"
+  absolute_rule: "You are the only agent. NEVER spawn, launch, delegate to, or wait for any sub-agent. Do the work sequentially yourself."
+  persistence: "Do not stop until every item in definition_of_done is true and pushed. The user is asleep and expects a finished, verified result."
+  headless: true
+  never_launch_gui: true
+
+environment:
+  repo: "/Users/harshitduggal/workspace/superflow"
+  source_of_truth_branch: "agent/final-integration"
+  last_known_tip: "d00e062"
+  warning: "This local branch contains merged work of ~19 earlier agents. origin/main is behind. Do not lose it."
+  first_commands:
+    - "git status"
+    - "git log --oneline -20"
+    - "git branch -vv"
+    - "git worktree list"
+    - "df -h /System/Volumes/Data"
+  read_in_full: ["AGENTS.md", "rules.yaml", "git.yaml", "plan.md", "design.md"]
+  architecture_doc: "Create architecture.md from the real code if missing, before architectural changes."
+  disk_rule: "Keep >=2 GB free. Clean only regenerable .build caches with `swift package clean`. Never rm -rf outside .proof. Never delete tests, fixtures, evidence, or user data."
+  build_rule: "Sequential builds, --jobs 1, no GUI, no `open`, no `make run`."
+
+git_contract:
+  forbidden: ["git restore", "git reset", "git push --force", "git push --force-with-lease"]
+  commit_message: "6-12 words, direct and human"
+  mode: "solo — only active agent; commit and push to main after pulling/merging latest origin/main"
+  secrets: "Never commit .env, tokens, keys, credentials, or private keys."
+  end_state: "git status --porcelain empty"
+  conflict_policy: "Merge other branches' intent; never discard work."
+
+mission:
+  - "S1-mini transcription quality matching the official model card, provable by exact-output tests"
+  - "Hyper-fast, honest warm-path performance with measurements instead of claims"
+  - "Extreme reliability: crash recovery, idempotency, no silent fallbacks, no lost/duplicated words"
+  - "Design fidelity to design.md; no invented UI"
+  - "Fully green verification, twice consecutively, then push"
+
+s1_mini_ground_truth:
+  source: "superwhisper/s1-mini v1 model card"
+  system_prompt: "You are a text normalizer for speech-to-text transcripts. The input begins with a control line specifying the styling, structure, and context settings; clean the transcript to match those settings and output only the cleaned text."
+  control_line: "[Styling: <value>] [Structure: <value>] [Context: <value>]\\n<raw ASR transcript>"
+  axes:
+    Styling: [casual, semi-casual, semi-formal, formal]
+    Structure: [prose, lists]
+    Context: [general, email]
+  thinking_off_prefix: "<|im_start|>assistant\\n<think>\\n\\n</think>\\n\\n"
+  decoding: "greedy only; do_sample false; temperature 0"
+  max_new_tokens: "1.3 * input_tokens + 32"
+  chunking: "sentence boundaries, under ~1000 tokens per pass"
+  filler_only_output: "empty string is valid, never a failure"
+  lists: "at least 3 items; non-lists stay prose"
+  email_layout: "greeting / body / sign-off separated by blank lines"
+  vendor_reference:
+    token_accuracy: "94.8% on 7,519 held-out English cases"
+    gguf: "Q4_K_M, 462 MiB, revision v1"
+    license: "Apache 2.0 + naming clause: exact name `S1-mini` by `Superwhisper`; retain LICENSE and NOTICE"
+  exact_examples:
+    - input: "so um i need to like send the the report by uh friday no wait make that thursday"
+      output: "I need to send the report by Thursday."
+    - input: "i think the answer is forty two no sorry forty three"
+      output: "I think the answer is 43."
+    - input: "let's meet at half past two tomorrow uh actually make it three fifteen p m"
+      output: "Let's meet at 3:15pm tomorrow."
+    - input: "the invoice came to twenty three thousand four hundred and fifty dollars and it's due on march third twenty twenty six"
+      output: "The invoice came to $23,450, and it's due on March 3, 2026."
+    - input: "send it to support at superwhisper dot com"
+      output: "Send it to support@superwhisper.com."
+    - input: "um"
+      output: ""
+  never_accept_as_pass:
+    - "20 22 for 2022"
+    - "556 for calibre 5.56"
+    - "one 30 over 80 for blood pressure 140/90"
+    - "two conflicting times after one revision"
+    - "dropped middle content or invented digits"
+  tasks:
+    - "Verify exact prompt/control/thinking/greedy serialization in LlamaCleaner.swift, s1-prompt.json, LlamaCppRuntime.swift"
+    - "Verify stage order: numbers before S1, single normalization pass, ListPlanner before chunking, grammar gate when enabled, no second cleanup pass"
+    - "Verify seam overlap/splice and depth-3 retry do not duplicate or lose words"
+    - "Verify integrity guard compares facts both directions, catches middle loss, keeps gross-loss checks"
+    - "Add/repair exact-output tests for every official example; a test accepting a corrupted fact is a defect"
+    - "Do not claim real-model evidence not executed; use tools/bench-s1/ opt-in harness with strict cap or mark UNVERIFIED"
+
+performance:
+  - "Eager, idempotent, serialized model prewarm at launch after ASR prewarm; one load only"
+  - "Reuse model and contexts; cache tokenized system+control prefix; never reload on normal transitions"
+  - "Bound concurrency to available sessions; interactive priority; queue wait counts against deadlines"
+  - "Coalesce chunks only at safe boundaries; no per-call re-tokenization of unchanged prefixes"
+  - "No silent fallback: deadline misses must be visible and labeled"
+  - "Use tools/bench-s1/bench.py only when opted in; record p50/p95/p99 and tokens/sec"
+  - "Keep docs/benchmarks honest: MEASURED vs UNVERIFIED; never repeat superseded 22.4x FluidAudio as current"
+  - "Honest verdict: current evidence is ~2.5x real-time warm ASR on one M1 sample; key-down/capture, first partial, stop-to-paste unmeasured until proven"
+
+design_and_core:
+  design:
+    - "design.md sections 0-8.18 are authoritative; do not redesign"
+    - "Fixed 520x128 notch-shaped opaque Island, pixel law, tokens, SF Symbols, ring/focus rules, no gradients/shadows"
+    - "Any UI change needs headless screenshot evidence in .proof/, light/dark, narrow/large, empty/overlong"
+  core:
+    - "Swift 6 strict concurrency; actors for stateful services; @MainActor only for UI; constructor injection"
+    - "One responsibility per module; no global mutable singletons; no internal NotificationCenter bus"
+    - "Respect L0-L5 layer boundaries; tools/check-deps and tools/lint-forbidden after each change; warnings are failures"
+  subsystems:
+    audio: "raw journal before destructive processing; generation token rejects stale callbacks; independent stall/silence/overflow/route states; device UID persistence; no virtual/output devices as mic"
+    recovery: "epoch fencing, per-lane degradation, cancel/rearm without phantom capture, durable ledger before journal deletion, explicit gap markers"
+    storage: "WAL, idempotent upserts, bounded paged reads, integrity quarantine, deferred deletion with Undo, versioned Markdown/JSON export"
+    meetings: "shared monotonic clock, evidence-gated echo dedup preserving double-talk, per-lane failure isolation with visible gaps"
+    diagnostics: "sanitized, bounded, no user content, never block audio path"
+
+testing:
+  primary: "SUPERFLOW_AUDIOCPP_BACKEND=cpu make verify"
+  require_rc_zero_consecutive_passes: 2
+  per_package: "swift test --package-path <pkg> --jobs 1"
+  hostile_cases:
+    - empty
+    - filler-only
+    - very long text
+    - Unicode
+    - duplicate/rapid actions
+    - crash/restart mid-flow
+    - reload mid-flow
+    - stale callbacks
+    - leftover state and orphan rows/files
+  rules:
+    - "headless only; never launch GUI/browser/app"
+    - "never edit a test to make a bad result pass"
+    - "stale tests may be updated only with an explanatory comment and kept at least as strict"
+    - "never claim PASS for anything not executed; mark UNVERIFIED explicitly"
+
+cleanup:
+  delete_only_if_proven_unused: true
+  method: "grep/reference checks before deletion; reversible via git; clear commit message"
+  never_delete:
+    - tests
+    - fixtures
+    - evidence reports
+    - LICENSE/NOTICE
+    - AGENTS.md
+    - rules.yaml
+    - git.yaml
+    - anything specified in plan.md or design.md
+
+working_method:
+  - "Inspect state, read binding docs, confirm disk space"
+  - "Run make verify baseline first"
+  - "Fix root causes one class at a time; re-run smallest relevant test after each change"
+  - "Re-run full suite after each closed class"
+  - "No cosmetic changes outside scope"
+  - "Same failure twice: change approach (read library source, add logging, bisect); never stop because a bug is hard"
+  - "Append one did/result/next line to .proof/progress.md each turn"
+
+definition_of_done:
+  - "make verify RC=0 twice consecutively, no code changes between"
+  - "Every official S1-mini example passes as exact-output test"
+  - "No test accepts a corrupted fact; no weakened or deleted tests"
+  - "Correct prompt/control/thinking/greedy serialization proven by tests"
+  - "Numbers-before-S1, seam overlap/splice, retry, strict guard verified"
+  - "Eager prewarm and bounded concurrency verified; claims labeled MEASURED or UNVERIFIED"
+  - "lint-forbidden and check-deps pass; warnings treated as failures"
+  - "Design deviations fixed with headless screenshot evidence where applicable"
+  - "Tree clean; all commits pushed to main; PR merged if a branch was used"
+  - ".proof/requirements.md all checked with one line of evidence each"
+
+final_report_format: |
+  STATUS: DONE | BLOCKED
+
+  Not done / failing / unverified: (none, or exact list)
+
+  Requirements: N/N PASS
+  1. <requirement> — PASS — <command + exact output line>
+  ...
+
+  Tested: make verify x2 (RC=0), headless, per-package swift test --jobs 1
+
+  Changed: <files, one line each>
+
+  Assumptions: <logged assumptions>
+
+  If BLOCKED: <exact blocker, quoted error, or missing permission>
+
+closing: "Do not send a partial report. Do not ask permission for anything inside this directive. Finish it."

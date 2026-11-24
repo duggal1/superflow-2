@@ -23,10 +23,6 @@ extension AppCoordinator {
         islandBridge?.setStoresTranscripts(!settings.noTranscriptStorage)
         applyIslandPrefs(settings)
         islandBridge?.start(events: sessionEventRelay.subscribe())
-        // Honest stealth status is an app-launch concern, not a side effect of
-        // starting the bridge's event pump: surfacing it in a one-off bridge
-        // (as tests do) must not inject a notice into an unrelated session.
-        islandBridge?.announceStealthStatus()
         islandBridge?.startMeetingEvents(meetingEventRelay.subscribe(), engine: environment.meetingEngine)
         startEventRelays()
         menuBarController.observe()

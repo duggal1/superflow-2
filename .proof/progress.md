@@ -1,26 +1,28 @@
 # Plan
 
-Goal: make the 60-second at 2x dictation replay finish cleanup before stop returns, at hyper-fast stop-to-insertion latency, with real repeated end-to-end proof.
+Goal: revert the Notch/Island front end and Intelligence page to the last good pre-rewrite state (`c5110df`), keep the backend, fix the dictation output path, raise transcription quality, restore the normal (non-pixelated) icon, then delete + rebuild + install + open the app.
 
-Non-goals: no fake/synthetic timings, no shrinking the audio fixture, no bypassing ASR or S1-mini, no weakening tests, no killing unrelated processes, no subagents.
+Baseline: `c5110df` (2026-11-10) is the last commit before `011e114` / `61ec24a` (2026-11-17) rewrote the Island and Intelligence surfaces. `FeatureIntelligence` did not exist before `c5110df`; `FeatureIsland` had a complete older implementation.
 
-Invariants: Nemotron final text remains authoritative; every source word is either accepted cleaned output or raw fallback; chunk seams preserve order and context; cleanup deadlines and token caps stay enforced; final insertion is once-only.
+Non-goals: no change to ClearlyInput/ClearlyStealth adapters or MeetingIntelligence engine; no redesign of the Knowledge page; no removal of backend quality work (cleanup, audio, storage, recovery).
 
-Failure modes: cleanup still in flight at stop; coordinator deadline abandons work; model queue saturated at stop; tail segment left raw; word loss at seams; disk/memory pressure invalidating measurement.
+Invariants:
+- The transcription pipeline and its quality tests stay green.
+- No secrets, no force-push, no reset/restore of unrelated work.
+- Uncommitted compile fixes from the previous task are preserved.
 
-Plan:
-1. Inspect current stop/cleanup path and replay harness; establish a real baseline on the 60-second WAV at 2x with the shipped code. Verify: repeated `Replay` runs report timing, unfinished count, words.
-2. Write failing regression tests for the measured limiter before changing production code. Verify: focused tests fail on current code.
-3. Implement the smallest real fix so pending cleanup drains before stop returns. Verify: focused tests pass, full suites pass.
-4. Re-run the real 60-second replay repeatedly; confirm zero unfinished, word retention, and lower stop-to-insertion. Verify: replay logs.
-5. Write before/after tables and audit all requirements; commit, pull, push main.
+Steps:
+1. Revert `FeatureIsland` sources+tests to `c5110df`; remove files added after it.
+2. Remove `FeatureIntelligence` package; revert its consumers (AppEnvironment, App Package.swift, IntelligenceTab, SettingsValidation, FeatureSettings tests).
+3. Revert island host wiring: `main.swift`, `AppCoordinator+Input`, `AppCoordinator+IntelligenceIsland` (delete), `IntelligenceIslandSeam` (delete), `IslandBridge`, `IslandPanelController`, `AppCoordinator+Launch`, `AppEnvironment`.
+4. Revert island/intelligence tests added by the rewrite; restore `WarmupGestureTests`.
+5. Restore `brand-mark.svg`, AppIcon PNGs, remove pixelated favicons.
+6. Build; fix every compile error at the root cause.
+7. Run package + app tests, quality tests, headless Island snapshot driver.
+8. Investigate the "history has data but no output" backend failure; fix the paste/output path.
+9. Raise transcription quality where the quality harness shows failures.
+10. Delete stale app bundle, rebuild release, sign, install to /Applications, open.
+11. Completion audit (two passes) + independent review.
 
 Progress:
-- New task started; prior proof archived to `.proof/archive/20261121T094344Z`.
-- Archived 60-second result was 3,598 ms and 19,177 ms with unfinished cleanup; not yet re-measured on shipped code.
-- Disk is at 1.7 GiB free; will keep a safety floor before disk-heavy builds.
-- Re-measured shipped code: 60 s @2x was 1,311–1,653 ms with zero unfinished, so the archived 19 s figure was from an abandoned path.
-- Rejected two real alternatives with measurements: trailing-sentence pre-clean (5–23 s, churned 1 S1 context) and two contexts (no latency benefit). Logs kept in `.proof/stream/`.
-- Added `waitForReady` to the coordinator and a 200 ms insertion budget in `stop()`; cleanup now drains with an 8 s deadline after insertion. Added `InsertionBudgetTests`; it failed before the change and passes after.
-- Final real replay: 6/6 runs finished, 174/174 words, stop-to-insertion median 547 ms (327–1,027), zero deadlines. Two full SessionEngine passes: 54 tests, 0 failures.
-- Results and before/after tables in `.proof/results.md`.
+- Task started; previous proof archived to `.proof/archive/20261124T175500Z/`.

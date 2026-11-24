@@ -71,6 +71,11 @@ extension CleanupService {
                                       tokensOut: result.tokensOut, hitTokenCap: result.hitTokenCap,
                                       latencyMs: result.latencyMs, prefillMs: result.prefillMs, generationMs: result.generationMs)
             if let failure = CleanGuard.verify(input: modelInput, protected: protected, result: checked, cap: cap) {
+                #if DEBUG
+                if ProcessInfo.processInfo.environment["SUPERFLOW_CLEANUP_DEBUG"] == "1" {
+                    FileHandle.standardError.write(Data("CLEANUP_GUARD reason=\(failure)\nIN=\(modelInput)\nOUT=\(checked.text)\n".utf8))
+                }
+                #endif
                 return Attempt(text: repairedText, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
                                latencyMs: Self.millis(from: start), prefillMs: result.prefillMs,
                                generationMs: result.generationMs, failure: String(describing: failure))

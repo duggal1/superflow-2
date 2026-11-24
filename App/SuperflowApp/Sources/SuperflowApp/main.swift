@@ -2,7 +2,6 @@ import AppKit
 import ApplicationServices
 import IOKit.hid
 import SwiftUI
-import ClearlyStealth
 import SuperflowAppCore
 import SuperflowDesignSystem
 import SuperflowIcons
@@ -15,7 +14,6 @@ import SuperflowUIComponents
 final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
     var menuController: MenuBarController?
     private var terminating = false
-    private let windowGuard = AppWindowGuard()
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if menuController?.isQuitting == true { return .terminateNow }
@@ -42,17 +40,6 @@ final class SuperflowAppDelegate: NSObject, NSApplicationDelegate {
         // One owner of "keyboard or pointer": the focus ring is drawn for keyboard
         // navigation only, so the monitor has to exist before the first window does.
         InputModality.shared.start()
-        // The Island must never leak into a screen share: enforce .none on every
-        // window this process owns, including ones AppKit/SwiftUI create later.
-        windowGuard.install()
-        // Honest stealth status. Only a persisted, build-matched verifier record
-        // can produce "Verified" copy; with no record the app says "Hiding not
-        // verified" and a Failed record warns loudly. Never claim more than was
-        // actually tested, and never say "undetectable" or "invisible to everything".
-        let stealthStatus = StealthSystem.presentation()
-        if stealthStatus.badge != nil {
-            NSLog("Clearly stealth: %@ — %@", stealthStatus.title, stealthStatus.detail)
-        }
         // The one system-level smoothing knob CoreText still reads before the
         // process starts drawing. The per-window context work lives in FontSmoothing.
         UserDefaults.standard.register(defaults: ["AppleFontSmoothing": 3])

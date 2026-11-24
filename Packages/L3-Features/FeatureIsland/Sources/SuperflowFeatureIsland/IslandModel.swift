@@ -48,10 +48,6 @@ public final class IslandModel {
     /// Increments on a small success moment (latched, landed) so the stage can
     /// give the silhouette a tiny impulse.
     public internal(set) var bump = 0
-    /// Hosted Intelligence content for the compose / answer / settings / history /
-    /// suggestions states. The app seam sets this closure so FeatureIsland never
-    /// imports another L3 feature module; it only renders the view it is given.
-    @ObservationIgnored public var intelligenceContent: ((IslandFlowState) -> AnyView?)?
     /// Opens the History window from the Island's history card. Set by the app.
     @ObservationIgnored public var showHistory: () -> Void = {}
     /// Re-inserts a transcript that never landed. Set by the app.

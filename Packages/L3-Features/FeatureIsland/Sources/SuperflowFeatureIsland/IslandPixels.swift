@@ -12,14 +12,14 @@ struct PixelBitmap: View {
     let rows: [String]
     var cell: CGFloat = 2
     var gap: CGFloat = 1
-    var tone: Color = IslandRamp.step(4)
+    var tone: Color = Ramp.blue[4]
     /// Seconds. Zero draws the finished mark immediately.
     var develop: TimeInterval = 0
 
     @State private var born = Date()
     @State private var finished = false
     @Environment(\.displayScale) private var scale
-    @Environment(\.islandReduceMotion) private var reduce
+    @Environment(\.accessibilityReduceMotion) private var reduce
 
     static let check = [
         "......#",
@@ -133,7 +133,7 @@ struct PixelCountdown: View {
                     let x = CGFloat(index) * 4
                     if index < lit {
                         context.fill(Path(grid.rect(CGRect(x: x, y: 0, width: 3, height: 3))),
-                                     with: .color(index == lit - 1 ? IslandRamp.step(4) : IslandRamp.step(3)),
+                                     with: .color(index == lit - 1 ? Ramp.blue[4] : Ramp.blue[3]),
                                      style: FillStyle(antialiased: false))
                     } else {
                         context.fill(Path(grid.rect(CGRect(x: x + 1, y: 1, width: 1, height: 1))),
@@ -153,7 +153,7 @@ struct PixelCountdown: View {
 /// is the announcement.
 struct PixelBurst: View {
     @State private var born = Date()
-    @Environment(\.islandReduceMotion) private var reduce
+    @Environment(\.accessibilityReduceMotion) private var reduce
     private let burstCells = 14
 
     @Environment(\.displayScale) private var scale
@@ -179,7 +179,7 @@ struct PixelBurst: View {
                                               y: CGFloat(row) * 4,
                                               width: 3, height: 3)
                             let tone = abs(distance - step * 8) < 0.6
-                                ? IslandRamp.step(4) : IslandRamp.step(3)
+                                ? Ramp.blue[4] : Ramp.blue[3]
                             context.fill(Path(grid.rect(rect)), with: .color(tone),
                                          style: FillStyle(antialiased: false))
                         }
@@ -206,7 +206,7 @@ struct PixelBurst: View {
 /// holds all three lit, because a frozen three-cell mark still reads as "busy"
 /// while a single frozen cell reads as "done".
 struct IslandWait: View {
-    @Environment(\.islandReduceMotion) private var reduce
+    @Environment(\.accessibilityReduceMotion) private var reduce
 
     @Environment(\.displayScale) private var scale
 
@@ -219,8 +219,8 @@ struct IslandWait: View {
                 : Int(timeline.date.timeIntervalSinceReferenceDate / 0.16) % 3
             Canvas { context, _ in
                 for index in 0..<3 {
-                    let tone = index == active ? IslandRamp.step(4)
-                        : reduce ? IslandRamp.step(3) : IslandRamp.step(2)
+                    let tone = index == active ? Ramp.blue[4]
+                        : reduce ? Ramp.blue[3] : Ramp.blue[2]
                     context.fill(Path(grid.rect(CGRect(x: CGFloat(index) * 6, y: 0, width: 2, height: 2))),
                                  with: .color(tone), style: FillStyle(antialiased: false))
                 }

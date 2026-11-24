@@ -108,7 +108,7 @@ final class AppCompositionTests: XCTestCase {
 
         XCTAssertEqual(pipeline.stageIDs,
                        ["selfCorrection", "preCleanupRepair", "aiEraPreCleanup", "preCleanupModelNames", "techDictionaryPreCleanup",
-                        "disfluency", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "spokenCode", "codingLanguage", "numbers", "lexicon", "codeAware", "lineformat",
+                        "disfluency", "numbers", "postCleanupRepair", "aiEraPostCleanup", "dedupe", "format", "spokenCode", "codingLanguage", "lexicon", "codeAware", "lineformat",
                         "normalize", "modelNames", "techDictionary"])
     }
 

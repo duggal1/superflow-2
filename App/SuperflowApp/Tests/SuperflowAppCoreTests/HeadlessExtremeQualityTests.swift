@@ -93,7 +93,7 @@ final class HeadlessExtremeQualityTests: XCTestCase {
             for token in item.required where !text.localizedCaseInsensitiveContains(token) { misses.append("missing:\(token)") }
             for token in item.forbidden where text.localizedCaseInsensitiveContains(token) { misses.append("bad:\(token)") }
             if misses.isEmpty { passed += 1 }
-            report += "== \(item.name) ==\nIN:  \(item.raw)\nOUT: \(text)\nSTATE: \(result.draft.cleanupState)\nSCORE: \(misses.isEmpty ? "PASS" : misses.joined(separator: ", "))\n\n"
+            report += "== \(item.name) ==\nIN:  \(item.raw)\nOUT: \(text)\nSTATE: \(result.draft.cleanupState)\nDIAG: \(result.draft.diagnostics.map { "\($0.stage): \($0.message)" }.joined(separator: " | "))\nSCORE: \(misses.isEmpty ? "PASS" : misses.joined(separator: ", "))\n\n"
         }
         report = "extreme full-pipeline quality score: \(passed)/\(cases.count)\n\n" + report
         try report.write(to: URL(fileURLWithPath: output), atomically: true, encoding: .utf8)

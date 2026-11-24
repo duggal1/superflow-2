@@ -87,7 +87,7 @@ public actor RetentionSweeper {
                 // The clip is already gone: do not keep advertising audio that
                 // cannot be played. Null the metadata and drop the row now —
                 // there is no file to give Undo a grace period over.
-                await store.clearAudio(session: session.id)
+                try await store.clearAudio(session: session.id)
                 try await store.deleteSession(session.id)
                 report.missingClipMetadataNulled += 1
             }
@@ -120,7 +120,7 @@ public actor RetentionSweeper {
             let clip = configuration.audioDirectory
                 .appendingPathComponent("\(id.value).m4a")
             if !FileManager.default.fileExists(atPath: clip.path) {
-                await store.clearAudio(session: id)
+                try await store.clearAudio(session: id)
                 repaired += 1
             }
         }
@@ -226,7 +226,7 @@ public actor RetentionSweeper {
             // Only drop the row once the file is safely in the Trash; on
             // failure leave everything for a later pass (no silent loss).
             if trash(clip) {
-                await store.clearAudio(session: id)
+                try? await store.clearAudio(session: id)
                 try? await store.deleteSession(id)
             }
         case .orphan(let name):

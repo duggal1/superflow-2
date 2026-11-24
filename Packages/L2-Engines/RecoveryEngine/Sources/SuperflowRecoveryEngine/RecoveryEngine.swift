@@ -49,7 +49,7 @@ public actor RecoveryEngine {
         self.sessionGate = RecoverySessionGate(fence: epochFence)
     }
 
-    private func recover(_ session: SessionRecord, epoch: RecoveryEpoch, report: inout RecoveryReport) async {
+    func recover(_ session: SessionRecord, epoch: RecoveryEpoch, report: inout RecoveryReport) async {
         let sid = session.id
         let cancelledNotice = "Recovery of \(sid.short) was cancelled; late callbacks were ignored and the journal was kept."
         let lock = RecoveryLock(root: lockRoot, session: sid, staleAfter: lockStaleAfter)

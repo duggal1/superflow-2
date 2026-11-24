@@ -1,6 +1,5 @@
 import Foundation
 import OSLog
-import SuperflowClearlyInput
 import SuperflowGestureKit
 import SuperflowHotkeyEngine
 import SuperflowKernel
@@ -12,13 +11,6 @@ import SuperflowPorts
 @MainActor
 extension AppCoordinator {
     func tryStartHotkeys() async {
-        // The picker is gone: clear its stored choice on every launch and on
-        // every settings/permission restart before any other work can bail out.
-        IntelligenceTriggerMigration.clear()
-        if let observer = intelligenceTriggerObserver {
-            NotificationCenter.default.removeObserver(observer)
-            intelligenceTriggerObserver = nil
-        }
         guard let environment, hotkeyTask == nil, !isStartingHotkeys else { return }
         isStartingHotkeys = true
         defer { isStartingHotkeys = false }
@@ -37,9 +29,11 @@ extension AppCoordinator {
             menuBarController.publishError("Dictation is off. Input Monitoring is not granted.")
             return
         }
-        // The dictation key is a separate setting from the intelligence trigger
-        // and is still applied before `start()` builds the legacy taps.
+        // The chosen key is applied before `start()` builds the taps, so the very
+        // first press is already the right one.
         await environment.hotkeySource.setDictationKey(settings.dictationKey)
+        await environment.hotkeySource.setIntelligenceTriggerKey(selectedIntelligenceTriggerKey())
+        observeIntelligenceTriggerSetting()
         // Fn suppression is what keeps macOS from running its Globe action (Show Emoji & Symbols)
         // over dictation. Swallowing an event needs an active tap, so apply it before `start()`
         // creates the taps, otherwise the first tap is built listen-only.
@@ -69,81 +63,8 @@ extension AppCoordinator {
                 }
             }
             startDictationConflictMonitor()
-            startClearlyInput()
         } catch {
             menuBarController.publishError("Keyboard shortcuts are unavailable. Check Input Monitoring in System Settings.")
-        }
-    }
-
-    /// Wires the two fixed bindings into the existing session engine, the
-    /// MeetingIntelligence bridge and the Island without changing either
-    /// backend. Actions are closures so the input package stays L0-only.
-    private func startClearlyInput() {
-        let actions = IntelligenceSessionActions(
-            pttBegan: { [weak self] in
-                await MainActor.run { self?.islandBridge?.holdBegan() }
-            },
-            pttWaveform: { [weak self] in
-                // Shown only after a short clean hold, so Option+key chords
-                // never flicker the Island open.
-                await MainActor.run { self?.islandBridge?.holdBegan() }
-            },
-            pttCancelled: { [weak self] in
-                await MainActor.run { self?.islandBridge?.cancelled() }
-            },
-            pttLatched: { [weak self] in
-                await MainActor.run { self?.islandBridge?.holdBegan() }
-            },
-            pttSend: { [weak self] in
-                guard let self else { return }
-                await MainActor.run {
-                    guard let environment = self.environment else { return }
-                    // Finalize listening, then let the existing bridge transcribe,
-                    // stream through Reflection and save to History.
-                    self.islandBridge?.holdEnded()
-                    // Right Option PTT sends the finalized transcript into the
-                    // rebuilt Intelligence surface. Clicking the Island still
-                    // opens typed compose; no second trigger key exists.
-                    if let transcript = self.islandBridge?.latestTranscriptText(),
-                       !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        self.openIntelligenceCompose()
-                        Task { @MainActor [weak self] in
-                            await self?.submitIntelligence(transcript)
-                        }
-                    } else {
-                        self.islandBridge?.openAssistant(environment: environment)
-                    }
-                }
-            },
-            meetingToggle: { [weak self] start in
-                guard let self else { return }
-                await MainActor.run { () -> Void in
-                    Task { @MainActor [weak self] in
-                        guard let self else { return }
-                        if start {
-                            await self.menuBarController.startMeeting()
-                            if self.menuBarController.meetingState.isActive {
-                                self.islandBridge?.meetingBegan()
-                            }
-                        } else {
-                            self.gesture = GestureRecognizer(config: self.settings.gesture)
-                            await self.applyGestureActions([.submit(.meeting)])
-                        }
-                    }
-                }
-            },
-            secureInputChanged: { [weak self] paused in
-                await MainActor.run {
-                    self?.menuBarController.publishError(
-                        paused ? "Hotkeys paused: secure input is active." : "")
-                }
-            }
-        )
-        do {
-            try ClearlyInputController.shared.start(actions: actions)
-        } catch {
-            menuBarController.publishError(
-                "Hotkeys need a restart to finish enabling Input Monitoring.")
         }
     }
 
@@ -170,7 +91,6 @@ extension AppCoordinator {
                         await self.tryStartHotkeys()
                     } else if let environment = self.environment, self.hotkeyTask != nil {
                         await environment.hotkeySource.stop()
-                        ClearlyInputController.shared.stop()
                         self.hotkeyTask?.cancel()
                         self.hotkeyTask = nil
                         self.gestureTimerTask?.cancel()
@@ -233,11 +153,16 @@ extension AppCoordinator {
 
     func handleKeyEvent(_ event: KeyEvent) async {
         if event.kind == .intelligenceDown {
-            // Superseded by ClearlyInput's listen-only tap: Right Option is the
-            // only intelligence trigger and drives the full press/hold/latch/
-            // release gesture there. The legacy mapper still emits this on a
-            // plain right-Option down, so it is deliberately a no-op to avoid
-            // opening the assistant twice.
+            Logger(subsystem: "com.superflow.app", category: "KeyboardGesture")
+                .notice("edge=intelligenceDown routing to Island assistant")
+            // The Intelligence hotkey answers in the Island, not on a settings
+            // page. With no environment (startup not finished) fall back to the
+            // page so the press still does something visible.
+            if let environment, let islandBridge {
+                islandBridge.openAssistant(environment: environment)
+            } else {
+                mainWindowController.show(.intelligence)
+            }
             return
         }
         if event.kind == .escape {
@@ -267,6 +192,24 @@ extension AppCoordinator {
             Task { await engine.stopCaptureWhileStarting() }
         }
         enqueueGestureActions(actions)
+    }
+
+    private func selectedIntelligenceTriggerKey() -> IntelligenceTriggerKey {
+        let rawValue = UserDefaults.standard.object(forKey: "intelligence.trigger") as? Int
+            ?? IntelligenceTriggerKey.rightOption.rawValue
+        return IntelligenceTriggerKey(rawValue: rawValue) ?? .rightOption
+    }
+
+    private func observeIntelligenceTriggerSetting() {
+        guard intelligenceTriggerObserver == nil else { return }
+        intelligenceTriggerObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, let source = self.environment?.hotkeySource else { return }
+                await source.setIntelligenceTriggerKey(self.selectedIntelligenceTriggerKey())
+            }
+        }
     }
 
     private func enqueueGestureActions(_ actions: [GestureAction]) {

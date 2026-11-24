@@ -71,7 +71,7 @@ private actor CatalogASRProvider: ASRModelRemoving {
 
 @MainActor
 final class ModelsViewTests: XCTestCase {
-    func testTwoStreamingRowsAreIndependent() async throws {
+    func testFourStreamingRowsAreIndependent() async throws {
         let provider = CatalogASRProvider(installedIDs: [
             ModelProfile.default.id, ModelProfile.qwen3ASR06B.id,
         ])
@@ -79,14 +79,17 @@ final class ModelsViewTests: XCTestCase {
                                  asrModelsByRuntime: [.audioCpp: provider])
         await vm.refresh()
         let speech = vm.items.filter { $0.kind == .speech }
-        XCTAssertEqual(speech.count, 2)
+        XCTAssertEqual(speech.count, 4)
         XCTAssertEqual(speech.filter(\.isActive).map(\.id), [ModelProfile.default.id])
         XCTAssertEqual(speech.filter { $0.state == .installed }.count, 2)
+        XCTAssertEqual(speech.first { $0.id == ModelProfile.voxtralRealtime.id }?.state, .idle)
         XCTAssertTrue(vm.matches(speech[1], query: "Qwen"))
         XCTAssertFalse(vm.matches(speech[1], query: "Voxtral"))
         XCTAssertTrue(speech.allSatisfy { vm.matches($0, query: "ASR") })
         XCTAssertTrue(speech.allSatisfy { vm.matches($0, query: "streaming") })
         XCTAssertTrue(vm.matches(speech[1], query: "Qwen/Qwen3-ASR"))
+        let voxtral = try XCTUnwrap(speech.last)
+        XCTAssertTrue(vm.matches(voxtral, query: "Mistral"))
         XCTAssertFalse(vm.matches(speech[0], query: "DeepFilterNet"))
     }
 
@@ -115,12 +118,12 @@ final class ModelsViewTests: XCTestCase {
         let didRemoveActive = await vm.remove(ModelProfile.qwen3ASR06B.id)
         XCTAssertFalse(didRemoveActive,
                        "The active profile must not be deletable")
-        let removed = await vm.remove(ModelProfile.default.id)
+        let removed = await vm.remove(ModelProfile.voxtralRealtime.id)
         XCTAssertTrue(removed)
         let removedIDs = await provider.removedProfiles()
-        XCTAssertEqual(removedIDs, [ModelProfile.default.id])
-        XCTAssertEqual(vm.items.first { $0.id == ModelProfile.default.id }?.state, .idle)
-        XCTAssertEqual(vm.items.first { $0.id == ModelProfile.qwen3ASR06B.id }?.state, .installed)
+        XCTAssertEqual(removedIDs, [ModelProfile.voxtralRealtime.id])
+        XCTAssertEqual(vm.items.first { $0.id == ModelProfile.voxtralRealtime.id }?.state, .idle)
+        XCTAssertEqual(vm.items.first { $0.id == ModelProfile.default.id }?.state, .installed)
     }
 
     func testExplicitOptionalModelDownloadTargetsRequestedProfile() async throws {
@@ -128,14 +131,14 @@ final class ModelsViewTests: XCTestCase {
         let vm = ModelsViewModel(asrModels: provider,
                                  asrModelsByRuntime: [.audioCpp: provider])
         await vm.refresh()
-        vm.download(ModelProfile.qwen3ASR06B.id)
+        vm.download(ModelProfile.voxtralRealtime.id)
         for _ in 0..<100 {
-            if await provider.preparedProfiles().contains(ModelProfile.qwen3ASR06B.id) { break }
+            if await provider.preparedProfiles().contains(ModelProfile.voxtralRealtime.id) { break }
             try await Task.sleep(for: .milliseconds(10))
         }
         let prepared = await provider.preparedProfiles()
-        XCTAssertEqual(prepared, [ModelProfile.qwen3ASR06B.id])
-        vm.cancel(ModelProfile.qwen3ASR06B.id)
+        XCTAssertEqual(prepared, [ModelProfile.voxtralRealtime.id])
+        vm.cancel(ModelProfile.voxtralRealtime.id)
     }
 
     func testInstalledSpeakerModelDoesNotNeedToBeLoadedToAppearInstalled() async throws {
@@ -166,7 +169,7 @@ final class ModelsViewTests: XCTestCase {
         XCTAssertEqual(cleanup.state, .installed)
         XCTAssertTrue(cleanup.isActive, "Cleanup runs on every dictation unless the owner turns it off.")
         XCTAssertEqual(vm.installedCount, 3)
-        XCTAssertEqual(vm.missingCount, 2)
+        XCTAssertEqual(vm.missingCount, 4)
     }
 
     /// Turning cleanup off in Settings leaves the model on disk; only its `Active`
@@ -210,7 +213,7 @@ final class ModelsViewTests: XCTestCase {
         let speech = try XCTUnwrap(vm.items.first { $0.kind == .speech })
         XCTAssertEqual(speech.state, .installed)
         XCTAssertTrue(speech.isActive)
-        XCTAssertEqual(vm.missingCount, 2)
+        XCTAssertEqual(vm.missingCount, 4)
         XCTAssertFalse(vm.isChecking)
     }
 

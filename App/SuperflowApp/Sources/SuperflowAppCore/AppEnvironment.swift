@@ -4,7 +4,6 @@ import SuperflowAudioCapture
 import SuperflowAudioJournal
 import SuperflowDiagnostics
 import SuperflowEnhancementDeepFilterNet
-import SuperflowFeatureIntelligence
 import SuperflowHotkeyEngine
 import SuperflowInferenceHelperProtocol
 import SuperflowKernel
@@ -60,10 +59,6 @@ public final class AppEnvironment {
     /// Keychain access for the Reflection key. Loads never prompt on the main
     /// actor; the assistant checks off-main.
     public let assistantCredentials = ReflectionCredentials()
-    /// The rebuilt Intelligence surface behind the Dynamic Island. Wraps the
-    /// existing Reflection / screen / transcript / history stack; owns no
-    /// second store and opens no window.
-    public let intelligenceIsland: IntelligenceIslandSeam
 
     public init(applicationSupportDirectory: URL? = nil,
                 fileManager: FileManager = .default) throws {
@@ -164,14 +159,6 @@ public final class AppEnvironment {
             pipeline: pipeline,
             repository: transcripts,
             journals: journalStore
-        )
-        intelligenceIsland = IntelligenceIslandSeam(
-            credentials: assistantCredentials,
-            transcript: assistantBuffer,
-            repository: transcripts,
-            clipboard: { text in
-                Task { _ = try? await textInserter.insert(text, strategy: .clipboardOnly) }
-            }
         )
     }
 

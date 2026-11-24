@@ -11,6 +11,7 @@ enum TranscriptionRepair: Sendable {
         guard !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return input }
         var text = input
         text = repairSpokenEmail(text)
+        text = repairMetricPercentiles(text, protected: protected)
         text = repairMissingSpaceAfterPunctuation(text)
         text = repairDoubledCapital(text, protected: protected)
         text = removeRepeatedSentences(text)
@@ -33,6 +34,41 @@ enum TranscriptionRepair: Sendable {
             func group(_ index: Int) -> String { ns.substring(with: match.range(at: index)) }
             output += ns.substring(with: NSRange(location: cursor, length: match.range.location - cursor))
             output += "\(group(1))@\(group(2)).\(group(3)).\(group(4))"
+            cursor = NSMaxRange(match.range)
+        }
+        output += ns.substring(from: cursor)
+        return output
+    }
+
+    /// "p 95" / "p95" → "P95", "p 99" → "P99". Percentile metric names are
+    /// conventionally uppercase, and ASR frequently splits the letter from the
+    /// digits. Only the canonical percentile values are rewritten, and never
+    /// inside a protected literal.
+    private static func repairMetricPercentiles(_ input: String, protected: Protected) -> String {
+        var lines: [String] = []
+        for line in input.components(separatedBy: "\n") {
+            lines.append(repairLineMetricPercentiles(line, protected: protected))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func repairLineMetricPercentiles(_ line: String, protected: Protected) -> String {
+        let ns = line as NSString
+        // Only explicit literals are sacred here: the detected-literal patterns
+        // would mark the digits themselves as protected and block the join.
+        let protectedRanges: [NSRange] = protected.ranges(in: line, detect: false)
+            .map { NSRange($0, in: line) }
+        guard let regex = try? NSRegularExpression(
+            pattern: #"(?i)(?<![\p{L}\p{N}])p\s*(50|90|95|99)(?![\p{L}\p{N}])"#
+        ) else { return line }
+        let matches = regex.matches(in: line, range: NSRange(location: 0, length: ns.length))
+        guard !matches.isEmpty else { return line }
+        var output = ""
+        var cursor = 0
+        for match in matches {
+            if protectedRanges.contains(where: { NSIntersectionRange($0, match.range).length > 0 }) { continue }
+            output += ns.substring(with: NSRange(location: cursor, length: match.range.location - cursor))
+            output += "P" + ns.substring(with: match.range(at: 1))
             cursor = NSMaxRange(match.range)
         }
         output += ns.substring(from: cursor)

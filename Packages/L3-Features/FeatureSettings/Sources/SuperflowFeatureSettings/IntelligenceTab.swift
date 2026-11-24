@@ -6,11 +6,12 @@ import SuperflowUIComponents
 import SwiftUI
 
 struct IntelligenceTab: View {
-    nonisolated static let titles = ["Reflection API key", "Connection", "Default effort", "Mode", "Screen awareness", "Custom instructions"]
+    nonisolated static let titles = ["Reflection API key", "Connection", "Default effort", "Mode", "Trigger key", "Screen awareness", "Custom instructions"]
     let query: String
     @AppStorage("intelligence.effort") private var effort = ReasoningEffort.low.rawValue
     @AppStorage("intelligence.mode") private var mode = MeetingMode.normal.rawValue
-    @AppStorage("intelligence.screenAware") private var screenAware = true
+    @AppStorage("intelligence.trigger") private var trigger = IntelligenceTriggerKey.rightOption.rawValue
+    @AppStorage("intelligence.screenAware") private var screenAware = false
     @AppStorage("intelligence.customInstructions") private var custom = ""
     @State private var key = ""
     @State private var hasKey = false
@@ -38,24 +39,26 @@ struct IntelligenceTab: View {
             if !status.isEmpty {
                 Text(status).appType(.body).foregroundStyle(Tok.text2).accessibilityLabel(status)
             }
-            SettingsCard(titles: Array(Self.titles[2...4]), query: query) {
+            SettingsCard(titles: Array(Self.titles[2...5]), query: query) {
                 SettingRow(.settingCompute, "Default effort", filter: query) {
                     Segmented(selection: $effort, items: ReasoningEffort.allCases.map { .init($0.rawValue.capitalized, value: $0.rawValue) })
                 }
                 SettingRow(.settingMeeting, "Mode", filter: query) {
                     Dropdown(selection: $mode, options: [
-                        .init(value: "normal", title: "General meeting"),
-                        .init(value: "codingInterview", title: "Coding interview"),
-                        .init(value: "sales", title: "Sales call"),
-                        .init(value: "journal", title: "Journal / personal"),
-                        .init(value: "custom", title: "Personal / custom")
+                        .init(value: "normal", title: "Meeting"), .init(value: "codingInterview", title: "Coding interview"),
+                        .init(value: "sales", title: "Sales"), .init(value: "custom", title: "Custom")
                     ], label: "Mode")
+                }
+                SettingRow(.keyboard, "Trigger key", filter: query) {
+                    Segmented(selection: $trigger, items: IntelligenceTriggerKey.allCases.map {
+                        .init($0.title, value: $0.rawValue)
+                    })
                 }
                 SettingRow(.eyeSlash, "Screen awareness", filter: query) {
                     AppToggle("Screen awareness", isOn: $screenAware)
                 }
             }
-            SettingsCard(titles: [Self.titles[5]], query: query) {
+            SettingsCard(titles: [Self.titles[6]], query: query) {
                 VStack(alignment: .leading, spacing: Space.sm) {
                     Text("Custom instructions").appType(.label).foregroundStyle(Tok.text)
                     AppTextEditor("Custom instructions", text: $custom)
