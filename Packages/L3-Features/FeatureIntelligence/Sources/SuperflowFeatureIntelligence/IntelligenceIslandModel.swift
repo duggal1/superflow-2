@@ -275,9 +275,13 @@ public final class IntelligenceIslandModel {
     }
 
     public func copyHistoryItem(_ id: SessionID) async {
-        let item = selectedHistory?.id == id ? selectedHistory : history.first { $0.id == id }
-        guard let text = item?.fullText, !text.isEmpty else { return }
-        copy(text)
+        do {
+            let item = try await historyStore.detail(id: id)
+            guard let text = item?.fullText, !text.isEmpty else { return }
+            copy(text)
+        } catch {
+            lastError = "Could not copy this session. \(error.localizedDescription)"
+        }
     }
 
     public func deleteHistoryItem(_ id: SessionID) async throws {
@@ -288,7 +292,7 @@ public final class IntelligenceIslandModel {
         await loadHistory(query: "")
     }
 
-    public func closeHistory() { slot = priorSlot }
+    public func closeHistory() { selectedHistory = nil; slot = priorSlot }
 
     // MARK: post-meeting suggestions
 

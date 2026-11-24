@@ -3,129 +3,254 @@ import SuperflowIcons
 import SuperflowUIComponents
 import SwiftUI
 
-/// The one SwiftUI surface hosted in the Island's compose / answer / settings /
-/// history / suggestions states. It renders only what the injected model
-/// exposes; it owns no network, database or keychain access. Its visual
-/// language is the Island's: cell glyphs, dotted rules and live bands.
+/// Shared, model-backed workspace. The compact variant is mounted directly
+/// inside the black Island; the window variant owns no second answer service.
 public struct IntelligenceContent: View {
     @Bindable public var model: IntelligenceIslandModel
+    private let compact: Bool
+    private let recording: Bool
+    private let onRecord: (() -> Void)?
+    private let onDismiss: (() -> Void)?
+    private let onConfiguration: (() -> Void)?
+    @State private var panel: Panel = .ask
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(model: IntelligenceIslandModel) { _model = Bindable(model) }
+    private enum Panel { case ask, history, settings }
+
+    public init(model: IntelligenceIslandModel, compact: Bool = true,
+                recording: Bool = false, onRecord: (() -> Void)? = nil,
+                onDismiss: (() -> Void)? = nil, onConfiguration: (() -> Void)? = nil) {
+        _model = Bindable(model)
+        self.compact = compact
+        self.recording = recording
+        self.onRecord = onRecord
+        self.onDismiss = onDismiss
+        self.onConfiguration = onConfiguration
+    }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            header
-            IntelPixelRule(tone: Ramp.blue[1])
-            switch model.slot {
-            case .compose: compose
-            case .answer: answer
-            case .settings: IntelligenceSettingsPanel(model: model)
-            case .history: IntelligenceHistoryPanel(model: model)
-            case .suggestions: suggestions
+        Group {
+            if compact {
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    header
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: Space.sm) {
+                            switch panel {
+                            case .ask: askSurface
+                            case .history: IntelligenceHistoryPanel(model: model, compact: true)
+                            case .settings:
+                                IntelligenceSettingsPanel(model: model)
+                                if let onConfiguration {
+                                    AppButton("Open app", glyph: .externalLink, kind: .secondary, action: onConfiguration)
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .scrollIndicators(.hidden)
+                }
+                .padding(.horizontal, Space.cardPadding)
+                .padding(.vertical, Space.sm)
+                .background(Tok.island)
+                .environment(\.colorScheme, .dark)
+                .onExitCommand { onDismiss?() }
+            } else {
+                VStack(alignment: .leading, spacing: Space.sectionGap) {
+                    askSurface
+                    IntelligenceHistoryPanel(model: model, compact: false)
+                }
             }
         }
-        .padding(Space.md)
-        .appType(.body)
         .foregroundStyle(Tok.text)
-        .intelPixelFramed()
+        .task { await model.loadHistory(query: model.historyQuery) }
         .accessibilityElement(children: .contain)
     }
 
     private var header: some View {
-        HStack(spacing: Space.sm) {
+        HStack(spacing: Space.xs) {
             PixelMark(rows: IntelPixel.mark, cell: IntelPixel.cell, color: Ramp.blue[4])
-            Text("Intelligence").appType(.label).foregroundStyle(Tok.text)
-            IntelPixelRule(tone: Ramp.blue[2])
-            AppButton(model.settingsExpanded ? "Done" : "Settings", glyph: .settings,
-                      kind: .quiet, height: 24) { model.toggleSettings() }
+            Text("Intelligence").appType(.label)
+            Spacer(minLength: 0)
+            tab(.ask, "Ask", glyph: .intelligence)
+            tab(.history, "History", glyph: .history)
+            tab(.settings, "Settings", glyph: .settings)
+            if let onDismiss {
+                IconButton(.close, label: "Close Intelligence", size: 14, action: onDismiss)
+            }
         }
-        .frame(height: ControlHeight.regular)
+        .frame(height: ControlHeight.large)
     }
 
-    private var compose: some View {
+    private func tab(_ value: Panel, _ label: String, glyph: Icon) -> some View {
+        IconButton(glyph, label: label, size: 14,
+                   tint: panel == value ? Tok.accentText : Tok.text2) {
+            withAnimation(reduceMotion ? nil : Motion.fade) { panel = value }
+        }
+        .accessibilityAddTraits(panel == value ? .isSelected : [])
+    }
+
+    private var askSurface: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            IntelPixelHeading(glyph: IntelPixel.send, title: "Compose", tone: Ramp.blue[4])
-            HStack(spacing: Space.xs) {
-                AppField("Question", prompt: "Enter any data and press Enter",
-                         text: $model.input, onCard: true) {
-                    Task { await model.submit() }
+            VStack(alignment: .leading, spacing: Space.xs) {
+                HStack(spacing: Space.xs) {
+                    PixelMark(rows: IntelPixel.send, cell: IntelPixel.cell, color: Ramp.blue[4])
+                    Text("Ask me about anything.").appType(.title)
+                    Spacer(minLength: 0)
+                    if recording {
+                        Text("Recording").appType(.caption).foregroundStyle(Tok.accentText)
+                    }
                 }
-                PixelMark(rows: IntelPixel.send, cell: IntelPixel.cell,
-                          color: model.input.isEmpty ? Ramp.blue[2] : Ramp.blue[4])
+                HStack(spacing: Space.xs) {
+                    AppField("Question", prompt: "Ask me about anything", text: $model.input, onCard: true) {
+                        submit()
+                    }
+                    AppButton("Ask", glyph: .arrowUp, kind: .primary, height: ControlHeight.regular,
+                              enabled: !model.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
+                        submit()
+                    }
+                }
+                modeRail
+                HStack(spacing: Space.xxs) {
+                    if let onRecord {
+                        AppButton(recording ? "Stop recording" : "Record meeting",
+                                  glyph: recording ? .stop : .mic,
+                                  kind: .secondary, height: ControlHeight.small, action: onRecord)
+                    }
+                    AppButton(model.screenAware ? "Screen on" : "Screen off",
+                              glyph: model.screenAware ? .checkmark : .eyeSlash,
+                              kind: .quiet, height: ControlHeight.small) {
+                        model.setScreenAware(!model.screenAware)
+                    }
+                    Spacer(minLength: 0)
+                    if compact {
+                        Text("Right ⌥ · Left ⌃").appType(.caption).foregroundStyle(Tok.text2)
+                            .lineLimit(1)
+                    }
+                }
+                if !compact {
+                    Text("Right Option to ask by voice · Left Control to start or stop a meeting")
+                        .appType(.caption).foregroundStyle(Tok.text2)
+                }
             }
+            .padding(compact ? Space.xs : Space.cardPadding)
+            .background(Tok.surface, in: .rect(cornerRadius: Radius.nested))
             if let question = model.pendingDetectedQuestion {
-                AppButton("Answer: \(question)", glyph: .arrow, kind: .secondary, height: 28) {
+                AppButton("Answer detected question", glyph: .arrow, kind: .secondary) {
                     Task { await model.askDetectedQuestion() }
                 }
+                Text(question).appType(.caption).foregroundStyle(Tok.text2).lineLimit(2)
             }
-            HStack(spacing: Space.sm) {
-                PixelMark(rows: IntelPixel.mark, cell: 1,
-                          color: model.screenAware ? Ramp.blue[4] : Ramp.blue[2])
-                Text("Screen context is \(model.screenAware ? "on" : "off"). Answers stream here.")
-                    .appType(.caption).foregroundStyle(Tok.text2)
-            }
-            IntelPixelRule(tone: Ramp.blue[1])
-        }
-    }
-
-    private var answer: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            IntelPixelHeading(glyph: IntelPixel.mark, title: "Answer",
-                              tone: model.phase == .thinking ? Ramp.blue[3] : Ramp.blue[4])
-            if model.phase == .thinking {
-                HStack(spacing: Space.sm) {
-                    IntelPixelBand(active: true, cells: 16)
-                    Text("Thinking").appType(.caption).foregroundStyle(Tok.text2)
-                }
-            } else if case .failed(let message) = model.phase {
-                Text(message).appType(.reading).foregroundStyle(Tok.text2)
-                    .textSelection(.enabled)
-            } else {
-                ScrollView {
-                    if model.answer.isEmpty {
-                        Text("No answer yet.")
-                            .appType(.reading)
-                            .foregroundStyle(Tok.text)
-                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                    } else {
-                        MarkdownAnswer(text: model.answer)
-                    }
-                }
-                .frame(maxHeight: 160)
-                .padding(Space.sm)
-                .background(Tok.well, in: .rect(cornerRadius: Radius.nested, style: .continuous))
-            }
-            HStack(spacing: Space.xs) {
-                PixelMark(rows: IntelPixel.check, cell: IntelPixel.cell, color: Ramp.blue[4])
-                AppButton("Copy", glyph: nil, kind: .primary, height: 24) {
-                    Task { await model.copy() }
-                }
-                if model.phase == .done || model.phase == .truncated {
-                    AppButton("Go deeper", glyph: nil, kind: .secondary, height: 24) { model.goDeeper() }
-                }
-                if case .failed = model.phase {
-                    AppButton("Retry", glyph: .refresh, kind: .secondary, height: 24) { model.retry() }
-                }
-                Spacer(minLength: 0)
-                AppButton("Ask another", glyph: nil, kind: .quiet, height: 24) { model.cancel() }
-            }
-            IntelPixelRule(tone: Ramp.blue[1])
-        }
-    }
-
-    private var suggestions: some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
-            IntelPixelHeading(glyph: IntelPixel.send, title: "Suggested next questions",
-                              tone: Ramp.blue[4])
-            ForEach(model.suggestions, id: \.self) { question in
-                HStack(spacing: Space.sm) {
-                    PixelMark(rows: IntelPixel.send, cell: 1, color: Ramp.blue[3])
-                    AppButton(question, glyph: nil, kind: .quiet, height: 28) {
+            if model.phase != .idle { answerSurface }
+            if !model.suggestions.isEmpty {
+                SectionHeader("Follow-up questions")
+                ForEach(model.suggestions, id: \.self) { question in
+                    RowButton(question, height: ControlHeight.large) {
                         Task { await model.askSuggestion(question) }
+                    } content: {
+                        HStack(spacing: Space.xs) {
+                            IconView(.arrow, size: 14, tint: Tok.accentText)
+                            Text(question).appType(.body).lineLimit(1)
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
             }
-            IntelPixelRule(tone: Ramp.blue[1])
+            if compact && model.phase == .idle {
+                HStack {
+                    Text("Recent meetings").appType(.label)
+                    Spacer()
+                    AppButton("View all", glyph: .chevronRight, kind: .quiet, height: ControlHeight.small) {
+                        panel = .history
+                    }
+                }
+                if model.history.isEmpty {
+                    Text(model.isLoadingHistory ? "Loading meetings…" : "No meetings saved yet.")
+                        .appType(.caption).foregroundStyle(Tok.text2)
+                } else {
+                    ForEach(Array(model.history.prefix(2))) { item in
+                        IntelligenceMeetingRow(item: item) {
+                            panel = .history
+                            Task { await model.openHistoryItem(item.id) }
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    private var modeRail: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: Space.xxs) {
+                ForEach(model.themes) { theme in
+                    AppButton(theme.label, glyph: modeIcon(theme.id),
+                              kind: theme.id == model.selectedThemeID ? .secondary : .quiet,
+                              height: ControlHeight.small) {
+                        model.selectTheme(theme)
+                    }
+                    .accessibilityAddTraits(theme.id == model.selectedThemeID ? .isSelected : [])
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
+        .accessibilityLabel("Prompt mode")
+    }
+
+    private func modeIcon(_ id: String) -> Icon {
+        switch id {
+        case "normal": .meetings
+        case "codingInterview": .code
+        case "sales": .chart
+        case "journal": .dictionary
+        default: .settings
+        }
+    }
+
+    private var answerSurface: some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            HStack(spacing: Space.xs) {
+                PixelMark(rows: IntelPixel.mark, cell: IntelPixel.cell, color: Ramp.blue[4])
+                Text(answerTitle).appType(.label)
+                Spacer(minLength: 0)
+                if model.phase == .thinking || model.phase == .streaming {
+                    IntelPixelBand(active: !reduceMotion, cells: 12)
+                    AppButton("Stop", glyph: .stop, kind: .quiet, height: ControlHeight.small) {
+                        model.cancel()
+                    }
+                } else {
+                    AppButton("Copy", glyph: .copy, kind: .secondary, height: ControlHeight.small,
+                              enabled: !model.answer.isEmpty) {
+                        Task { await model.copy() }
+                    }
+                }
+            }
+            if case .failed(let message) = model.phase {
+                Text(message).appType(.body).foregroundStyle(Tok.text2).textSelection(.enabled)
+                AppButton("Retry", glyph: .refresh, kind: .secondary) { model.retry() }
+            } else if !model.answer.isEmpty {
+                MarkdownAnswer(text: model.answer)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text("Preparing your answer…").appType(.body).foregroundStyle(Tok.text2)
+            }
+            if model.phase == .done || model.phase == .truncated {
+                AppButton("Go deeper", kind: .quiet, height: ControlHeight.small) { model.goDeeper() }
+            }
+        }
+        .padding(compact ? Space.xs : Space.cardPadding)
+        .background(Tok.surface, in: .rect(cornerRadius: Radius.nested))
+    }
+
+    private var answerTitle: String {
+        switch model.phase {
+        case .thinking: "Thinking"
+        case .streaming: "Answering"
+        case .truncated: "Answer · incomplete"
+        case .failed: "Could not answer"
+        default: "Answer"
+        }
+    }
+
+    private func submit() {
+        Task { await model.submit() }
     }
 }

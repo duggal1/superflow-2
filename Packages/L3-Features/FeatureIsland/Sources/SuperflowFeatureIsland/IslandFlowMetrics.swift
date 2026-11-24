@@ -50,7 +50,10 @@ public enum IslandFlowMetrics {
         case .meetingLive:
             return wings(232)
 
-        case .compose, .error, .permission:
+        case .compose:
+            return card(min(296, IslandTokens.Size.canvas.height - band))
+
+        case .error, .permission:
             return card(160)
 
         case .thinking:

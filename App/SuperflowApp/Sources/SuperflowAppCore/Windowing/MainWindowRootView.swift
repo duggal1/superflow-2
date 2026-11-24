@@ -175,7 +175,7 @@ public struct MainWindowRootView: View {
         case .models:
             if let model = coordinator.modelsModel { ModelsView(vm: model) }
         case .intelligence:
-            IntelligenceView()
+            IntelligenceWorkspaceRoute(coordinator: coordinator, menu: menuBar)
         case .settings:
             if let model = coordinator.settingsModel { SettingsView(model: model) }
         }

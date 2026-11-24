@@ -1,9 +1,22 @@
 import SuperflowFeatureIsland
+import SuperflowFeatureIntelligence
+import SwiftUI
 import SuperflowGestureKit
 
 extension AppCoordinator {
     func configureIslandActions(_ islandModel: IslandModel, environment: AppEnvironment) {
         islandBridge?.model = islandModel
+        islandModel.openIntelligence = { [weak self] in self?.openIntelligenceCompose() }
+        islandModel.intelligenceContent = { [weak self, weak islandModel] state in
+            guard let self, let islandModel else { return nil }
+            guard case .compose = state else { return nil }
+            return AnyView(SuperflowFeatureIntelligence.IntelligenceContent(
+                model: environment.intelligenceIsland.model,
+                onRecord: { [weak self] in self?.toggleIntelligenceRecording() },
+                onDismiss: { [weak islandModel] in islandModel?.send(.dismissed) },
+                onConfiguration: { [weak self] in self?.mainWindowController.show(.intelligence) }
+            ))
+        }
         islandModel.assistantHelp = { [weak self] in self?.islandBridge?.assistantHelp() }
         islandModel.assistantDeeper = { [weak self] in self?.islandBridge?.assistantDeeper() }
         islandModel.assistantRetry = { [weak self] in self?.islandBridge?.assistantRetry() }
