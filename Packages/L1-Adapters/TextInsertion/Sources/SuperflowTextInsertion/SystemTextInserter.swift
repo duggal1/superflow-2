@@ -7,7 +7,7 @@ import SuperflowPorts
 /// report onto the four existing port outcomes and implements the record-start
 /// preparation hook.
 public final class SystemTextInserter: TextInserter, @unchecked Sendable {
-    private let service: TextInsertionService
+    let service: TextInsertionService
     private let shouldObserve: @Sendable () async -> Bool
     private let onCorrection: @Sendable (ObservedCorrection) async -> Void
 

@@ -2,6 +2,8 @@ import Foundation
 import SuperflowFeatureIsland
 import SuperflowMeetingIntelligence
 import SuperflowKernel
+import SuperflowGestureKit
+import SuperflowSessionEngine
 
 @MainActor
 extension AppCoordinator {
@@ -53,9 +55,10 @@ extension AppCoordinator {
     }
 
     func cancelVoiceCommand() {
-        voiceCommandTask?.cancel()
-        voiceCommandTask = nil
-        Task { @MainActor [weak self] in
+        let previous = voiceCommandTask
+        previous?.cancel()
+        voiceCommandTask = Task { @MainActor [weak self] in
+            await previous?.value
             guard let self else { return }
             await self.menuBarController.cancel(.dictation)
             self.islandBridge?.cancelled()

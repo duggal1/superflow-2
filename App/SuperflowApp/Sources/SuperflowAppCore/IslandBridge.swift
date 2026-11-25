@@ -187,6 +187,10 @@ final class IslandBridge {
                 // (possibly partial) segment seen here.
                 didLand = false
             }
+        case .voiceActionCompleted:
+            didLand = true
+            box.clearLive()
+            box.send(.landed(words: 0))
         case .finished(let id, let status):
             switch status {
             case .complete:

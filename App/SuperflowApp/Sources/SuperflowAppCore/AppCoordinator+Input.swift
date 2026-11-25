@@ -218,6 +218,7 @@ extension AppCoordinator {
             Task { @MainActor [weak self] in
                 guard let self, let source = self.environment?.hotkeySource else { return }
                 await source.setIntelligenceTriggerKey(self.selectedIntelligenceTriggerKey())
+                await source.setVoiceCommandsEnabled(UserDefaults.standard.bool(forKey: "jev.enabled"))
             }
         }
     }
