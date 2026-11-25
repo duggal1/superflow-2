@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import XCTest
 import SuperflowKernel
 import SuperflowPorts
@@ -47,7 +48,7 @@ final class LiveSingleContextLongTranscriptTests: XCTestCase {
             return Int(result.text[range])
         }
 
-        print("LIVE_S1_LONG input_words=\(inputWords) output_words=\(outputWords) elapsed_ms=\(elapsedMs) output_ids=\(outputIDs.count) token_cap=\(result.hitTokenCap)")
+        Logger(subsystem: "com.superflow.tests", category: "S1LongTranscript").notice("LIVE_S1_LONG input_words=\(inputWords) output_words=\(outputWords) elapsed_ms=\(elapsedMs) output_ids=\(outputIDs.count) token_cap=\(result.hitTokenCap)")
         XCTAssertFalse(result.hitTokenCap)
         XCTAssertGreaterThanOrEqual(outputWords, 4_000)
         XCTAssertEqual(outputIDs, Array(0..<450))

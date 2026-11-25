@@ -20,14 +20,25 @@ public enum ParagraphShaper {
     }
 
     private static func shape(_ block: String, _ rules: ParagraphRules) -> String {
-        // Lists, code and any already multi-line block keep their own shape.
-        if block.contains("\n") || block.hasPrefix("```") || startsWithListMarker(block) {
-            return block
-        }
-        let split = SentenceSplitter.split(block)
+        // Preserve structured blocks; join only short, unindented prose fragments.
+        let lines = block.components(separatedBy: "\n")
+        if lines.contains(where: { line in
+            startsWithListMarker(line) || line.hasPrefix("#") || line.hasPrefix(">") ||
+            line.hasPrefix("|") || line.hasPrefix("    ") || line.hasPrefix("\t") ||
+            line.hasPrefix("```") || line.hasPrefix("~~~") || line.hasSuffix(":") ||
+            line.hasPrefix("Dear ") || line.hasPrefix("Hi ") || line.hasPrefix("Hello ") ||
+            line.hasPrefix("Thanks,") || line.hasPrefix("Best,")
+        }) { return block }
+        let prose: String
+        if lines.count > 1 {
+            guard lines.contains(where: { wordCount($0) <= 5 }),
+                  lines.allSatisfy({ !$0.isEmpty }) else { return block }
+            prose = lines.joined(separator: " ")
+        } else { prose = block }
+        let split = SentenceSplitter.split(prose)
         var sentences = split.complete
         if !split.remainder.isEmpty { sentences.append(split.remainder) }
-        guard wordCount(block) > rules.maxWords, sentences.count > 1 else { return block }
+        guard wordCount(prose) > rules.maxWords, sentences.count > 1 else { return prose }
 
         var paragraphs: [[String]] = [[]]
         var words = 0

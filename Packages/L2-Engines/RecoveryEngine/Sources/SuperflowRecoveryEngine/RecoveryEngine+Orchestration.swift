@@ -24,16 +24,19 @@ extension RecoveryEngine {
             let unfinished = try await repository.unfinishedSessions()
             report.scanned = unfinished.count
             for session in unfinished {
+                guard await sessionGate.isActive(epoch) else { break }
                 await recover(session, epoch: epoch, report: &report)
             }
-            await sweepOrphans(known: Set(unfinished.map(\.id)), report: &report)
+            if await sessionGate.isActive(epoch) {
+                await sweepOrphans(known: Set(unfinished.map(\.id)), epoch: epoch, report: &report)
+            }
         } catch {
             report.failed += 1
             report.needsUserAction.append(RecoverySupport.action(
                 SessionID("__recovery__"), "scan-failed", error.localizedDescription))
         }
-        await collectLedgerEvidence(report: &report)
-        await sessionGate.finish()
+        if await sessionGate.isActive(epoch) { await collectLedgerEvidence(report: &report) }
+        await sessionGate.finish(epoch: epoch)
         return report
     }
 
@@ -78,7 +81,7 @@ extension RecoveryEngine {
     /// Journals left by a prior run whose session is already terminal. Only a finalized ledger
     /// record plus a terminal session authorize deletion; everything else is reported, kept, and
     /// left for the user. Retention settings are honored: nothing is swept when journals are kept.
-    private func sweepOrphans(known: Set<SessionID>, report: inout RecoveryReport) async {
+    private func sweepOrphans(known: Set<SessionID>, epoch: RecoveryEpoch, report: inout RecoveryReport) async {
         do {
             try await fire(.sweepOrphans)
         } catch {
@@ -92,6 +95,7 @@ extension RecoveryEngine {
         let candidates = await journals.sessionsWithJournals()
         let records = (try? await ledger.read())?.records ?? []
         for sid in candidates where !known.contains(sid) {
+            guard await sessionGate.isActive(epoch) else { return }
             let row = try? await repository.session(sid)
             let finalized = records.contains { $0.session == sid.value && $0.kind == .finalized }
             // A partial recovery deliberately keeps its journal for inspection. An explicit
@@ -103,6 +107,7 @@ extension RecoveryEngine {
                 continue
             }
             let samples = await journals.sampleCount(session: sid, source: .mic)
+            guard await sessionGate.isActive(epoch) else { return }
             await journals.delete(session: sid)
             await record(RecoveryLedgerRecord(
                 id: RecoverySupport.eventID(.journalDiscarded, session: sid, qualifier: "orphan"),

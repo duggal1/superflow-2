@@ -21,10 +21,10 @@ public actor RecoverySessionGate {
     @discardableResult
     public func begin() async -> RecoveryEpoch? {
         guard phase != .recovering else { return nil }
-        let token = await fence.advance()
+        // Reserve the phase before crossing an actor boundary.
         phase = .recovering
         claimedSegments.removeAll()
-        return token
+        return await fence.advance()
     }
 
     /// Closes the active run. Later callbacks carrying its epoch become stale. Durable state is
@@ -60,6 +60,12 @@ public actor RecoverySessionGate {
     public func claimSegment(_ key: String) -> Bool {
         guard phase == .recovering else { return false }
         return claimedSegments.insert(key).inserted
+    }
+
+    /// A superseded recovery must not finish a newer run.
+    public func finish(epoch: RecoveryEpoch) async {
+        guard await isActive(epoch), phase == .recovering else { return }
+        phase = .idle
     }
 
     /// Marks an active run finished. A cancelled run is never silently promoted to finished.

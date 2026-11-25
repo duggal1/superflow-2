@@ -20,10 +20,10 @@ public struct SpeechActivityDetector: Sendable {
         /// Hold the verdict briefly after the last voiced frame so soft tails
         /// and word-final consonants are not cut ("cling to speech").
         public var hangoverMs: Float = 220
-        /// Absolute floor below which no frame can be speech (-56 dBFS).
-        public var absoluteFloor: Float = 0.0015
+        /// Absolute floor below which no frame can be speech (about -66 dBFS).
+        public var absoluteFloor: Float = 0.0005
         /// Speech must exceed the learned noise floor by this ratio.
-        public var noiseMultiplier: Float = 2.2
+        public var noiseMultiplier: Float = 2.0
         /// Broadband hiss has a high zero-crossing rate; speech at 16 kHz does not.
         public var maxZeroCrossingRate: Float = 0.42
         public var noiseAdaptation: Float = 0.02
@@ -91,11 +91,12 @@ public struct SpeechActivityDetector: Sendable {
             consecutiveVoiced += 1
             hangover = max(1, Int((settings.hangoverMs / settings.frameMs).rounded(.up)))
         } else if hangover > 0 {
+            if !confirmed { consecutiveVoiced = 0 }
             hangover -= 1
         } else {
             consecutiveVoiced = 0
             // Learn the noise floor only while nothing is being said.
-            if energy.isFinite, energy > 0 {
+            if energy.isFinite, energy > 0, score < settings.threshold * 0.5 {
                 noiseRMS += settings.noiseAdaptation * (energy - noiseRMS)
             }
         }

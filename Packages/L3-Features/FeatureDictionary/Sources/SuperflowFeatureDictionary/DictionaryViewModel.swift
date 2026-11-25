@@ -46,10 +46,11 @@ public final class DictionaryViewModel: ObservableObject {
     }
 
     public var visibleEntries: [LexiconEntry] {
-        let matched = Set(search(query).map(\.id))
+        if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return search(query).filter { filter.kind == nil || $0.kind == filter.kind }
+        }
         return entries
             .filter { filter.kind == nil || $0.kind == filter.kind }
-            .filter { matched.contains($0.id) }
             .sorted { lhs, rhs in
                 if lhs.enabled != rhs.enabled { return lhs.enabled }
                 let name = lhs.canonical.localizedCaseInsensitiveCompare(rhs.canonical)
@@ -137,8 +138,8 @@ public final class DictionaryViewModel: ObservableObject {
             return
         }
         do {
-            deleted = entry
             try await repository.deleteLexicon(id: entry.id)
+            deleted = entry
             entries.removeAll { $0.id == entry.id }
             onChange?()
             toast.show("Deleted “\(entry.canonical)”.", actionTitle: "Undo") { [weak self] in

@@ -6,7 +6,7 @@ enum ListFormatter {
     static func isListLine(_ line: String) -> Bool {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         guard let first = trimmed.first else { return false }
-        if "-*•".contains(first) { return true }
+        if "-*•".contains(first) { return trimmed.dropFirst().first?.isWhitespace == true }
         return numberedMarker(trimmed) != nil
     }
 
@@ -17,7 +17,7 @@ enum ListFormatter {
         let body = String(trailingTrimmed.dropFirst(indentation.count))
         guard let first = body.first else { return trailingTrimmed }
 
-        if "-*•".contains(first) {
+        if "-*•".contains(first), body.dropFirst().first?.isWhitespace == true {
             let rest = body.dropFirst().trimmingCharacters(in: .whitespaces)
             return rest.isEmpty ? indentation + String(first) : indentation + String(first) + " " + rest
         }
@@ -34,7 +34,9 @@ enum ListFormatter {
         for character in body {
             if character.isNumber { digits.append(character); continue }
             if !digits.isEmpty, character == "." || character == ")" {
-                return digits + String(character)
+                let marker = digits + String(character)
+                guard body.dropFirst(marker.count).first?.isWhitespace == true else { return nil }
+                return marker
             }
             return nil
         }
