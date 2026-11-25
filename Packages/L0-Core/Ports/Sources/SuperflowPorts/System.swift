@@ -8,6 +8,7 @@ public struct KeyEvent: Sendable, Equatable {
         case rightCmdDown
         case rightCmdUp
         case intelligenceDown
+        case voiceCommandToggle
         case enter
         case escape
         case otherKeyDown(UInt16)
@@ -31,12 +32,14 @@ public protocol HotkeySource: Sendable {
     /// does not need to know that Fn is not always the key.
     func setDictationKey(_ key: DictationKey) async
     func setIntelligenceTriggerKey(_ key: IntelligenceTriggerKey) async
+    func setVoiceCommandsEnabled(_ enabled: Bool) async
 }
 
 public extension HotkeySource {
     /// Sources that only emit Fn (test doubles, older adapters) keep Fn.
     func setDictationKey(_ key: DictationKey) async {}
     func setIntelligenceTriggerKey(_ key: IntelligenceTriggerKey) async {}
+    func setVoiceCommandsEnabled(_ enabled: Bool) async {}
 }
 
 public enum Permission: String, Sendable, CaseIterable, Identifiable {

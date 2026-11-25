@@ -33,6 +33,7 @@ extension AppCoordinator {
         // first press is already the right one.
         await environment.hotkeySource.setDictationKey(settings.dictationKey)
         await environment.hotkeySource.setIntelligenceTriggerKey(selectedIntelligenceTriggerKey())
+        await environment.hotkeySource.setVoiceCommandsEnabled(UserDefaults.standard.bool(forKey: "jev.enabled"))
         observeIntelligenceTriggerSetting()
         // Fn suppression is what keeps macOS from running its Globe action (Show Emoji & Symbols)
         // over dictation. Swallowing an event needs an active tap, so apply it before `start()`
@@ -152,6 +153,15 @@ extension AppCoordinator {
     }
 
     func handleKeyEvent(_ event: KeyEvent) async {
+        if event.kind == .voiceCommandToggle {
+            toggleVoiceCommand()
+            return
+        }
+        if voiceCommandActive {
+            if event.kind == .escape { cancelVoiceCommand() }
+            else if event.kind == .enter { toggleVoiceCommand() }
+            return
+        }
         if event.kind == .intelligenceDown {
             Logger(subsystem: "com.superflow.app", category: "KeyboardGesture")
                 .notice("edge=intelligenceDown routing to Island assistant")

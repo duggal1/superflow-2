@@ -22,6 +22,7 @@ public final class IslandModel {
     /// True while the key hints are up. The shelf is part of the silhouette, so
     /// the shape grows by `IslandLayout.hintShelf`.
     public private(set) var hint = false
+    public var voiceCommandMode = false
     /// Countdowns are deadline-based: the rail drains continuously and the
     /// numeral is derived from the same instant.
     public private(set) var undoDeadline: Date?

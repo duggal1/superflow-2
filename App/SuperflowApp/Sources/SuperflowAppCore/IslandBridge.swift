@@ -190,7 +190,9 @@ final class IslandBridge {
         case .finished(let id, let status):
             switch status {
             case .complete:
-                if !didLand {
+                if model?.voiceCommandMode == true {
+                    box.send(.cancelled)
+                } else if !didLand {
                     // Do not depend on the inserting event surviving buffering:
                     // the saved transcript, if any, should be recoverable.
                     await fail(id: id)

@@ -41,7 +41,7 @@ extension SessionEngine {
         }
     }
 
-    public func start(mode: SessionMode = .dictation) async throws -> SessionID {
+    public func start(mode: SessionMode = .dictation, commandCapture: Bool = false) async throws -> SessionID {
         guard !isStarting else {
             throw SuperflowError.invalidState("session already starting")
         }
@@ -67,6 +67,7 @@ extension SessionEngine {
         try await repository.createSession(newRecord)
         record = newRecord
         resetBuffers()
+        self.commandCapture = commandCapture
         recognitionStream = nil
         writer = nil
         archiveWriter = nil
@@ -140,8 +141,10 @@ extension SessionEngine {
                                                     metrics: metrics, emit: { event in
                 eventContinuation.yield(event)
             })
-            await cleanup.start(workerCount: settings.cleanupWorkers)
-            cleanupCoordinator = cleanup
+            if !commandCapture {
+                await cleanup.start(workerCount: settings.cleanupWorkers)
+                cleanupCoordinator = cleanup
+            }
             try Task.checkCancellation()
             transition(.recording(mode))
 
@@ -244,7 +247,7 @@ extension SessionEngine {
                        valueMs: Double((DispatchTime.now().uptimeNanoseconds - budgetStarted) / 1_000_000))
         await liveCleanup.reset()
         let assembledText = recognitionOverflow ? nil : await finalText(session: record.id)
-        let text = await pipeline.formatForInsertion(assembledText ?? "", context: TextContext(settings: settings, project: project, activeAppBundleID: record.frontmostBundleID))
+        let text = commandCapture ? (assembledText ?? "") : await pipeline.formatForInsertion(assembledText ?? "", context: TextContext(settings: settings, project: project, activeAppBundleID: record.frontmostBundleID))
         let words = wordCount(text)
         let duration = max(lastEndMs, Int(clock.now().timeIntervalSince(record.startedAt) * 1000))
 
@@ -256,7 +259,7 @@ extension SessionEngine {
             await cancel()
             return nil
         }
-        if !text.isEmpty {
+        if !text.isEmpty, !commandCapture {
             transition(.inserting)
             do {
                 insertion = try await withDeadline(insertionDeadline, label: "insertion") { [inserter] in

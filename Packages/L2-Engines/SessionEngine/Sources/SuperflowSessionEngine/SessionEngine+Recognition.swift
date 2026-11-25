@@ -9,6 +9,7 @@ extension SessionEngine {
             switch event {
             case .partial(let text):
                 emit(.partial(text))
+                if commandCapture { continue }
                 if streamingCleanupEnabled, settings.cleanupEnabled, !settings.reflectionCleanupEnabled,
                    case .recording = state, let record, record.id == session {
                     let context = TextContext(interactive: false, settings: settings, project: project,
@@ -41,6 +42,11 @@ extension SessionEngine {
             // Never insert incomplete text after a durable capture failure.
             recognitionOverflow = true
             emit(.notice("Could not persist raw segment \(index): \(error.localizedDescription)"))
+            return
+        }
+        if commandCapture {
+            do { try await repository.updateCleaned(session: session, index: index, cleaned: raw.text, state: .skipped) }
+            catch { recognitionOverflow = true; emit(.notice("Could not retain voice command transcript.")) }
             return
         }
         // Priority classification must not make an XPC tokenizer round trip:

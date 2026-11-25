@@ -137,7 +137,7 @@ struct WingsContent: View {
 
     private var hints: [(key: String, label: String)]? {
         switch phase {
-        case .handsFree: [(key: "fn / ⏎", label: "Send"), (key: "esc", label: "Cancel")]
+        case .handsFree: [(key: model.voiceCommandMode ? "ctrl / ⏎" : "fn / ⏎", label: model.voiceCommandMode ? "Run" : "Send"), (key: "esc", label: "Cancel")]
         case .meeting: [(key: "⌘", label: "Save"), (key: "esc", label: "Discard")]
         default: nil
         }

@@ -143,18 +143,23 @@ public struct ModifierEventMapper: Sendable {
     private var fnDown = false
     private var commandDown = false
     private var leftCommandDown = false
+    private var voiceTap = VoiceControlTap()
 
     public init() {}
 
     public mutating func reset() {
         tracker.reset()
+        voiceTap.reset()
         // Keep the last snapshot: a release after tap recovery must still emit
         // an up edge for a gesture that began before the interruption.
     }
 
+    public mutating func cancelVoiceTap() { voiceTap.cancel() }
+
     public mutating func events(keyCode: Int64, flags: CGEventFlags, timestampNs: UInt64,
                                 dictationKey: DictationKey,
-                                intelligenceTriggerKey: IntelligenceTriggerKey? = nil) -> [KeyEvent] {
+                                intelligenceTriggerKey: IntelligenceTriggerKey? = nil,
+                                voiceCommandsEnabled: Bool = false) -> [KeyEvent] {
         let tracked = tracker.isDown(keyCode: keyCode)
         if keyCode == KeyCode.leftCommand {
             leftCommandDown = flags.contains(.maskCommand) && tracked
@@ -162,14 +167,19 @@ public struct ModifierEventMapper: Sendable {
             leftCommandDown = false
         }
         var result: [KeyEvent] = []
-        if let intelligenceTriggerKey,
+        if voiceCommandsEnabled,
+           voiceTap.flagsChanged(keyCode: keyCode, flags: flags, timestamp: timestampNs) {
+            result.append(KeyEvent(kind: .voiceCommandToggle, timestampNs: timestampNs))
+        }
+        let reservedControl = voiceCommandsEnabled && keyCode == KeyCode.leftControl
+        if !reservedControl, let intelligenceTriggerKey,
            keyCode == Int64(intelligenceTriggerKey.keyCode),
            KeyEventMapper.modifierIsDown(keyCode, flags: flags, tracked: tracked) {
             result.append(KeyEvent(kind: .intelligenceDown, timestampNs: timestampNs))
         }
-        let isIntelligenceTrigger = intelligenceTriggerKey.map {
+        let isIntelligenceTrigger = reservedControl || (intelligenceTriggerKey.map {
             keyCode == Int64($0.keyCode)
-        } ?? false
+        } ?? false)
         let mapped = isIntelligenceTrigger
             ? nil
             : KeyEventMapper.flagsChanged(keyCode: keyCode, flags: flags,

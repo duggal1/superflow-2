@@ -124,15 +124,16 @@ public final class MenuBarController: ObservableObject {
     }
 
     @discardableResult
-    public func startDictation(mode: SessionMode = .dictation) async -> Bool {
+    public func startDictation(mode: SessionMode = .dictation, commandCapture: Bool = false) async -> Bool {
         guard session != nil else { return false }
         if let startTask {
+            guard !commandCapture else { return false }
             let result = await startTask.value
             if result, mode == .handsFree { await session?.setMode(.handsFree) }
             return result
         }
         let task = Task { @MainActor [weak self] in
-            await self?.performStartDictation(mode: mode) ?? false
+            await self?.performStartDictation(mode: mode, commandCapture: commandCapture) ?? false
         }
         startTask = task
         let result = await withTaskCancellationHandler {
@@ -144,7 +145,7 @@ public final class MenuBarController: ObservableObject {
         return result
     }
 
-    private func performStartDictation(mode: SessionMode) async -> Bool {
+    private func performStartDictation(mode: SessionMode, commandCapture: Bool) async -> Bool {
         guard let session else { return false }
         // The launch prewarm is silent, but an explicit warm-up (onboarding or a
         // settings change) can still hold `.warming`. Wait for that same load
@@ -169,7 +170,7 @@ public final class MenuBarController: ObservableObject {
             return false
         }
         do {
-            _ = try await session.start(mode: mode)
+            _ = try await session.start(mode: mode, commandCapture: commandCapture)
             sessionState = await session.currentState
             await hotkeys?.setActiveTap(true)
             error = nil
@@ -232,6 +233,14 @@ public final class MenuBarController: ObservableObject {
         } else {
             await startMeeting()
         }
+    }
+
+    func stopVoiceCommand() async -> SessionOutcome? {
+        guard let session, await session.isVoiceCommandCapture else { return nil }
+        let outcome = await session.stop()
+        sessionState = await session.currentState
+        await hotkeys?.setActiveTap(false)
+        return outcome
     }
 
     public func stopDictation() async {

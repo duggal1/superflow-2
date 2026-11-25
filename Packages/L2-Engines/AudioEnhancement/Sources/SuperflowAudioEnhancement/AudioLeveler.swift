@@ -66,6 +66,7 @@ public struct AudioLeveler: Sendable {
             // frames as audio, not silence; keep a modest gain floor without
             // allowing broadband noise to inherit the full speech gain.
             let uncertain = !speech && rms >= Self.freezeRMS && rms < 0.003
+                && SpeechActivityDetector.zeroCrossingRate(frameBuffer) <= detector.settings.maxZeroCrossingRate
 
             let gain: Float
             if speech {
@@ -81,7 +82,7 @@ public struct AudioLeveler: Sendable {
                 // never to the accumulated speech gain, so a loud utterance
                 // cannot pump the noise floor afterwards.
                 gain = uncertain ? min(currentGain, 2) : (rms > Self.freezeRMS
-                    ? min(currentGain, 1) * Self.noiseGate : 1)
+                    ? min(currentGain, 1) * Self.noiseGate : currentGain)
             }
             let limited = min(gain, Self.peakLimit / max(peak, 1e-6))
             for index in start..<end { samples[index] *= limited }

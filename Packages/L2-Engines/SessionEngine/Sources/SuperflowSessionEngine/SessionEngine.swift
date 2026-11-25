@@ -31,6 +31,8 @@ public actor SessionEngine {
     /// call during that window could create a second recording.
     var isStarting = false
     var captureStopRequested = false
+    var commandCapture = false
+    public var isVoiceCommandCapture: Bool { commandCapture && state.isActive }
     var record: SessionRecord?
     var recognitionStream: (any RecognitionStream)?
     var writer: (any AudioJournalWriter)?
