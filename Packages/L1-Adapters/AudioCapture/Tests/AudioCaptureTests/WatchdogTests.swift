@@ -45,9 +45,10 @@ final class WatchdogTests: XCTestCase {
         XCTAssertTrue(watchdog.health.rebuildingRoute)
         XCTAssertFalse(watchdog.health.rebuildTimedOut)
 
-        watchdog.check(now: 1_009)
+        // The rebuild started at 10 and times out after 100 ns.
+        watchdog.check(now: 109)
         XCTAssertFalse(watchdog.health.rebuildTimedOut)
-        watchdog.check(now: 1_010)
+        watchdog.check(now: 110)
         XCTAssertTrue(watchdog.health.rebuildTimedOut)
         XCTAssertTrue(watchdog.health.rebuildingRoute)
 

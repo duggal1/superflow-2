@@ -56,6 +56,8 @@ public struct ActivityYear: View {
     public let days: [ActivityDay]
     public var animatesIn = true
 
+    private let dayLimit: Int?
+    private let rowCount: Int
     private let blocks: [ActivityBlock]
     private let today: Date?
     private let firstActive: Date?
@@ -71,25 +73,38 @@ public struct ActivityYear: View {
     nonisolated fileprivate static let monthGap: CGFloat = 8
     nonisolated fileprivate static let rows = 7
 
-    public init(days: [ActivityDay], animatesIn: Bool = true) {
-        self.days = days
+    public init(days: [ActivityDay], animatesIn: Bool = true, dayLimit: Int? = nil) {
+        let ordered = days.sorted { $0.date < $1.date }
+        let visible = dayLimit.map { Array(ordered.suffix(max(1, $0))) } ?? ordered
+        self.days = visible
         self.animatesIn = animatesIn
-        self.blocks = ActivityBlock.make(days)
-        self.today = days.last?.date
-        self.firstActive = days.first { $0.words > 0 }?.date
-        self.total = days.reduce(0) { $0 + $1.words }
+        self.dayLimit = dayLimit
+        self.rowCount = dayLimit == nil ? 7 : 3
+        if dayLimit != nil, let first = visible.first {
+            // Chronological, 15 days per row at the requested 45-day range.
+            let columns = max(1, (visible.count + 2) / 3)
+            self.blocks = [ActivityBlock(month: first.date, cols: columns,
+                cells: visible.enumerated().map { index, day in
+                    ActivityBlock.Cell(col: index % columns, row: index / columns, day: day)
+                })]
+        } else {
+            self.blocks = ActivityBlock.make(visible)
+        }
+        self.today = visible.last?.date
+        self.firstActive = ordered.first { $0.words > 0 }?.date
+        self.total = visible.reduce(0) { $0 + $1.words }
     }
 
     private struct Metrics {
         let cell: CGFloat, pitch: CGFloat, height: CGFloat
         let originX: [CGFloat]
-        init(width: CGFloat, blocks: [ActivityBlock], scale: CGFloat) {
+        init(width: CGFloat, blocks: [ActivityBlock], scale: CGFloat, rows: Int) {
             let cols = max(blocks.reduce(0) { $0 + $1.cols }, 1)
             let inner = blocks.reduce(0) { $0 + $1.cols - 1 }
             let free = width - CGFloat(inner) * ActivityYear.gap - CGFloat(max(blocks.count - 1, 0)) * ActivityYear.monthGap
             cell = max(floor((free / CGFloat(cols)) * scale) / scale, 1)
             pitch = cell + ActivityYear.gap
-            height = CGFloat(ActivityYear.rows) * cell + CGFloat(ActivityYear.rows - 1) * ActivityYear.gap
+            height = CGFloat(rows) * cell + CGFloat(rows - 1) * ActivityYear.gap
             var x: CGFloat = 0
             var xs: [CGFloat] = []
             for b in blocks {
@@ -101,7 +116,7 @@ public struct ActivityYear: View {
     }
 
     public var body: some View {
-        let m = Metrics(width: width, blocks: blocks, scale: scale)
+        let m = Metrics(width: width, blocks: blocks, scale: scale, rows: rowCount)
         VStack(alignment: .leading, spacing: 12) {
             header
             VStack(alignment: .leading, spacing: 8) {
@@ -113,14 +128,14 @@ public struct ActivityYear: View {
                         case .ended: hovered = nil
                         }
                     }
-                monthLabels(m)
+                if dayLimit == nil { monthLabels(m) } else { rangeLabels }
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
             .opacity(width > 0 ? 1 : 0)
         }
         .animation(reduceMotion ? nil : .snappy(duration: 0.15), value: hovered)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Dictation words per day for the last 12 months")
+        .accessibilityLabel(dayLimit.map { "Dictation words per day for the last \($0) days" } ?? "Dictation words per day for the last 12 months")
         .accessibilityValue("\(total.formatted()) words")
         .task { await runReveal() }
     }
@@ -128,7 +143,7 @@ public struct ActivityYear: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Last 12 months").font(Typography.sectionTitle).foregroundStyle(Tok.text)
+                Text(dayLimit.map { "Last \($0) days" } ?? "Last 12 months").font(Typography.sectionTitle).foregroundStyle(Tok.text)
                 readout.frame(height: 16, alignment: .leading)
             }
             Spacer(minLength: 16)
@@ -152,6 +167,15 @@ public struct ActivityYear: View {
         }
     }
 
+    private var rangeLabels: some View {
+        HStack {
+            if let first = days.first { Text(first.date, format: .dateTime.month(.abbreviated).day()) }
+            Spacer()
+            Text("Today")
+        }
+        .font(AppType.caption.font).foregroundStyle(Tok.text2)
+    }
+
     private func snap(_ v: CGFloat) -> CGFloat { (v * scale).rounded() / scale }
 
     private func draw(_ ctx: inout GraphicsContext, _ m: Metrics) {
@@ -159,7 +183,7 @@ public struct ActivityYear: View {
             for c in b.cells {
                 let x = m.originX[bi] + CGFloat(c.col) * m.pitch
                 let y = CGFloat(c.row) * m.pitch
-                let order = 1 - (x + m.cell / 2) / max(width, 1)
+                let order = max(0, min(1, 1 - (x + m.cell / 2) / max(width, 1)))
                 guard order <= reveal else { continue }
 
                 let rect = CGRect(x: x, y: y, width: m.cell, height: m.cell)
@@ -210,7 +234,7 @@ public struct ActivityYear: View {
     private func runReveal() async {
         guard animatesIn, !reduceMotion else { reveal = 1; return }
         for k in 1...14 {
-            try? await Task.sleep(for: .milliseconds(600 / 14))
+            do { try await Task.sleep(for: .milliseconds(600 / 14)) } catch { return }
             reveal = CGFloat(k) / 14
         }
     }

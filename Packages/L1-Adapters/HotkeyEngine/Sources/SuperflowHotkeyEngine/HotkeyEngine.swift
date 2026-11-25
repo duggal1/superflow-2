@@ -27,6 +27,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     /// thread, so it lives under the same lock as the taps.
     private var dictationKey: DictationKey = .fn
     private var intelligenceTriggerKey: IntelligenceTriggerKey = .rightOption
+    private var voiceCommandsEnabled = false
     private var lifecycle = HotkeyLifecycle()
     private var wakeObserver: NSObjectProtocol?
     private var healthTimer: DispatchSourceTimer?
@@ -118,6 +119,14 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
 
     public func setIntelligenceTriggerKey(_ key: IntelligenceTriggerKey) async {
         lock.withLock { intelligenceTriggerKey = key }
+    }
+
+    public func setVoiceCommandsEnabled(_ enabled: Bool) async {
+        lock.withLock {
+            guard voiceCommandsEnabled != enabled else { return }
+            voiceCommandsEnabled = enabled
+            modifierTracker.cancelVoiceTap()
+        }
     }
 
     // MARK: taps
@@ -288,11 +297,13 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
             let (key, mapped) = lock.withLock { () -> (DictationKey, [KeyEvent]) in
                 (dictationKey, modifierTracker.events(keyCode: keyCode, flags: event.flags,
                                                        timestampNs: timestamp, dictationKey: dictationKey,
-                                                       intelligenceTriggerKey: intelligenceTriggerKey))
+                                                       intelligenceTriggerKey: intelligenceTriggerKey,
+                                                       voiceCommandsEnabled: voiceCommandsEnabled))
             }
             for edge in mapped { continuation.yield(edge) }
             if key == .fn, keyCode == KeyCode.fn, lock.withLock({ suppressFn }) { return nil }
         case .keyDown:
+            lock.withLock { modifierTracker.cancelVoiceTap() }
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
             let active = lock.withLock { activeTap != nil }
             if active, keyCode == KeyCode.enter || keyCode == KeyCode.escape {
@@ -328,6 +339,7 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
         // Never swallow or map a chord this app posted itself.
         if KeyEventMapper.isSynthetic(event) { return Unmanaged.passUnretained(event) }
         guard type == .keyDown else { return Unmanaged.passUnretained(event) }
+        lock.withLock { modifierTracker.cancelVoiceTap() }
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         guard keyCode == KeyCode.enter || keyCode == KeyCode.escape else {
             return Unmanaged.passUnretained(event)

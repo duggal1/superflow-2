@@ -85,6 +85,8 @@ public enum InsertionOutcome: Sendable, Equatable {
 public protocol TextInserter: Sendable {
     func insert(_ text: String, strategy: InsertionStrategy) async throws -> InsertionOutcome
     func frontmostBundleID() async -> String?
+    func openVoiceShortcut(_ shortcut: VoiceOpeningShortcut) async -> Bool
+    func insertAndSubmit(_ text: String, expectedBundleID: String?) async throws -> VoiceSubmission
     /// Called when recording starts, before model warm-up, so an adapter can ask
     /// the target app to build its Accessibility tree while the user speaks.
     func prepareForInsertion() async
@@ -92,4 +94,17 @@ public protocol TextInserter: Sendable {
 
 public extension TextInserter {
     func prepareForInsertion() async {}
+    func openVoiceShortcut(_ shortcut: VoiceOpeningShortcut) async -> Bool { false }
+    func insertAndSubmit(_ text: String, expectedBundleID: String?) async throws -> VoiceSubmission {
+        VoiceSubmission(insertion: try await insert(text, strategy: .auto), submitted: false)
+    }
+}
+
+public struct VoiceSubmission: Sendable {
+    public let insertion: InsertionOutcome
+    public let submitted: Bool
+    public init(insertion: InsertionOutcome, submitted: Bool) {
+        self.insertion = insertion
+        self.submitted = submitted
+    }
 }

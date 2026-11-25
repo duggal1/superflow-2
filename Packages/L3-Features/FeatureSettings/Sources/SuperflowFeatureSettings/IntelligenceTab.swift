@@ -6,7 +6,7 @@ import SuperflowUIComponents
 import SwiftUI
 
 struct IntelligenceTab: View {
-    nonisolated static let titles = ["Reflection API key", "Connection", "Default effort", "Mode", "Trigger key", "Screen awareness", "Custom instructions"]
+    nonisolated static let titles = ["Reflection API key", "Connection", "Default effort", "Mode", "Trigger key", "Screen awareness", "Custom instructions", "Jev voice commands", "Jev API key"]
     let query: String
     @AppStorage("intelligence.effort") private var effort = ReasoningEffort.low.rawValue
     @AppStorage("intelligence.mode") private var mode = MeetingMode.normal.rawValue
@@ -64,6 +64,7 @@ struct IntelligenceTab: View {
                     AppTextEditor("Custom instructions", text: $custom)
                 }.padding(.vertical, Space.sm)
             }
+            JevVoiceSettings(query: query)
             Text("Reflection receives transcript text and optional screen text. Defaults are saved on this Mac; Island capture integration is pending. Screen OCR is currently unverified.")
                 .appType(.body).foregroundStyle(Tok.text2)
         }

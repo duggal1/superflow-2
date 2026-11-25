@@ -92,7 +92,7 @@ public enum IslandLayout {
     public static let nonNotchGap: CGFloat = 16
     /// The key hints under a live mode. The wings grow by this much while the
     /// shelf is up, so the silhouette never clips a keycap.
-    public static let hintShelf: CGFloat = 32
+    public static let hintShelf: CGFloat = 24
     /// The streaming line is taller than the hint shelf: it holds real type.
     public static let liveShelf: CGFloat = 40
 

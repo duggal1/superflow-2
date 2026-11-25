@@ -1,5 +1,17 @@
 # SuperFlow
 
+## Follow-up quality and voice actions — 2026-11-25
+
+- P0: ensure formatting runs on the actual insertion path, including raw fallback and segment seams; preserve explicit line breaks and technical literals. Test numbered and bullet instructions with two or more items.
+- P0: preserve raw capture, make quiet speech usable without aggressive noise gating, separate AGC from optional denoising failure, test whisper and Bluetooth recordings before promising accuracy.
+- P1: compact FN hands-free shelf, visible keycaps, matching silhouette; improve recovery durability (do not delete journals when cleanup or storage failed).
+- P1: separate explicit voice-command capture from dictation. Left Control alone is reserved for Jev (TypeSafe hosted System One, opt-in API key); no network calls during normal dictation. Typed decision, validated local actions, bounded timeout and no arbitrary scripts. Sending messages requires explicit intent and verified focus/insertion. Never auto-publish model-generated or unspecified content. No command execution during crash recovery.
+- P2: Knowledge pixel-aligned compact rows, real SQLite-backed operations. Dashboard 45-day activity view, retaining full historical totals; simplify bottom analytics without invented sample data. Keep all capabilities.
+- Performance: profile idle and active RSS separately from resident model weights. Avoid extra audio/model runtime and polling; bound allocations and do not claim zero RAM. Run focused and full macOS CI.
+
+Jev API: https://api.typesafe.ai/redoc (POST /v1/systemone; Bearer credentials; typed questions). The model does not generate arbitrary text or shell commands.
+
+
 ## Active remediation — 2026-11-24
 
 This execution plan supersedes conflicting quality priorities below, not existing product contracts. Do not mark an item done without evidence.

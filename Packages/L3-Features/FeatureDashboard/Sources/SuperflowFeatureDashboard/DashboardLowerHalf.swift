@@ -64,8 +64,8 @@ public struct HoursCard: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
             SectionHeader("Your hours", note: "Words by hour, last 90 days")
-            Card {
-                VStack(alignment: .leading, spacing: Space.lg) {
+            Card(padding: Space.md) {
+                VStack(alignment: .leading, spacing: Space.sm) {
                     readout
                     VStack(alignment: .leading, spacing: Space.sm) {
                         HourColumns(values: values, peak: peak, hovered: $hovered)
@@ -112,8 +112,8 @@ public struct HourColumns: View {
     @Environment(\.displayScale) private var scale
     @State private var width: CGFloat = 0
 
-    private let rows = 8
-    private let gap: CGFloat = 3
+    private let rows = 6
+    private let gap: CGFloat = 2
     private static let blocks = 3
     private static let blockGap: CGFloat = 12
     private static let blockHours = 8
@@ -164,8 +164,8 @@ public struct HourColumns: View {
                     let rect = CGRect(x: x,
                                       y: CGFloat(rows - 1 - row) * pitch,
                                       width: cell, height: cell)
-                    context.fill(Path(roundedRect: rect, cornerRadius: 2, style: .continuous),
-                                 with: .color(row < lit ? tone : Tok.well))
+                    context.fill(Path(rect),
+                                 with: .color(row < lit ? tone : Tok.well), style: FillStyle(antialiased: false))
                 }
             }
         }

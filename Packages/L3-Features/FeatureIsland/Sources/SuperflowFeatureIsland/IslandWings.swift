@@ -21,7 +21,7 @@ struct WingsContent: View {
     var body: some View {
         let geometry = model.geometry
         let gap = geometry.hasNotch ? geometry.notch.width : IslandLayout.nonNotchGap
-        let wing = (model.box.body.width - gap) / 2
+        let wing = IslandLayout.wingWidth(phase, gap: gap)
 
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -51,7 +51,7 @@ struct WingsContent: View {
                 .frame(height: IslandLayout.hintShelf)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: model.hint)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: model.noSignal)
-                .modifier(Entrance(delay: 0.10, dy: 4))
+                .allowsHitTesting(false)
             } else if model.noSignal {
                 NoSignalShelf()
                     .transition(.opacity)
@@ -137,8 +137,8 @@ struct WingsContent: View {
 
     private var hints: [(key: String, label: String)]? {
         switch phase {
-        case .handsFree: [(key: "fn / ⏎", label: "Send"), (key: "esc", label: "Cancel")]
-        case .meeting: [(key: "⌘ ×2", label: "Save"), (key: "esc", label: "Discard")]
+        case .handsFree: [(key: model.voiceCommandMode ? "ctrl / ⏎" : "fn / ⏎", label: model.voiceCommandMode ? "Run" : "Send"), (key: "esc", label: "Cancel")]
+        case .meeting: [(key: "⌘", label: "Save"), (key: "esc", label: "Discard")]
         default: nil
         }
     }
@@ -164,9 +164,9 @@ struct HintShelf: View {
     let items: [(key: String, label: String)]
 
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 12) {
             ForEach(items.indices, id: \.self) { index in
-                HStack(spacing: 8) {
+                HStack(spacing: 4) {
                     HintKey(label: items[index].key)
                     Text(items[index].label)
                         .appType(.caption)
@@ -189,8 +189,8 @@ struct HintKey: View {
         Text(label)
             .appType(.caption)
             .foregroundStyle(Tok.text)
-            .padding(.horizontal, 6)
-            .frame(minWidth: 20, minHeight: 20)
+            .padding(.horizontal, 4)
+            .frame(minWidth: 18, minHeight: 16)
             .background(Tok.control, in: .rect(cornerRadius: Radius.chip,
                                                style: .continuous))
     }

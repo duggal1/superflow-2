@@ -46,6 +46,7 @@ public enum SessionEvent: Sendable, Equatable {
     case progress(Double)
     case notice(String)
     case inserted(InsertionOutcome)
+    case voiceActionCompleted
     case finished(SessionID, SessionStatus)
 }
 

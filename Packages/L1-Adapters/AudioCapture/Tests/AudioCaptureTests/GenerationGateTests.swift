@@ -30,8 +30,11 @@ final class GenerationGateTests: XCTestCase {
             issued.insert(generation)
             lock.unlock()
         }
-        XCTAssertEqual(issued.count, 128)
-        XCTAssertEqual(gate.generation, 5 + 128)
-        XCTAssertTrue(issued.allSatisfy { !gate.isCurrent($0) })
+        let latest: UInt64 = 5 + 128
+        XCTAssertEqual(issued, Set(UInt64(6)...latest), "Every concurrent advance issues exactly one unique generation")
+        XCTAssertEqual(gate.generation, latest)
+        XCTAssertTrue(gate.isCurrent(latest))
+        XCTAssertFalse(gate.isCurrent(5))
+        XCTAssertTrue(issued.subtracting([latest]).allSatisfy { !gate.isCurrent($0) })
     }
 }

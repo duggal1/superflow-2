@@ -22,13 +22,15 @@ struct KnowledgeRow: View {
     let spec: KnowledgeRowSpec
 
     var body: some View {
-        RowButton("\(spec.trigger), becomes \(spec.result)", height: 44) {
+        RowButton("\(spec.trigger), becomes \(spec.result)", height: 36) {
             spec.open()
         } content: {
             HStack(spacing: Space.sm) {
+                Rectangle().fill(spec.dimmed ? Tok.control : Tok.accent)
+                    .frame(width: 4, height: 4).accessibilityHidden(true)
                 Text(spec.trigger)
                     .appType(.label).foregroundStyle(spec.dimmed ? Tok.text2 : Tok.text)
-                    .lineLimit(1).frame(width: 168, alignment: .leading)
+                    .lineLimit(1).frame(width: 148, alignment: .leading)
                     .modifier(TextFade(length: 12))
                 IconView(.arrow, size: 12, tint: Tok.text2).frame(width: 12)
                 Text(spec.result)
@@ -75,7 +77,7 @@ struct LearningRow: View {
             }
             .fixedSize(horizontal: true, vertical: false).layoutPriority(1)
         }
-        .padding(.horizontal, Space.sm).frame(height: 56)
+        .padding(.horizontal, Space.sm).frame(height: 44)
         .accessibilityElement(children: .contain)
     }
 }

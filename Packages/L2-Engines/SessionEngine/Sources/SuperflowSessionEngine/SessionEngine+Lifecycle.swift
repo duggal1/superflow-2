@@ -41,7 +41,7 @@ extension SessionEngine {
         }
     }
 
-    public func start(mode: SessionMode = .dictation) async throws -> SessionID {
+    public func start(mode: SessionMode = .dictation, commandCapture: Bool = false) async throws -> SessionID {
         guard !isStarting else {
             throw SuperflowError.invalidState("session already starting")
         }
@@ -67,6 +67,7 @@ extension SessionEngine {
         try await repository.createSession(newRecord)
         record = newRecord
         resetBuffers()
+        self.commandCapture = commandCapture
         recognitionStream = nil
         writer = nil
         archiveWriter = nil
@@ -140,8 +141,10 @@ extension SessionEngine {
                                                     metrics: metrics, emit: { event in
                 eventContinuation.yield(event)
             })
-            await cleanup.start(workerCount: settings.cleanupWorkers)
-            cleanupCoordinator = cleanup
+            if !commandCapture {
+                await cleanup.start(workerCount: settings.cleanupWorkers)
+                cleanupCoordinator = cleanup
+            }
             try Task.checkCancellation()
             transition(.recording(mode))
 
@@ -166,14 +169,18 @@ extension SessionEngine {
             recognitionDrainTask = nil
             await recognitionStream?.finish()
             recognitionStream = nil
-            _ = await writer?.close()
+            let startJournal = await writer?.close()
             writer = nil
             await archiveWriter?.discard()
             archiveWriter = nil
             await archive?.delete(session: newRecord.id)
-            if !settings.keepJournals { await journals.delete(session: newRecord.id) }
-            try? await repository.finalizeSession(newRecord.id, endedAt: clock.now(), status: .failed,
-                                                  durationMs: 0, wordCount: 0, cleanupState: .skipped)
+            if (startJournal?.samples ?? 0) == 0 {
+                if !settings.keepJournals { await journals.delete(session: newRecord.id) }
+                try? await repository.finalizeSession(newRecord.id, endedAt: clock.now(), status: .failed,
+                                                      durationMs: 0, wordCount: 0, cleanupState: .skipped)
+            } else {
+                emit(.notice("Captured audio retained for recovery."))
+            }
             transition(.failed(newRecord.id, error.localizedDescription))
             emit(.notice("Could not start recording: \(error.localizedDescription)"))
             emit(.finished(newRecord.id, .failed))
@@ -244,7 +251,8 @@ extension SessionEngine {
                        valueMs: Double((DispatchTime.now().uptimeNanoseconds - budgetStarted) / 1_000_000))
         await liveCleanup.reset()
         let assembledText = recognitionOverflow ? nil : await finalText(session: record.id)
-        let text = assembledText ?? ""
+        let directive = await prepareInsertion(assembledText ?? "", session: record)
+        let text = directive.text
         let words = wordCount(text)
         let duration = max(lastEndMs, Int(clock.now().timeIntervalSince(record.startedAt) * 1000))
 
@@ -256,12 +264,13 @@ extension SessionEngine {
             await cancel()
             return nil
         }
-        if !text.isEmpty {
+        if let opening = directive.opening {
+            if await inserter.openVoiceShortcut(opening) { emit(.voiceActionCompleted) }
+            else { emit(.notice("Could not open the requested application.")) }
+        } else if !text.isEmpty, !commandCapture {
             transition(.inserting)
             do {
-                insertion = try await withDeadline(insertionDeadline, label: "insertion") { [inserter] in
-                    try await inserter.insert(text, strategy: .auto)
-                }
+                insertion = try await insertDirective(directive, expectedBundleID: record.frontmostBundleID)
                 if let insertion { emit(.inserted(insertion)) }
             } catch {
                 emit(.notice("Could not insert automatically. The text is on the clipboard and in History."))
@@ -317,7 +326,9 @@ extension SessionEngine {
             metrics.record("session.finalize.ms",
                            valueMs: Double((DispatchTime.now().uptimeNanoseconds - finalizeStarted) / 1_000_000))
         }
-        if !settings.keepJournals, finalized { await journals.delete(session: record.id) }
+        if !settings.keepJournals, finalized, cleanupState != .fallback, !journalWarned {
+            await journals.delete(session: record.id)
+        }
         if finalized {
             transition(.complete(record.id))
             emit(.finished(record.id, .complete))
