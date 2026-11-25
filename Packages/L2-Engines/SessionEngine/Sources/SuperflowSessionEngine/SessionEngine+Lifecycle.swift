@@ -244,7 +244,7 @@ extension SessionEngine {
                        valueMs: Double((DispatchTime.now().uptimeNanoseconds - budgetStarted) / 1_000_000))
         await liveCleanup.reset()
         let assembledText = recognitionOverflow ? nil : await finalText(session: record.id)
-        let text = assembledText ?? ""
+        let text = await pipeline.formatForInsertion(assembledText ?? "", context: TextContext(settings: settings, project: project, activeAppBundleID: record.frontmostBundleID))
         let words = wordCount(text)
         let duration = max(lastEndMs, Int(clock.now().timeIntervalSince(record.startedAt) * 1000))
 
@@ -317,7 +317,9 @@ extension SessionEngine {
             metrics.record("session.finalize.ms",
                            valueMs: Double((DispatchTime.now().uptimeNanoseconds - finalizeStarted) / 1_000_000))
         }
-        if !settings.keepJournals, finalized { await journals.delete(session: record.id) }
+        if !settings.keepJournals, finalized, cleanupState != .fallback, !journalWarned {
+            await journals.delete(session: record.id)
+        }
         if finalized {
             transition(.complete(record.id))
             emit(.finished(record.id, .complete))

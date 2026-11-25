@@ -18,12 +18,12 @@ public struct AudioLeveler: Sendable {
     /// VAD plus `freezeRMS`, not this value.
     public static let silenceRMS: Float = 0.005
     /// A true digital-zero frame freezes the AGC. Whispers are far above it.
-    public static let freezeRMS: Float = 0.000_1
+    public static let freezeRMS: Float = 0.000_05
     /// 36 dB of makeup gain: enough to lift -43 dBFS whispers to the target.
     public static let maxGain: Float = 64.0
     public static let releaseStep: Float = 0.05
     /// Non-speech energy is attenuated, never amplified.
-    public static let noiseGate: Float = 0.5
+    public static let noiseGate: Float = 0.85
 
     /// Baseline 150% boost, always on as the default. The AGC then rides
     /// around it toward the RMS target.
@@ -62,6 +62,10 @@ public struct AudioLeveler: Sendable {
             }
             let rms = (sumSq / Float(end - start)).squareRoot()
             let speech = detector.isSpeech(frameBuffer) && rms > Self.freezeRMS
+            // Quiet consonants and whispers may be unvoiced. Treat uncertain
+            // frames as audio, not silence; keep a modest gain floor without
+            // allowing broadband noise to inherit the full speech gain.
+            let uncertain = !speech && rms >= Self.freezeRMS && rms < 0.003
 
             let gain: Float
             if speech {
@@ -76,9 +80,8 @@ public struct AudioLeveler: Sendable {
                 // Frozen on silence/noise. Gate non-speech relative to unity,
                 // never to the accumulated speech gain, so a loud utterance
                 // cannot pump the noise floor afterwards.
-                gain = rms > Self.freezeRMS
-                    ? min(currentGain, 1) * Self.noiseGate
-                    : currentGain
+                gain = uncertain ? min(currentGain, 2) : (rms > Self.freezeRMS
+                    ? min(currentGain, 1) * Self.noiseGate : 1)
             }
             let limited = min(gain, Self.peakLimit / max(peak, 1e-6))
             for index in start..<end { samples[index] *= limited }

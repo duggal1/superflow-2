@@ -119,10 +119,12 @@ public struct FormattingStage: SuperflowPorts.TextStage {
         // re-invent bullets the model deliberately withheld.
         let structure = context.settings.cleanupStructure
             .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if structure == "prose" { config.lists = false }
+        // Strong explicit list cues override prose, but ordinary prose remains prose.
+        if structure == "prose", !CleanupStructureDetector.isList(draft.text) { config.lists = false }
         // Explicit numbering is a dictated layout command, not inferred bullets.
         // Apply it even in prose mode; ordinary enumerations still honor the setting.
         let explicit = SpokenEnumerationShaper.explicitCardinals(draft.text)
+        if explicit != draft.text { config.lists = true }
         config.listOptions.orderedAsBullets = false
         output.text = shapeOutput(explicit, config: config,
                                   counters: &counters)

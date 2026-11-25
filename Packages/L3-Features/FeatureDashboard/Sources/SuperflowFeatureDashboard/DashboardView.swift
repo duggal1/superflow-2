@@ -60,22 +60,22 @@ public struct DashboardView: View {
     /// The title and the canvas are one component: `ActivityYear` already draws
     /// "Last 12 months" and its readout line, so the page adds no second header.
     private var graph: some View {
-        ActivityYear(days: model.activity, animatesIn: !model.hasAppeared)
+        ActivityYear(days: model.activity, animatesIn: !model.hasAppeared, dayLimit: 45)
     }
 
     /// Both cards take the taller one's height, which comes from their content: no
     /// fixed row height, and no dead third of either card.
     private var usageCard: some View {
-        UsageCard(usage: model.usage.isEmpty ? AppUsage.examples : model.usage,
-                  range: $model.usageRange, isExample: model.usage.isEmpty,
+        UsageCard(usage: model.usage,
+                  range: $model.usageRange, isExample: false,
                   animatesIn: !model.hasAppeared)
     }
 
     private var lowerHalf: some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: Space.md) {
-                usageCard.frame(minWidth: 420)
-                HoursCard(hours: model.insights.hourly).frame(width: 320)
+                usageCard.frame(minWidth: 360)
+                HoursCard(hours: model.insights.hourly).frame(minWidth: 240, idealWidth: 280, maxWidth: 320)
             }
             VStack(alignment: .leading, spacing: Space.md) {
                 usageCard

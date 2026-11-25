@@ -41,7 +41,13 @@ public struct UsageCard: View {
                 }
             }
             Card(padding: Space.xs) {
-                VStack(spacing: Space.xxs) {
+                VStack(spacing: 0) {
+                    if rows.isEmpty {
+                        Text("No dictation in this period")
+                            .appType(.caption).foregroundStyle(Tok.text2)
+                            .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                            .padding(.horizontal, Space.sm)
+                    }
                     ForEach(Array(rows.enumerated()), id: \.element.id) { rank, app in
                         usageRow(app, rank: rank)
                     }
@@ -82,11 +88,11 @@ private struct UsageRowView: View {
     var body: some View {
         let name = AppNameLookup.name(for: app.bundleID)
         HStack(spacing: Space.sm) {
-            AppIcon(bundleID: app.bundleID, size: 20)
+            AppIcon(bundleID: app.bundleID, size: 16)
             Text(name).appType(.label).foregroundStyle(Tok.text)
-                .lineLimit(1).frame(width: 112, alignment: .leading)
+                .lineLimit(1).frame(width: 100, alignment: .leading)
             UsageBar(fraction: fraction, leader: rank == 0, reveal: reveal)
-                .frame(maxWidth: .infinity).frame(height: 16)
+                .frame(maxWidth: .infinity).frame(height: 12)
                 .animation(reduceMotion ? nil : .snappy(duration: 0.25), value: fraction)
             Text(app.words.formatted()).appType(.body).monospacedDigit()
                 .foregroundStyle(Tok.text).frame(width: 56, alignment: .trailing)
@@ -94,7 +100,7 @@ private struct UsageRowView: View {
                 .appType(.caption).monospacedDigit().foregroundStyle(Tok.text2)
                 .frame(width: 36, alignment: .trailing)
         }
-        .padding(.horizontal, Space.sm).frame(height: 40)
+        .padding(.horizontal, Space.sm).frame(height: 32)
         .background(hover ? Tok.control : .clear,
                     in: .rect(cornerRadius: Radius.nested, style: .continuous))
         .onHover { inside in
@@ -120,7 +126,8 @@ struct UsageBar: View, Animatable {
     var body: some View {
         Canvas { context, size in
             let pitch: CGFloat = 4
-            let columns = max(8, Int((size.width + 1) / pitch))
+            let columns = max(0, Int((size.width + 1) / pitch))
+            guard columns > 0 else { return }
             let lit = fraction <= 0 ? 0 : min(columns, max(1, Int((min(1, fraction) * Double(columns)).rounded(.up))))
             let shown = Int((Double(lit) * Double(reveal)).rounded(.down))
             let y = Pixel.snap((size.height - 10) / 2, scale)

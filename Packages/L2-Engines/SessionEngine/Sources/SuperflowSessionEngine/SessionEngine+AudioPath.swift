@@ -24,6 +24,7 @@ extension SessionEngine {
                       archive: (any AudioArchiveWriter)?,
                       feed: AsyncStream<AudioChunk>.Continuation) async {
         let enhancing = enhancementActive
+        let conditioning = settings.speechEnhancementEnabled
         var stage = EnhancementStage(enhancer: enhancer, enabled: enhancing)
         // AGC leveler runs after denoising (clean before gain) so it lifts
         // speech, never the noise floor. It follows the same Enhancement
@@ -50,7 +51,7 @@ extension SessionEngine {
             }
             let enhanceStart = DispatchTime.now().uptimeNanoseconds
             var clean = await stage.push(chunk.samples)
-            if enhancing {
+            if conditioning {
                 clarity.apply(&clean)
                 _ = leveler.level(&clean)
             }
@@ -67,7 +68,7 @@ extension SessionEngine {
             }
         }
         var tail = await stage.finish()
-        if enhancing {
+        if conditioning {
             clarity.apply(&tail)
             _ = leveler.level(&tail)
         }

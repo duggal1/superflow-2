@@ -228,9 +228,9 @@ struct KnowledgeView: View {
         let hidden = specs.count - shown.count
         return VStack(alignment: .leading, spacing: Space.xs) {
             if !shown.isEmpty {
-                Card(padding: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        SectionHeader(title, note: note).padding(.horizontal, Space.sm)
+                Card(padding: Space.xs) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        SectionHeader(title, note: note).padding(.horizontal, Space.sm).padding(.vertical, Space.xs)
                         ForEach(shown) { KnowledgeRow(spec: $0) }
                         if hidden > 0 {
                             AppButton("+\(hidden) more", kind: .link, height: ControlHeight.small) {

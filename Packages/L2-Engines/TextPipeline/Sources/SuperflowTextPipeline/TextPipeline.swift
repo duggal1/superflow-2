@@ -1,6 +1,7 @@
 import Foundation
 import SuperflowKernel
 import SuperflowPorts
+import SuperflowTextCleanup
 
 public struct StageTiming: Sendable, Equatable {
     public var id: String
@@ -59,6 +60,13 @@ public struct TextPipeline: Sendable {
     }
 
     public var stageIDs: [String] { stages.map(\.id) }
+
+    /// Reapply only deterministic structure after segments are assembled, including raw fallback.
+    /// No second model pass and no arbitrary punctuation or content rewrite.
+    public func formatForInsertion(_ text: String, context: TextContext) async -> String {
+        let output = await FormattingStage().apply(TranscriptDraft(text: text), context: context)
+        return output.text
+    }
 
     public func countTokens(_ text: String) async -> Int? {
         guard let tokenCounter else { return nil }
