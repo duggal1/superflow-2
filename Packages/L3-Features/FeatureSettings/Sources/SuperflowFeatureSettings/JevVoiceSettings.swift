@@ -1,4 +1,5 @@
 import SuperflowDesignSystem
+import SuperflowIcons
 import SuperflowMeetingIntelligence
 import SuperflowUIComponents
 import SwiftUI

@@ -122,7 +122,11 @@ public final class HotkeyEngine: HotkeySource, @unchecked Sendable {
     }
 
     public func setVoiceCommandsEnabled(_ enabled: Bool) async {
-        lock.withLock { voiceCommandsEnabled = enabled; modifierTracker.cancelVoiceTap() }
+        lock.withLock {
+            guard voiceCommandsEnabled != enabled else { return }
+            voiceCommandsEnabled = enabled
+            modifierTracker.cancelVoiceTap()
+        }
     }
 
     // MARK: taps
