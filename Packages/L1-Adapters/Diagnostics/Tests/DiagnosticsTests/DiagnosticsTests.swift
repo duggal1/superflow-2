@@ -132,7 +132,11 @@ final class DiagnosticsTests: XCTestCase {
         XCTAssertFalse(text.contains("MacBook"))
         XCTAssertFalse(text.contains("Phoenix"))
 
-        let payload = try JSONDecoder().decode(DiagnosticsPayload.self, from: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let payload = try decoder.decode(DiagnosticsPayload.self, from: data)
+        XCTAssertEqual(payload.metrics.count, 1)
+        XCTAssertEqual(payload.events.count, 1)
         XCTAssertEqual(payload.counters.audioDiscontinuities, 1)
         XCTAssertEqual(payload.counters.deadlineMisses, 1)
         XCTAssertEqual(payload.counters.maxQueueAgeMs, 41.5)
@@ -180,7 +184,8 @@ final class DiagnosticsTests: XCTestCase {
         let ring = MetricsRing(capacity: 2, counters: counters)
         for i in 0..<5 { ring.record("stage", valueMs: Double(i)) }
         XCTAssertEqual(counters.snapshot.ringOverflows, 3)
-        XCTAssertEqual(ring.snapshot.metrics.map(\.valueMs), [2, 3, 4])
+        XCTAssertEqual(ring.snapshot.metrics.map(\.valueMs), [3, 4])
+        XCTAssertEqual(ring.snapshot.metrics.count, 2)
     }
 
     func testTimingSummaryPercentilesAreCorrectAndBounded() {
